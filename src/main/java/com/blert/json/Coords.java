@@ -21,17 +21,17 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid;
+package com.blert.json;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
-    }
+import lombok.AllArgsConstructor;
+import net.runelite.api.coords.WorldPoint;
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+@AllArgsConstructor
+public class Coords {
+    int x;
+    int y;
+
+    public static Coords fromWorldPoint(WorldPoint point) {
+        return new Coords(point.getX(), point.getY());
     }
 }

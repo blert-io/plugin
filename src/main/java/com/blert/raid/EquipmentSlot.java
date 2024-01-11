@@ -23,15 +23,32 @@
 
 package com.blert.raid;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
-    }
+import lombok.Getter;
+import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.kit.KitType;
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+import javax.annotation.Nullable;
+
+@Getter
+public enum EquipmentSlot {
+    // KitType represents an item slot that is visibly rendered on players, so they do not map 1:1 to equipment slots.
+    HEAD(EquipmentInventorySlot.HEAD, KitType.HEAD),
+    CAPE(EquipmentInventorySlot.CAPE, KitType.CAPE),
+    AMULET(EquipmentInventorySlot.AMULET, KitType.AMULET),
+    AMMO(EquipmentInventorySlot.AMMO, null),
+    WEAPON(EquipmentInventorySlot.WEAPON, KitType.WEAPON),
+    TORSO(EquipmentInventorySlot.BODY, KitType.TORSO),
+    SHIELD(EquipmentInventorySlot.SHIELD, KitType.SHIELD),
+    LEGS(EquipmentInventorySlot.LEGS, KitType.LEGS),
+    GLOVES(EquipmentInventorySlot.GLOVES, KitType.HANDS),
+    BOOTS(EquipmentInventorySlot.BOOTS, KitType.BOOTS),
+    RING(EquipmentInventorySlot.RING, null);
+
+    private final int inventorySlotIndex;
+    private final @Nullable KitType kitType;
+
+    EquipmentSlot(EquipmentInventorySlot runeliteSlot, @Nullable KitType kitType) {
+        this.inventorySlotIndex = runeliteSlot.getSlotIdx();
+        this.kitType = kitType;
     }
 }

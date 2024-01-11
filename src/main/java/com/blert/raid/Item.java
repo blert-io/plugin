@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Alexei Frolov
+ * Copyright (c) 2023
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -23,15 +23,13 @@
 
 package com.blert.raid;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
-    }
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
-    }
+@AllArgsConstructor
+@Getter
+public class Item {
+    private int id;
+    private String name;
+    private int quantity;
 }

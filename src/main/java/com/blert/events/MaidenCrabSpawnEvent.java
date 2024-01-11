@@ -21,17 +21,34 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid;
+package com.blert.events;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
+import com.blert.raid.rooms.Room;
+import com.blert.raid.rooms.maiden.CrabSpawn;
+import com.blert.raid.rooms.maiden.MaidenCrab;
+import lombok.Getter;
+
+@Getter
+public class MaidenCrabSpawnEvent extends Event {
+    private final CrabSpawn spawn;
+    private final MaidenCrab crab;
+
+    public MaidenCrabSpawnEvent(int tick, CrabSpawn spawn, MaidenCrab crab) {
+        super(EventType.MAIDEN_CRAB_SPAWN, Room.MAIDEN, tick, crab.getSpawnPoint());
+        this.spawn = spawn;
+        this.crab = crab;
     }
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+    @Override
+    protected String eventDataString() {
+        StringBuilder sb = new StringBuilder("crab_spawn=(");
+        sb.append("spawn=").append(spawn);
+        sb.append(", crab=");
+        if (crab.isScuffed()) {
+            sb.append("scuffed ");
+        }
+        sb.append(crab.getPosition());
+        sb.append(')');
+        return sb.toString();
     }
 }

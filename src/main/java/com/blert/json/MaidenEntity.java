@@ -21,17 +21,42 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid;
+package com.blert.json;
+
+import com.blert.raid.rooms.maiden.CrabSpawn;
+import com.blert.raid.rooms.maiden.MaidenCrab;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
+
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Represents a game entity's current and maximum hitpoints.
+ * JSON object grouping all types of trackable maiden entities to avoid top-level `Event` clutter.
  */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
+@Getter
+public class MaidenEntity {
+    private @Nullable Crab crab;
+    private List<Coords> bloodSplats;
+
+    @AllArgsConstructor
+    private static class Crab {
+        final CrabSpawn spawn;
+        final MaidenCrab.Position position;
+        boolean scuffed;
     }
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+    public static MaidenEntity fromCrab(CrabSpawn spawn, MaidenCrab crab) {
+        MaidenEntity entity = new MaidenEntity();
+        entity.crab = new Crab(spawn, crab.getPosition(), crab.isScuffed());
+        return entity;
+    }
+
+    public static MaidenEntity bloodSplats(List<WorldPoint> points) {
+        MaidenEntity entity = new MaidenEntity();
+        entity.bloodSplats = points.stream().map(Coords::fromWorldPoint).collect(Collectors.toList());
+        return entity;
     }
 }

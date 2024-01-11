@@ -1,5 +1,6 @@
 package com.blert.raid;
 
+import com.blert.raid.rooms.Room;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 
@@ -33,8 +34,31 @@ public enum Location {
         }
     }
 
+    public boolean inRoom(Room room) {
+        switch (room) {
+            case MAIDEN:
+                return inMaiden();
+            case BLOAT:
+                return false;
+            case NYLOCAS:
+                return false;
+            case SOTETSEG:
+                return false;
+            case XARPUS:
+                return false;
+            case VERZIK:
+                return false;
+            default:
+                return false;
+        }
+    }
+
     public boolean inRaid() {
         return this != ELSEWHERE && this != LOBBY;
+    }
+
+    public boolean inMaidenInstance() {
+        return this == MAIDEN_INSTANCE || inMaiden();
     }
 
     public boolean inMaiden() {

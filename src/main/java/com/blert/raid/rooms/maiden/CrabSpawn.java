@@ -21,17 +21,17 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid;
+package com.blert.raid.rooms.maiden;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
-    }
+public enum CrabSpawn {
+    SEVENTIES,
+    FIFTIES,
+    THIRTIES;
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+    public CrabSpawn next() {
+        if (this == SEVENTIES) {
+            return FIFTIES;
+        }
+        return THIRTIES;
     }
 }

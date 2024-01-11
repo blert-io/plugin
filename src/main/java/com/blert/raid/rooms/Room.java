@@ -21,17 +21,16 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid;
+package com.blert.raid.rooms;
 
 /**
- * Represents a game entity's current and maximum hitpoints.
+ * Rooms in the Theatre of Blood.
  */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
-    }
-
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
-    }
+public enum Room {
+    MAIDEN,
+    BLOAT,
+    NYLOCAS,
+    SOTETSEG,
+    XARPUS,
+    VERZIK,
 }

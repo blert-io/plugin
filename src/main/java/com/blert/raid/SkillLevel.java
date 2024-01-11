@@ -23,15 +23,20 @@
 
 package com.blert.raid;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
-    }
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+/**
+ * Represents a game skill, with a base level and boosted/drained current level.
+ */
+@Getter
+@AllArgsConstructor
+public class SkillLevel {
+    private Skill skill;
+    private int current;
+    private int base;
+
+    public String toString() {
+        return String.valueOf(current) + "/" + base;
     }
 }

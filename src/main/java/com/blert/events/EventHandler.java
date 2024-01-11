@@ -1,5 +1,10 @@
 package com.blert.events;
 
 public interface EventHandler {
-    void handleEvent(Event event);
+    /**
+     * Processes an event occurring in a raid.
+     * @param clientTick Local monotonically increasing tick at which this event was sent. May be used to batch events.
+     * @param event The event that occurred.
+     */
+    void handleEvent(int clientTick, Event event);
 }

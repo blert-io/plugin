@@ -1,72 +1,158 @@
+/*
+ * Copyright (c) 2023 Alexei Frolov
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the “Software”), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.blert.raid;
 
 import com.blert.events.Event;
 import com.blert.events.EventHandler;
 import com.blert.events.RaidStartEvent;
-import lombok.Setter;
+import com.blert.raid.rooms.RoomDataTracker;
+import com.blert.raid.rooms.maiden.MaidenDataTracker;
+import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
+import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.VarbitChanged;
+import net.runelite.client.eventbus.EventBus;
+import net.runelite.client.eventbus.Subscribe;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 
 public class RaidManager {
+    private static final int TOB_ROOM_STATUS_VARBIT = 6447;
+
     @Inject
     private Client client;
 
-    @Setter
+    @Inject
+    private EventBus eventBus;
+
     private @Nullable EventHandler eventHandler = null;
 
     private RaidStatus status = RaidStatus.INACTIVE;
     private Location location = Location.ELSEWHERE;
 
-    private final Set<String> raidParty = new HashSet<>();
+    private final List<String> raiders = new ArrayList<>();
 
-    @Nullable RoomDataTracker roomDataTracker = null;
+    @Nullable
+    RoomDataTracker roomDataTracker = null;
+
+    public void initialize(EventHandler handler) {
+        this.eventHandler = handler;
+        eventBus.register(this);
+    }
 
     public boolean inRaid() {
         return status.isActive();
     }
 
-    public void updateState() {
-        Player player = client.getLocalPlayer();
-        if (player == null) {
+    public int getRaidScale() {
+        return inRaid() ? raiders.size() : 0;
+    }
+
+    public void tick() {
+        if (roomDataTracker != null) {
+            roomDataTracker.tick();
+        }
+    }
+
+    public void dispatchEvent(Event event) {
+        if (eventHandler != null) {
+            eventHandler.handleEvent(client.getTickCount(), event);
+        }
+    }
+
+    @Subscribe
+    private void onVarbitChanged(VarbitChanged varbit) {
+        if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
+            if (status == RaidStatus.INACTIVE && varbit.getValue() == 2) {
+                status = RaidStatus.ACTIVE;
+                dispatchEvent(new RaidStartEvent());
+            } else if (status == RaidStatus.ACTIVE && varbit.getValue() < 2) {
+                clearRoomDataTracker();
+                status = RaidStatus.INACTIVE;
+                raiders.clear();
+            }
             return;
         }
 
-        WorldPoint point = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-        Location new_location = Location.fromWorldPoint(point);
-        if (new_location.inRaid() && !location.inRaid()) {
-            status = RaidStatus.ACTIVE;
-            dispatchEvent(new RaidStartEvent());
-        } else if (!new_location.inRaid() && location.inRaid()) {
-            status = RaidStatus.INACTIVE;
-            roomDataTracker = null;
-        }
+        if (varbit.getVarbitId() == TOB_ROOM_STATUS_VARBIT) {
+            if (roomDataTracker != null && varbit.getValue() == 0) {
+                // Room has been completed.
+                clearRoomDataTracker();
+                return;
+            }
 
-        if (new_location.inMaiden() && !location.inMaiden()) {
-            roomDataTracker = new MaidenDataTracker(client, eventHandler);
-        }
+            if (varbit.getValue() == 1) {
+                // A new room has been started; initialize its data tracker.
+                Player player = client.getLocalPlayer();
+                if (player == null) {
+                    return;
+                }
 
-        location = new_location;
+                WorldPoint point = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+                Location location = Location.fromWorldPoint(point);
 
-        if (roomDataTracker != null) {
-            roomDataTracker.tick();
-            if (roomDataTracker.roomCompleted()) {
-                roomDataTracker = null;
+                if (location.inMaidenInstance()) {
+                    // When Maiden is started, players can no longer enter the raid. Grab final information about
+                    // raiders and scale.
+                    finalizePartyInformation();
+                    roomDataTracker = new MaidenDataTracker(this, client);
+                }
+
+                if (roomDataTracker != null) {
+                    eventBus.register(roomDataTracker);
+                    roomDataTracker.startRoom();
+                }
             }
         }
     }
 
-    private void dispatchEvent(Event event) {
-        if (eventHandler != null) {
-            eventHandler.handleEvent(event);
+    private void finalizePartyInformation() {
+        // ID of the client string containing the username of the first member in a ToB party. Subsequent party members'
+        // usernames (if present) occupy the following four IDs.
+        final int TOB_P1_VARCSTR_ID = 330;
+
+        for (int player = 0; player < 5; player++) {
+            String username = client.getVarcStrValue(TOB_P1_VARCSTR_ID + player);
+            if (!Strings.isNullOrEmpty(username)) {
+                raiders.add(username);
+            }
+        }
+    }
+
+    private void clearRoomDataTracker() {
+        if (roomDataTracker != null) {
+            roomDataTracker.finishRoom();
+            eventBus.unregister(roomDataTracker);
+            roomDataTracker = null;
         }
     }
 }

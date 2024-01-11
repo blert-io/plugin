@@ -23,15 +23,24 @@
 
 package com.blert.raid;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
+import net.runelite.api.NPC;
+import net.runelite.api.NPCComposition;
+import net.runelite.api.coords.LocalPoint;
+
+public class Utils {
+    /**
+     * Returns the southwest tile of an NPC's area in the local scene.
+     */
+    public static LocalPoint getNpcSouthwestTile(NPC npc) {
+        LocalPoint point = npc.getLocalLocation();
+        NPCComposition comp = npc.getComposition();
+        int size = comp != null ? comp.getSize() : 1;
+        return new LocalPoint(correctForSize(point.getX(), size), correctForSize(point.getY(), size));
     }
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+    private static int correctForSize(int coord, int size) {
+        // Southwest correction from Better NPC Highlight:
+        // https://github.com/MoreBuchus/buchus-plugins/blob/609c887477749b5329a6a3bcb6f3265e3a2eca5f/src/main/java/com/betternpchighlight/BetterNpcHighlightOverlay.java#L406
+        return coord - ((size - 1) * 128) / 2;
     }
 }

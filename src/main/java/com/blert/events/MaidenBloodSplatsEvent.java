@@ -21,17 +21,30 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid;
+package com.blert.events;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
+import com.blert.raid.rooms.Room;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Getter
+public class MaidenBloodSplatsEvent extends Event {
+    private final List<WorldPoint> bloodSplats;
+
+    public MaidenBloodSplatsEvent(int tick, List<WorldPoint> bloodSplats) {
+        super(EventType.MAIDEN_BLOOD_SPLATS, Room.MAIDEN, tick, null);
+        this.bloodSplats = bloodSplats;
     }
 
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+    @Override
+    protected String eventDataString() {
+        String splats = bloodSplats
+                .stream()
+                .map(wp -> "(" + wp.getX() + "," + wp.getY() + ")")
+                .collect(Collectors.joining(","));
+        return "blood_splats=[" + splats + ']';
     }
 }

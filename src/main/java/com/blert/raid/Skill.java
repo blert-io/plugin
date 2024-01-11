@@ -23,15 +23,6 @@
 
 package com.blert.raid;
 
-/**
- * Represents a game entity's current and maximum hitpoints.
- */
-public class Hitpoints extends SkillLevel {
-    public static Hitpoints fromRatio(double ratio, int baseHp) {
-        return new Hitpoints((int) (baseHp * ratio), baseHp);
-    }
-
-    public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
-    }
+public enum Skill {
+    HITPOINTS,
 }
