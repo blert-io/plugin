@@ -23,9 +23,12 @@
 
 package com.blert.raid.rooms.maiden;
 
+import com.blert.raid.Hitpoints;
+import com.blert.raid.TobNpc;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
 
 import java.util.Optional;
@@ -33,8 +36,13 @@ import java.util.Optional;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class MaidenCrab {
+    private NPC npc;
+
+    private CrabSpawn spawn;
     private Position position;
     private boolean scuffed;
+
+    private Hitpoints hitpoints;
 
     public enum Position {
         S1,
@@ -55,52 +63,76 @@ public class MaidenCrab {
      * @param location Spawn location corresponding to the southwest tile of the crab.
      * @return The type of crab which spawns at that location, if one exists.
      */
-    public static Optional<MaidenCrab> fromSpawnLocation(WorldPoint location) {
-        MaidenCrab crab = null;
+    public static Optional<MaidenCrab> fromSpawnLocation(int scale, NPC npc, CrabSpawn spawn, WorldPoint location) {
+        Position position;
+        boolean scuffed;
 
         if (location.equals(N1_SPAWN)) {
-            crab = new MaidenCrab(Position.N1, false);
+            position = Position.N1;
+            scuffed = false;
         } else if (location.equals(N1_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.N1, true);
+            position = Position.N1;
+            scuffed = true;
         } else if (location.equals(N2_SPAWN)) {
-            crab = new MaidenCrab(Position.N2, false);
+            position = Position.N2;
+            scuffed = false;
         } else if (location.equals(N2_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.N2, true);
+            position = Position.N2;
+            scuffed = true;
         } else if (location.equals(N3_SPAWN)) {
-            crab = new MaidenCrab(Position.N3, false);
+            position = Position.N3;
+            scuffed = false;
         } else if (location.equals(N3_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.N3, true);
+            position = Position.N3;
+            scuffed = true;
         } else if (location.equals(N4_INNER_SPAWN)) {
-            crab = new MaidenCrab(Position.N4_INNER, false);
+            position = Position.N4_INNER;
+            scuffed = false;
         } else if (location.equals(N4_INNER_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.N4_INNER, true);
+            position = Position.N4_INNER;
+            scuffed = true;
         } else if (location.equals(N4_OUTER_SPAWN)) {
-            crab = new MaidenCrab(Position.N4_OUTER, false);
+            position = Position.N4_OUTER;
+            scuffed = false;
         } else if (location.equals(N4_OUTER_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.N4_OUTER, true);
+            position = Position.N4_OUTER;
+            scuffed = true;
         } else if (location.equals(S1_SPAWN)) {
-            crab = new MaidenCrab(Position.S1, false);
+            position = Position.S1;
+            scuffed = false;
         } else if (location.equals(S1_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.S1, true);
+            position = Position.S1;
+            scuffed = true;
         } else if (location.equals(S2_SPAWN)) {
-            crab = new MaidenCrab(Position.S2, false);
+            position = Position.S2;
+            scuffed = false;
         } else if (location.equals(S2_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.S2, true);
+            position = Position.S1;
+            scuffed = true;
         } else if (location.equals(S3_SPAWN)) {
-            crab = new MaidenCrab(Position.S3, false);
+            position = Position.S3;
+            scuffed = false;
         } else if (location.equals(S3_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.S3, true);
+            position = Position.S3;
+            scuffed = true;
         } else if (location.equals(S4_INNER_SPAWN)) {
-            crab = new MaidenCrab(Position.S4_INNER, false);
+            position = Position.S4_INNER;
+            scuffed = false;
         } else if (location.equals(S4_INNER_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.S4_INNER, true);
+            position = Position.S4_INNER;
+            scuffed = true;
         } else if (location.equals(S4_OUTER_SPAWN)) {
-            crab = new MaidenCrab(Position.S4_OUTER, false);
+            position = Position.S4_OUTER;
+            scuffed = false;
         } else if (location.equals(S4_OUTER_SCUFFED_SPAWN)) {
-            crab = new MaidenCrab(Position.S4_OUTER, true);
+            position = Position.S4_OUTER;
+            scuffed = true;
+        } else {
+            return Optional.empty();
         }
 
-        return Optional.ofNullable(crab);
+        var hitpoints = TobNpc.withId(npc.getId()).map(tobNpc -> new Hitpoints(tobNpc.getBaseHitpoints(scale)));
+        return Optional.of(new MaidenCrab(npc, spawn, position, scuffed, hitpoints.orElse(null)));
     }
 
     /**

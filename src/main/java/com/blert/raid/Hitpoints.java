@@ -31,7 +31,19 @@ public class Hitpoints extends SkillLevel {
         return new Hitpoints((int) (baseHp * ratio), baseHp);
     }
 
+    public Hitpoints(int base) {
+        super(Skill.HITPOINTS, base, base);
+    }
+
     public Hitpoints(int current, int base) {
         super(Skill.HITPOINTS, current, base);
+    }
+
+    public Hitpoints(Hitpoints other) {
+        super(Skill.HITPOINTS, other.current, other.base);
+    }
+
+    public double percentage() {
+        return current / (double) base * 100.0;
     }
 }

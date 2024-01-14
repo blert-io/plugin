@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Alexei Frolov
+ * Copyright (c) 2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -21,30 +21,30 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid;
+package com.blert.events;
 
-import lombok.AllArgsConstructor;
+import com.blert.raid.Hitpoints;
+import com.blert.raid.rooms.Room;
+import com.blert.raid.rooms.maiden.CrabSpawn;
+import com.blert.raid.rooms.maiden.MaidenCrab;
 import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
-/**
- * Represents a game skill, with a base level and boosted/drained current level.
- */
 @Getter
-@AllArgsConstructor
-public class SkillLevel {
-    private Skill skill;
-    protected int current;
-    protected int base;
+public class MaidenCrabLeakEvent extends Event {
+    CrabSpawn spawn;
+    MaidenCrab.Position position;
+    Hitpoints hitpoints;
 
-    public void boost(int amount) {
-        current += amount;
+    public MaidenCrabLeakEvent(int tick, WorldPoint point, MaidenCrab crab) {
+        super(EventType.MAIDEN_CRAB_LEAK, Room.MAIDEN, tick, point);
+        spawn = crab.getSpawn();
+        position = crab.getPosition();
+        hitpoints = new Hitpoints(crab.getHitpoints());
     }
 
-    public void drain(int amount) {
-        current = Math.max(current - amount, 0);
-    }
-
-    public String toString() {
-        return String.valueOf(current) + "/" + base;
+    @Override
+    protected String eventDataString() {
+        return "crab_leak=(crab=" + spawn + ' ' + position + ", hp=" + hitpoints.getCurrent() + ')';
     }
 }

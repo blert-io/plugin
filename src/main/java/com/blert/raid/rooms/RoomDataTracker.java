@@ -42,7 +42,7 @@ import java.util.Set;
 @Slf4j
 
 public abstract class RoomDataTracker {
-    private final RaidManager raidManager;
+    protected final RaidManager raidManager;
 
     protected final Client client;
 
@@ -51,6 +51,11 @@ public abstract class RoomDataTracker {
     private int startClientTick = 0;
 
     private final Set<String> deadPlayers = new HashSet<>();
+
+    /**
+     * Set of NPC IDs for which an NpcUpdateEvent has been sent on the current tick.
+     */
+    private final Set<Integer> npcUpdatesThisTick = new HashSet<>();
 
     protected RoomDataTracker(RaidManager raidManager, Client client, Room room) {
         this.raidManager = raidManager;
@@ -64,6 +69,7 @@ public abstract class RoomDataTracker {
     public void startRoom() {
         this.startClientTick = client.getTickCount();
         dispatchEvent(new RoomStatusEvent(room, 0, RoomStatusEvent.Status.STARTED));
+        onRoomStart();
     }
 
     /**
@@ -82,9 +88,16 @@ public abstract class RoomDataTracker {
      * Collects data about the raid room in the current game tick.
      */
     public void tick() {
+        npcUpdatesThisTick.clear();
+
         updatePartyStatus();
         updatePlayers();
-        updateNpcs();
+
+        // Send simple updates for any NPCs not already reported by the implementation.
+        client.getNpcs()
+                .stream()
+                .filter(npc -> !npcUpdatesThisTick.contains(npc.getId()))
+                .forEach(this::sendBasicNpcUpdate);
 
         // Run implementation-specific behavior.
         onTick();
@@ -98,6 +111,11 @@ public abstract class RoomDataTracker {
     public int getRoomTick() {
         return client.getTickCount() - this.startClientTick + 1;
     }
+
+    /**
+     * Initialization method invoked when the room is first started.
+     */
+    protected abstract void onRoomStart();
 
     /**
      * Gathers information about the room and dispatches appropriate events. Invoked every tick.
@@ -164,26 +182,38 @@ public abstract class RoomDataTracker {
         }
     }
 
-    private void updateNpcs() {
-        for (NPC npc : client.getNpcs()) {
-            WorldPoint point = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(npc));
-            if (!Location.fromWorldPoint(point).inRoom(room)) {
-                continue;
-            }
-
-            Optional<TobNpc> maybeNpc = TobNpc.withId(npc.getId());
-            if (maybeNpc.isEmpty()) {
-                continue;
-            }
-            TobNpc tobNpc = maybeNpc.get();
-
-            Hitpoints hitpoints = null;
-            if (npc.getHealthScale() > 0 && npc.getHealthRatio() != -1) {
-                double hpRatio = npc.getHealthRatio() / (double) npc.getHealthScale();
-                hitpoints = Hitpoints.fromRatio(hpRatio, tobNpc.getBaseHitpoints(raidManager.getRaidScale()));
-            }
-
-            dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, npc.hashCode(), npc.getId(), hitpoints));
+    /**
+     * Sends an NPC update event for the current tick, tracking which NPCs have already been updated to avoid duplicate
+     * events.
+     */
+    protected void dispatchNpcUpdate(NpcUpdateEvent update) {
+        if (npcUpdatesThisTick.add(update.getNpcId())) {
+            dispatchEvent(update);
         }
+    }
+
+    /**
+     * Sends a generic update status about an NPC in the room. Implementations can choose to call this directly, or
+     * track additional information about their room NPCs and send them through `dispatchNpcUpdate`.
+     */
+    protected void sendBasicNpcUpdate(NPC npc) {
+        WorldPoint point = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(npc));
+        if (!Location.fromWorldPoint(point).inRoom(room)) {
+            return;
+        }
+
+        Optional<TobNpc> maybeNpc = TobNpc.withId(npc.getId());
+        if (maybeNpc.isEmpty()) {
+            return;
+        }
+        TobNpc tobNpc = maybeNpc.get();
+
+        Hitpoints hitpoints = null;
+        if (npc.getHealthScale() > 0 && npc.getHealthRatio() != -1) {
+            double hpRatio = npc.getHealthRatio() / (double) npc.getHealthScale();
+            hitpoints = Hitpoints.fromRatio(hpRatio, tobNpc.getBaseHitpoints(raidManager.getRaidScale()));
+        }
+
+        dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, npc.hashCode(), npc.getId(), hitpoints));
     }
 }

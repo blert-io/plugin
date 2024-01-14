@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Alexei Frolov
+ * Copyright (c) 2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -25,25 +25,28 @@ package com.blert.raid;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
 public enum TobNpc {
-    MAIDEN_ENTRY(10814, 6, new int[]{500, 0, 0}, true),
-    MAIDEN_MATOMENOS_ENTRY(10820, 1, new int[]{16, 0, 0}, true),
-    MAIDEN_BLOOD_SPAWN_ENTRY(10821, 1, new int[]{0, 0, 0}, true),
+    MAIDEN_ENTRY(10814, 6, Mode.ENTRY, new int[]{500, 0, 0}, true),
+    MAIDEN_MATOMENOS_ENTRY(10820, 1, Mode.ENTRY, new int[]{16, 0, 0}, true),
+    MAIDEN_BLOOD_SPAWN_ENTRY(10821, 1, Mode.ENTRY, new int[]{0, 0, 0}, true),
 
-    MAIDEN_REGULAR(8360, 6, new int[]{2625, 3062, 3500}, false),
-    MAIDEN_MATOMENOS_REGULAR(8366, 1, new int[]{75, 87, 100}, false),
-    MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, new int[]{0, 0, 0}, false),
+    MAIDEN_REGULAR(8360, 6, Mode.REGULAR, new int[]{2625, 3062, 3500}, false),
+    MAIDEN_MATOMENOS_REGULAR(8366, 1, Mode.REGULAR, new int[]{75, 87, 100}, false),
+    MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, Mode.REGULAR, new int[]{0, 0, 0}, false),
 
-    MAIDEN_HARD(10822, 6, new int[]{2625, 3062, 3500}, false),
-    MAIDEN_MATOMENOS_HARD(10828, 1, new int[]{75, 87, 100}, false),
-    MAIDEN_BLOOD_SPAWN_HARD(10829, 1, new int[]{0, 0, 0}, false);
+    MAIDEN_HARD(10822, 6, Mode.HARD, new int[]{2625, 3062, 3500}, false),
+    MAIDEN_MATOMENOS_HARD(10828, 1, Mode.HARD, new int[]{75, 87, 100}, false),
+    MAIDEN_BLOOD_SPAWN_HARD(10829, 1, Mode.HARD, new int[]{0, 0, 0}, false);
 
     @Getter
     private final int id;
     private final int idRange;
+    @Getter
+    private final Mode mode;
     private final int[] hitpointsByScale;
     private final boolean linearScaling;
 
@@ -65,10 +68,38 @@ public enum TobNpc {
         return Optional.ofNullable(npcsById.get(id));
     }
 
+    public static boolean isMaiden(int id) {
+        return id == MAIDEN_ENTRY.id || id == MAIDEN_REGULAR.id || id == MAIDEN_HARD.id;
+    }
+
+    @NotNull
+    public static TobNpc maiden(Mode mode) {
+        switch (mode) {
+            case ENTRY:
+                return MAIDEN_ENTRY;
+            case REGULAR:
+                return MAIDEN_REGULAR;
+            default:
+                return MAIDEN_HARD;
+        }
+    }
+
     public static boolean isMaidenMatomenos(int id) {
         return id == MAIDEN_MATOMENOS_ENTRY.id
                 || id == MAIDEN_MATOMENOS_REGULAR.id
                 || id == MAIDEN_MATOMENOS_HARD.id;
+    }
+
+    @NotNull
+    public static TobNpc maidenMatomenos(Mode mode) {
+        switch (mode) {
+            case ENTRY:
+                return MAIDEN_MATOMENOS_ENTRY;
+            case REGULAR:
+                return MAIDEN_MATOMENOS_REGULAR;
+            default:
+                return MAIDEN_MATOMENOS_HARD;
+        }
     }
 
     public static boolean isMaidenBloodSpawn(int id) {
@@ -96,9 +127,10 @@ public enum TobNpc {
         }
     }
 
-    TobNpc(int id, int idRange, int[] hitpoints, boolean linearScaling) {
+    TobNpc(int id, int idRange, Mode mode, int[] hitpoints, boolean linearScaling) {
         this.id = id;
         this.idRange = idRange;
+        this.mode = mode;
         this.hitpointsByScale = hitpoints;
         this.linearScaling = linearScaling;
     }

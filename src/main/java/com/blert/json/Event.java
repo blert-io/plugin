@@ -51,6 +51,11 @@ public class Event {
                 MaidenCrabSpawnEvent spawnEvent = (MaidenCrabSpawnEvent) blertEvent;
                 event.maidenEntity = MaidenEntity.fromCrab(spawnEvent.getSpawn(), spawnEvent.getCrab());
                 break;
+            case MAIDEN_CRAB_LEAK:
+                MaidenCrabLeakEvent leakEvent = (MaidenCrabLeakEvent) blertEvent;
+                event.maidenEntity = MaidenEntity.crabLeak(
+                        leakEvent.getSpawn(), leakEvent.getPosition(), leakEvent.getHitpoints());
+                break;
             case MAIDEN_BLOOD_SPLATS:
                 MaidenBloodSplatsEvent bloodSplatsEvent = (MaidenBloodSplatsEvent) blertEvent;
                 event.maidenEntity = MaidenEntity.bloodSplats(bloodSplatsEvent.getBloodSplats());

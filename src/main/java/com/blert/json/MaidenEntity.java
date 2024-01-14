@@ -23,6 +23,7 @@
 
 package com.blert.json;
 
+import com.blert.raid.Hitpoints;
 import com.blert.raid.rooms.maiden.CrabSpawn;
 import com.blert.raid.rooms.maiden.MaidenCrab;
 import lombok.AllArgsConstructor;
@@ -46,11 +47,19 @@ public class MaidenEntity {
         final CrabSpawn spawn;
         final MaidenCrab.Position position;
         boolean scuffed;
+        @Nullable
+        Hitpoints hitpoints;
     }
 
     public static MaidenEntity fromCrab(CrabSpawn spawn, MaidenCrab crab) {
         MaidenEntity entity = new MaidenEntity();
-        entity.crab = new Crab(spawn, crab.getPosition(), crab.isScuffed());
+        entity.crab = new Crab(spawn, crab.getPosition(), crab.isScuffed(), null);
+        return entity;
+    }
+
+    public static MaidenEntity crabLeak(CrabSpawn spawn, MaidenCrab.Position position, Hitpoints hitpoints) {
+        MaidenEntity entity = new MaidenEntity();
+        entity.crab = new Crab(spawn, position, false, hitpoints);
         return entity;
     }
 
