@@ -144,8 +144,8 @@ public class MaidenDataTracker extends RoomDataTracker {
         crabs.remove(npc.hashCode());
     }
 
-    @Subscribe
-    private void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
+    @Override
+    protected void onHitsplat(HitsplatApplied hitsplatApplied) {
         Optional.ofNullable(crabs.get(hitsplatApplied.getActor().hashCode())).ifPresent(crab -> {
             crab.getHitpoints().drain(hitsplatApplied.getHitsplat().getAmount());
         });

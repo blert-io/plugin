@@ -27,12 +27,15 @@ import com.blert.events.*;
 import com.blert.raid.*;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.NPC;
-import net.runelite.api.Player;
-import net.runelite.api.Varbits;
+import net.runelite.api.Item;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.HitsplatApplied;
+import net.runelite.api.events.VarbitChanged;
+import net.runelite.client.callback.ClientThread;
+import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -46,6 +49,8 @@ public abstract class RoomDataTracker {
 
     protected final Client client;
 
+    private final ClientThread clientThread;
+
     private final Room room;
 
     private int startClientTick = 0;
@@ -57,9 +62,12 @@ public abstract class RoomDataTracker {
      */
     private final Set<Integer> npcUpdatesThisTick = new HashSet<>();
 
+    private final SpecialAttackTracker specialAttackTracker = new SpecialAttackTracker(this::onSpecialAttack);
+
     protected RoomDataTracker(RaidManager raidManager, Client client, Room room) {
         this.raidManager = raidManager;
         this.client = client;
+        this.clientThread = raidManager.getClientThread();
         this.room = room;
     }
 
@@ -93,6 +101,8 @@ public abstract class RoomDataTracker {
         updatePartyStatus();
         updatePlayers();
 
+        specialAttackTracker.processPendingSpecial();
+
         // Send simple updates for any NPCs not already reported by the implementation.
         client.getNpcs()
                 .stream()
@@ -123,10 +133,65 @@ public abstract class RoomDataTracker {
     protected abstract void onTick();
 
     /**
+     * Implementation-specific equivalent of the `onHitsplatApplied` Runelite event handler.
+     * Should be overriden by implementations which require special hitsplat tracking.
+     *
+     * @param hitsplatApplied The hitsplat event.
+     */
+    protected void onHitsplat(HitsplatApplied hitsplatApplied) {
+    }
+
+    /**
      * Sends an event to the registered event handler, if any.
      */
     protected void dispatchEvent(Event event) {
         raidManager.dispatchEvent(event);
+    }
+
+    @Subscribe
+    public void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
+        Actor target = hitsplatApplied.getActor();
+        Hitsplat hitsplat = hitsplatApplied.getHitsplat();
+        if (hitsplat.isMine() && target != client.getLocalPlayer()) {
+            specialAttackTracker.recordHitsplat((NPC) target, hitsplat, client.getTickCount());
+        }
+
+        onHitsplat(hitsplatApplied);
+    }
+
+    @Subscribe
+    public void onVarbitChanged(VarbitChanged varbitChanged) {
+        if (varbitChanged.getVarpId() != VarPlayer.SPECIAL_ATTACK_PERCENT) {
+            return;
+        }
+
+        int percent = varbitChanged.getValue();
+        int oldPercent = specialAttackTracker.updateSpecialPercent(percent);
+        if (oldPercent != -1 && percent >= oldPercent) {
+            // This is a special attack regen, not drain. Ignore it.
+            return;
+        }
+
+        int specTick = client.getTickCount();
+        clientThread.invokeLater(() -> {
+            Actor target = client.getLocalPlayer().getInteracting();
+            if (target instanceof NPC) {
+                var equipment = client.getItemContainer(InventoryID.EQUIPMENT);
+                if (equipment == null) {
+                    return;
+                }
+
+                Item weapon = equipment.getItem(EquipmentInventorySlot.WEAPON.getSlotIdx());
+                if (weapon != null) {
+                    specialAttackTracker.recordSpecialUsed((NPC) target, weapon, specTick);
+                }
+            }
+        });
+    }
+
+    private void onSpecialAttack(SpecialAttackTracker.SpecialAttack spec) {
+        var weapon = client.getItemDefinition(spec.getWeapon().getId());
+        log.debug("Hit a " + spec.getDamage() + " with " + weapon.getName() + " on " + spec.getTarget().getName());
     }
 
     private void updatePartyStatus() {
@@ -186,7 +251,7 @@ public abstract class RoomDataTracker {
      * Sends an NPC update event for the current tick, tracking which NPCs have already been updated to avoid duplicate
      * events.
      */
-    protected void dispatchNpcUpdate(NpcUpdateEvent update) {
+    protected void dispatchNpcUpdate(@NotNull NpcUpdateEvent update) {
         if (npcUpdatesThisTick.add(update.getNpcId())) {
             dispatchEvent(update);
         }

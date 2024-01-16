@@ -30,7 +30,6 @@ import com.blert.raid.rooms.RoomDataTracker;
 import com.blert.raid.rooms.maiden.MaidenDataTracker;
 import joptsimple.internal.Strings;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
@@ -38,6 +37,7 @@ import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 
@@ -62,12 +62,15 @@ public class RaidManager {
     @Inject
     private EventBus eventBus;
 
+    @Inject
+    @Getter
+    private ClientThread clientThread;
+
     private @Nullable EventHandler eventHandler = null;
 
-    private RaidStatus status = RaidStatus.INACTIVE;
+    private RaidState state = RaidState.INACTIVE;
 
     @Getter
-    @Setter
     private Mode raidMode = null;
 
     private final List<String> raiders = new ArrayList<>();
@@ -81,7 +84,7 @@ public class RaidManager {
     }
 
     public boolean inRaid() {
-        return status.isActive();
+        return state.isActive();
     }
 
     public int getRaidScale() {
@@ -108,13 +111,13 @@ public class RaidManager {
     }
 
     private void startRaid() {
-        status = RaidStatus.ACTIVE;
+        state = RaidState.ACTIVE;
         dispatchEvent(new RaidStartEvent());
     }
 
     private void endRaid() {
         clearRoomDataTracker();
-        status = RaidStatus.INACTIVE;
+        state = RaidState.INACTIVE;
         raidMode = null;
         raiders.clear();
     }
@@ -122,9 +125,9 @@ public class RaidManager {
     @Subscribe
     private void onVarbitChanged(VarbitChanged varbit) {
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
-            if (status == RaidStatus.INACTIVE && varbit.getValue() == 2) {
+            if (state.isInactive() && varbit.getValue() == 2) {
                 startRaid();
-            } else if (status == RaidStatus.ACTIVE && varbit.getValue() < 2) {
+            } else if (state.isActive() && varbit.getValue() < 2) {
                 // The raid has finished; clean up.
                 endRaid();
             }
