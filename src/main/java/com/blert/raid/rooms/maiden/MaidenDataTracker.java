@@ -131,6 +131,12 @@ public class MaidenDataTracker extends RoomDataTracker {
     @Subscribe
     private void onNpcSpawned(NpcSpawned spawned) {
         NPC npc = spawned.getNpc();
+
+        if (TobNpc.isMaiden(npc.getId())) {
+            startRoom();
+            return;
+        }
+
         if (TobNpc.isMaidenMatomenos(npc.getId())) {
             handleMaidenCrabSpawn(npc);
         } else if (TobNpc.isMaidenBloodSpawn(npc.getId())) {
@@ -174,7 +180,7 @@ public class MaidenDataTracker extends RoomDataTracker {
 
     private void markNewSpawn() {
         spawnTicks[currentSpawn.ordinal()] = getRoomTick();
-        log.debug("Maiden" + currentSpawn + " spawned on tick " + getRoomTick());
+        log.debug("Maiden " + currentSpawn + " spawned on tick " + getRoomTick() + " (" + formattedRoomTime() + ")");
     }
 
     private void findMaidenNpc() {

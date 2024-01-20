@@ -27,10 +27,16 @@ import com.blert.events.Event;
 import com.blert.events.EventHandler;
 import com.blert.events.RaidStartEvent;
 import com.blert.raid.rooms.RoomDataTracker;
+import com.blert.raid.rooms.bloat.BloatDataTracker;
 import com.blert.raid.rooms.maiden.MaidenDataTracker;
+import com.blert.raid.rooms.nylocas.NylocasDataTracker;
+import com.blert.raid.rooms.sotetseg.SotetsegDataTracker;
+import com.blert.raid.rooms.verzik.VerzikDataTracker;
+import com.blert.raid.rooms.xarpus.XarpusDataTracker;
 import joptsimple.internal.Strings;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.Varbits;
@@ -40,11 +46,12 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -68,13 +75,15 @@ public class RaidManager {
 
     private @Nullable EventHandler eventHandler = null;
 
+    private Location location = Location.ELSEWHERE;
     private RaidState state = RaidState.INACTIVE;
 
     @Getter
     private Mode raidMode = null;
 
-    private final List<String> raiders = new ArrayList<>();
+    private final Set<String> raiders = new HashSet<>();
 
+    private RoomState roomState = RoomState.INACTIVE;
     @Nullable
     RoomDataTracker roomDataTracker = null;
 
@@ -91,6 +100,10 @@ public class RaidManager {
         return inRaid() ? raiders.size() : 0;
     }
 
+    public boolean playerIsInRaid(String username) {
+        return raiders.contains(username.toLowerCase());
+    }
+
     public void updateRaidMode(Mode mode) {
         if (raidMode != mode) {
             log.debug("Raid mode set to " + mode);
@@ -99,7 +112,23 @@ public class RaidManager {
     }
 
     public void tick() {
+        updateLocation();
+
+        if (!inRaid()) {
+            return;
+        }
+
+        updatePartyInformation();
+
         if (roomDataTracker != null) {
+            roomDataTracker.checkEntry();
+
+            if (roomDataTracker.notStarted() && roomState.isActive() && roomDataTracker.playersAreInRoom()) {
+                // The room may already be active when entered (e.g. as a spectator); start its tracker.
+                roomDataTracker.startRoomInaccurate();
+                log.debug("Room " + roomDataTracker.getRoom() + " started via activity check");
+            }
+
             roomDataTracker.tick();
         }
     }
@@ -111,19 +140,64 @@ public class RaidManager {
     }
 
     private void startRaid() {
+        log.debug("Starting new raid");
         state = RaidState.ACTIVE;
         dispatchEvent(new RaidStartEvent());
     }
 
     private void endRaid() {
+        log.debug("Raid completed");
+
         clearRoomDataTracker();
         state = RaidState.INACTIVE;
         raidMode = null;
         raiders.clear();
+
+        if (eventHandler != null) {
+            // TODO for debugging
+            ((com.blert.json.JsonEventHandler) eventHandler).flushEventsUpTo(client.getTickCount());
+        }
     }
 
-    @Subscribe
+    private void updateLocation() {
+        Player player = client.getLocalPlayer();
+        if (player == null) {
+            return;
+        }
+
+        Location loc = Location.fromWorldPoint(WorldPoint.fromLocalInstance(client, player.getLocalLocation()));
+        if (location == loc) {
+            return;
+        }
+
+        location = loc;
+        log.debug("Location changed to " + loc);
+
+        clearRoomDataTracker();
+
+        if (location.inMaidenInstance()) {
+            roomDataTracker = new MaidenDataTracker(this, client);
+        } else if (location.inBloatInstance()) {
+            roomDataTracker = new BloatDataTracker(this, client);
+        } else if (location.inNylocasInstance()) {
+            roomDataTracker = new NylocasDataTracker(this, client);
+        } else if (location.inSotetsegInstance()) {
+            roomDataTracker = new SotetsegDataTracker(this, client);
+        } else if (location.inXarpusInstance()) {
+            roomDataTracker = new XarpusDataTracker(this, client);
+        } else if (location.inVerzikInstance()) {
+            roomDataTracker = new VerzikDataTracker(this, client);
+        }
+
+        if (roomDataTracker != null) {
+            eventBus.register(roomDataTracker);
+        }
+    }
+
+    @Subscribe(priority = 10)
     private void onVarbitChanged(VarbitChanged varbit) {
+        updateLocation();
+
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
             if (state.isInactive() && varbit.getValue() == 2) {
                 startRaid();
@@ -131,58 +205,44 @@ public class RaidManager {
                 // The raid has finished; clean up.
                 endRaid();
             }
+        }
+
+        int roomStatus = client.getVarbitValue(TOB_ROOM_STATUS_VARBIT);
+        var state = RoomState.fromVarbit(roomStatus);
+        if (state.isEmpty()) {
+            log.error("Unknown value for room status varbit: " + varbit.getValue());
             return;
         }
 
-        if (varbit.getVarbitId() == TOB_ROOM_STATUS_VARBIT) {
-            if (roomDataTracker != null && varbit.getValue() == 0) {
-                // Room has been completed.
-                clearRoomDataTracker();
-                return;
-            }
-
-            if (varbit.getValue() == 1) {
-                // A new room has been started; initialize its data tracker.
-                Player player = client.getLocalPlayer();
-                if (player == null) {
-                    return;
-                }
-
-                WorldPoint point = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-                Location location = Location.fromWorldPoint(point);
-
-                if (location.inMaidenInstance()) {
-                    // When Maiden is started, players can no longer enter the raid. Grab final information about
-                    // raiders and scale.
-                    finalizePartyInformation();
-                    roomDataTracker = new MaidenDataTracker(this, client);
-                }
-
-                if (roomDataTracker != null) {
-                    eventBus.register(roomDataTracker);
-                    roomDataTracker.startRoom();
-                }
-            }
+        RoomState previousState = roomState;
+        roomState = state.get();
+        if (previousState != roomState) {
+            log.debug("Room status changed from " + previousState + " to " + roomState);
         }
     }
 
     @Subscribe
     private void onChatMessage(ChatMessage message) {
+        if (message.getType() != ChatMessageType.GAMEMESSAGE) {
+            return;
+        }
+
         Matcher matcher = RAID_ENTRY_REGEX.matcher(message.getMessage());
         if (matcher.matches()) {
             Mode.parse(matcher.group(1)).ifPresent(this::updateRaidMode);
         }
     }
 
-    private void finalizePartyInformation() {
+    private void updatePartyInformation() {
         // ID of the client string containing the username of the first member in a ToB party. Subsequent party members'
         // usernames (if present) occupy the following four IDs.
         final int TOB_P1_VARCSTR_ID = 330;
 
+        raiders.clear();
         for (int player = 0; player < 5; player++) {
-            String username = client.getVarcStrValue(TOB_P1_VARCSTR_ID + player);
+            String username = Text.standardize(client.getVarcStrValue(TOB_P1_VARCSTR_ID + player));
             if (!Strings.isNullOrEmpty(username)) {
-                raiders.add(username);
+                raiders.add(username.toLowerCase());
             }
         }
     }

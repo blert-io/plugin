@@ -26,10 +26,13 @@ package com.blert.raid.rooms;
 import com.blert.events.*;
 import com.blert.raid.*;
 import joptsimple.internal.Strings;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Item;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.callback.ClientThread;
@@ -41,6 +44,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 
@@ -51,9 +56,16 @@ public abstract class RoomDataTracker {
 
     private final ClientThread clientThread;
 
+    @Getter
     private final Room room;
+    private final Pattern waveEndRegex;
 
-    private int startClientTick = 0;
+    @Getter(AccessLevel.PROTECTED)
+    private State state;
+
+    private final boolean startOnEntry;
+    private int startClientTick;
+    private boolean startingTickAccurate;
 
     private final Set<String> deadPlayers = new HashSet<>();
 
@@ -64,19 +76,54 @@ public abstract class RoomDataTracker {
 
     private final SpecialAttackTracker specialAttackTracker = new SpecialAttackTracker(this::onSpecialAttack);
 
-    protected RoomDataTracker(RaidManager raidManager, Client client, Room room) {
+    protected enum State {
+        NOT_STARTED,
+        IN_PROGRESS,
+        COMPLETED,
+    }
+
+    protected RoomDataTracker(RaidManager raidManager, Client client, Room room, boolean startOnEntry) {
         this.raidManager = raidManager;
         this.client = client;
         this.clientThread = raidManager.getClientThread();
         this.room = room;
+        this.waveEndRegex = Pattern.compile(
+                "Wave '" + room.waveName() + "' \\(\\w+ Mode\\) complete!Duration: ([0-9:.]+)"
+        );
+        this.state = State.NOT_STARTED;
+        this.startOnEntry = startOnEntry;
+    }
+
+    protected RoomDataTracker(RaidManager raidManager, Client client, Room room) {
+        this(raidManager, client, room, false);
     }
 
     /**
      * Begins tracking data for the room.
      */
     public void startRoom() {
-        this.startClientTick = client.getTickCount();
+        startRoom(0, true);
+    }
+
+    /**
+     * Begins tracking data for the room, assuming that the starting tick is not correct (possibly because the room was
+     * already in progress).
+     */
+    public void startRoomInaccurate() {
+        startRoom(0, false);
+    }
+
+    private void startRoom(int tickOffset, boolean accurate) {
+        if (state != State.NOT_STARTED) {
+            return;
+        }
+
+        state = State.IN_PROGRESS;
+        startClientTick = client.getTickCount() + tickOffset;
+        startingTickAccurate = accurate;
+
         dispatchEvent(new RoomStatusEvent(room, 0, RoomStatusEvent.Status.STARTED));
+
         onRoomStart();
     }
 
@@ -84,18 +131,39 @@ public abstract class RoomDataTracker {
      * Finishes tracking data for the room and performs any necessary cleanup.
      */
     public void finishRoom() {
-        log.debug("Room " + room + " finished in " + getRoomTick() + " ticks");
+        if (state != State.IN_PROGRESS) {
+            return;
+        }
+
+        state = State.COMPLETED;
+        int finalRoomTick = getRoomTick();
+
+        log.debug("Room {} finished in {} ticks ({})", room, finalRoomTick, formattedRoomTime());
 
         var roomStatus = deadPlayers.size() == raidManager.getRaidScale()
                 ? RoomStatusEvent.Status.WIPED
                 : RoomStatusEvent.Status.COMPLETED;
-        dispatchEvent(new RoomStatusEvent(room, getRoomTick(), roomStatus));
+        dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus));
+    }
+
+    public void checkEntry() {
+        if (state == State.NOT_STARTED && this.startOnEntry) {
+            if (playersAreInRoom()) {
+                log.debug("Room " + room + " started because player entered");
+                // Players seem to enter the room boundary one tick after the in-game room timer starts.
+                startRoom(-1, true);
+            }
+        }
     }
 
     /**
      * Collects data about the raid room in the current game tick.
      */
     public void tick() {
+        if (state != State.IN_PROGRESS) {
+            return;
+        }
+
         npcUpdatesThisTick.clear();
 
         updatePartyStatus();
@@ -116,10 +184,28 @@ public abstract class RoomDataTracker {
     /**
      * Returns number of ticks the room has been active.
      *
-     * @return The current room tick, starting at 1.
+     * @return The current room tick.
      */
     public int getRoomTick() {
-        return client.getTickCount() - this.startClientTick + 1;
+        return client.getTickCount() - this.startClientTick;
+    }
+
+    public boolean notStarted() {
+        return state == State.NOT_STARTED;
+    }
+
+    /**
+     * Checks if any players are located within the boundaries of the boss room.
+     *
+     * @return True if there is at least one player within the room.
+     */
+    public boolean playersAreInRoom() {
+        return client.getPlayers().stream()
+                .filter(player -> raidManager.playerIsInRaid(player.getName()))
+                .anyMatch(player -> {
+                    WorldPoint position = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+                    return Location.fromWorldPoint(position).inRoom(room);
+                });
     }
 
     /**
@@ -149,7 +235,24 @@ public abstract class RoomDataTracker {
     }
 
     @Subscribe
-    public void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
+    private void onChatMessage(ChatMessage chatMessage) {
+        if (state != State.IN_PROGRESS || chatMessage.getType() != ChatMessageType.GAMEMESSAGE) {
+            return;
+        }
+
+        String stripped = Text.removeTags(chatMessage.getMessage());
+        Matcher matcher = waveEndRegex.matcher(stripped);
+        if (matcher.find()) {
+            finishRoom();
+        }
+    }
+
+    @Subscribe
+    private void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
+        if (state != State.IN_PROGRESS) {
+            return;
+        }
+
         Actor target = hitsplatApplied.getActor();
         Hitsplat hitsplat = hitsplatApplied.getHitsplat();
         if (hitsplat.isMine() && target != client.getLocalPlayer()) {
@@ -160,7 +263,11 @@ public abstract class RoomDataTracker {
     }
 
     @Subscribe
-    public void onVarbitChanged(VarbitChanged varbitChanged) {
+    private void onVarbitChanged(VarbitChanged varbitChanged) {
+        if (state != State.IN_PROGRESS) {
+            return;
+        }
+
         if (varbitChanged.getVarpId() != VarPlayer.SPECIAL_ATTACK_PERCENT) {
             return;
         }
@@ -280,5 +387,14 @@ public abstract class RoomDataTracker {
         }
 
         dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, npc.hashCode(), npc.getId(), hitpoints));
+    }
+
+    protected String formattedRoomTime() {
+        int milliseconds = getRoomTick() * 600;
+        int seconds = (milliseconds / 1000) % 60;
+        int minutes = milliseconds / 1000 / 60;
+        int deciseconds = (milliseconds % 1000) / 100;
+
+        return String.format("%d:%02d.%d", minutes, seconds, deciseconds);
     }
 }

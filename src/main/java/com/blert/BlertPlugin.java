@@ -40,7 +40,7 @@ public class BlertPlugin extends Plugin {
     protected void shutDown() throws Exception {
     }
 
-    @Subscribe
+    @Subscribe(priority = 10)
     public void onGameTick(GameTick gameTick) {
         raidManager.tick();
     }

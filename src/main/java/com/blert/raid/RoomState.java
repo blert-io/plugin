@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Alexei Frolov
+ * Copyright (c) 2024 Alexei
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -21,38 +21,39 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid.rooms;
+package com.blert.raid;
+
+import java.util.Optional;
 
 /**
- * Rooms in the Theatre of Blood.
+ * State of rooms in a ToB raid.
+ * The ordinal values of this enum correspond to values of the TOB_ROOM_STATUS client varbit.
  */
-public enum Room {
-    MAIDEN,
-    BLOAT,
-    NYLOCAS,
-    SOTETSEG,
-    XARPUS,
-    VERZIK;
+public enum RoomState {
+    INACTIVE,
+    // The actual boss fight.
+    BOSS,
+    // A special phase in a boss fight (Sote maze, Xarpus exhumes).
+    SPECIAL,
+    // P1 has its own status value for some reason (thanks Jagex).
+    VERZIK_P1;
 
-    /**
-     * Returns the name of the room as written in the in-game "wave" message.
-     */
-    public String waveName() {
-        switch (this) {
-            case MAIDEN:
-                return "The Maiden of Sugadinti";
-            case BLOAT:
-                return "The Pestilent Bloat";
-            case NYLOCAS:
-                return "The Nylocas";
-            case SOTETSEG:
-                return "Sotetseg";
-            case XARPUS:
-                return "Xarpus";
-            case VERZIK:
-                return "The Final Challenge";
+    public static Optional<RoomState> fromVarbit(int varbit) {
+        switch (varbit) {
+            case 0:
+                return Optional.of(INACTIVE);
+            case 1:
+                return Optional.of(BOSS);
+            case 2:
+                return Optional.of(SPECIAL);
+            case 3:
+                return Optional.of(VERZIK_P1);
             default:
-                return "";
+                return Optional.empty();
         }
+    }
+
+    public boolean isActive() {
+        return this != INACTIVE;
     }
 }

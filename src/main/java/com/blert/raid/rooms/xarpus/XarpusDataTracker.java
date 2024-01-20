@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Alexei Frolov
+ * Copyright (c) 2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -21,38 +21,33 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.blert.raid.rooms;
+package com.blert.raid.rooms.xarpus;
 
-/**
- * Rooms in the Theatre of Blood.
- */
-public enum Room {
-    MAIDEN,
-    BLOAT,
-    NYLOCAS,
-    SOTETSEG,
-    XARPUS,
-    VERZIK;
+import com.blert.raid.RaidManager;
+import com.blert.raid.TobNpc;
+import com.blert.raid.rooms.Room;
+import com.blert.raid.rooms.RoomDataTracker;
+import net.runelite.api.Client;
+import net.runelite.api.events.NpcChanged;
+import net.runelite.client.eventbus.Subscribe;
 
-    /**
-     * Returns the name of the room as written in the in-game "wave" message.
-     */
-    public String waveName() {
-        switch (this) {
-            case MAIDEN:
-                return "The Maiden of Sugadinti";
-            case BLOAT:
-                return "The Pestilent Bloat";
-            case NYLOCAS:
-                return "The Nylocas";
-            case SOTETSEG:
-                return "Sotetseg";
-            case XARPUS:
-                return "Xarpus";
-            case VERZIK:
-                return "The Final Challenge";
-            default:
-                return "";
+public class XarpusDataTracker extends RoomDataTracker {
+    public XarpusDataTracker(RaidManager manager, Client client) {
+        super(manager, client, Room.XARPUS);
+    }
+
+    @Override
+    protected void onRoomStart() {
+    }
+
+    @Override
+    protected void onTick() {
+    }
+
+    @Subscribe
+    private void onNpcChanged(NpcChanged changed) {
+        if (TobNpc.isXarpusIdle(changed.getOld().getId()) && TobNpc.isXarpus(changed.getNpc().getId())) {
+            startRoom();
         }
     }
 }
