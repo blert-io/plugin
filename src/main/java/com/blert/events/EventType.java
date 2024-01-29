@@ -2,6 +2,8 @@ package com.blert.events;
 
 public enum EventType {
     RAID_START,
+    RAID_END,
+    RAID_UPDATE,
     ROOM_STATUS,
     PLAYER_UPDATE,
     PLAYER_DEATH,

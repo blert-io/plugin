@@ -171,14 +171,14 @@ public abstract class RoomDataTracker {
 
         specialAttackTracker.processPendingSpecial();
 
+        // Run implementation-specific behavior.
+        onTick();
+
         // Send simple updates for any NPCs not already reported by the implementation.
         client.getNpcs()
                 .stream()
                 .filter(npc -> !npcUpdatesThisTick.contains(npc.getId()))
                 .forEach(this::sendBasicNpcUpdate);
-
-        // Run implementation-specific behavior.
-        onTick();
     }
 
     /**
@@ -201,7 +201,7 @@ public abstract class RoomDataTracker {
      */
     public boolean playersAreInRoom() {
         return client.getPlayers().stream()
-                .filter(player -> raidManager.playerIsInRaid(player.getName()))
+                .filter(player -> raidManager.playerIsInRaid(Objects.requireNonNull(player.getName())))
                 .anyMatch(player -> {
                     WorldPoint position = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
                     return Location.fromWorldPoint(position).inRoom(room);
@@ -333,7 +333,7 @@ public abstract class RoomDataTracker {
 
     private void updatePlayers() {
         Player player = client.getLocalPlayer();
-        if (player != null) {
+        if (player != null && raidManager.playerIsInRaid(Objects.requireNonNull(player.getName()))) {
             Location location = Location.fromWorldPoint(WorldPoint.fromLocalInstance(client, player.getLocalLocation()));
             if (location.inRoom(room) && !deadPlayers.contains(Text.standardize(player.getName()))) {
                 // Report detailed information about the logged-in player.
@@ -343,7 +343,9 @@ public abstract class RoomDataTracker {
 
         // Report basic positional information about every other player in the room.
         for (Player other : client.getPlayers()) {
-            if (other == player || deadPlayers.contains(Text.standardize(other.getName()))) {
+            if (other == player
+                    || !raidManager.playerIsInRaid(Objects.requireNonNull(other.getName()))
+                    || deadPlayers.contains(Text.standardize(other.getName()))) {
                 continue;
             }
 

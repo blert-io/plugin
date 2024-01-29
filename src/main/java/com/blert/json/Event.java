@@ -2,9 +2,12 @@ package com.blert.json;
 
 import com.blert.events.*;
 import com.blert.raid.rooms.Room;
+import com.google.gson.Gson;
 import lombok.Getter;
+import lombok.Setter;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 
 @Getter
 public class Event {
@@ -15,14 +18,18 @@ public class Event {
     private int xCoord = 0;
     private int yCoord = 0;
 
+    @Setter
+    private String raidId = null;
+
     // All possible sub-objects whose data can be stored in an event. These are optional; a null value will not be
     // serialized.
+    private @Nullable RaidInfo raidInfo = null;
     private @Nullable RoomStatusEvent.Status roomStatus = null;
     private @Nullable Player player = null;
     private @Nullable Npc npc = null;
     private @Nullable MaidenEntity maidenEntity = null;
 
-    static Event fromBlert(com.blert.events.Event blertEvent) {
+    public static Event fromBlert(com.blert.events.Event blertEvent) {
         Event event = new Event();
         event.type = blertEvent.getType();
         event.room = blertEvent.getRoom().orElse(null);
@@ -31,6 +38,14 @@ public class Event {
         event.yCoord = blertEvent.getYCoord();
 
         switch (event.getType()) {
+            case RAID_START:
+                RaidStartEvent raidStartEvent = (RaidStartEvent) blertEvent;
+                event.raidInfo = new RaidInfo(raidStartEvent.getParty(), raidStartEvent.getMode());
+                break;
+            case RAID_UPDATE:
+                RaidUpdateEvent raidUpdateEvent = (RaidUpdateEvent) blertEvent;
+                event.raidInfo = new RaidInfo(new ArrayList<>(), raidUpdateEvent.getMode());
+                break;
             case ROOM_STATUS:
                 event.roomStatus = ((RoomStatusEvent) blertEvent).getStatus();
                 break;
@@ -63,5 +78,9 @@ public class Event {
         }
 
         return event;
+    }
+
+    public String encode() {
+        return new Gson().toJson(this);
     }
 }

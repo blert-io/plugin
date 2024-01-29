@@ -23,9 +23,7 @@
 
 package com.blert.raid;
 
-import com.blert.events.Event;
-import com.blert.events.EventHandler;
-import com.blert.events.RaidStartEvent;
+import com.blert.events.*;
 import com.blert.raid.rooms.RoomDataTracker;
 import com.blert.raid.rooms.bloat.BloatDataTracker;
 import com.blert.raid.rooms.maiden.MaidenDataTracker;
@@ -35,6 +33,7 @@ import com.blert.raid.rooms.verzik.VerzikDataTracker;
 import com.blert.raid.rooms.xarpus.XarpusDataTracker;
 import joptsimple.internal.Strings;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -50,8 +49,8 @@ import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -73,6 +72,7 @@ public class RaidManager {
     @Getter
     private ClientThread clientThread;
 
+    @Setter
     private @Nullable EventHandler eventHandler = null;
 
     private Location location = Location.ELSEWHERE;
@@ -81,7 +81,7 @@ public class RaidManager {
     @Getter
     private Mode raidMode = null;
 
-    private final Set<String> raiders = new HashSet<>();
+    private final List<String> raiders = new ArrayList<>();
 
     private RoomState roomState = RoomState.INACTIVE;
     @Nullable
@@ -108,6 +108,7 @@ public class RaidManager {
         if (raidMode != mode) {
             log.debug("Raid mode set to " + mode);
             raidMode = mode;
+            dispatchEvent(new RaidUpdateEvent(mode));
         }
     }
 
@@ -139,24 +140,27 @@ public class RaidManager {
         }
     }
 
-    private void startRaid() {
+    private void startRaid(@Nullable Mode mode) {
         log.debug("Starting new raid");
         state = RaidState.ACTIVE;
-        dispatchEvent(new RaidStartEvent());
+        raidMode = mode;
+
+        // Defer sending the raid start event as party information is not always immediately available.
+        clientThread.invokeLater(() -> {
+            updatePartyInformation();
+            dispatchEvent(new RaidStartEvent(new ArrayList<>(raiders), raidMode));
+        });
     }
 
     private void endRaid() {
         log.debug("Raid completed");
 
+        dispatchEvent(new RaidEndEvent());
+
         clearRoomDataTracker();
         state = RaidState.INACTIVE;
         raidMode = null;
         raiders.clear();
-
-        if (eventHandler != null) {
-            // TODO for debugging
-            ((com.blert.json.JsonEventHandler) eventHandler).flushEventsUpTo(client.getTickCount());
-        }
     }
 
     private void updateLocation() {
@@ -200,7 +204,7 @@ public class RaidManager {
 
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
             if (state.isInactive() && varbit.getValue() == 2) {
-                startRaid();
+                startRaid(null);
             } else if (state.isActive() && varbit.getValue() < 2) {
                 // The raid has finished; clean up.
                 endRaid();
@@ -227,9 +231,11 @@ public class RaidManager {
             return;
         }
 
-        Matcher matcher = RAID_ENTRY_REGEX.matcher(message.getMessage());
-        if (matcher.matches()) {
-            Mode.parse(matcher.group(1)).ifPresent(this::updateRaidMode);
+        if (state.isInactive()) {
+            Matcher matcher = RAID_ENTRY_REGEX.matcher(message.getMessage());
+            if (matcher.matches()) {
+                startRaid(Mode.parse(matcher.group(1)).orElse(null));
+            }
         }
     }
 
