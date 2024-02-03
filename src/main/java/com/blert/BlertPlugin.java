@@ -60,6 +60,10 @@ public class BlertPlugin extends Plugin {
 
     @Subscribe
     private void onGameStateChanged(GameStateChanged gameStateChanged) {
+        if (wsClient == null || config.dontConnect()) {
+            return;
+        }
+
         if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
             if (config.apiKey() != null && !wsClient.isOpen()) {
                 wsClient.open();
@@ -69,7 +73,8 @@ public class BlertPlugin extends Plugin {
 
     @Subscribe
     private void onConfigChanged(ConfigChanged changed) {
-        if (changed.getKey().equals("apiKey") || changed.getKey().equals("serverUrl")) {
+        if (changed.getKey().equals("apiKey") || changed.getKey().equals("serverUrl")
+                || changed.getKey().equals("dontConnect")) {
             initializeWebSocketClient();
         }
     }
@@ -81,6 +86,10 @@ public class BlertPlugin extends Plugin {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+        }
+
+        if (config.dontConnect()) {
+            return;
         }
 
         String hostname = config.serverUrl();

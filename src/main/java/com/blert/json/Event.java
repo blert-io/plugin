@@ -27,6 +27,7 @@ public class Event {
     private @Nullable RoomStatusEvent.Status roomStatus = null;
     private @Nullable Player player = null;
     private @Nullable Npc npc = null;
+    private @Nullable Attack attack = null;
     private @Nullable MaidenEntity maidenEntity = null;
 
     public static Event fromBlert(com.blert.events.Event blertEvent) {
@@ -52,14 +53,17 @@ public class Event {
             case PLAYER_UPDATE:
                 event.player = Player.fromBlertEvent((PlayerUpdateEvent) blertEvent);
                 break;
+            case PLAYER_ATTACK:
+                PlayerAttackEvent playerAttackEvent = (PlayerAttackEvent) blertEvent;
+                event.attack = Attack.fromPlayerAttackEvent(playerAttackEvent);
+                event.player = new Player(playerAttackEvent.getUsername());
+                break;
             case PLAYER_DEATH:
                 event.player = new Player(((PlayerDeathEvent) blertEvent).getUsername());
                 break;
             case NPC_UPDATE:
                 NpcUpdateEvent npcUpdateEvent = (NpcUpdateEvent) blertEvent;
-                event.npc = new Npc();
-                event.npc.setId(npcUpdateEvent.getNpcId());
-                event.npc.setRoomId(npcUpdateEvent.getRoomId());
+                event.npc = new Npc(npcUpdateEvent.getNpcId(), npcUpdateEvent.getRoomId());
                 npcUpdateEvent.getHitpoints().ifPresent(event.npc::setHitpoints);
                 break;
             case MAIDEN_CRAB_SPAWN:

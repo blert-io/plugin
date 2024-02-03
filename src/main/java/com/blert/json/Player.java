@@ -17,6 +17,7 @@ public class Player {
     private String name;
     private @Nullable Hitpoints hitpoints = null;
     private Map<EquipmentSlot, Item> equipment = new HashMap<>();
+    private int offCooldownTick;
 
     public Player(String name) {
         this.name = name;
@@ -26,6 +27,7 @@ public class Player {
         Player player = new Player(event.getUsername());
         event.getHitpoints().ifPresent(player::setHitpoints);
         player.equipment = event.getEquipment();
+        player.offCooldownTick = event.getOffCooldownTick();
         return player;
     }
 }

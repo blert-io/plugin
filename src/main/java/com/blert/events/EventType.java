@@ -6,6 +6,7 @@ public enum EventType {
     RAID_UPDATE,
     ROOM_STATUS,
     PLAYER_UPDATE,
+    PLAYER_ATTACK,
     PLAYER_DEATH,
     NPC_UPDATE,
 

@@ -24,14 +24,14 @@
 package com.blert.raid.rooms;
 
 import com.blert.events.*;
+import com.blert.raid.Item;
 import com.blert.raid.*;
-import joptsimple.internal.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Item;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.VarbitChanged;
@@ -41,7 +41,6 @@ import net.runelite.client.util.Text;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -66,8 +65,6 @@ public abstract class RoomDataTracker {
     private final boolean startOnEntry;
     private int startClientTick;
     private boolean startingTickAccurate;
-
-    private final Set<String> deadPlayers = new HashSet<>();
 
     /**
      * Set of NPC IDs for which an NpcUpdateEvent has been sent on the current tick.
@@ -122,6 +119,14 @@ public abstract class RoomDataTracker {
         startClientTick = client.getTickCount() + tickOffset;
         startingTickAccurate = accurate;
 
+        client.getPlayers().forEach(player -> {
+            Raider raider = raidManager.getRaider(player.getName());
+            if (raider != null) {
+                raider.resetForNewRoom();
+                raider.setPlayer(player);
+            }
+        });
+
         dispatchEvent(new RoomStatusEvent(room, 0, RoomStatusEvent.Status.STARTED));
 
         onRoomStart();
@@ -140,7 +145,8 @@ public abstract class RoomDataTracker {
 
         log.debug("Room {} finished in {} ticks ({})", room, finalRoomTick, formattedRoomTime());
 
-        var roomStatus = deadPlayers.size() == raidManager.getRaidScale()
+        long deadRaiders = raidManager.getRaiders().stream().filter(Raider::isDead).count();
+        var roomStatus = deadRaiders == raidManager.getRaidScale()
                 ? RoomStatusEvent.Status.WIPED
                 : RoomStatusEvent.Status.COMPLETED;
         dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus));
@@ -169,6 +175,8 @@ public abstract class RoomDataTracker {
         updatePartyStatus();
         updatePlayers();
 
+        raidManager.getRaiders().forEach(this::checkForPlayerAttack);
+
         specialAttackTracker.processPendingSpecial();
 
         // Run implementation-specific behavior.
@@ -177,7 +185,7 @@ public abstract class RoomDataTracker {
         // Send simple updates for any NPCs not already reported by the implementation.
         client.getNpcs()
                 .stream()
-                .filter(npc -> !npcUpdatesThisTick.contains(npc.getId()))
+                .filter(npc -> !npcUpdatesThisTick.contains(npc.hashCode()))
                 .forEach(this::sendBasicNpcUpdate);
     }
 
@@ -201,7 +209,7 @@ public abstract class RoomDataTracker {
      */
     public boolean playersAreInRoom() {
         return client.getPlayers().stream()
-                .filter(player -> raidManager.playerIsInRaid(Objects.requireNonNull(player.getName())))
+                .filter(player -> raidManager.playerIsInRaid(player.getName()))
                 .anyMatch(player -> {
                     WorldPoint position = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
                     return Location.fromWorldPoint(position).inRoom(room);
@@ -288,12 +296,29 @@ public abstract class RoomDataTracker {
                     return;
                 }
 
-                Item weapon = equipment.getItem(EquipmentInventorySlot.WEAPON.getSlotIdx());
+                net.runelite.api.Item weapon = equipment.getItem(EquipmentInventorySlot.WEAPON.getSlotIdx());
                 if (weapon != null) {
                     specialAttackTracker.recordSpecialUsed((NPC) target, weapon, specTick);
                 }
             }
         });
+    }
+
+    @Subscribe
+    private void onAnimationChanged(AnimationChanged event) {
+        if (state != State.IN_PROGRESS) {
+            return;
+        }
+
+        Actor actor = event.getActor();
+        if (!(actor instanceof Player)) {
+            return;
+        }
+
+        Raider raider = raidManager.getRaider(actor.getName());
+        if (raider != null) {
+            raider.setAnimation(getRoomTick(), actor.getAnimation());
+        }
     }
 
     private void onSpecialAttack(SpecialAttackTracker.SpecialAttack spec) {
@@ -302,58 +327,87 @@ public abstract class RoomDataTracker {
     }
 
     private void updatePartyStatus() {
-        // ID of the client string containing the username of the first member in a ToB party. Subsequent party members'
-        // usernames (if present) occupy the following four IDs.
-        final int TOB_P1_VARCSTR_ID = 330;
-
-        for (int player = 0; player < 5; player++) {
-            String username = Text.standardize(client.getVarcStrValue(TOB_P1_VARCSTR_ID + player));
-            if (Strings.isNullOrEmpty(username)) {
-                continue;
-            }
+        raidManager.forEachOrb((orb, username) -> {
+            Raider raider = raidManager.getRaider(username);
 
             // ToB orb health. 0 = hide, 1-27 = health percentage (0-100%), 30 = dead.
-            int orbHealth = client.getVarbitValue(Varbits.THEATRE_OF_BLOOD_ORB1 + player);
+            int orbHealth = client.getVarbitValue(Varbits.THEATRE_OF_BLOOD_ORB1 + orb);
             if (orbHealth == 1) {
-                if (!deadPlayers.add(username)) {
+                if (raider.isDead()) {
                     // Player was already dead.
-                    continue;
+                    return;
                 }
 
-                for (Player p : client.getPlayers()) {
-                    if (Objects.equals(Text.standardize(p.getName()), username)) {
-                        WorldPoint point = WorldPoint.fromLocalInstance(client, p.getLocalLocation());
-                        dispatchEvent(new PlayerDeathEvent(room, getRoomTick(), point, p.getName()));
-                        break;
-                    }
+                raider.setDead(true);
+                if (raider.getPlayer() != null) {
+                    WorldPoint point = WorldPoint.fromLocalInstance(client, raider.getPlayer().getLocalLocation());
+                    dispatchEvent(new PlayerDeathEvent(room, getRoomTick(), point, raider.getUsername()));
                 }
             }
-        }
+        });
     }
 
     private void updatePlayers() {
-        Player player = client.getLocalPlayer();
-        if (player != null && raidManager.playerIsInRaid(Objects.requireNonNull(player.getName()))) {
-            Location location = Location.fromWorldPoint(WorldPoint.fromLocalInstance(client, player.getLocalLocation()));
-            if (location.inRoom(room) && !deadPlayers.contains(Text.standardize(player.getName()))) {
-                // Report detailed information about the logged-in player.
-                dispatchEvent(PlayerUpdateEvent.fromLocalPlayer(room, getRoomTick(), client));
-            }
-        }
+        int tick = getRoomTick();
 
-        // Report basic positional information about every other player in the room.
-        for (Player other : client.getPlayers()) {
-            if (other == player
-                    || !raidManager.playerIsInRaid(Objects.requireNonNull(other.getName()))
-                    || deadPlayers.contains(Text.standardize(other.getName()))) {
-                continue;
+        client.getPlayers().forEach(player -> {
+            Raider raider = raidManager.getRaider(player.getName());
+            if (raider == null || raider.isDead()) {
+                return;
             }
 
-            WorldPoint point = WorldPoint.fromLocalInstance(client, other.getLocalLocation());
-            if (Location.fromWorldPoint(point).inRoom(room)) {
-                dispatchEvent(PlayerUpdateEvent.fromPlayer(room, getRoomTick(), client, other));
-            }
+            raider.updateState(client, player, tick);
+
+            dispatchEvent(PlayerUpdateEvent.fromRaider(room, tick, client, raider));
+        });
+    }
+
+    private void checkForPlayerAttack(@NotNull Raider raider) {
+        int animationId = raider.getAnimationId();
+        if (animationId == -1) {
+            return;
         }
+
+        final int tick = getRoomTick();
+
+        boolean mayHaveAttacked = raider.isOffCooldownOn(tick)
+                && (raider.getAnimationTick() == tick || raider.isBlowpiping() || raider.stoppedBlowpiping());
+        if (!mayHaveAttacked) {
+            return;
+        }
+
+        Player player = raider.getPlayer();
+        if (player == null) {
+            return;
+        }
+
+        WorldPoint point = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+        if (!Location.fromWorldPoint(point).inRoom(room)) {
+            return;
+        }
+
+        Optional<PlayerAttack> maybeAttack;
+        Optional<NPC> target = raider.getTarget();
+        Optional<Item> weapon = raider.getEquippedItem(EquipmentSlot.WEAPON);
+        int weaponId = weapon.map(Item::getId).orElse(-1);
+
+        if (raider.stoppedBlowpiping()) {
+            // In some instances, the blowpipe animation overrides another weapon's attack animation when the player
+            // attacks on blowpipe cooldown. If the player is still using the blowpipe animation but has just stopped
+            // blowpiping and targeted another NPC, assume that they attacked it with the weapon they're holding.
+            if (!PlayerAttack.BLOWPIPE.hasAnimation(animationId) || target.isEmpty()) {
+                return;
+            }
+            maybeAttack = PlayerAttack.findByWeaponOnly(weaponId);
+        } else {
+            maybeAttack = PlayerAttack.find(weaponId, animationId);
+        }
+
+        maybeAttack.ifPresent(attack -> {
+            raider.recordAttack(tick, attack);
+            dispatchEvent(new PlayerAttackEvent(room, tick, point, attack,
+                    weapon.orElse(null), player.getName(), target.orElse(null)));
+        });
     }
 
     /**
@@ -361,14 +415,15 @@ public abstract class RoomDataTracker {
      * events.
      */
     protected void dispatchNpcUpdate(@NotNull NpcUpdateEvent update) {
-        if (npcUpdatesThisTick.add(update.getNpcId())) {
+        if (npcUpdatesThisTick.add(update.getRoomId())) {
             dispatchEvent(update);
         }
     }
 
     /**
      * Sends a generic update status about an NPC in the room. Implementations can choose to call this directly, or
-     * track additional information about their room NPCs and send them through `dispatchNpcUpdate`.
+     * track additional information about their room NPCs and send them through
+     * {@link #dispatchNpcUpdate(NpcUpdateEvent)}.
      */
     protected void sendBasicNpcUpdate(NPC npc) {
         WorldPoint point = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(npc));
@@ -389,6 +444,7 @@ public abstract class RoomDataTracker {
         }
 
         dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, npc.hashCode(), npc.getId(), hitpoints));
+        npcUpdatesThisTick.add(npc.hashCode());
     }
 
     protected String formattedRoomTime() {

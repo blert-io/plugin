@@ -49,10 +49,14 @@ import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 
@@ -81,7 +85,10 @@ public class RaidManager {
     @Getter
     private Mode raidMode = null;
 
-    private final List<String> raiders = new ArrayList<>();
+    /**
+     * Players in the raid party, stored in orb order.
+     */
+    private final Map<String, Raider> party = new LinkedHashMap<>();
 
     private RoomState roomState = RoomState.INACTIVE;
     @Nullable
@@ -97,11 +104,19 @@ public class RaidManager {
     }
 
     public int getRaidScale() {
-        return inRaid() ? raiders.size() : 0;
+        return inRaid() ? party.size() : 0;
     }
 
-    public boolean playerIsInRaid(String username) {
-        return raiders.contains(username.toLowerCase());
+    public boolean playerIsInRaid(@Nullable String username) {
+        return username != null && party.containsKey(username.toLowerCase());
+    }
+
+    public Raider getRaider(@Nullable String username) {
+        return username != null ? party.get(username.toLowerCase()) : null;
+    }
+
+    public Collection<Raider> getRaiders() {
+        return party.values();
     }
 
     public void updateRaidMode(Mode mode) {
@@ -140,6 +155,23 @@ public class RaidManager {
         }
     }
 
+    /**
+     * Invokes a callback for each username displayed in the ToB orb list.
+     *
+     * @param callback Function to run on each user.
+     */
+    public void forEachOrb(BiConsumer<Integer, String> callback) {
+        // ID of the client string containing the username of the first member in a ToB party. Subsequent party members'
+        // usernames (if present) occupy the following four IDs.
+        final int TOB_P1_VARCSTR_ID = 330;
+        for (int player = 0; player < 5; player++) {
+            String username = Text.standardize(client.getVarcStrValue(TOB_P1_VARCSTR_ID + player));
+            if (!Strings.isNullOrEmpty(username)) {
+                callback.accept(player, username);
+            }
+        }
+    }
+
     private void startRaid(@Nullable Mode mode) {
         log.debug("Starting new raid");
         state = RaidState.ACTIVE;
@@ -147,8 +179,10 @@ public class RaidManager {
 
         // Defer sending the raid start event as party information is not always immediately available.
         clientThread.invokeLater(() -> {
-            updatePartyInformation();
-            dispatchEvent(new RaidStartEvent(new ArrayList<>(raiders), raidMode));
+            initializeParty();
+
+            List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
+            dispatchEvent(new RaidStartEvent(names, raidMode));
         });
     }
 
@@ -160,7 +194,7 @@ public class RaidManager {
         clearRoomDataTracker();
         state = RaidState.INACTIVE;
         raidMode = null;
-        raiders.clear();
+        party.clear();
     }
 
     private void updateLocation() {
@@ -239,18 +273,20 @@ public class RaidManager {
         }
     }
 
-    private void updatePartyInformation() {
-        // ID of the client string containing the username of the first member in a ToB party. Subsequent party members'
-        // usernames (if present) occupy the following four IDs.
-        final int TOB_P1_VARCSTR_ID = 330;
+    private void initializeParty() {
+        String localPlayer = client.getLocalPlayer().getName();
+        forEachOrb((orb, username) -> party.put(username.toLowerCase(), new Raider(username, username.equals(localPlayer))));
+    }
 
-        raiders.clear();
-        for (int player = 0; player < 5; player++) {
-            String username = Text.standardize(client.getVarcStrValue(TOB_P1_VARCSTR_ID + player));
-            if (!Strings.isNullOrEmpty(username)) {
-                raiders.add(username.toLowerCase());
+    private void updatePartyInformation() {
+        // Toggle the players who are currently connected to the raid.
+        party.values().forEach(r -> r.setActive(false));
+        forEachOrb((orb, username) -> {
+            Raider raider = party.get(username.toLowerCase());
+            if (raider != null) {
+                raider.setActive(true);
             }
-        }
+        });
     }
 
     private void clearRoomDataTracker() {
