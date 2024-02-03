@@ -88,7 +88,7 @@ public class BlertPlugin extends Plugin {
             }
         }
 
-        if (config.dontConnect()) {
+        if (config.dontConnect() || config.apiKey() == null) {
             return;
         }
 
@@ -97,7 +97,7 @@ public class BlertPlugin extends Plugin {
             hostname = DEFAULT_BLERT_HOSTNAME;
         }
 
-        wsClient = new WebSocketClient(hostname);
+        wsClient = new WebSocketClient(hostname, config.apiKey());
         handler = new WebsocketEventHandler(wsClient);
         raidManager.setEventHandler(handler);
 

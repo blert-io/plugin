@@ -30,21 +30,26 @@ import okhttp3.internal.annotations.EverythingIsNonNull;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.function.Consumer;
 
 @Slf4j
 
 public class WebSocketClient extends WebSocketListener implements AutoCloseable {
+    @NotNull
     private final String hostname;
+    private final byte[] apiKey;
     private final OkHttpClient client;
     private WebSocket socket;
 
     @Setter
     private @Nullable Consumer<String> messageCallback = null;
 
-    public WebSocketClient(String hostname) {
-        this.client = new OkHttpClient.Builder().build();
+    public WebSocketClient(@NotNull String hostname, @NotNull String apiKey) {
+        this.apiKey = apiKey.getBytes(StandardCharsets.UTF_8);
         this.hostname = hostname;
+        this.client = new OkHttpClient.Builder().build();
     }
 
     /**
@@ -57,8 +62,10 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
     }
 
     public void open() {
-        // TODO(frolv): Authenticate using the API key.
-        Request request = new Request.Builder().url("ws://" + hostname + "/ws").build();
+        Request request = new Request.Builder()
+                .url("ws://" + hostname + "/ws")
+                .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(apiKey))
+                .build();
         socket = client.newWebSocket(request, this);
     }
 
