@@ -29,6 +29,7 @@ public class Event {
     private @Nullable Npc npc = null;
     private @Nullable Attack attack = null;
     private @Nullable MaidenEntity maidenEntity = null;
+    private @Nullable BloatStatus bloatStatus = null;
 
     public static Event fromBlert(com.blert.events.Event blertEvent) {
         Event event = new Event();
@@ -78,6 +79,10 @@ public class Event {
             case MAIDEN_BLOOD_SPLATS:
                 MaidenBloodSplatsEvent bloodSplatsEvent = (MaidenBloodSplatsEvent) blertEvent;
                 event.maidenEntity = MaidenEntity.bloodSplats(bloodSplatsEvent.getBloodSplats());
+                break;
+            case BLOAT_DOWN:
+                BloatDownEvent bloatDownEvent = (BloatDownEvent) blertEvent;
+                event.bloatStatus = new BloatStatus(bloatDownEvent.getUptime());
                 break;
         }
 

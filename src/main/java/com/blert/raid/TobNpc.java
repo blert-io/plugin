@@ -48,6 +48,11 @@ public enum TobNpc {
     MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, Mode.REGULAR, new int[]{0, 0, 0}),
     MAIDEN_BLOOD_SPAWN_HARD(10829, 1, Mode.HARD, new int[]{0, 0, 0}),
 
+    // Bloat.
+    BLOAT_ENTRY(10812, 1, Mode.ENTRY, 320),
+    BLOAT_REGULAR(8359, 1, Mode.REGULAR, new int[]{1500, 1750, 2000}),
+    BLOAT_HARD(10813, 1, Mode.HARD, new int[]{1800, 2100, 2400}),
+
     // Inactive Sotetseg (prior to room entry or during maze).
     SOTETSEG_IDLE_ENTRY(10864, Mode.ENTRY),
     SOTETSEG_IDLE_REGULAR(8387, Mode.REGULAR),
@@ -121,8 +126,16 @@ public enum TobNpc {
         this(id, 1, mode, new int[]{0, 0, 0});
     }
 
+    public boolean hasId(int id) {
+        return id >= this.id && id < this.id + this.idRange;
+    }
+
+    private static boolean idMatches(int id, TobNpc entry, TobNpc regular, TobNpc hard) {
+        return entry.hasId(id) || regular.hasId(id) || hard.hasId(id);
+    }
+
     public static boolean isMaiden(int id) {
-        return id == MAIDEN_ENTRY.id || id == MAIDEN_REGULAR.id || id == MAIDEN_HARD.id;
+        return idMatches(id, MAIDEN_ENTRY, MAIDEN_REGULAR, MAIDEN_HARD);
     }
 
     @NotNull
@@ -138,9 +151,7 @@ public enum TobNpc {
     }
 
     public static boolean isMaidenMatomenos(int id) {
-        return id == MAIDEN_MATOMENOS_ENTRY.id
-                || id == MAIDEN_MATOMENOS_REGULAR.id
-                || id == MAIDEN_MATOMENOS_HARD.id;
+        return idMatches(id, MAIDEN_MATOMENOS_ENTRY, MAIDEN_MATOMENOS_REGULAR, MAIDEN_MATOMENOS_HARD);
     }
 
     @NotNull
@@ -156,34 +167,35 @@ public enum TobNpc {
     }
 
     public static boolean isMaidenBloodSpawn(int id) {
-        return id == MAIDEN_BLOOD_SPAWN_ENTRY.id
-                || id == MAIDEN_BLOOD_SPAWN_REGULAR.id
-                || id == MAIDEN_BLOOD_SPAWN_HARD.id;
+        return idMatches(id, MAIDEN_BLOOD_SPAWN_ENTRY, MAIDEN_BLOOD_SPAWN_REGULAR, MAIDEN_BLOOD_SPAWN_HARD);
     }
 
+    public static boolean isBloat(int id) {
+        return idMatches(id, BLOAT_ENTRY, BLOAT_REGULAR, BLOAT_HARD);
+    }
 
     public static boolean isSotetsegIdle(int id) {
-        return id == SOTETSEG_IDLE_ENTRY.id || id == SOTETSEG_IDLE_REGULAR.id || id == SOTETSEG_IDLE_HARD.id;
+        return idMatches(id, SOTETSEG_IDLE_ENTRY, SOTETSEG_IDLE_REGULAR, SOTETSEG_IDLE_HARD);
     }
 
     public static boolean isSotetseg(int id) {
-        return id == SOTETSEG_ENTRY.id || id == SOTETSEG_REGULAR.id || id == SOTETSEG_HARD.id;
+        return idMatches(id, SOTETSEG_ENTRY, SOTETSEG_REGULAR, SOTETSEG_HARD);
     }
 
     public static boolean isXarpusIdle(int id) {
-        return id == XARPUS_IDLE_ENTRY.id || id == XARPUS_IDLE_REGULAR.id || id == XARPUS_IDLE_HARD.id;
+        return idMatches(id, XARPUS_IDLE_ENTRY, XARPUS_IDLE_REGULAR, XARPUS_IDLE_HARD);
     }
 
     public static boolean isXarpus(int id) {
-        return id == XARPUS_P1_ENTRY.id || id == XARPUS_P1_REGULAR.id || id == XARPUS_P1_HARD.id;
+        return idMatches(id, XARPUS_P1_ENTRY, XARPUS_P1_REGULAR, XARPUS_P1_HARD);
     }
 
     public static boolean isVerzikIdle(int id) {
-        return id == VERZIK_IDLE_ENTRY.id || id == VERZIK_IDLE_REGULAR.id || id == VERZIK_IDLE_HARD.id;
+        return idMatches(id, VERZIK_IDLE_ENTRY, VERZIK_IDLE_REGULAR, VERZIK_IDLE_HARD);
     }
 
     public static boolean isVerzikP1(int id) {
-        return id == VERZIK_P1_ENTRY.id || id == VERZIK_P1_REGULAR.id || id == VERZIK_P1_HARD.id;
+        return idMatches(id, VERZIK_P1_ENTRY, VERZIK_P1_REGULAR, VERZIK_P1_HARD);
     }
 
     public int getBaseHitpoints(int scale) {

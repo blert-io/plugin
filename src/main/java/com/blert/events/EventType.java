@@ -13,4 +13,7 @@ public enum EventType {
     MAIDEN_CRAB_SPAWN,
     MAIDEN_CRAB_LEAK,
     MAIDEN_BLOOD_SPLATS,
+
+    BLOAT_DOWN,
+    BLOAT_UP,
 }

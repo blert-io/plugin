@@ -227,7 +227,16 @@ public abstract class RoomDataTracker {
     protected abstract void onTick();
 
     /**
-     * Implementation-specific equivalent of the `onHitsplatApplied` Runelite event handler.
+     * Implementation-specific equivalent of the {@code onAnimationChanged} Runelite event handler.
+     * Should be overriden by implementations which require special animation tracking.
+     *
+     * @param animationChanged The animation event.
+     */
+    protected void onAnimation(AnimationChanged animationChanged) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onHitsplatApplied} Runelite event handler.
      * Should be overriden by implementations which require special hitsplat tracking.
      *
      * @param hitsplatApplied The hitsplat event.
@@ -311,14 +320,14 @@ public abstract class RoomDataTracker {
         }
 
         Actor actor = event.getActor();
-        if (!(actor instanceof Player)) {
-            return;
+        if (actor instanceof Player) {
+            Raider raider = raidManager.getRaider(actor.getName());
+            if (raider != null) {
+                raider.setAnimation(getRoomTick(), actor.getAnimation());
+            }
         }
 
-        Raider raider = raidManager.getRaider(actor.getName());
-        if (raider != null) {
-            raider.setAnimation(getRoomTick(), actor.getAnimation());
-        }
+        onAnimation(event);
     }
 
     private void onSpecialAttack(SpecialAttackTracker.SpecialAttack spec) {

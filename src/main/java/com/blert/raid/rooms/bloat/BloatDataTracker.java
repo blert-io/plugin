@@ -23,17 +23,32 @@
 
 package com.blert.raid.rooms.bloat;
 
+import com.blert.events.BloatDownEvent;
+import com.blert.events.BloatUpEvent;
 import com.blert.raid.RaidManager;
+import com.blert.raid.TobNpc;
 import com.blert.raid.rooms.Room;
 import com.blert.raid.rooms.RoomDataTracker;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Actor;
 import net.runelite.api.Client;
+import net.runelite.api.NPC;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.AnimationChanged;
 
 @Slf4j
 
 public class BloatDataTracker extends RoomDataTracker {
+    private static final int BLOAT_DOWN_ANIMATION = 8082;
+
+    int currentDown;
+    int lastDownTick;
+    int lastUpTick;
+
     public BloatDataTracker(RaidManager manager, Client client) {
         super(manager, client, Room.BLOAT, true);
+        currentDown = 0;
+        lastUpTick = 0;
     }
 
     @Override
@@ -42,5 +57,42 @@ public class BloatDataTracker extends RoomDataTracker {
 
     @Override
     protected void onTick() {
+    }
+
+    @Override
+    protected void onAnimation(AnimationChanged event) {
+        Actor actor = event.getActor();
+        if (!(actor instanceof NPC)) {
+            return;
+        }
+
+        NPC npc = (NPC) actor;
+        if (!TobNpc.isBloat(npc.getId())) {
+            return;
+        }
+
+        final int tick = getRoomTick();
+        if (npc.getAnimation() == BLOAT_DOWN_ANIMATION) {
+            handleBloatDown(npc, tick);
+        } else if (npc.getAnimation() == -1) {
+            handleBloatUp(npc, tick);
+        }
+    }
+
+    private void handleBloatDown(NPC bloat, int tick) {
+        currentDown++;
+        lastDownTick = tick;
+        log.debug("Bloat down {} tick {}", currentDown, lastDownTick);
+
+        WorldPoint point = WorldPoint.fromLocalInstance(client, bloat.getLocalLocation());
+        dispatchEvent(new BloatDownEvent(tick, point, tick - lastUpTick));
+    }
+
+    private void handleBloatUp(NPC bloat, int tick) {
+        lastUpTick = tick;
+        log.debug("Bloat up {} tick {}", currentDown, lastUpTick);
+
+        WorldPoint point = WorldPoint.fromLocalInstance(client, bloat.getLocalLocation());
+        dispatchEvent(new BloatUpEvent(tick, point));
     }
 }
