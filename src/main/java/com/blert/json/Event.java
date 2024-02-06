@@ -30,6 +30,7 @@ public class Event {
     private @Nullable Attack attack = null;
     private @Nullable MaidenEntity maidenEntity = null;
     private @Nullable BloatStatus bloatStatus = null;
+    private @Nullable NyloWave nyloWave = null;
 
     public static Event fromBlert(com.blert.events.Event blertEvent) {
         Event event = new Event();
@@ -83,6 +84,14 @@ public class Event {
             case BLOAT_DOWN:
                 BloatDownEvent bloatDownEvent = (BloatDownEvent) blertEvent;
                 event.bloatStatus = new BloatStatus(bloatDownEvent.getUptime());
+                break;
+            case NYLO_WAVE_SPAWN:
+                NyloWaveSpawnEvent waveSpawn = (NyloWaveSpawnEvent) blertEvent;
+                event.nyloWave = new NyloWave(waveSpawn.getWave(), waveSpawn.getNyloCount(), waveSpawn.getNyloCap());
+                break;
+            case NYLO_WAVE_STALL:
+                NyloWaveStallEvent waveStall = (NyloWaveStallEvent) blertEvent;
+                event.nyloWave = new NyloWave(waveStall.getWave(), waveStall.getNyloCount(), waveStall.getNyloCap());
                 break;
         }
 

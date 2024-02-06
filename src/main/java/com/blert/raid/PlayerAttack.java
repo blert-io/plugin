@@ -34,6 +34,7 @@ public enum PlayerAttack {
     BGS_SMACK(new int[]{ItemID.BANDOS_GODSWORD, ItemID.BANDOS_GODSWORD_OR}, 7045, 6),
     BGS_SPEC(new int[]{ItemID.BANDOS_GODSWORD, ItemID.BANDOS_GODSWORD_OR}, new int[]{7642, 7643}, 6),
     BLOWPIPE(new int[]{ItemID.TOXIC_BLOWPIPE, ItemID.BLAZING_BLOWPIPE}, new int[]{5061, 10656}, 2),
+    CHALLY_SWIPE(ItemID.CRYSTAL_HALBERD, 440, 7),
     CHALLY_SPEC(ItemID.CRYSTAL_HALBERD, 1203, 7),
     CHIN_BLACK(ItemID.BLACK_CHINCHOMPA, 7618, 3),
     CHIN_GREY(ItemID.CHINCHOMPA, 7618, 3),
@@ -56,6 +57,7 @@ public enum PlayerAttack {
     SCYTHE_UNCHARGED(ItemID.SCYTHE_OF_VITUR_UNCHARGED, 8056, 5),
     SHADOW(ItemID.TUMEKENS_SHADOW, 9493, 5),
     SHADOW_BARRAGE(ItemID.TUMEKENS_SHADOW, 1979, 5),  // please don't tob ever again
+    SOTD_BARRAGE(ItemID.STAFF_OF_THE_DEAD, 1979, 5),
     SWIFT(ItemID.SWIFT_BLADE, new int[]{390, 8288}, 3),
     // TOXIC_TRIDENT must come before TOXIC_TRIDENT_BARRAGE as it is the default assumption when the animation is unknown.
     TOXIC_TRIDENT(new int[]{ItemID.TRIDENT_OF_THE_SWAMP, ItemID.TRIDENT_OF_THE_SWAMP_E}, 1167, 4),

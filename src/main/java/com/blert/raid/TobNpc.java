@@ -45,13 +45,69 @@ public enum TobNpc {
 
     // Maiden heat-seeking blood spawn.
     MAIDEN_BLOOD_SPAWN_ENTRY(10821, 1, Mode.ENTRY, 0),
-    MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, Mode.REGULAR, new int[]{0, 0, 0}),
+    MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, Mode.REGULAR, new int[]{90, 105, 120}),
     MAIDEN_BLOOD_SPAWN_HARD(10829, 1, Mode.HARD, new int[]{0, 0, 0}),
 
     // Bloat.
     BLOAT_ENTRY(10812, 1, Mode.ENTRY, 320),
     BLOAT_REGULAR(8359, 1, Mode.REGULAR, new int[]{1500, 1750, 2000}),
     BLOAT_HARD(10813, 1, Mode.HARD, new int[]{1800, 2100, 2400}),
+
+    // Melee small nylos.
+    NYLOCAS_ISCHYROS_SMALL_ENTRY(10774, 1, Mode.ENTRY, 2),
+    NYLOCAS_ISCHYROS_SMALL_REGULAR(8342, 1, Mode.REGULAR, new int[]{8, 9, 11}),
+    NYLOCAS_ISCHYROS_SMALL_HARD(10791, 1, Mode.HARD, new int[]{8, 9, 11}),
+    NYLOCAS_ISCHYROS_SMALL_AGGRO_ENTRY(10780, 1, Mode.ENTRY, 2),
+    NYLOCAS_ISCHYROS_SMALL_AGRRO_REGULAR(8348, 1, Mode.REGULAR, new int[]{8, 9, 11}),
+    NYLOCAS_ISCHYROS_SMALL_AGGRO_HARD(10797, 1, Mode.HARD, new int[]{8, 9, 11}),
+
+    // Melee big nylos.
+    NYLOCAS_ISCHYROS_BIG_ENTRY(10777, 1, Mode.ENTRY, 3),
+    NYLOCAS_ISCHYROS_BIG_REGULAR(8345, 1, Mode.REGULAR, new int[]{16, 19, 22}),
+    NYLOCAS_ISCHYROS_BIG_HARD(10794, 1, Mode.HARD, new int[]{16, 19, 22}),
+    NYLOCAS_ISCHYROS_BIG_AGGRO_ENTRY(10783, 1, Mode.ENTRY, 3),
+    NYLOCAS_ISCHYROS_BIG_AGGRO_REGULAR(8351, 1, Mode.REGULAR, new int[]{16, 19, 22}),
+    NYLOCAS_ISCHYROS_BIG_AGGRO_HARD(10800, 1, Mode.HARD, new int[]{16, 19, 22}),
+
+    // Range small nylos.
+    NYLOCAS_TOXOBOLOS_SMALL_ENTRY(10775, 1, Mode.ENTRY, 2),
+    NYLOCAS_TOXOBOLOS_SMALL_REGULAR(8343, 1, Mode.REGULAR, new int[]{8, 9, 11}),
+    NYLOCAS_TOXOBOLOS_SMALL_HARD(10792, 1, Mode.HARD, new int[]{8, 9, 11}),
+    NYLOCAS_TOXOBOLOS_SMALL_AGGRO_ENTRY(10781, 1, Mode.ENTRY, 2),
+    NYLOCAS_TOXOBOLOS_SMALL_AGRRO_REGULAR(8349, 1, Mode.REGULAR, new int[]{8, 9, 11}),
+    NYLOCAS_TOXOBOLOS_SMALL_AGGRO_HARD(10798, 1, Mode.HARD, new int[]{8, 9, 11}),
+
+    // Range big nylos.
+    NYLOCAS_TOXOBOLOS_BIG_ENTRY(10778, 1, Mode.ENTRY, 3),
+    NYLOCAS_TOXOBOLOS_BIG_REGULAR(8346, 1, Mode.REGULAR, new int[]{16, 19, 22}),
+    NYLOCAS_TOXOBOLOS_BIG_HARD(10795, 1, Mode.HARD, new int[]{16, 19, 22}),
+    NYLOCAS_TOXOBOLOS_BIG_AGGRO_ENTRY(10784, 1, Mode.ENTRY, 3),
+    NYLOCAS_TOXOBOLOS_BIG_AGGRO_REGULAR(8352, 1, Mode.REGULAR, new int[]{16, 19, 22}),
+    NYLOCAS_TOXOBOLOS_BIG_AGGRO_HARD(10801, 1, Mode.HARD, new int[]{16, 19, 22}),
+
+    // Mage small nylos.
+    NYLOCAS_HAGIOS_SMALL_ENTRY(10776, 1, Mode.ENTRY, 2),
+    NYLOCAS_HAGIOS_SMALL_REGULAR(8344, 1, Mode.REGULAR, new int[]{8, 9, 11}),
+    NYLOCAS_HAGIOS_SMALL_HARD(10793, 1, Mode.HARD, new int[]{8, 9, 11}),
+    NYLOCAS_HAGIOS_SMALL_AGGRO_ENTRY(10782, 1, Mode.ENTRY, 2),
+    NYLOCAS_HAGIOS_SMALL_AGRRO_REGULAR(8350, 1, Mode.REGULAR, new int[]{8, 9, 11}),
+    NYLOCAS_HAGIOS_SMALL_AGGRO_HARD(10799, 1, Mode.HARD, new int[]{8, 9, 11}),
+
+    // Mage big nylos.
+    NYLOCAS_HAGIOS_BIG_ENTRY(10779, 1, Mode.ENTRY, 3),
+    NYLOCAS_HAGIOS_BIG_REGULAR(8347, 1, Mode.REGULAR, new int[]{16, 19, 22}),
+    NYLOCAS_HAGIOS_BIG_HARD(10796, 1, Mode.HARD, new int[]{16, 19, 22}),
+    NYLOCAS_HAGIOS_BIG_AGGRO_ENTRY(10785, 1, Mode.ENTRY, 3),
+    NYLOCAS_HAGIOS_BIG_AGGRO_REGULAR(8353, 1, Mode.REGULAR, new int[]{16, 19, 22}),
+    NYLOCAS_HAGIOS_BIG_AGGRO_HARD(10802, 1, Mode.HARD, new int[]{16, 19, 22}),
+
+    // HMT nylo prince.
+    NYLOCAS_PRINKIPAS(10803, 4, Mode.HARD, new int[]{300, 350, 400}),
+
+    // Nylo king.
+    NYLOCAS_VASILIAS_ENTRY(10787, 4, Mode.ENTRY, 360),
+    NYLOCAS_VASILIAS_REGULAR(8354, 4, Mode.REGULAR, new int[]{1875, 2187, 2500}),
+    NYLOCAS_VASILIAS_HARD(10807, 4, Mode.HARD, new int[]{1875, 2187, 2500}),
 
     // Inactive Sotetseg (prior to room entry or during maze).
     SOTETSEG_IDLE_ENTRY(10864, Mode.ENTRY),
@@ -174,6 +230,60 @@ public enum TobNpc {
         return idMatches(id, BLOAT_ENTRY, BLOAT_REGULAR, BLOAT_HARD);
     }
 
+    public static boolean isNylocasIschyrosSmall(int id) {
+        return idMatches(id, NYLOCAS_ISCHYROS_SMALL_ENTRY, NYLOCAS_ISCHYROS_SMALL_REGULAR, NYLOCAS_ISCHYROS_SMALL_HARD)
+                || idMatches(id, NYLOCAS_ISCHYROS_SMALL_AGGRO_ENTRY, NYLOCAS_ISCHYROS_SMALL_AGRRO_REGULAR, NYLOCAS_ISCHYROS_SMALL_AGGRO_HARD);
+    }
+
+    public static boolean isNylocasIschyrosBig(int id) {
+        return idMatches(id, NYLOCAS_ISCHYROS_BIG_ENTRY, NYLOCAS_ISCHYROS_BIG_REGULAR, NYLOCAS_ISCHYROS_BIG_HARD)
+                || idMatches(id, NYLOCAS_ISCHYROS_BIG_AGGRO_ENTRY, NYLOCAS_ISCHYROS_BIG_AGGRO_REGULAR, NYLOCAS_ISCHYROS_BIG_AGGRO_HARD);
+    }
+
+    public static boolean isNylocasIschyros(int id) {
+        return isNylocasIschyrosSmall(id) || isNylocasIschyrosBig(id);
+    }
+
+    public static boolean isNylocasToxobolosSmall(int id) {
+        return idMatches(id, NYLOCAS_TOXOBOLOS_SMALL_ENTRY, NYLOCAS_TOXOBOLOS_SMALL_REGULAR, NYLOCAS_TOXOBOLOS_SMALL_HARD)
+                || idMatches(id, NYLOCAS_TOXOBOLOS_SMALL_AGGRO_ENTRY, NYLOCAS_TOXOBOLOS_SMALL_AGRRO_REGULAR, NYLOCAS_TOXOBOLOS_SMALL_AGGRO_HARD);
+    }
+
+    public static boolean isNylocasToxobolosBig(int id) {
+        return idMatches(id, NYLOCAS_TOXOBOLOS_BIG_ENTRY, NYLOCAS_TOXOBOLOS_BIG_REGULAR, NYLOCAS_TOXOBOLOS_BIG_HARD)
+                || idMatches(id, NYLOCAS_TOXOBOLOS_BIG_AGGRO_ENTRY, NYLOCAS_TOXOBOLOS_BIG_AGGRO_REGULAR, NYLOCAS_TOXOBOLOS_BIG_AGGRO_HARD);
+    }
+
+    public static boolean isNylocasToxobolos(int id) {
+        return isNylocasToxobolosSmall(id) || isNylocasToxobolosBig(id);
+    }
+
+    public static boolean isNylocasHagiosSmall(int id) {
+        return idMatches(id, NYLOCAS_HAGIOS_SMALL_ENTRY, NYLOCAS_HAGIOS_SMALL_REGULAR, NYLOCAS_HAGIOS_SMALL_HARD)
+                || idMatches(id, NYLOCAS_HAGIOS_SMALL_AGGRO_ENTRY, NYLOCAS_HAGIOS_SMALL_AGRRO_REGULAR, NYLOCAS_HAGIOS_SMALL_AGGRO_HARD);
+    }
+
+    public static boolean isNylocasHagiosBig(int id) {
+        return idMatches(id, NYLOCAS_HAGIOS_BIG_ENTRY, NYLOCAS_HAGIOS_BIG_REGULAR, NYLOCAS_HAGIOS_BIG_HARD)
+                || idMatches(id, NYLOCAS_HAGIOS_BIG_AGGRO_ENTRY, NYLOCAS_HAGIOS_BIG_AGGRO_REGULAR, NYLOCAS_HAGIOS_BIG_AGGRO_HARD);
+    }
+
+    public static boolean isNylocasHagios(int id) {
+        return isNylocasHagiosSmall(id) || isNylocasHagiosBig(id);
+    }
+
+    public static boolean isNylocas(int id) {
+        return isNylocasIschyros(id) || isNylocasToxobolos(id) || isNylocasHagios(id);
+    }
+
+    public static boolean isNylocasPrinkipas(int id) {
+        return NYLOCAS_PRINKIPAS.hasId(id);
+    }
+
+    public static boolean isNylocasVasilias(int id) {
+        return idMatches(id, NYLOCAS_VASILIAS_ENTRY, NYLOCAS_VASILIAS_REGULAR, NYLOCAS_VASILIAS_HARD);
+    }
+
     public static boolean isSotetsegIdle(int id) {
         return idMatches(id, SOTETSEG_IDLE_ENTRY, SOTETSEG_IDLE_REGULAR, SOTETSEG_IDLE_HARD);
     }
@@ -204,6 +314,9 @@ public enum TobNpc {
         }
 
         if (mode == Mode.ENTRY) {
+            if (isNylocas(this.id)) {
+                return hitpointsByScale[0];
+            }
             // Entry mode scales hitpoints linearly with party size.
             return hitpointsByScale[0] * scale;
         }
