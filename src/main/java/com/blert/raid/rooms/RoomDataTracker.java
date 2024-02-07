@@ -251,6 +251,10 @@ public abstract class RoomDataTracker {
         raidManager.dispatchEvent(event);
     }
 
+    protected WorldPoint getWorldLocation(@NotNull Actor actor) {
+        return WorldPoint.fromLocalInstance(client, actor.getLocalLocation());
+    }
+
     @Subscribe
     private void onChatMessage(ChatMessage chatMessage) {
         if (state != State.IN_PROGRESS || chatMessage.getType() != ChatMessageType.GAMEMESSAGE) {

@@ -23,31 +23,61 @@
 
 package com.blert.raid.rooms.xarpus;
 
+import com.blert.events.XarpusPhaseEvent;
 import com.blert.raid.RaidManager;
 import com.blert.raid.TobNpc;
 import com.blert.raid.rooms.Room;
 import com.blert.raid.rooms.RoomDataTracker;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.NPC;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.client.eventbus.Subscribe;
 
+@Slf4j
 public class XarpusDataTracker extends RoomDataTracker {
+
+    private XarpusPhase phase;
+    private NPC xarpus = null;
+
     public XarpusDataTracker(RaidManager manager, Client client) {
         super(manager, client, Room.XARPUS);
     }
 
     @Override
     protected void onRoomStart() {
+        phase = XarpusPhase.P1;
     }
 
     @Override
     protected void onTick() {
+        final int tick = getRoomTick();
+
+        if (xarpus != null && xarpus.getOverheadText() != null && phase != XarpusPhase.P3) {
+            phase = XarpusPhase.P3;
+            dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(xarpus), phase));
+            log.debug("Screech: {} ({})", tick, formattedRoomTime());
+        }
+
     }
 
     @Subscribe
     private void onNpcChanged(NpcChanged changed) {
-        if (TobNpc.isXarpusIdle(changed.getOld().getId()) && TobNpc.isXarpus(changed.getNpc().getId())) {
+        int idBefore = changed.getOld().getId();
+        int idAfter = changed.getNpc().getId();
+
+        if (TobNpc.isXarpusIdle(idBefore) && TobNpc.isXarpusP1(idAfter)) {
             startRoom();
+            return;
+        }
+
+        final int tick = getRoomTick();
+
+        if (TobNpc.isXarpusP1(idBefore) && TobNpc.isXarpus(idAfter)) {
+            xarpus = changed.getNpc();
+            phase = XarpusPhase.P2;
+            dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(xarpus), phase));
+            log.debug("Exhumes: {} ({})", tick, formattedRoomTime());
         }
     }
 }

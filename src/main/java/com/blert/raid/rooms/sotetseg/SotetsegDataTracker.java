@@ -23,15 +23,26 @@
 
 package com.blert.raid.rooms.sotetseg;
 
+import com.blert.events.SoteMazeProcEvent;
 import com.blert.raid.RaidManager;
 import com.blert.raid.TobNpc;
 import com.blert.raid.rooms.Room;
 import com.blert.raid.rooms.RoomDataTracker;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Actor;
 import net.runelite.api.Client;
+import net.runelite.api.Player;
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.client.eventbus.Subscribe;
 
+@Slf4j
 public class SotetsegDataTracker extends RoomDataTracker {
+    private static final int MAZE_TELEPORT_ANIMATION = 1816;
+
+    private final int[] mazeTicks = new int[]{-1, -1};
+    private Maze maze = Maze.MAZE_66;
+
     public SotetsegDataTracker(RaidManager manager, Client client) {
         super(manager, client, Room.SOTETSEG);
     }
@@ -42,13 +53,34 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     @Override
     protected void onTick() {
+        final int tick = getRoomTick();
+        if (mazeTicks[maze.ordinal()] == tick) {
+            // Advance to the next maze after all of the teleport animation handlers have run.
+            maze = Maze.MAZE_33;
+        }
     }
-
 
     @Subscribe
     private void onNpcChanged(NpcChanged changed) {
         if (TobNpc.isSotetsegIdle(changed.getOld().getId()) && TobNpc.isSotetseg(changed.getNpc().getId())) {
             startRoom();
+        }
+    }
+
+    @Override
+    protected void onAnimation(AnimationChanged event) {
+        Actor actor = event.getActor();
+        int animationId = actor.getAnimation();
+        if (!(actor instanceof Player) || animationId != MAZE_TELEPORT_ANIMATION) {
+            return;
+        }
+
+        if (mazeTicks[maze.ordinal()] == -1) {
+            final int tick = getRoomTick();
+
+            mazeTicks[maze.ordinal()] = tick;
+            dispatchEvent(new SoteMazeProcEvent(tick, maze));
+            log.debug("Sotetseg {} procced on tick {} {}", maze, tick, formattedRoomTime());
         }
     }
 }

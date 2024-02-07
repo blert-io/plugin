@@ -129,6 +129,11 @@ public enum TobNpc {
     XARPUS_P1_REGULAR(8339, Mode.REGULAR),
     XARPUS_P1_HARD(10771, Mode.HARD),
 
+    // Xarpus main phase and post-screech.
+    XARPUS_ENTRY(10768, 1, Mode.ENTRY, 680),
+    XARPUS_REGULAR(8340, 1, Mode.REGULAR, new int[]{3810, 4445, 5080}),
+    XARPUS_HARD(10772, 1, Mode.HARD, new int[]{4500, 5250, 6000}),
+
     // Verzik sitting at her throne prior to combat.
     VERZIK_IDLE_ENTRY(10830, Mode.ENTRY),
     VERZIK_IDLE_REGULAR(8369, Mode.REGULAR),
@@ -296,8 +301,12 @@ public enum TobNpc {
         return idMatches(id, XARPUS_IDLE_ENTRY, XARPUS_IDLE_REGULAR, XARPUS_IDLE_HARD);
     }
 
-    public static boolean isXarpus(int id) {
+    public static boolean isXarpusP1(int id) {
         return idMatches(id, XARPUS_P1_ENTRY, XARPUS_P1_REGULAR, XARPUS_P1_HARD);
+    }
+
+    public static boolean isXarpus(int id) {
+        return idMatches(id, XARPUS_ENTRY, XARPUS_REGULAR, XARPUS_HARD);
     }
 
     public static boolean isVerzikIdle(int id) {

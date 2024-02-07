@@ -2,6 +2,7 @@ package com.blert.json;
 
 import com.blert.events.*;
 import com.blert.raid.rooms.Room;
+import com.blert.raid.rooms.xarpus.XarpusPhase;
 import com.google.gson.Gson;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,6 +32,8 @@ public class Event {
     private @Nullable MaidenEntity maidenEntity = null;
     private @Nullable BloatStatus bloatStatus = null;
     private @Nullable NyloWave nyloWave = null;
+    private @Nullable SoteMaze soteMaze = null;
+    private @Nullable XarpusPhase xarpusPhase = null;
 
     public static Event fromBlert(com.blert.events.Event blertEvent) {
         Event event = new Event();
@@ -92,6 +95,14 @@ public class Event {
             case NYLO_WAVE_STALL:
                 NyloWaveStallEvent waveStall = (NyloWaveStallEvent) blertEvent;
                 event.nyloWave = new NyloWave(waveStall.getWave(), waveStall.getNyloCount(), waveStall.getNyloCap());
+                break;
+            case SOTE_MAZE_PROC:
+                SoteMazeProcEvent mazeProc = (SoteMazeProcEvent) blertEvent;
+                event.soteMaze = new SoteMaze(mazeProc.getMaze());
+                break;
+            case XARPUS_PHASE:
+                XarpusPhaseEvent xarpusPhaseEvent = (XarpusPhaseEvent) blertEvent;
+                event.xarpusPhase = xarpusPhaseEvent.getPhase();
                 break;
         }
 

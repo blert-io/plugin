@@ -21,4 +21,9 @@ public enum EventType {
     NYLO_WAVE_STALL,
     NYLO_CLEANUP_END,
     NYLO_BOSS_SPAWN,
+
+    SOTE_MAZE_PROC,
+    SOTE_MAZE_PATH,
+
+    XARPUS_PHASE,
 }
