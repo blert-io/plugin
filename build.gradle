@@ -27,7 +27,7 @@ dependencies {
     testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
 }
 
-group = 'com.blert'
+group = 'io.blert'
 version = '1.0-SNAPSHOT'
 
 tasks.withType(JavaCompile) {
