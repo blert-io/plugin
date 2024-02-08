@@ -165,9 +165,9 @@ public class RaidManager {
         // usernames (if present) occupy the following four IDs.
         final int TOB_P1_VARCSTR_ID = 330;
         for (int player = 0; player < 5; player++) {
-            String username = Text.standardize(client.getVarcStrValue(TOB_P1_VARCSTR_ID + player));
+            String username = client.getVarcStrValue(TOB_P1_VARCSTR_ID + player);
             if (!Strings.isNullOrEmpty(username)) {
-                callback.accept(player, username);
+                callback.accept(player, Text.toJagexName(username));
             }
         }
     }
@@ -275,14 +275,17 @@ public class RaidManager {
 
     private void initializeParty() {
         String localPlayer = client.getLocalPlayer().getName();
-        forEachOrb((orb, username) -> party.put(username.toLowerCase(), new Raider(username, username.equals(localPlayer))));
+        forEachOrb((orb, username) -> {
+            String normalized = Text.standardize(username);
+            party.put(normalized, new Raider(username, username.equals(localPlayer)));
+        });
     }
 
     private void updatePartyInformation() {
         // Toggle the players who are currently connected to the raid.
         party.values().forEach(r -> r.setActive(false));
         forEachOrb((orb, username) -> {
-            Raider raider = party.get(username.toLowerCase());
+            Raider raider = party.get(Text.standardize(username));
             if (raider != null) {
                 raider.setActive(true);
             }

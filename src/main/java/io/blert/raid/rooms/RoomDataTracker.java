@@ -341,7 +341,7 @@ public abstract class RoomDataTracker {
 
     private void updatePartyStatus() {
         raidManager.forEachOrb((orb, username) -> {
-            Raider raider = raidManager.getRaider(username);
+            Raider raider = raidManager.getRaider(Text.standardize(username));
 
             // ToB orb health. 0 = hide, 1-27 = health percentage (0-100%), 30 = dead.
             int orbHealth = client.getVarbitValue(Varbits.THEATRE_OF_BLOOD_ORB1 + orb);
