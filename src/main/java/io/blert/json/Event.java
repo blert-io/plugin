@@ -26,6 +26,7 @@ package io.blert.json;
 import com.google.gson.Gson;
 import io.blert.events.*;
 import io.blert.raid.rooms.Room;
+import io.blert.raid.rooms.verzik.VerzikPhase;
 import io.blert.raid.rooms.xarpus.XarpusPhase;
 import lombok.Getter;
 import lombok.Setter;
@@ -57,6 +58,7 @@ public class Event {
     private @Nullable NyloWave nyloWave = null;
     private @Nullable SoteMaze soteMaze = null;
     private @Nullable XarpusPhase xarpusPhase = null;
+    private @Nullable VerzikPhase verzikPhase = null;
 
     public static Event fromBlert(io.blert.events.Event blertEvent) {
         Event event = new Event();
@@ -126,6 +128,14 @@ public class Event {
             case XARPUS_PHASE:
                 XarpusPhaseEvent xarpusPhaseEvent = (XarpusPhaseEvent) blertEvent;
                 event.xarpusPhase = xarpusPhaseEvent.getPhase();
+                break;
+            case VERZIK_PHASE:
+                VerzikPhaseEvent verzikPhase = (VerzikPhaseEvent) blertEvent;
+                event.verzikPhase = verzikPhase.getPhase();
+                break;
+            case VERZIK_REDS_SPAWN:
+                VerzikRedsSpawnEvent verzikReds = (VerzikRedsSpawnEvent) blertEvent;
+                event.verzikPhase = verzikReds.getPhase();
                 break;
         }
 

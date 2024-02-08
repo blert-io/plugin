@@ -23,33 +23,21 @@
 
 package io.blert.events;
 
-public enum EventType {
-    RAID_START,
-    RAID_END,
-    RAID_UPDATE,
-    ROOM_STATUS,
-    PLAYER_UPDATE,
-    PLAYER_ATTACK,
-    PLAYER_DEATH,
-    NPC_UPDATE,
+import io.blert.raid.rooms.Room;
+import io.blert.raid.rooms.verzik.VerzikPhase;
 
-    MAIDEN_CRAB_SPAWN,
-    MAIDEN_CRAB_LEAK,
-    MAIDEN_BLOOD_SPLATS,
+public class VerzikRedsSpawnEvent extends Event {
+    public VerzikRedsSpawnEvent(int tick) {
+        super(EventType.VERZIK_REDS_SPAWN, Room.VERZIK, tick, null);
+    }
 
-    BLOAT_DOWN,
-    BLOAT_UP,
+    @Override
+    protected String eventDataString() {
+        return null;
+    }
 
-    NYLO_WAVE_SPAWN,
-    NYLO_WAVE_STALL,
-    NYLO_CLEANUP_END,
-    NYLO_BOSS_SPAWN,
-
-    SOTE_MAZE_PROC,
-    SOTE_MAZE_PATH,
-
-    XARPUS_PHASE,
-
-    VERZIK_PHASE,
-    VERZIK_REDS_SPAWN,
+    public VerzikPhase getPhase() {
+        // Reds only spawn during P2.
+        return VerzikPhase.P2;
+    }
 }

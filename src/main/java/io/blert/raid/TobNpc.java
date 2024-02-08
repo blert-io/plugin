@@ -139,10 +139,22 @@ public enum TobNpc {
     VERZIK_IDLE_REGULAR(8369, Mode.REGULAR),
     VERZIK_IDLE_HARD(10847, Mode.HARD),
 
-    // Verzik P1.
-    VERZIK_P1_ENTRY(10831, 1, Mode.ENTRY, 300),
-    VERZIK_P1_REGULAR(8370, 1, Mode.REGULAR, new int[]{0, 0, 0}),
-    VERZIK_P1_HARD(10848, 1, Mode.HARD, new int[]{0, 0, 0});
+    // Verzik P1, including the transition to P2.
+    VERZIK_P1_ENTRY(10831, 2, Mode.ENTRY, 240),
+    VERZIK_P1_REGULAR(8370, 2, Mode.REGULAR, new int[]{1500, 1750, 2000}),
+    VERZIK_P1_HARD(10848, 2, Mode.HARD, new int[]{1500, 1750, 2000}),
+
+    // Verzik P2, including the transition to P3.
+    VERZIK_P2_ENTRY(10834, 2, Mode.ENTRY, 320),
+    VERZIK_P2_REGULAR(8372, 2, Mode.REGULAR, new int[]{2437, 2843, 3250}),
+    VERZIK_P2_HARD(10850, 2, Mode.HARD, new int[]{2437, 2843, 3250}),
+
+    // Red crabs at Verzik.
+    VERZIK_MATOMENOS_ENTRY(10845, 1, Mode.ENTRY, 0),
+    VERZIK_MATOMENOS_REGULAR(8385, 1, Mode.REGULAR, new int[]{150, 175, 200}),
+    VERZIK_MATOMENOS_HARD(10862, 1, Mode.HARD, new int[]{150, 175, 200}),
+
+    ;
 
     @Getter
     private final int id;
@@ -315,6 +327,14 @@ public enum TobNpc {
 
     public static boolean isVerzikP1(int id) {
         return idMatches(id, VERZIK_P1_ENTRY, VERZIK_P1_REGULAR, VERZIK_P1_HARD);
+    }
+
+    public static boolean isVerzikP2(int id) {
+        return idMatches(id, VERZIK_P2_ENTRY, VERZIK_P2_REGULAR, VERZIK_P2_HARD);
+    }
+
+    public static boolean isVerzikMatomenos(int id) {
+        return idMatches(id, VERZIK_MATOMENOS_ENTRY, VERZIK_MATOMENOS_REGULAR, VERZIK_MATOMENOS_HARD);
     }
 
     public int getBaseHitpoints(int scale) {
