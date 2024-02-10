@@ -34,7 +34,6 @@ import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.NpcChanged;
-import net.runelite.client.eventbus.Subscribe;
 
 @Slf4j
 public class SotetsegDataTracker extends RoomDataTracker {
@@ -60,8 +59,8 @@ public class SotetsegDataTracker extends RoomDataTracker {
         }
     }
 
-    @Subscribe
-    private void onNpcChanged(NpcChanged changed) {
+    @Override
+    protected void onNpcChange(NpcChanged changed) {
         if (TobNpc.isSotetsegIdle(changed.getOld().getId()) && TobNpc.isSotetseg(changed.getNpc().getId())) {
             startRoom();
         }

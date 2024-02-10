@@ -21,38 +21,17 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.json;
 
-import io.blert.raid.Item;
-import io.blert.raid.PlayerAttack;
-import io.blert.raid.rooms.Room;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
+import io.blert.raid.rooms.nylocas.SpawnType;
+import lombok.AllArgsConstructor;
 
-@Getter
-public class PlayerAttackEvent extends Event {
-    private final PlayerAttack attack;
-    private final Item weapon;
-    private final String username;
-    private final int targetNpcId;
-    private final long targetRoomId;
-
-    public PlayerAttackEvent(Room room, int tick, WorldPoint point, PlayerAttack attack, Item weapon, String username, int targetNpcId, long targetRoomId) {
-        super(EventType.PLAYER_ATTACK, room, tick, point);
-        this.attack = attack;
-        this.weapon = weapon;
-        this.username = username;
-        this.targetNpcId = targetNpcId;
-        this.targetRoomId = targetRoomId;
-    }
-
-    @Override
-    protected String eventDataString() {
-        StringBuilder sb = new StringBuilder("type=" + attack);
-        if (attack.isUnknown()) {
-            sb.append("weapon=").append(attack.getWeaponId());
-        }
-        return sb.toString();
-    }
+@AllArgsConstructor
+public class Nylo {
+    private final long roomId;
+    private final long parentRoomId;
+    private final int wave;
+    private final io.blert.raid.rooms.nylocas.Nylo.Style style;
+    private final SpawnType spawnType;
+    private final boolean big;
 }
-

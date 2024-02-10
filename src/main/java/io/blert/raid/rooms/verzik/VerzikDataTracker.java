@@ -37,7 +37,6 @@ import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
-import net.runelite.client.eventbus.Subscribe;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -78,8 +77,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
     }
 
-    @Subscribe
-    private void onNpcSpawned(NpcSpawned event) {
+    @Override
+    protected void onNpcSpawn(NpcSpawned event) {
         NPC npc = event.getNpc();
         final int tick = getRoomTick();
 
@@ -93,8 +92,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
     }
 
-    @Subscribe
-    private void onNpcDespawned(NpcDespawned event) {
+    @Override
+    protected void onNpcDespawn(NpcDespawned event) {
         NPC npc = event.getNpc();
 
         if (TobNpc.isVerzikMatomenos(npc.getId())) {
@@ -102,8 +101,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
     }
 
-    @Subscribe
-    private void onNpcChanged(NpcChanged changed) {
+    @Override
+    protected void onNpcChange(NpcChanged changed) {
         int beforeId = changed.getOld().getId();
         int afterId = changed.getNpc().getId();
 

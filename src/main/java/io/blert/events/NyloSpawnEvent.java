@@ -23,36 +23,10 @@
 
 package io.blert.events;
 
-import io.blert.raid.Item;
-import io.blert.raid.PlayerAttack;
-import io.blert.raid.rooms.Room;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
+import io.blert.raid.rooms.nylocas.Nylo;
 
-@Getter
-public class PlayerAttackEvent extends Event {
-    private final PlayerAttack attack;
-    private final Item weapon;
-    private final String username;
-    private final int targetNpcId;
-    private final long targetRoomId;
-
-    public PlayerAttackEvent(Room room, int tick, WorldPoint point, PlayerAttack attack, Item weapon, String username, int targetNpcId, long targetRoomId) {
-        super(EventType.PLAYER_ATTACK, room, tick, point);
-        this.attack = attack;
-        this.weapon = weapon;
-        this.username = username;
-        this.targetNpcId = targetNpcId;
-        this.targetRoomId = targetRoomId;
-    }
-
-    @Override
-    protected String eventDataString() {
-        StringBuilder sb = new StringBuilder("type=" + attack);
-        if (attack.isUnknown()) {
-            sb.append("weapon=").append(attack.getWeaponId());
-        }
-        return sb.toString();
+public class NyloSpawnEvent extends NyloEvent {
+    public NyloSpawnEvent(int tick, Nylo nylo) {
+        super(EventType.NYLO_SPAWN, tick, nylo.getSpawnPoint(), nylo);
     }
 }
-

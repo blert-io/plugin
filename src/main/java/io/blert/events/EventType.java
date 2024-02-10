@@ -40,6 +40,8 @@ public enum EventType {
     BLOAT_DOWN,
     BLOAT_UP,
 
+    NYLO_SPAWN,
+    NYLO_DEATH,
     NYLO_WAVE_SPAWN,
     NYLO_WAVE_STALL,
     NYLO_CLEANUP_END,

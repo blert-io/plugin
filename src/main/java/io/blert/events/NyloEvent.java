@@ -23,36 +23,45 @@
 
 package io.blert.events;
 
-import io.blert.raid.Item;
-import io.blert.raid.PlayerAttack;
 import io.blert.raid.rooms.Room;
+import io.blert.raid.rooms.nylocas.Nylo;
+import io.blert.raid.rooms.nylocas.SpawnType;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
+/**
+ * Base class for events containing information about a {@link Nylo}.
+ */
 @Getter
-public class PlayerAttackEvent extends Event {
-    private final PlayerAttack attack;
-    private final Item weapon;
-    private final String username;
-    private final int targetNpcId;
-    private final long targetRoomId;
+public abstract class NyloEvent extends Event {
+    protected final long roomId;
+    protected final long parentRoomId;
+    protected final int wave;
+    protected final Nylo.Style style;
+    protected final SpawnType spawnType;
+    protected final boolean big;
 
-    public PlayerAttackEvent(Room room, int tick, WorldPoint point, PlayerAttack attack, Item weapon, String username, int targetNpcId, long targetRoomId) {
-        super(EventType.PLAYER_ATTACK, room, tick, point);
-        this.attack = attack;
-        this.weapon = weapon;
-        this.username = username;
-        this.targetNpcId = targetNpcId;
-        this.targetRoomId = targetRoomId;
+    protected NyloEvent(EventType type, int tick, WorldPoint point, Nylo nylo) {
+        super(type, Room.NYLOCAS, tick, point);
+        this.roomId = nylo.getRoomId();
+        this.parentRoomId = nylo.getParent().map(Nylo::getRoomId).orElse(0L);
+        this.wave = nylo.getWave();
+        this.style = nylo.getStyle();
+        this.spawnType = nylo.getSpawnType();
+        this.big = nylo.isBig();
     }
 
     @Override
     protected String eventDataString() {
-        StringBuilder sb = new StringBuilder("type=" + attack);
-        if (attack.isUnknown()) {
-            sb.append("weapon=").append(attack.getWeaponId());
+        StringBuilder sb = new StringBuilder();
+        sb.append("roomId=").append(roomId);
+        if (parentRoomId != 0) {
+            sb.append(", parentRoomId=").append(parentRoomId);
         }
+        sb.append(", wave=").append(wave);
+        sb.append(", style=").append(style);
+        sb.append(", spawnType=").append(spawnType);
+        sb.append(", big=").append(big);
         return sb.toString();
     }
 }
-

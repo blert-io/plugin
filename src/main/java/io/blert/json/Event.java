@@ -55,6 +55,7 @@ public class Event {
     private @Nullable Attack attack = null;
     private @Nullable MaidenEntity maidenEntity = null;
     private @Nullable BloatStatus bloatStatus = null;
+    private @Nullable Nylo nylo = null;
     private @Nullable NyloWave nyloWave = null;
     private @Nullable SoteMaze soteMaze = null;
     private @Nullable XarpusPhase xarpusPhase = null;
@@ -112,6 +113,12 @@ public class Event {
             case BLOAT_DOWN:
                 BloatDownEvent bloatDownEvent = (BloatDownEvent) blertEvent;
                 event.bloatStatus = new BloatStatus(bloatDownEvent.getUptime());
+                break;
+            case NYLO_SPAWN:
+            case NYLO_DEATH:
+                NyloEvent nyloEvent = (NyloEvent) blertEvent;
+                event.nylo = new Nylo(nyloEvent.getRoomId(), nyloEvent.getParentRoomId(), nyloEvent.getWave(),
+                        nyloEvent.getStyle(), nyloEvent.getSpawnType(), nyloEvent.isBig());
                 break;
             case NYLO_WAVE_SPAWN:
                 NyloWaveSpawnEvent waveSpawn = (NyloWaveSpawnEvent) blertEvent;

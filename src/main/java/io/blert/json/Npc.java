@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 @Getter
 public class Npc {
     final private int id;
-    final private int roomId;
+    final private long roomId;
     @Setter
     private @Nullable Hitpoints hitpoints = null;
 }

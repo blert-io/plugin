@@ -30,19 +30,15 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.HitsplatApplied;
-import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -66,10 +62,12 @@ public abstract class RoomDataTracker {
     private int startClientTick;
     private boolean startingTickAccurate;
 
+    private final Map<Integer, Long> npcRoomIds = new HashMap<>();
+
     /**
-     * Set of NPC IDs for which an NpcUpdateEvent has been sent on the current tick.
+     * Set of NPC room IDs for which an NpcUpdateEvent has been sent on the current tick.
      */
-    private final Set<Integer> npcUpdatesThisTick = new HashSet<>();
+    private final Set<Long> npcUpdatesThisTick = new HashSet<>();
 
     private final SpecialAttackTracker specialAttackTracker = new SpecialAttackTracker(this::onSpecialAttack);
 
@@ -77,6 +75,7 @@ public abstract class RoomDataTracker {
         NOT_STARTED,
         IN_PROGRESS,
         COMPLETED,
+        TERMINATING,
     }
 
     protected RoomDataTracker(RaidManager raidManager, Client client, Room room, boolean startOnEntry) {
@@ -127,6 +126,13 @@ public abstract class RoomDataTracker {
             }
         });
 
+        // Assign a room ID to every existing NPC when the room started.
+        client.getNpcs().forEach(npc -> {
+            if (!npcRoomIds.containsKey(npc.hashCode())) {
+                npcRoomIds.put(npc.hashCode(), npcRoomId(0, npc.getId(), getWorldLocation(npc)));
+            }
+        });
+
         dispatchEvent(new RoomStatusEvent(room, 0, RoomStatusEvent.Status.STARTED));
 
         onRoomStart();
@@ -150,6 +156,13 @@ public abstract class RoomDataTracker {
                 ? RoomStatusEvent.Status.WIPED
                 : RoomStatusEvent.Status.COMPLETED;
         dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus));
+    }
+
+    public void terminate() {
+        if (state == State.IN_PROGRESS) {
+            finishRoom();
+        }
+        state = State.TERMINATING;
     }
 
     public void checkEntry() {
@@ -202,6 +215,10 @@ public abstract class RoomDataTracker {
         return state == State.NOT_STARTED;
     }
 
+    public boolean terminating() {
+        return state == State.TERMINATING;
+    }
+
     /**
      * Checks if any players are located within the boundaries of the boss room.
      *
@@ -225,6 +242,51 @@ public abstract class RoomDataTracker {
      * Gathers information about the room and dispatches appropriate events. Invoked every tick.
      */
     protected abstract void onTick();
+
+    /**
+     * Implementation-specific equivalent of the {@code onNpcSpawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onNpcSpawn(NpcSpawned event) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onNpcDespawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onNpcDespawn(NpcDespawned event) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onNpcChanged} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onNpcChange(NpcChanged event) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onGameObjectSpawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGameObjectSpawn(GameObjectSpawned event) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onGameObjectDespawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGameObjectDespawn(GameObjectDespawned event) {
+    }
 
     /**
      * Implementation-specific equivalent of the {@code onAnimationChanged} Runelite event handler.
@@ -251,12 +313,66 @@ public abstract class RoomDataTracker {
         raidManager.dispatchEvent(event);
     }
 
+    protected long getRoomId(@NotNull NPC npc) {
+        return npcRoomIds.get(npc.hashCode());
+    }
+
     protected WorldPoint getWorldLocation(@NotNull Actor actor) {
-        return WorldPoint.fromLocalInstance(client, actor.getLocalLocation());
+        LocalPoint local = actor instanceof NPC ? Utils.getNpcSouthwestTile((NPC) actor) : actor.getLocalLocation();
+        return WorldPoint.fromLocalInstance(client, local);
     }
 
     @Subscribe
-    private void onChatMessage(ChatMessage chatMessage) {
+    public final void onNpcSpawned(NpcSpawned event) {
+        if (terminating()) {
+            return;
+        }
+
+        NPC npc = event.getNpc();
+        WorldPoint spawnPoint = getWorldLocation(npc);
+        if (!npcRoomIds.containsKey(npc.hashCode())) {
+            npcRoomIds.put(npc.hashCode(), npcRoomId(getRoomTick(), npc.getId(), spawnPoint));
+        }
+
+        onNpcSpawn(event);
+    }
+
+    @Subscribe
+    protected final void onNpcDespawned(NpcDespawned event) {
+        if (terminating()) {
+            return;
+        }
+
+        NPC npc = event.getNpc();
+
+        onNpcDespawn(event);
+
+        npcRoomIds.remove(npc.hashCode());
+    }
+
+    @Subscribe
+    protected final void onNpcChanged(NpcChanged event) {
+        if (!terminating()) {
+            onNpcChange(event);
+        }
+    }
+
+    @Subscribe
+    protected final void onGameObjectSpawned(GameObjectSpawned event) {
+        if (!terminating()) {
+            onGameObjectSpawn(event);
+        }
+    }
+
+    @Subscribe
+    protected final void onGameObjectDespawned(GameObjectDespawned event) {
+        if (!terminating()) {
+            onGameObjectDespawn(event);
+        }
+    }
+
+    @Subscribe
+    protected final void onChatMessage(ChatMessage chatMessage) {
         if (state != State.IN_PROGRESS || chatMessage.getType() != ChatMessageType.GAMEMESSAGE) {
             return;
         }
@@ -269,7 +385,7 @@ public abstract class RoomDataTracker {
     }
 
     @Subscribe
-    private void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
+    protected final void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
         if (state != State.IN_PROGRESS) {
             return;
         }
@@ -284,7 +400,7 @@ public abstract class RoomDataTracker {
     }
 
     @Subscribe
-    private void onVarbitChanged(VarbitChanged varbitChanged) {
+    protected final void onVarbitChanged(VarbitChanged varbitChanged) {
         if (state != State.IN_PROGRESS) {
             return;
         }
@@ -318,7 +434,7 @@ public abstract class RoomDataTracker {
     }
 
     @Subscribe
-    private void onAnimationChanged(AnimationChanged event) {
+    protected final void onAnimationChanged(AnimationChanged event) {
         if (state != State.IN_PROGRESS) {
             return;
         }
@@ -418,8 +534,10 @@ public abstract class RoomDataTracker {
 
         maybeAttack.ifPresent(attack -> {
             raider.recordAttack(tick, attack);
-            dispatchEvent(new PlayerAttackEvent(room, tick, point, attack,
-                    weapon.orElse(null), player.getName(), target.orElse(null)));
+            int targetNpcId = target.map(NPC::getId).orElse(0);
+            long targetRoomId = target.map(this::getRoomId).orElse(0L);
+            dispatchEvent(new PlayerAttackEvent(room, tick, point, attack, weapon.orElse(null),
+                    player.getName(), targetNpcId, targetRoomId));
         });
     }
 
@@ -456,8 +574,8 @@ public abstract class RoomDataTracker {
             hitpoints = Hitpoints.fromRatio(hpRatio, tobNpc.getBaseHitpoints(raidManager.getRaidScale()));
         }
 
-        dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, npc.hashCode(), npc.getId(), hitpoints));
-        npcUpdatesThisTick.add(npc.hashCode());
+        dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, getRoomId(npc), npc.getId(), hitpoints));
+        npcUpdatesThisTick.add(getRoomId(npc));
     }
 
     protected String formattedRoomTime() {
@@ -467,5 +585,21 @@ public abstract class RoomDataTracker {
         int deciseconds = (milliseconds % 1000) / 100;
 
         return String.format("%d:%02d.%d", minutes, seconds, deciseconds);
+    }
+
+    /**
+     * Creates a deterministic unique identifier for each NPC spawned in a room.
+     *
+     * @param spawnTick     Tick on which the NPC spawned.
+     * @param npcId         ID of the spawned NPC.
+     * @param spawnLocation Location at which the NPC spawned.
+     * @return A unique ID for the NPC within the room.
+     */
+    private static long npcRoomId(int spawnTick, int npcId, WorldPoint spawnLocation) {
+        long x = spawnLocation.getRegionX() & 0x3ff;  // 10
+        long y = ((long) spawnLocation.getRegionY() & 0x3ff);  // 10
+        long tick = ((long) spawnTick & 0x7ff);  // 11
+        long id = ((long) npcId & 0x1fffff);  // 21
+        return x | (y << 10) | (tick << 20) | (id << 31);
     }
 }

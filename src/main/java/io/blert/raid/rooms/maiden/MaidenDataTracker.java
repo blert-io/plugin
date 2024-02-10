@@ -37,7 +37,6 @@ import net.runelite.api.GraphicsObject;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
-import net.runelite.client.eventbus.Subscribe;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -94,7 +93,7 @@ public class MaidenDataTracker extends RoomDataTracker {
             Hitpoints hitpoints = crab.getHitpoints();
 
             dispatchNpcUpdate(new NpcUpdateEvent(
-                    Room.MAIDEN, getRoomTick(), point, crabNpc.hashCode(), crabNpc.getId(), new Hitpoints(hitpoints)));
+                    Room.MAIDEN, getRoomTick(), point, getRoomId(crabNpc), crabNpc.getId(), new Hitpoints(hitpoints)));
 
             if (maiden != null) {
                 if (!crabNpc.isDead() && crabNpc.getWorldArea().distanceTo2D(maiden.getWorldArea()) <= 1) {
@@ -104,8 +103,8 @@ public class MaidenDataTracker extends RoomDataTracker {
         }
     }
 
-    @Subscribe
-    private void onGameObjectSpawned(GameObjectSpawned spawned) {
+    @Override
+    protected void onGameObjectSpawn(GameObjectSpawned spawned) {
         // The blood trails left by blood spawns are game objects with stable hash codes, so store them in a set when
         // they spawn and remove them on de-spawn. The `onTick` handler will dispatch events with the active set of
         // blood trails.
@@ -120,16 +119,16 @@ public class MaidenDataTracker extends RoomDataTracker {
         }
     }
 
-    @Subscribe
-    private void onGameObjectDespawned(GameObjectDespawned despawned) {
+    @Override
+    protected void onGameObjectDespawn(GameObjectDespawned despawned) {
         GameObject object = despawned.getGameObject();
         if (object.getId() == MAIDEN_BLOOD_TRAIL_OBJECT_ID) {
             bloodTrails.remove(object);
         }
     }
 
-    @Subscribe
-    private void onNpcSpawned(NpcSpawned spawned) {
+    @Override
+    protected void onNpcSpawn(NpcSpawned spawned) {
         NPC npc = spawned.getNpc();
 
         if (TobNpc.isMaiden(npc.getId())) {
@@ -144,8 +143,8 @@ public class MaidenDataTracker extends RoomDataTracker {
         }
     }
 
-    @Subscribe
-    private void onNpcDespawned(NpcDespawned despawned) {
+    @Override
+    protected void onNpcDespawn(NpcDespawned despawned) {
         NPC npc = despawned.getNpc();
         crabs.remove(npc.hashCode());
     }

@@ -59,6 +59,7 @@ public enum PlayerAttack {
     SHADOW_BARRAGE(ItemID.TUMEKENS_SHADOW, 1979, 5),  // please don't tob ever again
     SOTD_BARRAGE(ItemID.STAFF_OF_THE_DEAD, 1979, 5),
     SWIFT(ItemID.SWIFT_BLADE, new int[]{390, 8288}, 3),
+    TENT_WHIP(new int[]{ItemID.ABYSSAL_TENTACLE, ItemID.ABYSSAL_TENTACLE_OR}, 1658, 4),
     // TOXIC_TRIDENT must come before TOXIC_TRIDENT_BARRAGE as it is the default assumption when the animation is unknown.
     TOXIC_TRIDENT(new int[]{ItemID.TRIDENT_OF_THE_SWAMP, ItemID.TRIDENT_OF_THE_SWAMP_E}, 1167, 4),
     TOXIC_TRIDENT_BARRAGE(new int[]{ItemID.TRIDENT_OF_THE_SWAMP, ItemID.TRIDENT_OF_THE_SWAMP_E}, 1979, 5),

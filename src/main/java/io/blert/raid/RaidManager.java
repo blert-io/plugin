@@ -41,6 +41,7 @@ import net.runelite.api.Player;
 import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
@@ -197,15 +198,21 @@ public class RaidManager {
         party.clear();
     }
 
-    private void updateLocation() {
+    /**
+     * Checks the location of the logged-in player, initializing the appropriate {@link RoomDataTracker} if a new room
+     * has been entered.
+     *
+     * @return {@code true} if the player's location has changed from the last recorded one.
+     */
+    private boolean updateLocation() {
         Player player = client.getLocalPlayer();
         if (player == null) {
-            return;
+            return false;
         }
 
         Location loc = Location.fromWorldPoint(WorldPoint.fromLocalInstance(client, player.getLocalLocation()));
         if (location == loc) {
-            return;
+            return false;
         }
 
         location = loc;
@@ -229,6 +236,16 @@ public class RaidManager {
 
         if (roomDataTracker != null) {
             eventBus.register(roomDataTracker);
+        }
+
+        return true;
+    }
+
+    @Subscribe(priority = 10)
+    private void onNpcSpawned(NpcSpawned npcSpawned) {
+        if (updateLocation() && roomDataTracker != null) {
+            // When the room changes, the event must be manually forwarded to the new `roomDataTracker`.
+            roomDataTracker.onNpcSpawned(npcSpawned);
         }
     }
 
@@ -259,8 +276,10 @@ public class RaidManager {
         }
     }
 
-    @Subscribe
+    @Subscribe(priority = 10)
     private void onChatMessage(ChatMessage message) {
+        updateLocation();
+
         if (message.getType() != ChatMessageType.GAMEMESSAGE) {
             return;
         }
@@ -294,7 +313,7 @@ public class RaidManager {
 
     private void clearRoomDataTracker() {
         if (roomDataTracker != null) {
-            roomDataTracker.finishRoom();
+            roomDataTracker.terminate();
             eventBus.unregister(roomDataTracker);
             roomDataTracker = null;
         }

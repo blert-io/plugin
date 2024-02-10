@@ -33,12 +33,12 @@ import java.util.Optional;
 
 public class NpcUpdateEvent extends Event {
     @Getter
-    private final int roomId;
+    private final long roomId;
     @Getter
     private final int npcId;
     private final @Nullable Hitpoints hitpoints;
 
-    public NpcUpdateEvent(Room room, int tick, WorldPoint point, int roomId, int npcId, @Nullable Hitpoints hitpoints) {
+    public NpcUpdateEvent(Room room, int tick, WorldPoint point, long roomId, int npcId, @Nullable Hitpoints hitpoints) {
         super(EventType.NPC_UPDATE, room, tick, point);
         this.roomId = roomId;
         this.npcId = npcId;
@@ -51,6 +51,6 @@ public class NpcUpdateEvent extends Event {
 
     @Override
     protected String eventDataString() {
-        return "npc=" + npcId;
+        return "npc=" + roomId;
     }
 }

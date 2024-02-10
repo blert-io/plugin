@@ -32,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.events.NpcChanged;
-import net.runelite.client.eventbus.Subscribe;
 
 @Slf4j
 public class XarpusDataTracker extends RoomDataTracker {
@@ -61,8 +60,8 @@ public class XarpusDataTracker extends RoomDataTracker {
 
     }
 
-    @Subscribe
-    private void onNpcChanged(NpcChanged changed) {
+    @Override
+    protected void onNpcChange(NpcChanged changed) {
         int idBefore = changed.getOld().getId();
         int idAfter = changed.getNpc().getId();
 

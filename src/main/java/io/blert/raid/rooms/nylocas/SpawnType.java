@@ -25,7 +25,12 @@ package io.blert.raid.rooms.nylocas;
 
 import net.runelite.api.coords.WorldPoint;
 
-public class SpawnPoint {
+public enum SpawnType {
+    WEST,
+    SOUTH,
+    EAST,
+    SPLIT;
+
     private static final WorldPoint EAST_LANE_NORTH = new WorldPoint(3310, 4249, 0);
     private static final WorldPoint EAST_LANE_SOUTH = new WorldPoint(3310, 4248, 0);
     private static final WorldPoint EAST_LANE_SOUTHWEST = new WorldPoint(3309, 4248, 0);  // east bigs
@@ -34,9 +39,25 @@ public class SpawnPoint {
     private static final WorldPoint SOUTH_LANE_WEST = new WorldPoint(3295, 4233, 0);
     private static final WorldPoint SOUTH_LANE_EAST = new WorldPoint(3296, 4233, 0);
 
-    public static boolean isNyloLaneSpawn(WorldPoint point) {
-        return point.equals(EAST_LANE_NORTH) || point.equals(EAST_LANE_SOUTH) || point.equals(EAST_LANE_SOUTHWEST)
-                || point.equals(WEST_LANE_NORTH) || point.equals(WEST_LANE_SOUTH)
-                || point.equals(SOUTH_LANE_WEST) || point.equals(SOUTH_LANE_EAST);
+    public static SpawnType fromWorldPoint(WorldPoint point) {
+        if (point.equals(EAST_LANE_NORTH) || point.equals(EAST_LANE_SOUTH) || point.equals(EAST_LANE_SOUTHWEST)) {
+            return EAST;
+        }
+        if (point.equals(WEST_LANE_NORTH) || point.equals(WEST_LANE_SOUTH)) {
+            return WEST;
+        }
+        if (point.equals(SOUTH_LANE_WEST) || point.equals(SOUTH_LANE_EAST)) {
+            return SOUTH;
+        }
+
+        return SPLIT;
+    }
+
+    public boolean isSplit() {
+        return this == SPLIT;
+    }
+
+    public boolean isLaneSpawn() {
+        return !isSplit();
     }
 }
