@@ -43,6 +43,10 @@ public class Hitpoints extends SkillLevel {
         super(Skill.HITPOINTS, other.current, other.base);
     }
 
+    public Hitpoints(TobNpc tobNpc, int scale) {
+        this(tobNpc.getBaseHitpoints(scale));
+    }
+
     public double percentage() {
         return current / (double) base * 100.0;
     }

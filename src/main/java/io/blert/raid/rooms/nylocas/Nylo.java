@@ -25,6 +25,7 @@ package io.blert.raid.rooms.nylocas;
 
 import io.blert.raid.Hitpoints;
 import io.blert.raid.TobNpc;
+import io.blert.raid.rooms.RoomNpc;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 
 @Slf4j
-public class Nylo {
+public class Nylo extends RoomNpc {
     public enum Style {
         MELEE,
         RANGE,
@@ -54,13 +55,8 @@ public class Nylo {
         }
     }
 
-    @Getter
-    private final @NotNull NPC npc;
     @Setter
     private @Nullable Nylo parent;
-    @Getter
-    private final long roomId;
-
     @Getter
     private final SpawnType spawnType;
     @Getter
@@ -78,13 +74,10 @@ public class Nylo {
     private WorldPoint deathPoint;
     private int deathTick;
 
-    @Getter
-    private final Hitpoints hitpoints;
-
-    public Nylo(@NotNull NPC npc, long roomId, WorldPoint spawnPoint, int spawnTick, int wave, int baseHitpoints) {
-        this.npc = npc;
+    public Nylo(@NotNull NPC npc, TobNpc tobNpc, long roomId, WorldPoint spawnPoint,
+                int spawnTick, int wave, int baseHitpoints) {
+        super(npc, tobNpc, roomId, new Hitpoints(baseHitpoints));
         this.parent = null;
-        this.roomId = roomId;
         this.spawnType = SpawnType.fromWorldPoint(spawnPoint);
         this.spawnPoint = spawnPoint;
         this.spawnTick = spawnTick;
@@ -92,7 +85,6 @@ public class Nylo {
         this.wave = wave;
         this.big = npc.getComposition().getSize() > 1;
         this.deathTick = -1;
-        this.hitpoints = new Hitpoints(baseHitpoints);
     }
 
     public boolean isSplit() {

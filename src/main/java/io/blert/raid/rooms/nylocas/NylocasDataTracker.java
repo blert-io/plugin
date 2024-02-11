@@ -25,18 +25,18 @@ package io.blert.raid.rooms.nylocas;
 
 import com.google.common.collect.ImmutableSet;
 import io.blert.events.*;
+import io.blert.raid.Hitpoints;
 import io.blert.raid.Mode;
 import io.blert.raid.RaidManager;
 import io.blert.raid.TobNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
+import io.blert.raid.rooms.RoomNpc;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.NullNpcID;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
@@ -58,8 +58,8 @@ public class NylocasDataTracker extends RoomDataTracker {
     private final int[] waveSpawnTicks = new int[LAST_NYLO_WAVE + 1];
     private int bossSpawnTick;
 
-    private final Map<Long, Nylo> nylosInRoom = new HashMap<>();
-    private @Nullable NPC nyloPrince = null;
+    private final Map<Integer, Nylo> nylosInRoom = new HashMap<>();
+    private @Nullable NyloBoss nyloBoss = null;
     private final List<Nylo> bigDeathsThisTick = new ArrayList<>();
 
     private static final ImmutableSet<Integer> NYLOCAS_PILLAR_NPC_IDS = ImmutableSet.of(
@@ -75,7 +75,7 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     private int roomNyloCount() {
-        return nylosInRoom.size() + (nyloPrince != null ? 3 : 0);
+        return nylosInRoom.size() + ((nyloBoss != null && nyloBoss.isPrince()) ? 3 : 0);
     }
 
     private int waveCap() {
@@ -112,50 +112,87 @@ public class NylocasDataTracker extends RoomDataTracker {
 
         assignParentsToSplits();
 
-        nylosInRoom.forEach((roomId, nylo) -> {
-            if (nylo.getSpawnTick() == tick) {
-                dispatchEvent(new NyloSpawnEvent(tick, nylo));
-            }
-
-            NPC npc = nylo.getNpc();
-            dispatchNpcUpdate(
-                    new NpcUpdateEvent(getRoom(), tick, getWorldLocation(npc), roomId, npc.getId(), nylo.getHitpoints()));
-        });
+        nylosInRoom.values().stream()
+                .filter(nylo -> nylo.getSpawnTick() == tick)
+                .forEach(nylo -> dispatchEvent(new NyloSpawnEvent(tick, nylo)));
 
         bigDeathsThisTick.clear();
     }
 
     @Override
-    protected void onNpcSpawn(NpcSpawned spawned) {
+    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned spawned) {
         NPC npc = spawned.getNpc();
 
         if (NYLOCAS_PILLAR_NPC_IDS.contains(npc.getId())) {
             startRoom();
-            return;
+            return Optional.empty();
         }
 
         if (TobNpc.isNylocas(npc.getId())) {
-            handleNylocasSpawn(npc);
-        } else if (TobNpc.isNylocasPrinkipas(npc.getId())) {
-            nyloPrince = npc;
-        } else if (TobNpc.isNylocasVasilias(npc.getId())) {
-            handleBossSpawn(npc);
+            return handleNylocasSpawn(npc);
         }
+
+        Optional<TobNpc> maybeNpc = TobNpc.withId(npc.getId());
+        if (maybeNpc.isEmpty()) {
+            return Optional.empty();
+        }
+        TobNpc tobNpc = maybeNpc.get();
+
+        if (TobNpc.isNylocasPrinkipas(tobNpc.getId())) {
+            long roomId = generateRoomId(npc);
+            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            return Optional.of(nyloBoss);
+        }
+
+        if (TobNpc.isNylocasVasilias(tobNpc.getId())) {
+            // Two spawn events are sent out for the Nylo king: one when it first drops down, and one when the fight
+            // actually starts. Only generate a new room ID for the former.
+            boolean bossAlreadySpawned = nyloBoss != null && !nyloBoss.isPrince();
+
+            long roomId;
+            if (bossAlreadySpawned) {
+                roomId = nyloBoss.getRoomId();
+            } else {
+                handleBossSpawn(npc);
+                roomId = generateRoomId(npc);
+            }
+
+            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            return Optional.of(nyloBoss);
+        }
+
+        return Optional.empty();
     }
 
     @Override
-    protected void onNpcDespawn(NpcDespawned despawned) {
+    protected boolean onNpcDespawn(NpcDespawned despawned, RoomNpc roomNpc) {
         NPC npc = despawned.getNpc();
-        if (TobNpc.isNylocasPrinkipas(npc.getId())) {
-            nyloPrince = null;
-        } else if (!TobNpc.isNylocas(npc.getId())) {
-            return;
+
+        if (TobNpc.isDroppingNyloBoss(npc.getId())) {
+            // A dropping boss despawning is not a true despawn; it will be replaced by the actual boss.
+            return false;
         }
 
-        Nylo nylo = nylosInRoom.remove(getRoomId(npc));
-        if (nylo == null) {
-            return;
+        if (TobNpc.isNylocasPrinkipas(npc.getId())) {
+            nyloBoss = null;
+            checkCleanupComplete();
+            return true;
         }
+
+        if (roomNpc == nyloBoss) {
+            nyloBoss = null;
+            return true;
+        }
+
+        if (!TobNpc.isNylocas(npc.getId())) {
+            return false;
+        }
+
+        Nylo nylo = nylosInRoom.remove(npc.hashCode());
+        if (nylo == null) {
+            return false;
+        }
+        assert nylo == roomNpc;
 
         final int tick = getRoomTick();
 
@@ -166,30 +203,14 @@ public class NylocasDataTracker extends RoomDataTracker {
 
         dispatchEvent(new NyloDeathEvent(tick, nylo));
 
-        if (currentWave == LAST_NYLO_WAVE && nylosInRoom.isEmpty() && (nyloPrince == null || nyloPrince.isDead())) {
-            dispatchEvent(new NyloCleanupEndEvent(tick));
-            log.debug("Cleanup: {} ({})", tick, formattedRoomTime());
-        }
+        checkCleanupComplete();
+        return true;
     }
 
-    @Override
-    protected void onHitsplat(HitsplatApplied event) {
-        Actor actor = event.getActor();
-        if (!(actor instanceof NPC)) {
-            return;
-        }
-
-        NPC npc = (NPC) actor;
-        Nylo nylo = nylosInRoom.get(getRoomId(npc));
-        if (nylo != null) {
-            nylo.getHitpoints().drain(event.getHitsplat().getAmount());
-        }
-    }
-
-    private void handleNylocasSpawn(NPC npc) {
+    private Optional<Nylo> handleNylocasSpawn(NPC npc) {
         Optional<TobNpc> tobNpc = TobNpc.withId(npc.getId());
         if (tobNpc.isEmpty()) {
-            return;
+            return Optional.empty();
         }
 
         final int tick = getRoomTick();
@@ -201,10 +222,10 @@ public class NylocasDataTracker extends RoomDataTracker {
             }
         }
 
-        long roomId = getRoomId(npc);
-
-        Nylo nylo = new Nylo(npc, roomId, point, tick, currentWave, tobNpc.get().getBaseHitpoints(raidManager.getRaidScale()));
-        nylosInRoom.put(roomId, nylo);
+        Nylo nylo = new Nylo(npc, tobNpc.get(), generateRoomId(npc), point, tick,
+                currentWave, tobNpc.get().getBaseHitpoints(raidManager.getRaidScale()));
+        nylosInRoom.put(npc.hashCode(), nylo);
+        return Optional.of(nylo);
     }
 
     private void handleWaveSpawn(int tick) {
@@ -246,5 +267,13 @@ public class NylocasDataTracker extends RoomDataTracker {
                         .filter(big -> big.isPossibleParentOf(nylo))
                         .findFirst()
                         .ifPresent(nylo::setParent));
+    }
+
+    private void checkCleanupComplete() {
+        boolean princeAlive = nyloBoss != null && nyloBoss.isPrince() && !nyloBoss.getNpc().isDead();
+        if (currentWave == LAST_NYLO_WAVE && nylosInRoom.isEmpty() && !princeAlive) {
+            dispatchEvent(new NyloCleanupEndEvent(getRoomTick()));
+            log.debug("Cleanup: {} ({})", getRoomTick(), formattedRoomTime());
+        }
     }
 }

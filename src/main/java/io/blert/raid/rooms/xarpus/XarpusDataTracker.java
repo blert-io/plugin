@@ -24,20 +24,28 @@
 package io.blert.raid.rooms.xarpus;
 
 import io.blert.events.XarpusPhaseEvent;
+import io.blert.raid.Hitpoints;
 import io.blert.raid.RaidManager;
 import io.blert.raid.TobNpc;
+import io.blert.raid.rooms.BasicRoomNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
+import io.blert.raid.rooms.RoomNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.events.NpcChanged;
+import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.NpcSpawned;
+
+import javax.annotation.Nullable;
+import java.util.Optional;
 
 @Slf4j
 public class XarpusDataTracker extends RoomDataTracker {
 
     private XarpusPhase phase;
-    private NPC xarpus = null;
+    private @Nullable BasicRoomNpc xarpus = null;
 
     public XarpusDataTracker(RaidManager manager, Client client) {
         super(manager, client, Room.XARPUS);
@@ -52,12 +60,31 @@ public class XarpusDataTracker extends RoomDataTracker {
     protected void onTick() {
         final int tick = getRoomTick();
 
-        if (xarpus != null && xarpus.getOverheadText() != null && phase != XarpusPhase.P3) {
+        if (xarpus != null && xarpus.getNpc().getOverheadText() != null && phase != XarpusPhase.P3) {
             phase = XarpusPhase.P3;
-            dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(xarpus), phase));
+            dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(xarpus.getNpc()), phase));
             log.debug("Screech: {} ({})", tick, formattedRoomTime());
         }
 
+    }
+
+    @Override
+    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event) {
+        NPC npc = event.getNpc();
+
+        Optional<TobNpc> maybeXarpus = TobNpc.withId(npc.getId()).filter(TobNpc::isAnyXarpus);
+        if (maybeXarpus.isPresent()) {
+            xarpus = new BasicRoomNpc(npc, maybeXarpus.get(), generateRoomId(npc),
+                    new Hitpoints(maybeXarpus.get(), raidManager.getRaidScale()));
+            return Optional.of(xarpus);
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
+        return roomNpc == xarpus;
     }
 
     @Override
@@ -73,9 +100,8 @@ public class XarpusDataTracker extends RoomDataTracker {
         final int tick = getRoomTick();
 
         if (TobNpc.isXarpusP1(idBefore) && TobNpc.isXarpus(idAfter)) {
-            xarpus = changed.getNpc();
             phase = XarpusPhase.P2;
-            dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(xarpus), phase));
+            dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(changed.getNpc()), phase));
             log.debug("Exhumes: {} ({})", tick, formattedRoomTime());
         }
     }

@@ -21,29 +21,21 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.raid.rooms.nylocas;
 
 import io.blert.raid.Hitpoints;
-import io.blert.raid.rooms.Room;
+import io.blert.raid.TobNpc;
 import io.blert.raid.rooms.RoomNpc;
 import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.NPC;
+import org.jetbrains.annotations.NotNull;
 
 @Getter
-public class NpcUpdateEvent extends Event {
-    private final long roomId;
-    private final int npcId;
-    private final Hitpoints hitpoints;
+public class NyloBoss extends RoomNpc {
+    private final boolean prince;
 
-    public NpcUpdateEvent(Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
-        super(EventType.NPC_UPDATE, room, tick, point);
-        this.roomId = roomNpc.getRoomId();
-        this.npcId = roomNpc.getNpcId();
-        this.hitpoints = roomNpc.getHitpoints();
-    }
-
-    @Override
-    protected String eventDataString() {
-        return "npc=" + roomId;
+    protected NyloBoss(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
+        super(npc, tobNpc, roomId, hitpoints);
+        this.prince = TobNpc.isNylocasPrinkipas(tobNpc.getId());
     }
 }

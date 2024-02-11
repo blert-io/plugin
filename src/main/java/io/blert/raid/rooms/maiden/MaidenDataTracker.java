@@ -26,17 +26,21 @@ package io.blert.raid.rooms.maiden;
 import io.blert.events.MaidenBloodSplatsEvent;
 import io.blert.events.MaidenCrabLeakEvent;
 import io.blert.events.MaidenCrabSpawnEvent;
-import io.blert.events.NpcUpdateEvent;
 import io.blert.raid.*;
+import io.blert.raid.rooms.BasicRoomNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
+import io.blert.raid.rooms.RoomNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.GraphicsObject;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.*;
+import net.runelite.api.events.GameObjectDespawned;
+import net.runelite.api.events.GameObjectSpawned;
+import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.NpcSpawned;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -50,7 +54,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     private CrabSpawn currentSpawn = CrabSpawn.SEVENTIES;
     private final int[] spawnTicks = new int[3];
 
-    private @Nullable NPC maiden = null;
+    private @Nullable BasicRoomNpc maiden;
 
     private final Set<GameObject> bloodTrails = new HashSet<>();
     private final Map<Integer, MaidenCrab> crabs = new HashMap<>();
@@ -61,13 +65,13 @@ public class MaidenDataTracker extends RoomDataTracker {
 
     @Override
     protected void onRoomStart() {
-        findMaidenNpc();
+        if (maiden != null) {
+            raidManager.updateRaidMode(maiden.getRaidMode());
+        }
     }
 
     @Override
     protected void onTick() {
-        findMaidenNpc();
-
         List<WorldPoint> bloodSplats = new ArrayList<>();
 
         // Search for active blood splats thrown by Maiden, and report them if they exist.
@@ -83,22 +87,21 @@ public class MaidenDataTracker extends RoomDataTracker {
             bloodSplats.add(WorldPoint.fromLocalInstance(client, trail.getLocalLocation()));
         }
 
+        final int tick = getRoomTick();
+
         if (!bloodSplats.isEmpty()) {
-            dispatchEvent(new MaidenBloodSplatsEvent(getRoomTick(), bloodSplats));
+            dispatchEvent(new MaidenBloodSplatsEvent(tick, bloodSplats));
+        }
+
+        if (maiden == null) {
+            return;
         }
 
         for (MaidenCrab crab : crabs.values()) {
             NPC crabNpc = crab.getNpc();
-            WorldPoint point = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(crabNpc));
-            Hitpoints hitpoints = crab.getHitpoints();
 
-            dispatchNpcUpdate(new NpcUpdateEvent(
-                    Room.MAIDEN, getRoomTick(), point, getRoomId(crabNpc), crabNpc.getId(), new Hitpoints(hitpoints)));
-
-            if (maiden != null) {
-                if (!crabNpc.isDead() && crabNpc.getWorldArea().distanceTo2D(maiden.getWorldArea()) <= 1) {
-                    dispatchEvent(new MaidenCrabLeakEvent(getRoomTick(), point, crab));
-                }
+            if (!crabNpc.isDead() && crabNpc.getWorldArea().distanceTo2D(maiden.getNpc().getWorldArea()) <= 1) {
+                dispatchEvent(new MaidenCrabLeakEvent(tick, getWorldLocation(crabNpc), crab));
             }
         }
     }
@@ -128,38 +131,43 @@ public class MaidenDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected void onNpcSpawn(NpcSpawned spawned) {
+    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned spawned) {
         NPC npc = spawned.getNpc();
+        return TobNpc.withId(npc.getId()).flatMap(tobNpc -> {
+            if (TobNpc.isMaiden(tobNpc.getId())) {
+                startRoom();
+                maiden = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                        new Hitpoints(tobNpc.getBaseHitpoints(raidManager.getRaidScale())));
+                return Optional.of(maiden);
+            }
 
-        if (TobNpc.isMaiden(npc.getId())) {
-            startRoom();
-            return;
-        }
+            if (TobNpc.isMaidenMatomenos(tobNpc.getId())) {
+                return handleMaidenCrabSpawn(npc);
+            }
 
-        if (TobNpc.isMaidenMatomenos(npc.getId())) {
-            handleMaidenCrabSpawn(npc);
-        } else if (TobNpc.isMaidenBloodSpawn(npc.getId())) {
-            handleMaidenBloodSpawnSpawn(npc);
-        }
-    }
+            if (TobNpc.isMaidenBloodSpawn(tobNpc.getId())) {
+                return handleMaidenBloodSpawnSpawn(npc);
+            }
 
-    @Override
-    protected void onNpcDespawn(NpcDespawned despawned) {
-        NPC npc = despawned.getNpc();
-        crabs.remove(npc.hashCode());
-    }
-
-    @Override
-    protected void onHitsplat(HitsplatApplied hitsplatApplied) {
-        Optional.ofNullable(crabs.get(hitsplatApplied.getActor().hashCode())).ifPresent(crab -> {
-            crab.getHitpoints().drain(hitsplatApplied.getHitsplat().getAmount());
+            return Optional.empty();
         });
     }
 
-    private void handleMaidenBloodSpawnSpawn(NPC npc) {
+    @Override
+    protected boolean onNpcDespawn(NpcDespawned despawned, RoomNpc roomNpc) {
+        NPC npc = despawned.getNpc();
+        crabs.remove(npc.hashCode());
+        // Every maiden NPC despawn is final.
+        return true;
     }
 
-    private void handleMaidenCrabSpawn(NPC npc) {
+    private Optional<RoomNpc> handleMaidenBloodSpawnSpawn(NPC npc) {
+        return TobNpc.withId(npc.getId()).map(tobNpc ->
+                new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                        new Hitpoints(tobNpc.getBaseHitpoints(raidManager.getRaidScale()))));
+    }
+
+    private Optional<MaidenCrab> handleMaidenCrabSpawn(NPC npc) {
         if (spawnTicks[currentSpawn.ordinal()] == 0) {
             markNewSpawn();
         } else if (spawnTicks[currentSpawn.ordinal()] != getRoomTick()) {
@@ -169,23 +177,20 @@ public class MaidenDataTracker extends RoomDataTracker {
 
         WorldPoint spawnLocation = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(npc));
 
-        MaidenCrab.fromSpawnLocation(raidManager.getRaidScale(), npc, currentSpawn, spawnLocation)
-                .ifPresent(maidenCrab -> {
-                    log.debug("Crab position: " + maidenCrab.getPosition() + " scuffed: " + maidenCrab.isScuffed());
-                    crabs.put(npc.hashCode(), maidenCrab);
-                    dispatchEvent(new MaidenCrabSpawnEvent(getRoomTick(), currentSpawn, maidenCrab));
-                });
+        Optional<MaidenCrab> maybeCrab = MaidenCrab.fromSpawnLocation(
+                raidManager.getRaidScale(), npc, generateRoomId(npc), currentSpawn, spawnLocation);
+        if (maybeCrab.isPresent()) {
+            MaidenCrab maidenCrab = maybeCrab.get();
+            log.debug("Crab position: " + maidenCrab.getPosition() + " scuffed: " + maidenCrab.isScuffed());
+            crabs.put(npc.hashCode(), maidenCrab);
+            dispatchEvent(new MaidenCrabSpawnEvent(getRoomTick(), currentSpawn, maidenCrab));
+        }
+
+        return maybeCrab;
     }
 
     private void markNewSpawn() {
         spawnTicks[currentSpawn.ordinal()] = getRoomTick();
         log.debug("Maiden " + currentSpawn + " spawned on tick " + getRoomTick() + " (" + formattedRoomTime() + ")");
-    }
-
-    private void findMaidenNpc() {
-        client.getNpcs().stream().filter(npc -> TobNpc.isMaiden(npc.getId())).findFirst().ifPresent(npc -> {
-            maiden = npc;
-            TobNpc.withId(npc.getId()).ifPresent(tobNpc -> raidManager.updateRaidMode(tobNpc.getMode()));
-        });
     }
 }

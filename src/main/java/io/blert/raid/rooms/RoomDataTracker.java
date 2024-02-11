@@ -37,8 +37,9 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,12 +63,7 @@ public abstract class RoomDataTracker {
     private int startClientTick;
     private boolean startingTickAccurate;
 
-    private final Map<Integer, Long> npcRoomIds = new HashMap<>();
-
-    /**
-     * Set of NPC room IDs for which an NpcUpdateEvent has been sent on the current tick.
-     */
-    private final Set<Long> npcUpdatesThisTick = new HashSet<>();
+    private final RoomNpcCollection roomNpcs = new RoomNpcCollection();
 
     private final SpecialAttackTracker specialAttackTracker = new SpecialAttackTracker(this::onSpecialAttack);
 
@@ -126,13 +122,6 @@ public abstract class RoomDataTracker {
             }
         });
 
-        // Assign a room ID to every existing NPC when the room started.
-        client.getNpcs().forEach(npc -> {
-            if (!npcRoomIds.containsKey(npc.hashCode())) {
-                npcRoomIds.put(npc.hashCode(), npcRoomId(0, npc.getId(), getWorldLocation(npc)));
-            }
-        });
-
         dispatchEvent(new RoomStatusEvent(room, 0, RoomStatusEvent.Status.STARTED));
 
         onRoomStart();
@@ -183,8 +172,6 @@ public abstract class RoomDataTracker {
             return;
         }
 
-        npcUpdatesThisTick.clear();
-
         updatePartyStatus();
         updatePlayers();
 
@@ -196,10 +183,7 @@ public abstract class RoomDataTracker {
         onTick();
 
         // Send simple updates for any NPCs not already reported by the implementation.
-        client.getNpcs()
-                .stream()
-                .filter(npc -> !npcUpdatesThisTick.contains(npc.hashCode()))
-                .forEach(this::sendBasicNpcUpdate);
+        roomNpcs.forEach(this::sendNpcUpdate);
     }
 
     /**
@@ -244,22 +228,26 @@ public abstract class RoomDataTracker {
     protected abstract void onTick();
 
     /**
-     * Implementation-specific equivalent of the {@code onNpcSpawned} Runelite event handler.
-     * Should be overriden by implementations which require special handling.
+     * Event handler invoked when a new NPC spawns. If the spawned NPC should be tracked and have its data reported,
+     * returns a {@link RoomNpc} describing it. Otherwise, returns {@link Optional#empty()}, performing any desired
+     * actions to handle the spawn.
      *
-     * @param event The event.
+     * @param event The Runelite NPC spawn event.
+     * @return The room NPC to track if desired.
      */
-    protected void onNpcSpawn(NpcSpawned event) {
-    }
+    protected abstract Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event);
 
     /**
-     * Implementation-specific equivalent of the {@code onNpcDespawned} Runelite event handler.
-     * Should be overriden by implementations which require special handling.
+     * Event handler invoked when an NPC in the room despawns. If the NPC was being tracked as a room NPC, and is now
+     * completely dead or otherwise inactive, returns {@code true} to indicate that it should be removed from
+     * tracking.
      *
-     * @param event The event.
+     * @param event   The event.
+     * @param roomNpc The room NPC corresponding to the despawned NPC, if it is tracked.
+     * @return {@code true} if the NPC should no longer be tracked, {@code false} if it should not (e.g. this despawn
+     * indicates a phase change).
      */
-    protected void onNpcDespawn(NpcDespawned event) {
-    }
+    protected abstract boolean onNpcDespawn(NpcDespawned event, @Nullable RoomNpc roomNpc);
 
     /**
      * Implementation-specific equivalent of the {@code onNpcChanged} Runelite event handler.
@@ -313,13 +301,13 @@ public abstract class RoomDataTracker {
         raidManager.dispatchEvent(event);
     }
 
-    protected long getRoomId(@NotNull NPC npc) {
-        return npcRoomIds.get(npc.hashCode());
-    }
-
     protected WorldPoint getWorldLocation(@NotNull Actor actor) {
         LocalPoint local = actor instanceof NPC ? Utils.getNpcSouthwestTile((NPC) actor) : actor.getLocalLocation();
         return WorldPoint.fromLocalInstance(client, local);
+    }
+
+    protected long generateRoomId(@NotNull NPC npc) {
+        return RoomNpcCollection.npcRoomId(getRoomTick(), npc.getId(), getWorldLocation(npc));
     }
 
     @Subscribe
@@ -328,13 +316,19 @@ public abstract class RoomDataTracker {
             return;
         }
 
-        NPC npc = event.getNpc();
-        WorldPoint spawnPoint = getWorldLocation(npc);
-        if (!npcRoomIds.containsKey(npc.hashCode())) {
-            npcRoomIds.put(npc.hashCode(), npcRoomId(getRoomTick(), npc.getId(), spawnPoint));
-        }
+        onNpcSpawn(event).ifPresent(roomNpc -> {
+            boolean existing = roomNpcs.remove(roomNpc);
+            if (!existing) {
+                // TODO(frolv): Events for newly spawned NPCs.
+            }
+            roomNpcs.add(roomNpc);
 
-        onNpcSpawn(event);
+            // Update the raid mode on the first NPC seen in a room, in case the client joined the raid late, and it
+            // has not been set.
+            if (roomNpcs.size() == 1) {
+                raidManager.updateRaidMode(roomNpc.getRaidMode());
+            }
+        });
     }
 
     @Subscribe
@@ -343,11 +337,13 @@ public abstract class RoomDataTracker {
             return;
         }
 
-        NPC npc = event.getNpc();
-
-        onNpcDespawn(event);
-
-        npcRoomIds.remove(npc.hashCode());
+        Optional<RoomNpc> maybeRoomNpc = roomNpcs.getByNpc(event.getNpc());
+        if (onNpcDespawn(event, maybeRoomNpc.orElse(null))) {
+            maybeRoomNpc.ifPresent(roomNpc -> {
+                // TODO(frolv): Events for despawned NPCs.
+                roomNpcs.remove(roomNpc);
+            });
+        }
     }
 
     @Subscribe
@@ -394,6 +390,16 @@ public abstract class RoomDataTracker {
         Hitsplat hitsplat = hitsplatApplied.getHitsplat();
         if (hitsplat.isMine() && target != client.getLocalPlayer()) {
             specialAttackTracker.recordHitsplat((NPC) target, hitsplat, client.getTickCount());
+        }
+
+        if (target instanceof NPC) {
+            roomNpcs.getByNpc((NPC) target).ifPresent(roomNpc -> {
+                if (hitsplat.getHitsplatType() == HitsplatID.HEAL) {
+                    roomNpc.getHitpoints().boost(hitsplat.getAmount());
+                } else {
+                    roomNpc.getHitpoints().drain(hitsplat.getAmount());
+                }
+            });
         }
 
         onHitsplat(hitsplatApplied);
@@ -534,48 +540,21 @@ public abstract class RoomDataTracker {
 
         maybeAttack.ifPresent(attack -> {
             raider.recordAttack(tick, attack);
-            int targetNpcId = target.map(NPC::getId).orElse(0);
-            long targetRoomId = target.map(this::getRoomId).orElse(0L);
+
+            RoomNpc roomTarget = target.flatMap(roomNpcs::getByNpc).orElse(null);
             dispatchEvent(new PlayerAttackEvent(room, tick, point, attack, weapon.orElse(null),
-                    player.getName(), targetNpcId, targetRoomId));
+                    player.getName(), roomTarget));
         });
     }
 
     /**
-     * Sends an NPC update event for the current tick, tracking which NPCs have already been updated to avoid duplicate
-     * events.
+     * Sends an {@link NpcUpdateEvent} about an NPC in the room.
      */
-    protected void dispatchNpcUpdate(@NotNull NpcUpdateEvent update) {
-        if (npcUpdatesThisTick.add(update.getRoomId())) {
-            dispatchEvent(update);
+    protected void sendNpcUpdate(RoomNpc roomNpc) {
+        WorldPoint point = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(roomNpc.getNpc()));
+        if (Location.fromWorldPoint(point).inRoom(room)) {
+            dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, roomNpc));
         }
-    }
-
-    /**
-     * Sends a generic update status about an NPC in the room. Implementations can choose to call this directly, or
-     * track additional information about their room NPCs and send them through
-     * {@link #dispatchNpcUpdate(NpcUpdateEvent)}.
-     */
-    protected void sendBasicNpcUpdate(NPC npc) {
-        WorldPoint point = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(npc));
-        if (!Location.fromWorldPoint(point).inRoom(room)) {
-            return;
-        }
-
-        Optional<TobNpc> maybeNpc = TobNpc.withId(npc.getId());
-        if (maybeNpc.isEmpty()) {
-            return;
-        }
-        TobNpc tobNpc = maybeNpc.get();
-
-        Hitpoints hitpoints = null;
-        if (npc.getHealthScale() > 0 && npc.getHealthRatio() != -1) {
-            double hpRatio = npc.getHealthRatio() / (double) npc.getHealthScale();
-            hitpoints = Hitpoints.fromRatio(hpRatio, tobNpc.getBaseHitpoints(raidManager.getRaidScale()));
-        }
-
-        dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, getRoomId(npc), npc.getId(), hitpoints));
-        npcUpdatesThisTick.add(getRoomId(npc));
     }
 
     protected String formattedRoomTime() {
@@ -585,21 +564,5 @@ public abstract class RoomDataTracker {
         int deciseconds = (milliseconds % 1000) / 100;
 
         return String.format("%d:%02d.%d", minutes, seconds, deciseconds);
-    }
-
-    /**
-     * Creates a deterministic unique identifier for each NPC spawned in a room.
-     *
-     * @param spawnTick     Tick on which the NPC spawned.
-     * @param npcId         ID of the spawned NPC.
-     * @param spawnLocation Location at which the NPC spawned.
-     * @return A unique ID for the NPC within the room.
-     */
-    private static long npcRoomId(int spawnTick, int npcId, WorldPoint spawnLocation) {
-        long x = spawnLocation.getRegionX() & 0x3ff;  // 10
-        long y = ((long) spawnLocation.getRegionY() & 0x3ff);  // 10
-        long tick = ((long) spawnTick & 0x7ff);  // 11
-        long id = ((long) npcId & 0x1fffff);  // 21
-        return x | (y << 10) | (tick << 20) | (id << 31);
     }
 }

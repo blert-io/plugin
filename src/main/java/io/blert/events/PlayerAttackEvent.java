@@ -26,8 +26,11 @@ package io.blert.events;
 import io.blert.raid.Item;
 import io.blert.raid.PlayerAttack;
 import io.blert.raid.rooms.Room;
+import io.blert.raid.rooms.RoomNpc;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
+
+import javax.annotation.Nullable;
 
 @Getter
 public class PlayerAttackEvent extends Event {
@@ -37,13 +40,20 @@ public class PlayerAttackEvent extends Event {
     private final int targetNpcId;
     private final long targetRoomId;
 
-    public PlayerAttackEvent(Room room, int tick, WorldPoint point, PlayerAttack attack, Item weapon, String username, int targetNpcId, long targetRoomId) {
+    public PlayerAttackEvent(Room room, int tick, WorldPoint point, PlayerAttack attack,
+                             Item weapon, String username, @Nullable RoomNpc roomNpc) {
         super(EventType.PLAYER_ATTACK, room, tick, point);
         this.attack = attack;
         this.weapon = weapon;
         this.username = username;
-        this.targetNpcId = targetNpcId;
-        this.targetRoomId = targetRoomId;
+
+        if (roomNpc != null) {
+            this.targetNpcId = roomNpc.getNpcId();
+            this.targetRoomId = roomNpc.getRoomId();
+        } else {
+            this.targetNpcId = 0;
+            this.targetRoomId = 0;
+        }
     }
 
     @Override

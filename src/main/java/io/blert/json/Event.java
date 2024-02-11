@@ -95,7 +95,7 @@ public class Event {
             case NPC_UPDATE:
                 NpcUpdateEvent npcUpdateEvent = (NpcUpdateEvent) blertEvent;
                 event.npc = new Npc(npcUpdateEvent.getNpcId(), npcUpdateEvent.getRoomId());
-                npcUpdateEvent.getHitpoints().ifPresent(event.npc::setHitpoints);
+                event.npc.setHitpoints(npcUpdateEvent.getHitpoints());
                 break;
             case MAIDEN_CRAB_SPAWN:
                 MaidenCrabSpawnEvent spawnEvent = (MaidenCrabSpawnEvent) blertEvent;

@@ -110,9 +110,9 @@ public enum TobNpc {
     NYLOCAS_VASILIAS_HARD(10807, 4, Mode.HARD, new int[]{1875, 2187, 2500}),
 
     // Inactive Sotetseg (prior to room entry or during maze).
-    SOTETSEG_IDLE_ENTRY(10864, Mode.ENTRY),
-    SOTETSEG_IDLE_REGULAR(8387, Mode.REGULAR),
-    SOTETSEG_IDLE_HARD(10867, Mode.HARD),
+    SOTETSEG_IDLE_ENTRY(10864, 1, Mode.ENTRY, 560),
+    SOTETSEG_IDLE_REGULAR(8387, 1, Mode.REGULAR, new int[]{3000, 3500, 4000}),
+    SOTETSEG_IDLE_HARD(10867, 1, Mode.HARD, new int[]{3000, 3500, 4000}),
 
     // Main Sotetseg boss.
     SOTETSEG_ENTRY(10865, 1, Mode.ENTRY, 560),
@@ -120,14 +120,14 @@ public enum TobNpc {
     SOTETSEG_HARD(10868, 1, Mode.HARD, new int[]{3000, 3500, 4000}),
 
     // Inactive Xarpus prior to room entry.
-    XARPUS_IDLE_ENTRY(10766, Mode.ENTRY),
-    XARPUS_IDLE_REGULAR(8338, Mode.REGULAR),
-    XARPUS_IDLE_HARD(10770, Mode.HARD),
+    XARPUS_IDLE_ENTRY(10766, 1, Mode.ENTRY, 680),
+    XARPUS_IDLE_REGULAR(8338, 1, Mode.REGULAR, new int[]{3810, 4445, 5080}),
+    XARPUS_IDLE_HARD(10770, 1, Mode.HARD, new int[]{4500, 5250, 6000}),
 
     // Xarpus healing during P1 exhumes.
-    XARPUS_P1_ENTRY(10767, Mode.ENTRY),
-    XARPUS_P1_REGULAR(8339, Mode.REGULAR),
-    XARPUS_P1_HARD(10771, Mode.HARD),
+    XARPUS_P1_ENTRY(10767, 1, Mode.ENTRY, 680),
+    XARPUS_P1_REGULAR(8339, 1, Mode.REGULAR, new int[]{3810, 4445, 5080}),
+    XARPUS_P1_HARD(10771, 1, Mode.HARD, new int[]{4500, 5250, 6000}),
 
     // Xarpus main phase and post-screech.
     XARPUS_ENTRY(10768, 1, Mode.ENTRY, 680),
@@ -135,9 +135,9 @@ public enum TobNpc {
     XARPUS_HARD(10772, 1, Mode.HARD, new int[]{4500, 5250, 6000}),
 
     // Verzik sitting at her throne prior to combat.
-    VERZIK_IDLE_ENTRY(10830, Mode.ENTRY),
-    VERZIK_IDLE_REGULAR(8369, Mode.REGULAR),
-    VERZIK_IDLE_HARD(10847, Mode.HARD),
+    VERZIK_IDLE_ENTRY(10830, 1, Mode.ENTRY, 240),
+    VERZIK_IDLE_REGULAR(8369, 1, Mode.REGULAR, new int[]{1500, 1750, 2000}),
+    VERZIK_IDLE_HARD(10847, 1, Mode.HARD, new int[]{1500, 1750, 2000}),
 
     // Verzik P1, including the transition to P2.
     VERZIK_P1_ENTRY(10831, 2, Mode.ENTRY, 240),
@@ -145,9 +145,14 @@ public enum TobNpc {
     VERZIK_P1_HARD(10848, 2, Mode.HARD, new int[]{1500, 1750, 2000}),
 
     // Verzik P2, including the transition to P3.
-    VERZIK_P2_ENTRY(10834, 2, Mode.ENTRY, 320),
+    VERZIK_P2_ENTRY(10833, 2, Mode.ENTRY, 320),
     VERZIK_P2_REGULAR(8372, 2, Mode.REGULAR, new int[]{2437, 2843, 3250}),
     VERZIK_P2_HARD(10850, 2, Mode.HARD, new int[]{2437, 2843, 3250}),
+
+    // Verzik P3, including death animation.
+    VERZIK_P3_ENTRY(10835, 2, Mode.ENTRY, 320),
+    VERZIK_P3_REGULAR(8374, 2, Mode.REGULAR, new int[]{2437, 2843, 3250}),
+    VERZIK_P3_HARD(10852, 2, Mode.HARD, new int[]{2437, 2843, 3250}),
 
     // Red crabs at Verzik.
     VERZIK_MATOMENOS_ENTRY(10845, 1, Mode.ENTRY, 0),
@@ -301,6 +306,13 @@ public enum TobNpc {
         return idMatches(id, NYLOCAS_VASILIAS_ENTRY, NYLOCAS_VASILIAS_REGULAR, NYLOCAS_VASILIAS_HARD);
     }
 
+    public static boolean isDroppingNyloBoss(int id) {
+        // The base ID of each Nylo boss is the NPC ID of it dropping from the ceiling, so do a strict check agsinst
+        // those, ignoring the ID range.
+        return id == NYLOCAS_PRINKIPAS.id || id == NYLOCAS_VASILIAS_ENTRY.id
+                || id == NYLOCAS_VASILIAS_REGULAR.id || id == NYLOCAS_VASILIAS_HARD.id;
+    }
+
     public static boolean isSotetsegIdle(int id) {
         return idMatches(id, SOTETSEG_IDLE_ENTRY, SOTETSEG_IDLE_REGULAR, SOTETSEG_IDLE_HARD);
     }
@@ -313,28 +325,72 @@ public enum TobNpc {
         return idMatches(id, XARPUS_IDLE_ENTRY, XARPUS_IDLE_REGULAR, XARPUS_IDLE_HARD);
     }
 
+    public boolean isXarpusIdle() {
+        return isXarpusIdle(this.id);
+    }
+
     public static boolean isXarpusP1(int id) {
         return idMatches(id, XARPUS_P1_ENTRY, XARPUS_P1_REGULAR, XARPUS_P1_HARD);
+    }
+
+    public boolean isXarpusP1() {
+        return isXarpusP1(this.id);
     }
 
     public static boolean isXarpus(int id) {
         return idMatches(id, XARPUS_ENTRY, XARPUS_REGULAR, XARPUS_HARD);
     }
 
+    public boolean isXarpus() {
+        return isXarpus(this.id);
+    }
+
+    public boolean isAnyXarpus() {
+        return isXarpusIdle() || isXarpusP1() || isXarpus();
+    }
+
     public static boolean isVerzikIdle(int id) {
         return idMatches(id, VERZIK_IDLE_ENTRY, VERZIK_IDLE_REGULAR, VERZIK_IDLE_HARD);
+    }
+
+    public boolean isVerzikIdle() {
+        return isVerzikIdle(this.id);
     }
 
     public static boolean isVerzikP1(int id) {
         return idMatches(id, VERZIK_P1_ENTRY, VERZIK_P1_REGULAR, VERZIK_P1_HARD);
     }
 
+    public boolean isVerzikP1() {
+        return isVerzikP1(this.id);
+    }
+
     public static boolean isVerzikP2(int id) {
         return idMatches(id, VERZIK_P2_ENTRY, VERZIK_P2_REGULAR, VERZIK_P2_HARD);
     }
 
+    public boolean isVerzikP2() {
+        return isVerzikP2(this.id);
+    }
+
+    public static boolean isVerzikP3(int id) {
+        return idMatches(id, VERZIK_P3_ENTRY, VERZIK_P3_REGULAR, VERZIK_P3_HARD);
+    }
+
+    public boolean isVerzikP3() {
+        return isVerzikP3(this.id);
+    }
+
+    public boolean isAnyVerzik() {
+        return isVerzikIdle() || isVerzikP1() || isVerzikP2() || isVerzikP3();
+    }
+
     public static boolean isVerzikMatomenos(int id) {
         return idMatches(id, VERZIK_MATOMENOS_ENTRY, VERZIK_MATOMENOS_REGULAR, VERZIK_MATOMENOS_HARD);
+    }
+
+    public boolean isVerzikMatomenos() {
+        return isVerzikMatomenos(this.id);
     }
 
     public int getBaseHitpoints(int scale) {

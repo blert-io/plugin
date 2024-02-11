@@ -25,10 +25,13 @@ package io.blert.raid.rooms.verzik;
 
 import io.blert.events.VerzikPhaseEvent;
 import io.blert.events.VerzikRedsSpawnEvent;
+import io.blert.raid.Hitpoints;
 import io.blert.raid.RaidManager;
 import io.blert.raid.TobNpc;
+import io.blert.raid.rooms.BasicRoomNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
+import io.blert.raid.rooms.RoomNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -39,6 +42,7 @@ import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 @Slf4j
@@ -46,6 +50,8 @@ public class VerzikDataTracker extends RoomDataTracker {
     private static final int P3_TRANSITION_ANIMATION = 8118;
 
     private VerzikPhase phase;
+
+    private BasicRoomNpc verzik;
 
     private int redCrabsTick;
     private int redCrabSpawnCount;
@@ -78,11 +84,23 @@ public class VerzikDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected void onNpcSpawn(NpcSpawned event) {
+    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event) {
         NPC npc = event.getNpc();
         final int tick = getRoomTick();
 
-        if (TobNpc.isVerzikMatomenos(npc.getId())) {
+        var maybeNpc = TobNpc.withId(npc.getId());
+        if (maybeNpc.isEmpty()) {
+            return Optional.empty();
+        }
+        TobNpc tobNpc = maybeNpc.get();
+
+        if (tobNpc.isAnyVerzik()) {
+            long roomId = verzik != null ? verzik.getRoomId() : generateRoomId(npc);
+            verzik = new BasicRoomNpc(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            return Optional.of(verzik);
+        }
+
+        if (tobNpc.isVerzikMatomenos()) {
             if (tick != redCrabsTick) {
                 redCrabsTick = tick;
                 redCrabSpawnCount++;
@@ -90,28 +108,46 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             redCrabs.add(npc);
         }
+
+        return Optional.empty();
     }
 
     @Override
-    protected void onNpcDespawn(NpcDespawned event) {
+    protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
         NPC npc = event.getNpc();
 
         if (TobNpc.isVerzikMatomenos(npc.getId())) {
             redCrabs.remove(npc);
+            return false;
         }
+
+        // Verzik despawns between phases, but it should not be counted as a final despawn until the end of the fight.
+        return roomNpc == verzik && phase == VerzikPhase.P3;
     }
 
     @Override
     protected void onNpcChange(NpcChanged changed) {
+        NPC npc = changed.getNpc();
         int beforeId = changed.getOld().getId();
-        int afterId = changed.getNpc().getId();
 
         final int tick = getRoomTick();
 
-        if (TobNpc.isVerzikIdle(beforeId) && TobNpc.isVerzikP1(afterId)) {
+        var maybeVerzik = TobNpc.withId(npc.getId());
+        if (maybeVerzik.isEmpty()) {
+            return;
+        }
+        TobNpc tobNpc = maybeVerzik.get();
+
+        if (TobNpc.isVerzikIdle(beforeId) && tobNpc.isVerzikP1()) {
             startRoom();
-        } else if (TobNpc.isVerzikP1(beforeId) && TobNpc.isVerzikP2(afterId)) {
+            return;
+        }
+
+        if (TobNpc.isVerzikP1(beforeId) && tobNpc.isVerzikP2()) {
+            // A transition from P1 to P2 does not spawn a new NPC. Simply reset Verzik's HP to its P2 value.
             phase = VerzikPhase.P2;
+            verzik.setHitpoints(new Hitpoints(tobNpc, raidManager.getRaidScale()));
+
             dispatchEvent(new VerzikPhaseEvent(tick, phase));
             log.debug("P2: {} ({})", tick, formattedRoomTime());
         }

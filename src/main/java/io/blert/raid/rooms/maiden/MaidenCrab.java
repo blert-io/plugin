@@ -25,24 +25,19 @@ package io.blert.raid.rooms.maiden;
 
 import io.blert.raid.Hitpoints;
 import io.blert.raid.TobNpc;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
+import io.blert.raid.rooms.RoomNpc;
 import lombok.Getter;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
 @Getter
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class MaidenCrab {
-    private NPC npc;
-
-    private CrabSpawn spawn;
-    private Position position;
-    private boolean scuffed;
-
-    private Hitpoints hitpoints;
+public class MaidenCrab extends RoomNpc {
+    private final CrabSpawn spawn;
+    private final Position position;
+    private final boolean scuffed;
 
     public enum Position {
         S1,
@@ -63,7 +58,8 @@ public class MaidenCrab {
      * @param location Spawn location corresponding to the southwest tile of the crab.
      * @return The type of crab which spawns at that location, if one exists.
      */
-    public static Optional<MaidenCrab> fromSpawnLocation(int scale, NPC npc, CrabSpawn spawn, WorldPoint location) {
+    public static Optional<MaidenCrab> fromSpawnLocation(int scale, NPC npc, long roomId,
+                                                         CrabSpawn spawn, WorldPoint location) {
         Position position;
         boolean scuffed;
 
@@ -131,8 +127,17 @@ public class MaidenCrab {
             return Optional.empty();
         }
 
-        var hitpoints = TobNpc.withId(npc.getId()).map(tobNpc -> new Hitpoints(tobNpc.getBaseHitpoints(scale)));
-        return Optional.of(new MaidenCrab(npc, spawn, position, scuffed, hitpoints.orElse(null)));
+        return TobNpc.withId(npc.getId()).map(tobNpc ->
+                new MaidenCrab(npc, tobNpc, roomId, spawn, position,
+                        scuffed, new Hitpoints(tobNpc.getBaseHitpoints(scale))));
+    }
+
+    private MaidenCrab(@NotNull NPC npc, TobNpc tobNpc, long roomId, CrabSpawn spawn,
+                       Position position, boolean scuffed, Hitpoints hitpoints) {
+        super(npc, tobNpc, roomId, hitpoints);
+        this.spawn = spawn;
+        this.position = position;
+        this.scuffed = scuffed;
     }
 
     /**

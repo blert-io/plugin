@@ -25,16 +25,23 @@ package io.blert.raid.rooms.bloat;
 
 import io.blert.events.BloatDownEvent;
 import io.blert.events.BloatUpEvent;
+import io.blert.raid.Hitpoints;
 import io.blert.raid.RaidManager;
 import io.blert.raid.TobNpc;
+import io.blert.raid.rooms.BasicRoomNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
+import io.blert.raid.rooms.RoomNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
+import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.NpcSpawned;
+
+import java.util.Optional;
 
 @Slf4j
 
@@ -57,6 +64,21 @@ public class BloatDataTracker extends RoomDataTracker {
 
     @Override
     protected void onTick() {
+    }
+
+    @Override
+    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event) {
+        NPC npc = event.getNpc();
+
+        return TobNpc.withId(npc.getId())
+                .filter(tobNpc -> TobNpc.isBloat(tobNpc.getId()))
+                .map(tobNpc -> new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                        new Hitpoints(tobNpc, raidManager.getRaidScale())));
+    }
+
+    @Override
+    protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
+        return true;
     }
 
     @Override
