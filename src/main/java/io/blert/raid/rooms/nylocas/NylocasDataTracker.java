@@ -24,7 +24,10 @@
 package io.blert.raid.rooms.nylocas;
 
 import com.google.common.collect.ImmutableSet;
-import io.blert.events.*;
+import io.blert.events.NyloBossSpawnEvent;
+import io.blert.events.NyloCleanupEndEvent;
+import io.blert.events.NyloWaveSpawnEvent;
+import io.blert.events.NyloWaveStallEvent;
 import io.blert.raid.Hitpoints;
 import io.blert.raid.Mode;
 import io.blert.raid.RaidManager;
@@ -37,6 +40,7 @@ import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.NullNpcID;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
@@ -111,11 +115,6 @@ public class NylocasDataTracker extends RoomDataTracker {
         }
 
         assignParentsToSplits();
-
-        nylosInRoom.values().stream()
-                .filter(nylo -> nylo.getSpawnTick() == tick)
-                .forEach(nylo -> dispatchEvent(new NyloSpawnEvent(tick, nylo)));
-
         bigDeathsThisTick.clear();
     }
 
@@ -201,10 +200,17 @@ public class NylocasDataTracker extends RoomDataTracker {
             bigDeathsThisTick.add(nylo);
         }
 
-        dispatchEvent(new NyloDeathEvent(tick, nylo));
-
         checkCleanupComplete();
         return true;
+    }
+
+    @Override
+    protected void onNpcChange(NpcChanged event) {
+        NPC npc = event.getNpc();
+        Nylo nylo = nylosInRoom.get(npc.hashCode());
+        if (nylo != null) {
+            nylo.setStyle(Nylo.Style.fromNpcId(npc.getId()));
+        }
     }
 
     private Optional<Nylo> handleNylocasSpawn(NPC npc) {

@@ -236,6 +236,9 @@ public class RaidManager {
 
         if (roomDataTracker != null) {
             eventBus.register(roomDataTracker);
+            // TODO(frolv): If the raid has not yet started, this event should be queued to be sent after the
+            // raid start event.
+            dispatchEvent(new RoomStatusEvent(roomDataTracker.getRoom(), 0, RoomStatusEvent.Status.ENTERED));
         }
 
         return true;

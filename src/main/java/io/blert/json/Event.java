@@ -33,6 +33,8 @@ import lombok.Setter;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 public class Event {
@@ -53,9 +55,8 @@ public class Event {
     private @Nullable Player player = null;
     private @Nullable Npc npc = null;
     private @Nullable Attack attack = null;
-    private @Nullable MaidenEntity maidenEntity = null;
+    private @Nullable List<Coords> maidenBloodSplats = null;
     private @Nullable BloatStatus bloatStatus = null;
-    private @Nullable Nylo nylo = null;
     private @Nullable NyloWave nyloWave = null;
     private @Nullable SoteMaze soteMaze = null;
     private @Nullable XarpusPhase xarpusPhase = null;
@@ -74,72 +75,79 @@ public class Event {
                 RaidStartEvent raidStartEvent = (RaidStartEvent) blertEvent;
                 event.raidInfo = new RaidInfo(raidStartEvent.getParty(), raidStartEvent.getMode());
                 break;
+
             case RAID_UPDATE:
                 RaidUpdateEvent raidUpdateEvent = (RaidUpdateEvent) blertEvent;
                 event.raidInfo = new RaidInfo(new ArrayList<>(), raidUpdateEvent.getMode());
                 break;
+
             case ROOM_STATUS:
                 event.roomStatus = ((RoomStatusEvent) blertEvent).getStatus();
                 break;
+
             case PLAYER_UPDATE:
                 event.player = Player.fromBlertEvent((PlayerUpdateEvent) blertEvent);
                 break;
+
             case PLAYER_ATTACK:
                 PlayerAttackEvent playerAttackEvent = (PlayerAttackEvent) blertEvent;
                 event.attack = Attack.fromPlayerAttackEvent(playerAttackEvent);
                 event.player = new Player(playerAttackEvent.getUsername());
                 break;
+
             case PLAYER_DEATH:
                 event.player = new Player(((PlayerDeathEvent) blertEvent).getUsername());
                 break;
+
+            case NPC_SPAWN:
             case NPC_UPDATE:
-                NpcUpdateEvent npcUpdateEvent = (NpcUpdateEvent) blertEvent;
-                event.npc = new Npc(npcUpdateEvent.getNpcId(), npcUpdateEvent.getRoomId());
-                event.npc.setHitpoints(npcUpdateEvent.getHitpoints());
+            case NPC_DEATH:
+                event.npc = Npc.fromNpcEvent((NpcEvent) blertEvent);
                 break;
-            case MAIDEN_CRAB_SPAWN:
-                MaidenCrabSpawnEvent spawnEvent = (MaidenCrabSpawnEvent) blertEvent;
-                event.maidenEntity = MaidenEntity.fromCrab(spawnEvent.getSpawn(), spawnEvent.getCrab());
-                break;
+
             case MAIDEN_CRAB_LEAK:
                 MaidenCrabLeakEvent leakEvent = (MaidenCrabLeakEvent) blertEvent;
-                event.maidenEntity = MaidenEntity.crabLeak(
-                        leakEvent.getSpawn(), leakEvent.getPosition(), leakEvent.getHitpoints());
+                event.npc = new Npc(leakEvent.getNpcId(), leakEvent.getRoomId(),
+                        leakEvent.getHitpoints(), leakEvent.getProperties());
                 break;
+
             case MAIDEN_BLOOD_SPLATS:
                 MaidenBloodSplatsEvent bloodSplatsEvent = (MaidenBloodSplatsEvent) blertEvent;
-                event.maidenEntity = MaidenEntity.bloodSplats(bloodSplatsEvent.getBloodSplats());
+                event.maidenBloodSplats = bloodSplatsEvent.getBloodSplats().stream()
+                        .map(Coords::fromWorldPoint)
+                        .collect(Collectors.toList());
                 break;
+
             case BLOAT_DOWN:
                 BloatDownEvent bloatDownEvent = (BloatDownEvent) blertEvent;
                 event.bloatStatus = new BloatStatus(bloatDownEvent.getUptime());
                 break;
-            case NYLO_SPAWN:
-            case NYLO_DEATH:
-                NyloEvent nyloEvent = (NyloEvent) blertEvent;
-                event.nylo = new Nylo(nyloEvent.getRoomId(), nyloEvent.getParentRoomId(), nyloEvent.getWave(),
-                        nyloEvent.getStyle(), nyloEvent.getSpawnType(), nyloEvent.isBig());
-                break;
+
             case NYLO_WAVE_SPAWN:
                 NyloWaveSpawnEvent waveSpawn = (NyloWaveSpawnEvent) blertEvent;
                 event.nyloWave = new NyloWave(waveSpawn.getWave(), waveSpawn.getNyloCount(), waveSpawn.getNyloCap());
                 break;
+
             case NYLO_WAVE_STALL:
                 NyloWaveStallEvent waveStall = (NyloWaveStallEvent) blertEvent;
                 event.nyloWave = new NyloWave(waveStall.getWave(), waveStall.getNyloCount(), waveStall.getNyloCap());
                 break;
+
             case SOTE_MAZE_PROC:
                 SoteMazeProcEvent mazeProc = (SoteMazeProcEvent) blertEvent;
                 event.soteMaze = new SoteMaze(mazeProc.getMaze());
                 break;
+
             case XARPUS_PHASE:
                 XarpusPhaseEvent xarpusPhaseEvent = (XarpusPhaseEvent) blertEvent;
                 event.xarpusPhase = xarpusPhaseEvent.getPhase();
                 break;
+
             case VERZIK_PHASE:
                 VerzikPhaseEvent verzikPhase = (VerzikPhaseEvent) blertEvent;
                 event.verzikPhase = verzikPhase.getPhase();
                 break;
+
             case VERZIK_REDS_SPAWN:
                 VerzikRedsSpawnEvent verzikReds = (VerzikRedsSpawnEvent) blertEvent;
                 event.verzikPhase = verzikReds.getPhase();

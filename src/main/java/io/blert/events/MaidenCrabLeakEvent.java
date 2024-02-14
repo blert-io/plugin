@@ -23,7 +23,6 @@
 
 package io.blert.events;
 
-import io.blert.raid.Hitpoints;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.maiden.CrabSpawn;
 import io.blert.raid.rooms.maiden.MaidenCrab;
@@ -31,20 +30,26 @@ import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
 @Getter
-public class MaidenCrabLeakEvent extends Event {
-    CrabSpawn spawn;
-    MaidenCrab.Position position;
-    Hitpoints hitpoints;
-
+public class MaidenCrabLeakEvent extends NpcEvent {
     public MaidenCrabLeakEvent(int tick, WorldPoint point, MaidenCrab crab) {
-        super(EventType.MAIDEN_CRAB_LEAK, Room.MAIDEN, tick, point);
-        spawn = crab.getSpawn();
-        position = crab.getPosition();
-        hitpoints = new Hitpoints(crab.getHitpoints());
+        super(EventType.MAIDEN_CRAB_LEAK, Room.MAIDEN, tick, point, crab);
+    }
+
+    @Override
+    public MaidenCrab.Properties getProperties() {
+        return (MaidenCrab.Properties) super.getProperties();
+    }
+
+    public CrabSpawn getSpawn() {
+        return getProperties().getSpawn();
+    }
+
+    public MaidenCrab.Position getPosition() {
+        return getProperties().getPosition();
     }
 
     @Override
     protected String eventDataString() {
-        return "crab_leak=(crab=" + spawn + ' ' + position + ", hp=" + hitpoints.getCurrent() + ')';
+        return "crab_leak=(crab=" + getSpawn() + ' ' + getPosition() + ", hp=" + getHitpoints().getCurrent() + ')';
     }
 }

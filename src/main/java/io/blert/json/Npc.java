@@ -23,18 +23,100 @@
 
 package io.blert.json;
 
+import io.blert.events.NpcEvent;
 import io.blert.raid.Hitpoints;
+import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.maiden.CrabSpawn;
+import io.blert.raid.rooms.maiden.MaidenCrab;
+import io.blert.raid.rooms.nylocas.Nylo;
+import io.blert.raid.rooms.nylocas.SpawnType;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 
-@RequiredArgsConstructor
 @Getter
 public class Npc {
-    final private int id;
-    final private long roomId;
+    private enum Type {
+        BASIC,
+        MAIDEN_CRAB,
+        NYLO,
+    }
+
+    @AllArgsConstructor
+    @Getter
+    public static class MaidenRedCrab {
+        private final CrabSpawn spawn;
+        private final MaidenCrab.Position position;
+        private boolean scuffed;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    private static class Nylocas {
+        private final long parentRoomId;
+        private final int wave;
+        private final Nylo.Style style;
+        private final SpawnType spawnType;
+    }
+
+    private final Type type;
+    private final int id;
+    private final long roomId;
     @Setter
     private @Nullable Hitpoints hitpoints = null;
+
+    // Optional NPC properties.
+    private @Nullable MaidenRedCrab maidenCrab = null;
+    @Setter
+    private @Nullable Nylocas nylo = null;
+
+    static Npc fromNpcEvent(NpcEvent event) {
+        RoomNpc.Properties properties = event.getProperties();
+
+        if (properties instanceof MaidenCrab.Properties) {
+            var crab = (MaidenCrab.Properties) properties;
+            return new Npc(event.getNpcId(), event.getRoomId(), event.getHitpoints(), crab);
+        }
+
+        if (properties instanceof Nylo.Properties) {
+            var nylo = (Nylo.Properties) properties;
+            return new Npc(event.getNpcId(), event.getRoomId(), event.getHitpoints(), nylo);
+        }
+
+        return new Npc(event.getNpcId(), event.getRoomId(), event.getHitpoints());
+    }
+
+    Npc(int id, long roomId) {
+        this.type = Type.BASIC;
+        this.id = id;
+        this.roomId = roomId;
+        this.hitpoints = null;
+    }
+
+    Npc(int id, long roomId, @NotNull Hitpoints hitpoints) {
+        this.type = Type.BASIC;
+        this.id = id;
+        this.roomId = roomId;
+        this.hitpoints = hitpoints;
+    }
+
+    Npc(int id, long roomId, @NotNull Hitpoints hitpoints, MaidenCrab.Properties properties) {
+        this.type = Type.MAIDEN_CRAB;
+        this.id = id;
+        this.roomId = roomId;
+        this.hitpoints = hitpoints;
+        this.maidenCrab = new MaidenRedCrab(properties.getSpawn(), properties.getPosition(), properties.isScuffed());
+    }
+
+    Npc(int id, long roomId, @NotNull Hitpoints hitpoints, Nylo.Properties properties) {
+        this.type = Type.NYLO;
+        this.id = id;
+        this.roomId = roomId;
+        this.hitpoints = hitpoints;
+        this.nylo = new Nylocas(properties.getParentRoomId(), properties.getWave(),
+                properties.getStyle(), properties.getSpawnType());
+    }
 }

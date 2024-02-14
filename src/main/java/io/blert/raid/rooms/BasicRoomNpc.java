@@ -32,7 +32,15 @@ import org.jetbrains.annotations.NotNull;
  * A room NPC without any special properties, existing as a simple wrapper around a Runelite NPC.
  */
 public final class BasicRoomNpc extends RoomNpc {
+    public static class EmptyProperties extends RoomNpc.Properties {
+    }
+
     public BasicRoomNpc(@NotNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
+    }
+
+    @Override
+    public @NotNull Properties getProperties() {
+        return new EmptyProperties();
     }
 }

@@ -144,7 +144,10 @@ public abstract class RoomDataTracker {
         var roomStatus = deadRaiders == raidManager.getRaidScale()
                 ? RoomStatusEvent.Status.WIPED
                 : RoomStatusEvent.Status.COMPLETED;
-        dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus));
+
+        // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
+        // own events first.
+        clientThread.invokeLater(() -> dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus)));
     }
 
     public void terminate() {
@@ -182,7 +185,8 @@ public abstract class RoomDataTracker {
         // Run implementation-specific behavior.
         onTick();
 
-        // Send simple updates for any NPCs not already reported by the implementation.
+        // Send out an update for every tracked NPC. This must be done after `onTick` to ensure any
+        // implementation-specific changes to the NPC are complete.
         roomNpcs.forEach(this::sendNpcUpdate);
     }
 
@@ -306,6 +310,10 @@ public abstract class RoomDataTracker {
         return WorldPoint.fromLocalInstance(client, local);
     }
 
+    protected WorldPoint getWorldLocation(@NotNull RoomNpc roomNpc) {
+        return getWorldLocation(roomNpc.getNpc());
+    }
+
     protected long generateRoomId(@NotNull NPC npc) {
         return RoomNpcCollection.npcRoomId(getRoomTick(), npc.getId(), getWorldLocation(npc));
     }
@@ -319,9 +327,15 @@ public abstract class RoomDataTracker {
         onNpcSpawn(event).ifPresent(roomNpc -> {
             boolean existing = roomNpcs.remove(roomNpc);
             if (!existing) {
-                // TODO(frolv): Events for newly spawned NPCs.
+                roomNpc.setSpawnTick(getRoomTick());
             }
             roomNpcs.add(roomNpc);
+
+            if (state == State.NOT_STARTED) {
+                // NPCs which spawn before the room begins must be reported immediately as the `onTick` handler
+                // is not yet active.
+                dispatchEvent(NpcEvent.spawn(room, 0, getWorldLocation(roomNpc), roomNpc));
+            }
 
             // Update the raid mode on the first NPC seen in a room, in case the client joined the raid late, and it
             // has not been set.
@@ -340,7 +354,7 @@ public abstract class RoomDataTracker {
         Optional<RoomNpc> maybeRoomNpc = roomNpcs.getByNpc(event.getNpc());
         if (onNpcDespawn(event, maybeRoomNpc.orElse(null))) {
             maybeRoomNpc.ifPresent(roomNpc -> {
-                // TODO(frolv): Events for despawned NPCs.
+                dispatchEvent(NpcEvent.death(room, getRoomTick(), getWorldLocation(roomNpc), roomNpc));
                 roomNpcs.remove(roomNpc);
             });
         }
@@ -548,12 +562,16 @@ public abstract class RoomDataTracker {
     }
 
     /**
-     * Sends an {@link NpcUpdateEvent} about an NPC in the room.
+     * Sends an {@link NpcEvent} about an NPC in the room.
      */
     protected void sendNpcUpdate(RoomNpc roomNpc) {
-        WorldPoint point = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(roomNpc.getNpc()));
-        if (Location.fromWorldPoint(point).inRoom(room)) {
-            dispatchEvent(new NpcUpdateEvent(room, getRoomTick(), point, roomNpc));
+        final int tick = getRoomTick();
+        WorldPoint point = getWorldLocation(roomNpc);
+
+        if (roomNpc.getSpawnTick() == tick) {
+            dispatchEvent(NpcEvent.spawn(room, tick, point, roomNpc));
+        } else {
+            dispatchEvent(NpcEvent.update(room, tick, point, roomNpc));
         }
     }
 

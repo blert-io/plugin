@@ -29,6 +29,7 @@ import lombok.Getter;
 @Getter
 public class RoomStatusEvent extends Event {
     public enum Status {
+        ENTERED,
         STARTED,
         COMPLETED,
         WIPED,

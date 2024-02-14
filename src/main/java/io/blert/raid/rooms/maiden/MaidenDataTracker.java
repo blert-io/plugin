@@ -25,7 +25,6 @@ package io.blert.raid.rooms.maiden;
 
 import io.blert.events.MaidenBloodSplatsEvent;
 import io.blert.events.MaidenCrabLeakEvent;
-import io.blert.events.MaidenCrabSpawnEvent;
 import io.blert.raid.*;
 import io.blert.raid.rooms.BasicRoomNpc;
 import io.blert.raid.rooms.Room;
@@ -183,7 +182,6 @@ public class MaidenDataTracker extends RoomDataTracker {
             MaidenCrab maidenCrab = maybeCrab.get();
             log.debug("Crab position: " + maidenCrab.getPosition() + " scuffed: " + maidenCrab.isScuffed());
             crabs.put(npc.hashCode(), maidenCrab);
-            dispatchEvent(new MaidenCrabSpawnEvent(getRoomTick(), currentSpawn, maidenCrab));
         }
 
         return maybeCrab;

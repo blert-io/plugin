@@ -23,7 +23,7 @@
 
 package io.blert.raid.rooms;
 
-import io.blert.events.NpcUpdateEvent;
+import io.blert.events.NpcEvent;
 import io.blert.raid.Hitpoints;
 import io.blert.raid.Mode;
 import io.blert.raid.TobNpc;
@@ -34,10 +34,16 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@code RoomNpc} is an NPC within a Theatre of Blood room whose data is trackable and reported via
- * {@link NpcUpdateEvent}s. The {@code RoomNpc} wraps an existing Runelite {@link NPC} with additional raid-specific
+ * {@link NpcEvent}s. The {@code RoomNpc} wraps an existing Runelite {@link NPC} with additional raid-specific
  * data fields. Each {@code RoomNpc} also has an ID which uniquely identifies it among all NPCs within the raid room.
  */
 public abstract class RoomNpc {
+    /**
+     * Properties are an immutable copy of NPC-specific data fields for a {@link RoomNpc}.
+     */
+    public abstract static class Properties {
+    }
+
     @Getter
     private final long roomId;
 
@@ -51,12 +57,24 @@ public abstract class RoomNpc {
     @Setter
     private Hitpoints hitpoints;
 
+    @Getter
+    @Setter
+    private int spawnTick;
+
     protected RoomNpc(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         this.npc = npc;
         this.mode = tobNpc.getMode();
         this.roomId = roomId;
         this.hitpoints = hitpoints;
+        this.spawnTick = -1;
     }
+
+    /**
+     * Returns a snapshot of NPC-specific properties for the NPC at a point in time.
+     *
+     * @return Copy of the current state of the NPC.
+     */
+    public abstract @NotNull Properties getProperties();
 
     public int getNpcId() {
         return npc.getId();

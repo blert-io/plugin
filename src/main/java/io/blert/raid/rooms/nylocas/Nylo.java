@@ -26,6 +26,7 @@ package io.blert.raid.rooms.nylocas;
 import io.blert.raid.Hitpoints;
 import io.blert.raid.TobNpc;
 import io.blert.raid.rooms.RoomNpc;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -39,12 +40,22 @@ import java.util.Optional;
 
 @Slf4j
 public class Nylo extends RoomNpc {
+    @AllArgsConstructor
+    @Getter
+    public static class Properties extends RoomNpc.Properties {
+        private long roomId;
+        private long parentRoomId;
+        private int wave;
+        private SpawnType spawnType;
+        private Style style;
+    }
+
     public enum Style {
         MELEE,
         RANGE,
         MAGE;
 
-        private static Style fromNpcId(int id) {
+        static Style fromNpcId(int id) {
             if (TobNpc.isNylocasIschyros(id)) {
                 return MELEE;
             }
@@ -64,7 +75,8 @@ public class Nylo extends RoomNpc {
     @Getter
     private final int spawnTick;
     @Getter
-    private final Style style;
+    @Setter
+    private Style style;
     @Getter
     private final int wave;
     @Getter
@@ -85,6 +97,12 @@ public class Nylo extends RoomNpc {
         this.wave = wave;
         this.big = npc.getComposition().getSize() > 1;
         this.deathTick = -1;
+    }
+
+    @Override
+    public @NotNull RoomNpc.Properties getProperties() {
+        long parentRoomId = parent != null ? parent.getRoomId() : 0;
+        return new Properties(getRoomId(), parentRoomId, wave, spawnType, style);
     }
 
     public boolean isSplit() {

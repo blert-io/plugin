@@ -30,20 +30,34 @@ import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
 @Getter
-public class NpcUpdateEvent extends Event {
+public class NpcEvent extends Event {
     private final long roomId;
     private final int npcId;
     private final Hitpoints hitpoints;
+    private final RoomNpc.Properties properties;
 
-    public NpcUpdateEvent(Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
-        super(EventType.NPC_UPDATE, room, tick, point);
+    public static NpcEvent spawn(Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
+        return new NpcEvent(EventType.NPC_SPAWN, room, tick, point, roomNpc);
+    }
+
+    public static NpcEvent update(Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
+        return new NpcEvent(EventType.NPC_UPDATE, room, tick, point, roomNpc);
+    }
+
+    public static NpcEvent death(Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
+        return new NpcEvent(EventType.NPC_DEATH, room, tick, point, roomNpc);
+    }
+
+    protected NpcEvent(EventType type, Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
+        super(type, room, tick, point);
         this.roomId = roomNpc.getRoomId();
         this.npcId = roomNpc.getNpcId();
         this.hitpoints = roomNpc.getHitpoints();
+        this.properties = roomNpc.getProperties();
     }
 
     @Override
     protected String eventDataString() {
-        return "npc=" + roomId;
+        return "npc=(npcId=" + npcId + ", roomId=" + roomId + ", hitpoints=" + hitpoints + ")";
     }
 }

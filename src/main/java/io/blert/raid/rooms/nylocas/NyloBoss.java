@@ -32,10 +32,18 @@ import org.jetbrains.annotations.NotNull;
 
 @Getter
 public class NyloBoss extends RoomNpc {
+    public static class NyloBossProperties extends RoomNpc.Properties {
+    }
+
     private final boolean prince;
 
     protected NyloBoss(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
         this.prince = TobNpc.isNylocasPrinkipas(tobNpc.getId());
+    }
+
+    @Override
+    public @NotNull Properties getProperties() {
+        return new NyloBossProperties();
     }
 }
