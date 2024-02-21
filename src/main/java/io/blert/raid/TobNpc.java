@@ -154,6 +154,18 @@ public enum TobNpc {
     VERZIK_P3_REGULAR(8374, 2, Mode.REGULAR, new int[]{2437, 2843, 3250}),
     VERZIK_P3_HARD(10852, 2, Mode.HARD, new int[]{2437, 2843, 3250}),
 
+    // Nylos at Verzik.
+    // TODO(frolv): Correct HP values.
+    VERZIK_NYLOCAS_ISCHYROS_ENTRY(10841, 1, Mode.ENTRY, 11),
+    VERZIK_NYLOCAS_ISCHYROS_REGULAR(8381, 1, Mode.REGULAR, 11),
+    VERZIK_NYLOCAS_ISCHYROS_HARD(10858, 1, Mode.HARD, 11),
+    VERZIK_NYLOCAS_TOXOBOLOS_ENTRY(10842, 1, Mode.ENTRY, 11),
+    VERZIK_NYLOCAS_TOXOBOLOS_REGULAR(8382, 1, Mode.REGULAR, 11),
+    VERZIK_NYLOCAS_TOXOBOLOS_HARD(10859, 1, Mode.HARD, 11),
+    VERZIK_NYLOCAS_HAGIOS_ENTRY(10843, 1, Mode.ENTRY, 11),
+    VERZIK_NYLOCAS_HAGIOS_REGULAR(8383, 1, Mode.REGULAR, 11),
+    VERZIK_NYLOCAS_HAGIOS_HARD(10860, 1, Mode.HARD, 11),
+
     // Red crabs at Verzik.
     VERZIK_MATOMENOS_ENTRY(10845, 1, Mode.ENTRY, 0),
     VERZIK_MATOMENOS_REGULAR(8385, 1, Mode.REGULAR, new int[]{150, 175, 200}),
@@ -383,6 +395,28 @@ public enum TobNpc {
 
     public boolean isAnyVerzik() {
         return isVerzikIdle() || isVerzikP1() || isVerzikP2() || isVerzikP3();
+    }
+
+    public static boolean isVerzikIschyros(int id) {
+        return idMatches(
+                id, VERZIK_NYLOCAS_ISCHYROS_ENTRY, VERZIK_NYLOCAS_ISCHYROS_REGULAR, VERZIK_NYLOCAS_ISCHYROS_HARD);
+    }
+
+    public static boolean isVerzikToxobolos(int id) {
+        return idMatches(
+                id, VERZIK_NYLOCAS_TOXOBOLOS_ENTRY, VERZIK_NYLOCAS_TOXOBOLOS_REGULAR, VERZIK_NYLOCAS_TOXOBOLOS_HARD);
+    }
+
+    public static boolean isVerzikHagios(int id) {
+        return idMatches(id, VERZIK_NYLOCAS_HAGIOS_ENTRY, VERZIK_NYLOCAS_HAGIOS_REGULAR, VERZIK_NYLOCAS_HAGIOS_HARD);
+    }
+
+    public static boolean isVerzikCrab(int id) {
+        return isVerzikIschyros(id) || isVerzikToxobolos(id) || isVerzikHagios(id);
+    }
+
+    public boolean isVerzikCrab() {
+        return isVerzikCrab(this.id);
     }
 
     public static boolean isVerzikMatomenos(int id) {

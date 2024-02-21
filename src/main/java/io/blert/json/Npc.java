@@ -30,6 +30,8 @@ import io.blert.raid.rooms.maiden.CrabSpawn;
 import io.blert.raid.rooms.maiden.MaidenCrab;
 import io.blert.raid.rooms.nylocas.Nylo;
 import io.blert.raid.rooms.nylocas.SpawnType;
+import io.blert.raid.rooms.verzik.VerzikCrab;
+import io.blert.raid.rooms.verzik.VerzikPhase;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,6 +45,7 @@ public class Npc {
         BASIC,
         MAIDEN_CRAB,
         NYLO,
+        VERZIK_CRAB,
     }
 
     @AllArgsConstructor
@@ -62,6 +65,13 @@ public class Npc {
         private final SpawnType spawnType;
     }
 
+    @AllArgsConstructor
+    @Getter
+    private static class VerzikNylo {
+        private final VerzikPhase phase;
+        private final VerzikCrab.Spawn spawn;
+    }
+
     private final Type type;
     private final int id;
     private final long roomId;
@@ -70,8 +80,8 @@ public class Npc {
 
     // Optional NPC properties.
     private @Nullable MaidenRedCrab maidenCrab = null;
-    @Setter
     private @Nullable Nylocas nylo = null;
+    private @Nullable VerzikNylo verzikCrab = null;
 
     static Npc fromNpcEvent(NpcEvent event) {
         RoomNpc.Properties properties = event.getProperties();
@@ -84,6 +94,11 @@ public class Npc {
         if (properties instanceof Nylo.Properties) {
             var nylo = (Nylo.Properties) properties;
             return new Npc(event.getNpcId(), event.getRoomId(), event.getHitpoints(), nylo);
+        }
+
+        if (properties instanceof VerzikCrab.Properties) {
+            var crab = (VerzikCrab.Properties) properties;
+            return new Npc(event.getNpcId(), event.getRoomId(), event.getHitpoints(), crab);
         }
 
         return new Npc(event.getNpcId(), event.getRoomId(), event.getHitpoints());
@@ -118,5 +133,13 @@ public class Npc {
         this.hitpoints = hitpoints;
         this.nylo = new Nylocas(properties.getParentRoomId(), properties.getWave(),
                 properties.getStyle(), properties.getSpawnType());
+    }
+
+    Npc(int id, long roomId, @NotNull Hitpoints hitpoints, VerzikCrab.Properties properties) {
+        this.type = Type.VERZIK_CRAB;
+        this.id = id;
+        this.roomId = roomId;
+        this.hitpoints = hitpoints;
+        this.verzikCrab = new VerzikNylo(properties.getPhase(), properties.getSpawn());
     }
 }

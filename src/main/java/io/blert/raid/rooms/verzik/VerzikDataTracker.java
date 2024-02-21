@@ -36,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
@@ -55,7 +56,8 @@ public class VerzikDataTracker extends RoomDataTracker {
 
     private int redCrabsTick;
     private int redCrabSpawnCount;
-    private final Set<NPC> redCrabs = new HashSet<>();
+    private final Set<VerzikCrab> crabs = new HashSet<>();
+    private final Set<BasicRoomNpc> redCrabs = new HashSet<>();
 
     public VerzikDataTracker(RaidManager manager, Client client) {
         super(manager, client, Room.VERZIK);
@@ -100,13 +102,25 @@ public class VerzikDataTracker extends RoomDataTracker {
             return Optional.of(verzik);
         }
 
+        if (tobNpc.isVerzikCrab()) {
+            WorldPoint point = getWorldLocation(npc);
+            long roomId = generateRoomId(npc);
+            VerzikCrab crab = VerzikCrab.fromSpawnedNpc(npc, tobNpc, roomId, point, raidManager.getRaidScale(), phase);
+
+            crabs.add(crab);
+            return Optional.of(crab);
+        }
+
         if (tobNpc.isVerzikMatomenos()) {
             if (tick != redCrabsTick) {
                 redCrabsTick = tick;
                 redCrabSpawnCount++;
             }
 
-            redCrabs.add(npc);
+            BasicRoomNpc crab = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                    new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            redCrabs.add(crab);
+            return Optional.of(crab);
         }
 
         return Optional.empty();
@@ -117,8 +131,11 @@ public class VerzikDataTracker extends RoomDataTracker {
         NPC npc = event.getNpc();
 
         if (TobNpc.isVerzikMatomenos(npc.getId())) {
-            redCrabs.remove(npc);
-            return false;
+            return roomNpc instanceof BasicRoomNpc && redCrabs.remove(roomNpc);
+        }
+
+        if (TobNpc.isVerzikCrab(npc.getId())) {
+            return roomNpc instanceof VerzikCrab && crabs.remove(roomNpc);
         }
 
         // Verzik despawns between phases, but it should not be counted as a final despawn until the end of the fight.

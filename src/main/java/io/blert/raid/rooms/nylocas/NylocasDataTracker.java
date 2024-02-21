@@ -198,9 +198,11 @@ public class NylocasDataTracker extends RoomDataTracker {
         nylo.recordDeath(tick, getWorldLocation(npc));
         if (nylo.isBig()) {
             bigDeathsThisTick.add(nylo);
+        } else {
+            // Only check to see if the room is empty when a small dies.
+            checkCleanupComplete();
         }
 
-        checkCleanupComplete();
         return true;
     }
 
