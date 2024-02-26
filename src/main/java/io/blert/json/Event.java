@@ -54,13 +54,15 @@ public class Event {
     private @Nullable RoomStatusEvent.Status roomStatus = null;
     private @Nullable Player player = null;
     private @Nullable Npc npc = null;
-    private @Nullable Attack attack = null;
+    private @Nullable NpcAttack npcAttack = null;
+    private @Nullable PlayerAttack attack = null;
     private @Nullable List<Coords> maidenBloodSplats = null;
     private @Nullable BloatStatus bloatStatus = null;
     private @Nullable NyloWave nyloWave = null;
     private @Nullable SoteMaze soteMaze = null;
     private @Nullable XarpusPhase xarpusPhase = null;
     private @Nullable VerzikPhase verzikPhase = null;
+    private @Nullable VerzikAttack verzikAttack = null;
 
     public static Event fromBlert(io.blert.events.Event blertEvent) {
         Event event = new Event();
@@ -91,7 +93,7 @@ public class Event {
 
             case PLAYER_ATTACK:
                 PlayerAttackEvent playerAttackEvent = (PlayerAttackEvent) blertEvent;
-                event.attack = Attack.fromPlayerAttackEvent(playerAttackEvent);
+                event.attack = PlayerAttack.fromPlayerAttackEvent(playerAttackEvent);
                 event.player = new Player(playerAttackEvent.getUsername());
                 break;
 
@@ -103,6 +105,12 @@ public class Event {
             case NPC_UPDATE:
             case NPC_DEATH:
                 event.npc = Npc.fromNpcEvent((NpcEvent) blertEvent);
+                break;
+
+            case NPC_ATTACK:
+                NpcAttackEvent npcAttackEvent = (NpcAttackEvent) blertEvent;
+                event.npc = new Npc(npcAttackEvent.getNpcId(), npcAttackEvent.getRoomId());
+                event.npcAttack = new NpcAttack(npcAttackEvent.getAttack(), npcAttackEvent.getTarget());
                 break;
 
             case MAIDEN_CRAB_LEAK:
@@ -151,6 +159,11 @@ public class Event {
             case VERZIK_REDS_SPAWN:
                 VerzikRedsSpawnEvent verzikReds = (VerzikRedsSpawnEvent) blertEvent;
                 event.verzikPhase = verzikReds.getPhase();
+                break;
+
+            case VERZIK_ATTACK_STYLE:
+                VerzikAttackStyleEvent verzikAttackStyle = (VerzikAttackStyleEvent) blertEvent;
+                event.verzikAttack = new VerzikAttack(verzikAttackStyle.getStyle(), verzikAttackStyle.getAttackTick());
                 break;
         }
 

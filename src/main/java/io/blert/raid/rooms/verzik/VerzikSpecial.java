@@ -21,38 +21,24 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.raid.rooms.verzik;
 
-public enum EventType {
-    RAID_START,
-    RAID_END,
-    RAID_UPDATE,
-    ROOM_STATUS,
-    PLAYER_UPDATE,
-    PLAYER_ATTACK,
-    PLAYER_DEATH,
-    NPC_SPAWN,
-    NPC_UPDATE,
-    NPC_DEATH,
-    NPC_ATTACK,
+public enum VerzikSpecial {
+    CRABS,
+    WEBS,
+    YELLOWS,
+    BALL;
 
-    MAIDEN_CRAB_LEAK,
-    MAIDEN_BLOOD_SPLATS,
-
-    BLOAT_DOWN,
-    BLOAT_UP,
-
-    NYLO_WAVE_SPAWN,
-    NYLO_WAVE_STALL,
-    NYLO_CLEANUP_END,
-    NYLO_BOSS_SPAWN,
-
-    SOTE_MAZE_PROC,
-    SOTE_MAZE_PATH,
-
-    XARPUS_PHASE,
-
-    VERZIK_PHASE,
-    VERZIK_REDS_SPAWN,
-    VERZIK_ATTACK_STYLE,
+    public VerzikSpecial next() {
+        switch (this) {
+            case CRABS:
+                return WEBS;
+            case WEBS:
+                return YELLOWS;
+            case YELLOWS:
+                return BALL;
+            default:
+                return CRABS;
+        }
+    }
 }

@@ -23,29 +23,13 @@
 
 package io.blert.json;
 
-import io.blert.events.PlayerAttackEvent;
-import io.blert.raid.Item;
-import io.blert.raid.PlayerAttack;
+import io.blert.events.VerzikAttackStyleEvent;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import javax.annotation.Nullable;
-
+@AllArgsConstructor
 @Getter
-public class Attack {
-    private final PlayerAttack type;
-    private @Nullable Item weapon;
-    private @Nullable Npc target;
-
-    public static Attack fromPlayerAttackEvent(PlayerAttackEvent event) {
-        Attack attack = new Attack(event.getAttack());
-        attack.weapon = event.getWeapon();
-        if (event.getTargetNpcId() != -1) {
-            attack.target = new Npc(event.getTargetNpcId(), event.getTargetRoomId());
-        }
-        return attack;
-    }
-
-    private Attack(PlayerAttack attack) {
-        this.type = attack;
-    }
+public class VerzikAttack {
+    private VerzikAttackStyleEvent.Style style;
+    private int npcAttackTick;
 }

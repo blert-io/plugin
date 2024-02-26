@@ -21,38 +21,30 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.json;
 
-public enum EventType {
-    RAID_START,
-    RAID_END,
-    RAID_UPDATE,
-    ROOM_STATUS,
-    PLAYER_UPDATE,
-    PLAYER_ATTACK,
-    PLAYER_DEATH,
-    NPC_SPAWN,
-    NPC_UPDATE,
-    NPC_DEATH,
-    NPC_ATTACK,
+import io.blert.events.PlayerAttackEvent;
+import io.blert.raid.Item;
+import lombok.Getter;
 
-    MAIDEN_CRAB_LEAK,
-    MAIDEN_BLOOD_SPLATS,
+import javax.annotation.Nullable;
 
-    BLOAT_DOWN,
-    BLOAT_UP,
+@Getter
+public class PlayerAttack {
+    private final io.blert.raid.PlayerAttack type;
+    private @Nullable Item weapon;
+    private @Nullable Npc target;
 
-    NYLO_WAVE_SPAWN,
-    NYLO_WAVE_STALL,
-    NYLO_CLEANUP_END,
-    NYLO_BOSS_SPAWN,
+    public static PlayerAttack fromPlayerAttackEvent(PlayerAttackEvent event) {
+        PlayerAttack attack = new PlayerAttack(event.getAttack());
+        attack.weapon = event.getWeapon();
+        if (event.getTargetNpcId() != -1) {
+            attack.target = new Npc(event.getTargetNpcId(), event.getTargetRoomId());
+        }
+        return attack;
+    }
 
-    SOTE_MAZE_PROC,
-    SOTE_MAZE_PATH,
-
-    XARPUS_PHASE,
-
-    VERZIK_PHASE,
-    VERZIK_REDS_SPAWN,
-    VERZIK_ATTACK_STYLE,
+    private PlayerAttack(io.blert.raid.PlayerAttack attack) {
+        this.type = attack;
+    }
 }

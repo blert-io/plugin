@@ -23,36 +23,28 @@
 
 package io.blert.events;
 
-public enum EventType {
-    RAID_START,
-    RAID_END,
-    RAID_UPDATE,
-    ROOM_STATUS,
-    PLAYER_UPDATE,
-    PLAYER_ATTACK,
-    PLAYER_DEATH,
-    NPC_SPAWN,
-    NPC_UPDATE,
-    NPC_DEATH,
-    NPC_ATTACK,
+import io.blert.raid.rooms.Room;
+import lombok.Getter;
 
-    MAIDEN_CRAB_LEAK,
-    MAIDEN_BLOOD_SPLATS,
+@Getter
+public class VerzikAttackStyleEvent extends Event {
+    public enum Style {
+        MELEE,
+        RANGE,
+        MAGE,
+    }
 
-    BLOAT_DOWN,
-    BLOAT_UP,
+    private final Style style;
+    private final int attackTick;
 
-    NYLO_WAVE_SPAWN,
-    NYLO_WAVE_STALL,
-    NYLO_CLEANUP_END,
-    NYLO_BOSS_SPAWN,
+    public VerzikAttackStyleEvent(int tick, Style style, int attackTick) {
+        super(EventType.VERZIK_ATTACK_STYLE, Room.VERZIK, tick, null);
+        this.style = style;
+        this.attackTick = attackTick;
+    }
 
-    SOTE_MAZE_PROC,
-    SOTE_MAZE_PATH,
-
-    XARPUS_PHASE,
-
-    VERZIK_PHASE,
-    VERZIK_REDS_SPAWN,
-    VERZIK_ATTACK_STYLE,
+    @Override
+    protected String eventDataString() {
+        return "verzik_attack=(style=" + style + ", tick=" + attackTick + ")";
+    }
 }

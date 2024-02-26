@@ -281,12 +281,30 @@ public abstract class RoomDataTracker {
     }
 
     /**
+     * Implementation-specific equivalent of the {@code onGraphicsObjectCreated} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
+    }
+
+    /**
      * Implementation-specific equivalent of the {@code onAnimationChanged} Runelite event handler.
      * Should be overriden by implementations which require special animation tracking.
      *
      * @param animationChanged The animation event.
      */
     protected void onAnimation(AnimationChanged animationChanged) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onProjectileMoved} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onProjectile(ProjectileMoved event) {
     }
 
     /**
@@ -378,6 +396,20 @@ public abstract class RoomDataTracker {
     protected final void onGameObjectDespawned(GameObjectDespawned event) {
         if (!terminating()) {
             onGameObjectDespawn(event);
+        }
+    }
+
+    @Subscribe
+    private void onGraphicsObjectCreated(GraphicsObjectCreated event) {
+        if (!terminating()) {
+            onGraphicsObjectCreation(event);
+        }
+    }
+
+    @Subscribe
+    protected final void onProjectileMoved(ProjectileMoved event) {
+        if (!terminating()) {
+            onProjectile(event);
         }
     }
 

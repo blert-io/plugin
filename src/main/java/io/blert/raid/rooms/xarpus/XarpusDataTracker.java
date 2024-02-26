@@ -23,10 +23,9 @@
 
 package io.blert.raid.rooms.xarpus;
 
+import io.blert.events.NpcAttackEvent;
 import io.blert.events.XarpusPhaseEvent;
-import io.blert.raid.Hitpoints;
-import io.blert.raid.RaidManager;
-import io.blert.raid.TobNpc;
+import io.blert.raid.*;
 import io.blert.raid.rooms.BasicRoomNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
@@ -34,6 +33,7 @@ import io.blert.raid.rooms.RoomNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
@@ -43,9 +43,14 @@ import java.util.Optional;
 
 @Slf4j
 public class XarpusDataTracker extends RoomDataTracker {
+    private static final int FIRST_P2_TURN_TICK = 7;
+    private static final int TICKS_PER_TURN_P2 = 4;
+    private static final int TICKS_PER_TURN_P3 = 8;
 
     private XarpusPhase phase;
     private @Nullable BasicRoomNpc xarpus = null;
+
+    private int nextTurnTick = -1;
 
     public XarpusDataTracker(RaidManager manager, Client client) {
         super(manager, client, Room.XARPUS);
@@ -62,10 +67,23 @@ public class XarpusDataTracker extends RoomDataTracker {
 
         if (xarpus != null && xarpus.getNpc().getOverheadText() != null && phase != XarpusPhase.P3) {
             phase = XarpusPhase.P3;
+            nextTurnTick = tick + TICKS_PER_TURN_P3;
             dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(xarpus.getNpc()), phase));
             log.debug("Screech: {} ({})", tick, formattedRoomTime());
         }
 
+        if (tick == nextTurnTick && xarpus != null) {
+            WorldPoint point = getWorldLocation(xarpus);
+            if (phase == XarpusPhase.P2) {
+                nextTurnTick += TICKS_PER_TURN_P2;
+                dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.XARPUS_SPIT, xarpus));
+            } else if (phase == XarpusPhase.P3) {
+                if (raidManager.getRaidMode() != Mode.HARD) {
+                    nextTurnTick += TICKS_PER_TURN_P3;
+                    dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.XARPUS_TURN, xarpus));
+                }
+            }
+        }
     }
 
     @Override
@@ -84,7 +102,11 @@ public class XarpusDataTracker extends RoomDataTracker {
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
-        return roomNpc == xarpus;
+        if (roomNpc == xarpus) {
+            nextTurnTick = -1;
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -101,6 +123,7 @@ public class XarpusDataTracker extends RoomDataTracker {
 
         if (TobNpc.isXarpusP1(idBefore) && TobNpc.isXarpus(idAfter)) {
             phase = XarpusPhase.P2;
+            nextTurnTick = tick + FIRST_P2_TURN_TICK;
             dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(changed.getNpc()), phase));
             log.debug("Exhumes: {} ({})", tick, formattedRoomTime());
         }

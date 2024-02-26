@@ -393,8 +393,12 @@ public enum TobNpc {
         return isVerzikP3(this.id);
     }
 
+    public static boolean isAnyVerzik(int id) {
+        return isVerzikIdle(id) || isVerzikP1(id) || isVerzikP2(id) || isVerzikP3(id);
+    }
+
     public boolean isAnyVerzik() {
-        return isVerzikIdle() || isVerzikP1() || isVerzikP2() || isVerzikP3();
+        return isAnyVerzik(this.id);
     }
 
     public static boolean isVerzikIschyros(int id) {

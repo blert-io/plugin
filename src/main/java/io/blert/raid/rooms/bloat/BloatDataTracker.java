@@ -25,7 +25,9 @@ package io.blert.raid.rooms.bloat;
 
 import io.blert.events.BloatDownEvent;
 import io.blert.events.BloatUpEvent;
+import io.blert.events.NpcAttackEvent;
 import io.blert.raid.Hitpoints;
+import io.blert.raid.NpcAttack;
 import io.blert.raid.RaidManager;
 import io.blert.raid.TobNpc;
 import io.blert.raid.rooms.BasicRoomNpc;
@@ -47,23 +49,56 @@ import java.util.Optional;
 
 public class BloatDataTracker extends RoomDataTracker {
     private static final int BLOAT_DOWN_ANIMATION = 8082;
+    private static final int BLOAT_DOWN_CYCLE_TICKS = 32;
+    private static final int BLOAT_STOMP_TICK = 3;
 
-    int currentDown;
-    int lastDownTick;
-    int lastUpTick;
+    private enum State {
+        WALKING,
+        DOWN,
+    }
+
+    private State state;
+    private BasicRoomNpc bloat;
+
+    private int currentDown;
+    private int currentDownTick;
+    private int lastDownTick;
+    private int lastUpTick;
 
     public BloatDataTracker(RaidManager manager, Client client) {
         super(manager, client, Room.BLOAT, true);
+        state = State.WALKING;
         currentDown = 0;
-        lastUpTick = 0;
+        lastDownTick = -1;
+        lastUpTick = -1;
+        bloat = null;
     }
 
     @Override
     protected void onRoomStart() {
+        if (bloat != null && bloat.getNpc().getAnimation() == BLOAT_DOWN_ANIMATION) {
+            state = State.DOWN;
+        } else {
+            state = State.WALKING;
+        }
     }
 
     @Override
     protected void onTick() {
+        final int tick = getRoomTick();
+
+        if (state == State.DOWN) {
+            if (lastDownTick == tick) {
+                currentDownTick = BLOAT_DOWN_CYCLE_TICKS;
+            } else {
+                currentDownTick--;
+            }
+
+            if (currentDownTick == BLOAT_STOMP_TICK && bloat != null) {
+                WorldPoint point = getWorldLocation(bloat);
+                dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.BLOAT_STOMP, bloat));
+            }
+        }
     }
 
     @Override
@@ -72,13 +107,16 @@ public class BloatDataTracker extends RoomDataTracker {
 
         return TobNpc.withId(npc.getId())
                 .filter(tobNpc -> TobNpc.isBloat(tobNpc.getId()))
-                .map(tobNpc -> new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
-                        new Hitpoints(tobNpc, raidManager.getRaidScale())));
+                .map(tobNpc -> {
+                    bloat = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                            new Hitpoints(tobNpc, raidManager.getRaidScale()));
+                    return bloat;
+                });
     }
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
-        return true;
+        return roomNpc == bloat;
     }
 
     @Override
@@ -103,6 +141,7 @@ public class BloatDataTracker extends RoomDataTracker {
 
     private void handleBloatDown(NPC bloat, int tick) {
         currentDown++;
+        state = State.DOWN;
         lastDownTick = tick;
         log.debug("Bloat down {} tick {}", currentDown, lastDownTick);
 
@@ -112,6 +151,7 @@ public class BloatDataTracker extends RoomDataTracker {
 
     private void handleBloatUp(NPC bloat, int tick) {
         lastUpTick = tick;
+        state = State.WALKING;
         log.debug("Bloat up {} tick {}", currentDown, lastUpTick);
 
         WorldPoint point = WorldPoint.fromLocalInstance(client, bloat.getLocalLocation());

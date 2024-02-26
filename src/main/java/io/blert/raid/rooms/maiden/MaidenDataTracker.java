@@ -25,21 +25,16 @@ package io.blert.raid.rooms.maiden;
 
 import io.blert.events.MaidenBloodSplatsEvent;
 import io.blert.events.MaidenCrabLeakEvent;
+import io.blert.events.NpcAttackEvent;
 import io.blert.raid.*;
 import io.blert.raid.rooms.BasicRoomNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
 import io.blert.raid.rooms.RoomNpc;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.GameObject;
-import net.runelite.api.GraphicsObject;
-import net.runelite.api.NPC;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameObjectDespawned;
-import net.runelite.api.events.GameObjectSpawned;
-import net.runelite.api.events.NpcDespawned;
-import net.runelite.api.events.NpcSpawned;
+import net.runelite.api.events.*;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -49,6 +44,9 @@ import java.util.*;
 public class MaidenDataTracker extends RoomDataTracker {
     private final static int MAIDEN_BLOODSPLAT_GRAPHIC_ID = 1579;
     private final static int MAIDEN_BLOOD_TRAIL_OBJECT_ID = 32984;
+
+    private final static int MAIDEN_BLOOD_THROW_ANIMATION = 8091;
+    private final static int MAIDEN_AUTO_ANIMATION = 8092;
 
     private CrabSpawn currentSpawn = CrabSpawn.SEVENTIES;
     private final int[] spawnTicks = new int[3];
@@ -158,6 +156,30 @@ public class MaidenDataTracker extends RoomDataTracker {
         crabs.remove(npc.hashCode());
         // Every maiden NPC despawn is final.
         return true;
+    }
+
+    @Override
+    protected void onAnimation(AnimationChanged event) {
+        Actor actor = event.getActor();
+        if (maiden == null || actor != maiden.getNpc()) {
+            return;
+        }
+
+        final int tick = getRoomTick();
+
+        NpcAttack attack;
+        switch (actor.getAnimation()) {
+            case MAIDEN_BLOOD_THROW_ANIMATION:
+                attack = NpcAttack.MAIDEN_BLOOD_THROW;
+                break;
+            case MAIDEN_AUTO_ANIMATION:
+                attack = NpcAttack.MAIDEN_AUTO;
+                break;
+            default:
+                return;
+        }
+
+        dispatchEvent(new NpcAttackEvent(getRoom(), tick, getWorldLocation(actor), attack, maiden));
     }
 
     private Optional<RoomNpc> handleMaidenBloodSpawnSpawn(NPC npc) {

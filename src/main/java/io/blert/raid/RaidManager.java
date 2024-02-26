@@ -109,11 +109,11 @@ public class RaidManager {
     }
 
     public boolean playerIsInRaid(@Nullable String username) {
-        return username != null && party.containsKey(username.toLowerCase());
+        return username != null && party.containsKey(Text.standardize(username));
     }
 
     public Raider getRaider(@Nullable String username) {
-        return username != null ? party.get(username.toLowerCase()) : null;
+        return username != null ? party.get(Text.standardize(username)) : null;
     }
 
     public Collection<Raider> getRaiders() {
@@ -168,7 +168,7 @@ public class RaidManager {
         for (int player = 0; player < 5; player++) {
             String username = client.getVarcStrValue(TOB_P1_VARCSTR_ID + player);
             if (!Strings.isNullOrEmpty(username)) {
-                callback.accept(player, Text.toJagexName(username));
+                callback.accept(player, Text.sanitize(username));
             }
         }
     }

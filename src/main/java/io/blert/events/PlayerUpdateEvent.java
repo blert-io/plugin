@@ -81,7 +81,7 @@ public class PlayerUpdateEvent extends Event {
         WorldPoint point = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
         Source source = raider.isLocalPlayer() ? Source.PRIMARY : Source.SECONDARY;
 
-        PlayerUpdateEvent evt = new PlayerUpdateEvent(room, tick, point, source, player.getName());
+        PlayerUpdateEvent evt = new PlayerUpdateEvent(room, tick, point, source, raider.getUsername());
         evt.equipment.putAll(raider.getEquipment());
         evt.offCooldownTick = raider.getOffCooldownTick();
 

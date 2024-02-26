@@ -24,22 +24,18 @@
 package io.blert.raid.rooms.nylocas;
 
 import com.google.common.collect.ImmutableSet;
-import io.blert.events.NyloBossSpawnEvent;
-import io.blert.events.NyloCleanupEndEvent;
-import io.blert.events.NyloWaveSpawnEvent;
-import io.blert.events.NyloWaveStallEvent;
-import io.blert.raid.Hitpoints;
-import io.blert.raid.Mode;
-import io.blert.raid.RaidManager;
-import io.blert.raid.TobNpc;
+import io.blert.events.*;
+import io.blert.raid.*;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
 import io.blert.raid.rooms.RoomNpc;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.NullNpcID;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
@@ -56,6 +52,10 @@ public class NylocasDataTracker extends RoomDataTracker {
     private static final int[] NATURAL_STALLS = new int[]{
             0, 4, 4, 4, 4, 16, 4, 12, 4, 12, 8, 8, 8, 8, 8, 8, 4, 12, 8, 12, 16, 8, 12, 8, 8, 8, 4, 8, 4, 4, 4,
     };
+
+    private static final int NYLO_BOSS_MAGE_ANIMATION = 7989;
+    private static final int NYLO_BOSS_RANGE_ANIMATION = 7999;
+    private static final int NYLO_BOSS_MELEE_ANIMATION = 8004;
 
     private int currentWave;
     private int nextWaveSpawnCheckTick;
@@ -213,6 +213,33 @@ public class NylocasDataTracker extends RoomDataTracker {
         if (nylo != null) {
             nylo.setStyle(Nylo.Style.fromNpcId(npc.getId()));
         }
+    }
+
+    @Override
+    protected void onAnimation(AnimationChanged event) {
+        Actor actor = event.getActor();
+        if (nyloBoss == null || actor != nyloBoss.getNpc()) {
+            return;
+        }
+
+        final int tick = getRoomTick();
+
+        NpcAttack attack;
+        switch (actor.getAnimation()) {
+            case NYLO_BOSS_MAGE_ANIMATION:
+                attack = NpcAttack.NYLO_BOSS_MAGE;
+                break;
+            case NYLO_BOSS_RANGE_ANIMATION:
+                attack = NpcAttack.NYLO_BOSS_RANGE;
+                break;
+            case NYLO_BOSS_MELEE_ANIMATION:
+                attack = NpcAttack.NYLO_BOSS_MELEE;
+                break;
+            default:
+                return;
+        }
+
+        dispatchEvent(new NpcAttackEvent(getRoom(), tick, getWorldLocation(actor), attack, nyloBoss));
     }
 
     private Optional<Nylo> handleNylocasSpawn(NPC npc) {

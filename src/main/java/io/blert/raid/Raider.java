@@ -80,6 +80,10 @@ public class Raider {
         this.active = true;
     }
 
+    public boolean isAlive() {
+        return !dead;
+    }
+
     public boolean isOffCooldownOn(int tick) {
         return offCooldownTick <= tick;
     }

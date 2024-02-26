@@ -23,36 +23,35 @@
 
 package io.blert.events;
 
-public enum EventType {
-    RAID_START,
-    RAID_END,
-    RAID_UPDATE,
-    ROOM_STATUS,
-    PLAYER_UPDATE,
-    PLAYER_ATTACK,
-    PLAYER_DEATH,
-    NPC_SPAWN,
-    NPC_UPDATE,
-    NPC_DEATH,
-    NPC_ATTACK,
+import io.blert.raid.NpcAttack;
+import io.blert.raid.rooms.Room;
+import io.blert.raid.rooms.RoomNpc;
+import lombok.Getter;
+import net.runelite.api.Actor;
+import net.runelite.api.Player;
+import net.runelite.api.coords.WorldPoint;
 
-    MAIDEN_CRAB_LEAK,
-    MAIDEN_BLOOD_SPLATS,
+import javax.annotation.Nullable;
 
-    BLOAT_DOWN,
-    BLOAT_UP,
+@Getter
+public class NpcAttackEvent extends Event {
+    private final NpcAttack attack;
+    private final int npcId;
+    private final long roomId;
+    private final @Nullable String target;
 
-    NYLO_WAVE_SPAWN,
-    NYLO_WAVE_STALL,
-    NYLO_CLEANUP_END,
-    NYLO_BOSS_SPAWN,
+    public NpcAttackEvent(@Nullable Room room, int tick, @Nullable WorldPoint point, NpcAttack attack, RoomNpc npc) {
+        super(EventType.NPC_ATTACK, room, tick, point);
+        this.attack = attack;
+        this.npcId = npc.getNpcId();
+        this.roomId = npc.getRoomId();
 
-    SOTE_MAZE_PROC,
-    SOTE_MAZE_PATH,
+        Actor interacting = npc.getNpc().getInteracting();
+        this.target = interacting instanceof Player ? interacting.getName() : null;
+    }
 
-    XARPUS_PHASE,
-
-    VERZIK_PHASE,
-    VERZIK_REDS_SPAWN,
-    VERZIK_ATTACK_STYLE,
+    @Override
+    protected String eventDataString() {
+        return "npc_attack=(attack=" + attack + ", target=" + (target != null ? target : "none") + ")";
+    }
 }
