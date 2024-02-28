@@ -34,10 +34,12 @@ public class PlayerAttack {
     private final io.blert.raid.PlayerAttack type;
     private @Nullable Item weapon;
     private @Nullable Npc target;
+    private int distanceToTarget;
 
     public static PlayerAttack fromPlayerAttackEvent(PlayerAttackEvent event) {
         PlayerAttack attack = new PlayerAttack(event.getAttack());
         attack.weapon = event.getWeapon();
+        attack.distanceToTarget = event.getDistanceToTarget();
         if (event.getTargetNpcId() != -1) {
             attack.target = new Npc(event.getTargetNpcId(), event.getTargetRoomId());
         }

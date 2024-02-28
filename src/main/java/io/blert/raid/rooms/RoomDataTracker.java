@@ -588,8 +588,10 @@ public abstract class RoomDataTracker {
             raider.recordAttack(tick, attack);
 
             RoomNpc roomTarget = target.flatMap(roomNpcs::getByNpc).orElse(null);
-            dispatchEvent(new PlayerAttackEvent(room, tick, point, attack, weapon.orElse(null),
-                    player.getName(), roomTarget));
+            WorldPoint npcPoint = target.map(npc ->
+                    WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(npc))).orElse(null);
+            dispatchEvent(new PlayerAttackEvent(room, tick, point, npcPoint, attack,
+                    weapon.orElse(null), raider, roomTarget));
         });
     }
 

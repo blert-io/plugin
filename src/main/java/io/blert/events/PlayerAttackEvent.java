@@ -25,6 +25,7 @@ package io.blert.events;
 
 import io.blert.raid.Item;
 import io.blert.raid.PlayerAttack;
+import io.blert.raid.Raider;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomNpc;
 import lombok.Getter;
@@ -39,13 +40,15 @@ public class PlayerAttackEvent extends Event {
     private final String username;
     private final int targetNpcId;
     private final long targetRoomId;
+    private final int distanceToTarget;
 
-    public PlayerAttackEvent(Room room, int tick, WorldPoint point, PlayerAttack attack,
-                             Item weapon, String username, @Nullable RoomNpc roomNpc) {
-        super(EventType.PLAYER_ATTACK, room, tick, point);
+    public PlayerAttackEvent(Room room, int tick, WorldPoint playerPoint, @Nullable WorldPoint npcPoint,
+                             PlayerAttack attack, Item weapon, Raider raider, @Nullable RoomNpc roomNpc) {
+        super(EventType.PLAYER_ATTACK, room, tick, playerPoint);
         this.attack = attack;
         this.weapon = weapon;
-        this.username = username;
+        this.username = raider.getUsername();
+        this.distanceToTarget = npcPoint != null ? playerPoint.distanceTo2D(npcPoint) : -1;
 
         if (roomNpc != null) {
             this.targetNpcId = roomNpc.getNpcId();
