@@ -81,7 +81,7 @@ public class MaidenDataTracker extends RoomDataTracker {
 
         // Add any blood trails left by blood spawns to the list. In the future, this may be a separate event.
         for (GameObject trail : bloodTrails) {
-            bloodSplats.add(WorldPoint.fromLocalInstance(client, trail.getLocalLocation()));
+            bloodSplats.add(getWorldLocation(trail));
         }
 
         final int tick = getRoomTick();
@@ -113,8 +113,7 @@ public class MaidenDataTracker extends RoomDataTracker {
             return;
         }
 
-        WorldPoint point = WorldPoint.fromLocalInstance(client, spawned.getTile().getLocalLocation());
-        if (Location.fromWorldPoint(point).inMaiden()) {
+        if (Location.fromWorldPoint(getWorldLocation(object)).inMaiden()) {
             bloodTrails.add(object);
         }
     }
@@ -196,7 +195,7 @@ public class MaidenDataTracker extends RoomDataTracker {
             markNewSpawn();
         }
 
-        WorldPoint spawnLocation = WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(npc));
+        WorldPoint spawnLocation = getWorldLocation(npc);
 
         Optional<MaidenCrab> maybeCrab = MaidenCrab.fromSpawnLocation(
                 raidManager.getRaidScale(), npc, generateRoomId(npc), currentSpawn, spawnLocation);

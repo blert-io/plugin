@@ -38,7 +38,6 @@ import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.Player;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 
 import javax.annotation.Nullable;
@@ -54,6 +53,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     private final int[] mazeTicks = new int[]{-1, -1};
     private Maze maze = Maze.MAZE_66;
+    private @Nullable NpcAttack attackThisTick = null;
     private int lastAttackTick = -1;
     private int deathBallSpawnTick = -1;
     private @Nullable BasicRoomNpc sotetseg = null;
@@ -77,6 +77,17 @@ public class SotetsegDataTracker extends RoomDataTracker {
         if (deathBallSpawnTick != -1 && tick == deathBallSpawnTick + 20) {
             // The ball takes 15 ticks to land, but add in a safety buffer.
             deathBallSpawnTick = -1;
+        }
+
+        if (attackThisTick != null && sotetseg != null) {
+            if (deathBallSpawnTick == tick) {
+                // A regular attack animation may have occurred at the same time as the death ball; the death ball
+                // should take priority.
+                attackThisTick = NpcAttack.SOTE_DEATH_BALL;
+            }
+            lastAttackTick = tick;
+            dispatchEvent(new NpcAttackEvent(getRoom(), tick, getWorldLocation(sotetseg), attackThisTick, sotetseg));
+            attackThisTick = null;
         }
     }
 
@@ -120,17 +131,11 @@ public class SotetsegDataTracker extends RoomDataTracker {
                 return;
             }
 
-            NpcAttack attack;
             if (animationId == SOTE_MELEE_ANIMATION) {
-                attack = NpcAttack.SOTE_MELEE;
+                attackThisTick = NpcAttack.SOTE_MELEE;
             } else if (animationId == SOTE_BALL_ANIMATION) {
-                attack = NpcAttack.SOTE_BALL;
-            } else {
-                return;
+                attackThisTick = NpcAttack.SOTE_BALL;
             }
-
-            lastAttackTick = tick;
-            dispatchEvent(new NpcAttackEvent(getRoom(), tick, getWorldLocation(actor), attack, sotetseg));
             return;
         }
 
@@ -148,14 +153,8 @@ public class SotetsegDataTracker extends RoomDataTracker {
     @Override
     protected void onProjectile(ProjectileMoved event) {
         if (event.getProjectile().getId() == SOTE_DEATH_BALL_PROJECTILE && deathBallSpawnTick == -1) {
-            final int tick = getRoomTick();
-
-            deathBallSpawnTick = tick;
-
-            if (sotetseg != null) {
-                WorldPoint point = getWorldLocation(sotetseg);
-                dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.SOTE_DEATH_BALL, sotetseg));
-            }
+            deathBallSpawnTick = getRoomTick();
+            attackThisTick = NpcAttack.SOTE_DEATH_BALL;
         }
     }
 }

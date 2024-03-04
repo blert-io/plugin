@@ -286,8 +286,7 @@ public class NylocasDataTracker extends RoomDataTracker {
 
         if (bossSpawnTick == -1) {
             bossSpawnTick = tick;
-            WorldPoint spawnPoint = WorldPoint.fromLocalInstance(client, npc.getLocalLocation());
-            dispatchEvent(new NyloBossSpawnEvent(tick, spawnPoint));
+            dispatchEvent(new NyloBossSpawnEvent(tick, getWorldLocation(npc)));
             log.debug("Boss: {} ({})", tick, formattedRoomTime());
         }
     }

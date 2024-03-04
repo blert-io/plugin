@@ -145,8 +145,7 @@ public class BloatDataTracker extends RoomDataTracker {
         lastDownTick = tick;
         log.debug("Bloat down {} tick {}", currentDown, lastDownTick);
 
-        WorldPoint point = WorldPoint.fromLocalInstance(client, bloat.getLocalLocation());
-        dispatchEvent(new BloatDownEvent(tick, point, tick - lastUpTick));
+        dispatchEvent(new BloatDownEvent(tick, getWorldLocation(bloat), tick - lastUpTick));
     }
 
     private void handleBloatUp(NPC bloat, int tick) {
@@ -154,7 +153,6 @@ public class BloatDataTracker extends RoomDataTracker {
         state = State.WALKING;
         log.debug("Bloat up {} tick {}", currentDown, lastUpTick);
 
-        WorldPoint point = WorldPoint.fromLocalInstance(client, bloat.getLocalLocation());
-        dispatchEvent(new BloatUpEvent(tick, point));
+        dispatchEvent(new BloatUpEvent(tick, getWorldLocation(bloat)));
     }
 }

@@ -34,6 +34,7 @@ public enum PlayerAttack {
     BGS_SMACK(new int[]{ItemID.BANDOS_GODSWORD, ItemID.BANDOS_GODSWORD_OR}, 7045, 6),
     BGS_SPEC(new int[]{ItemID.BANDOS_GODSWORD, ItemID.BANDOS_GODSWORD_OR}, new int[]{7642, 7643}, 6),
     BLOWPIPE(new int[]{ItemID.TOXIC_BLOWPIPE, ItemID.BLAZING_BLOWPIPE}, new int[]{5061, 10656}, 2),
+    BOWFA(new int[]{ItemID.BOW_OF_FAERDHINEN, ItemID.BOW_OF_FAERDHINEN_C, 25884, 25886, 25888, 25890, 25892, 25894, 25896}, 426, 4),
     CHALLY_SWIPE(ItemID.CRYSTAL_HALBERD, 440, 7),
     CHALLY_SPEC(ItemID.CRYSTAL_HALBERD, 1203, 7),
     CHIN_BLACK(ItemID.BLACK_CHINCHOMPA, 7618, 3),
@@ -79,7 +80,7 @@ public enum PlayerAttack {
 
     // Attacks where the animation matches a known style of attack, but the weapon does not.
     UNKNOWN_BOW(426),
-    UNKNOWN_BARRAGE(1979),
+    UNKNOWN_BARRAGE(1979, 5),
     UNKNOWN_POWERED_STAFF(1167),
     UNKNOWN(-1),
     ;
@@ -203,6 +204,13 @@ public enum PlayerAttack {
 
     PlayerAttack(int weaponId, int animationId, int cooldown) {
         this(new int[]{weaponId}, new int[]{animationId}, cooldown);
+    }
+
+    PlayerAttack(int animationId, int cooldown) {
+        this.weaponIds = new int[]{-1};
+        this.animationIds = new int[]{animationId};
+        this.cooldown = cooldown;
+        this.unknown = true;
     }
 
     PlayerAttack(int animationId) {

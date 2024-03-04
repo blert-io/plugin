@@ -42,13 +42,13 @@ public class PlayerAttackEvent extends Event {
     private final long targetRoomId;
     private final int distanceToTarget;
 
-    public PlayerAttackEvent(Room room, int tick, WorldPoint playerPoint, @Nullable WorldPoint npcPoint,
-                             PlayerAttack attack, Item weapon, Raider raider, @Nullable RoomNpc roomNpc) {
+    public PlayerAttackEvent(Room room, int tick, WorldPoint playerPoint, PlayerAttack attack, Item weapon,
+                             Raider raider, @Nullable RoomNpc roomNpc, int distanceToNpc) {
         super(EventType.PLAYER_ATTACK, room, tick, playerPoint);
         this.attack = attack;
         this.weapon = weapon;
         this.username = raider.getUsername();
-        this.distanceToTarget = npcPoint != null ? playerPoint.distanceTo2D(npcPoint) : -1;
+        this.distanceToTarget = distanceToNpc;
 
         if (roomNpc != null) {
             this.targetNpcId = roomNpc.getNpcId();

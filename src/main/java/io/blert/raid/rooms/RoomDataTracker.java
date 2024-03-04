@@ -215,10 +215,7 @@ public abstract class RoomDataTracker {
     public boolean playersAreInRoom() {
         return client.getPlayers().stream()
                 .filter(player -> raidManager.playerIsInRaid(player.getName()))
-                .anyMatch(player -> {
-                    WorldPoint position = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-                    return Location.fromWorldPoint(position).inRoom(room);
-                });
+                .anyMatch(player -> Location.fromWorldPoint(getWorldLocation(player)).inRoom(room));
     }
 
     /**
@@ -323,13 +320,21 @@ public abstract class RoomDataTracker {
         raidManager.dispatchEvent(event);
     }
 
+    private WorldPoint getWorldLocation(WorldPoint instanceUnawareWorldPoint) {
+        LocalPoint local = LocalPoint.fromWorld(client, instanceUnawareWorldPoint);
+        return local != null ? WorldPoint.fromLocalInstance(client, local) : null;
+    }
+
     protected WorldPoint getWorldLocation(@NotNull Actor actor) {
-        LocalPoint local = actor instanceof NPC ? Utils.getNpcSouthwestTile((NPC) actor) : actor.getLocalLocation();
-        return WorldPoint.fromLocalInstance(client, local);
+        return getWorldLocation(actor.getWorldLocation());
     }
 
     protected WorldPoint getWorldLocation(@NotNull RoomNpc roomNpc) {
         return getWorldLocation(roomNpc.getNpc());
+    }
+
+    protected WorldPoint getWorldLocation(@NotNull GameObject object) {
+        return getWorldLocation(object.getWorldLocation());
     }
 
     protected long generateRoomId(@NotNull NPC npc) {
@@ -521,8 +526,8 @@ public abstract class RoomDataTracker {
 
                 raider.setDead(true);
                 if (raider.getPlayer() != null) {
-                    WorldPoint point = WorldPoint.fromLocalInstance(client, raider.getPlayer().getLocalLocation());
-                    dispatchEvent(new PlayerDeathEvent(room, getRoomTick(), point, raider.getUsername()));
+                    dispatchEvent(new PlayerDeathEvent(
+                            room, getRoomTick(), getWorldLocation(raider.getPlayer()), raider.getUsername()));
                 }
             }
         });
@@ -539,7 +544,7 @@ public abstract class RoomDataTracker {
 
             raider.updateState(client, player, tick);
 
-            dispatchEvent(PlayerUpdateEvent.fromRaider(room, tick, client, raider));
+            dispatchEvent(PlayerUpdateEvent.fromRaider(room, tick, getWorldLocation(player), client, raider));
         });
     }
 
@@ -562,7 +567,7 @@ public abstract class RoomDataTracker {
             return;
         }
 
-        WorldPoint point = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
+        WorldPoint point = getWorldLocation(player);
         if (!Location.fromWorldPoint(point).inRoom(room)) {
             return;
         }
@@ -588,10 +593,9 @@ public abstract class RoomDataTracker {
             raider.recordAttack(tick, attack);
 
             RoomNpc roomTarget = target.flatMap(roomNpcs::getByNpc).orElse(null);
-            WorldPoint npcPoint = target.map(npc ->
-                    WorldPoint.fromLocalInstance(client, Utils.getNpcSouthwestTile(npc))).orElse(null);
-            dispatchEvent(new PlayerAttackEvent(room, tick, point, npcPoint, attack,
-                    weapon.orElse(null), raider, roomTarget));
+            int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);
+            dispatchEvent(new PlayerAttackEvent(room, tick, point, attack, weapon.orElse(null),
+                    raider, roomTarget, distanceToNpc));
         });
     }
 
