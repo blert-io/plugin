@@ -46,7 +46,7 @@ public enum TobNpc {
     // Maiden heat-seeking blood spawn.
     MAIDEN_BLOOD_SPAWN_ENTRY(10821, 1, Mode.ENTRY, 0),
     MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, Mode.REGULAR, new int[]{90, 105, 120}),
-    MAIDEN_BLOOD_SPAWN_HARD(10829, 1, Mode.HARD, new int[]{0, 0, 0}),
+    MAIDEN_BLOOD_SPAWN_HARD(10829, 1, Mode.HARD, new int[]{90, 105, 120}),
 
     // Bloat.
     BLOAT_ENTRY(10812, 1, Mode.ENTRY, 320),
@@ -154,6 +154,9 @@ public enum TobNpc {
     VERZIK_P3_REGULAR(8374, 2, Mode.REGULAR, new int[]{2437, 2843, 3250}),
     VERZIK_P3_HARD(10852, 2, Mode.HARD, new int[]{2437, 2843, 3250}),
 
+    // Pillars at Verzik.
+    VERZIK_PILLAR(8379, 1, Mode.REGULAR, 0),
+
     // Nylos at Verzik.
     // TODO(frolv): Correct HP values.
     VERZIK_NYLOCAS_ISCHYROS_ENTRY(10841, 1, Mode.ENTRY, 11),
@@ -165,6 +168,11 @@ public enum TobNpc {
     VERZIK_NYLOCAS_HAGIOS_ENTRY(10843, 1, Mode.ENTRY, 11),
     VERZIK_NYLOCAS_HAGIOS_REGULAR(8383, 1, Mode.REGULAR, 11),
     VERZIK_NYLOCAS_HAGIOS_HARD(10860, 1, Mode.HARD, 11),
+
+    // Purple crab at Verzik.
+    VERZIK_ATHANATOS_ENTRY(10844, 1, Mode.ENTRY, 0),
+    VERZIK_ATHANATOS_REGULAR(8384, 1, Mode.REGULAR, 0),
+    VERZIK_ATHANATOS_HARD(10861, 1, Mode.HARD, 0),
 
     // Red crabs at Verzik.
     VERZIK_MATOMENOS_ENTRY(10845, 1, Mode.ENTRY, 0),
@@ -421,6 +429,14 @@ public enum TobNpc {
 
     public boolean isVerzikCrab() {
         return isVerzikCrab(this.id);
+    }
+
+    public static boolean isVerzikAthanatos(int id) {
+        return idMatches(id, VERZIK_ATHANATOS_ENTRY, VERZIK_ATHANATOS_REGULAR, VERZIK_ATHANATOS_HARD);
+    }
+
+    public boolean isVerzikAthanatos() {
+        return isVerzikAthanatos(this.id);
     }
 
     public static boolean isVerzikMatomenos(int id) {

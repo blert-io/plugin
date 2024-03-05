@@ -376,10 +376,7 @@ public abstract class RoomDataTracker {
 
         Optional<RoomNpc> maybeRoomNpc = roomNpcs.getByNpc(event.getNpc());
         if (onNpcDespawn(event, maybeRoomNpc.orElse(null))) {
-            maybeRoomNpc.ifPresent(roomNpc -> {
-                dispatchEvent(NpcEvent.death(room, getRoomTick(), getWorldLocation(roomNpc), roomNpc));
-                roomNpcs.remove(roomNpc);
-            });
+            maybeRoomNpc.ifPresent(this::despawnRoomNpc);
         }
     }
 
@@ -611,6 +608,11 @@ public abstract class RoomDataTracker {
         } else {
             dispatchEvent(NpcEvent.update(room, tick, point, roomNpc));
         }
+    }
+
+    protected void despawnRoomNpc(RoomNpc roomNpc) {
+        dispatchEvent(NpcEvent.death(room, getRoomTick(), getWorldLocation(roomNpc), roomNpc));
+        roomNpcs.remove(roomNpc);
     }
 
     protected String formattedRoomTime() {

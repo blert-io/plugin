@@ -83,8 +83,9 @@ public class VerzikDataTracker extends RoomDataTracker {
 
     private int redCrabsTick;
     private int redCrabSpawnCount;
-    private final Set<VerzikCrab> crabs = new HashSet<>();
-    private final Set<BasicRoomNpc> redCrabs = new HashSet<>();
+    private final List<BasicRoomNpc> pillars = new ArrayList<>();
+    private final Set<VerzikCrab> explodingCrabs = new HashSet<>();
+    private final Set<BasicRoomNpc> specialCrabs = new HashSet<>();
     private final List<WorldPoint> yellowPools = new ArrayList<>();
 
     public VerzikDataTracker(RaidManager manager, Client client) {
@@ -161,6 +162,24 @@ public class VerzikDataTracker extends RoomDataTracker {
             return Optional.empty();
         }
 
+        if (npc.getId() == NpcID.SUPPORTING_PILLAR) {
+            BasicRoomNpc pillar = new BasicRoomNpc(npc, TobNpc.VERZIK_PILLAR, generateRoomId(npc), new Hitpoints(0));
+            pillars.add(pillar);
+            return Optional.of(pillar);
+        }
+
+        if (npc.getId() == NpcID.COLLAPSING_PILLAR) {
+            // Find the pillar that collapsed and despawn it.
+            pillars.stream()
+                    .filter(pillar -> npc.getWorldArea().contains2D(pillar.getNpc().getWorldLocation()))
+                    .findFirst()
+                    .ifPresent(collapsed -> {
+                        pillars.remove(collapsed);
+                        despawnRoomNpc(collapsed);
+                    });
+            return Optional.empty();
+        }
+
         var maybeNpc = TobNpc.withId(npc.getId());
         if (maybeNpc.isEmpty()) {
             return Optional.empty();
@@ -178,8 +197,15 @@ public class VerzikDataTracker extends RoomDataTracker {
             long roomId = generateRoomId(npc);
             VerzikCrab crab = VerzikCrab.fromSpawnedNpc(npc, tobNpc, roomId, point, raidManager.getRaidScale(), phase);
 
-            crabs.add(crab);
+            explodingCrabs.add(crab);
             return Optional.of(crab);
+        }
+
+        if (tobNpc.isVerzikAthanatos()) {
+            BasicRoomNpc purpleCrab = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                    new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            specialCrabs.add(purpleCrab);
+            return Optional.of(purpleCrab);
         }
 
         if (tobNpc.isVerzikMatomenos()) {
@@ -189,7 +215,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             BasicRoomNpc crab = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
                     new Hitpoints(tobNpc, raidManager.getRaidScale()));
-            redCrabs.add(crab);
+            specialCrabs.add(crab);
             return Optional.of(crab);
         }
 
@@ -200,12 +226,12 @@ public class VerzikDataTracker extends RoomDataTracker {
     protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
         NPC npc = event.getNpc();
 
-        if (TobNpc.isVerzikMatomenos(npc.getId())) {
-            return roomNpc instanceof BasicRoomNpc && redCrabs.remove(roomNpc);
+        if (TobNpc.isVerzikMatomenos(npc.getId()) || TobNpc.isVerzikAthanatos(npc.getId())) {
+            return roomNpc instanceof BasicRoomNpc && specialCrabs.remove(roomNpc);
         }
 
         if (TobNpc.isVerzikCrab(npc.getId())) {
-            return roomNpc instanceof VerzikCrab && crabs.remove(roomNpc);
+            return roomNpc instanceof VerzikCrab && explodingCrabs.remove(roomNpc);
         }
 
         // Verzik despawns between phases, but it should not be counted as a final despawn until the end of the fight.
@@ -286,7 +312,10 @@ public class VerzikDataTracker extends RoomDataTracker {
                     nextVerzikAttack = NpcAttack.VERZIK_P2_CABBAGE;
                     break;
                 case P2_ZAP_PROJECTILE:
-                    nextVerzikAttack = NpcAttack.VERZIK_P2_ZAP;
+                    if (verzikAttacksUntilSpecial <= 0) {
+                        nextVerzikAttack = NpcAttack.VERZIK_P2_ZAP;
+                        verzikAttacksUntilSpecial = 4;
+                    }
                     break;
                 case P2_PURPLE_PROJECTILE:
                     nextVerzikAttack = NpcAttack.VERZIK_P2_PURPLE;
@@ -350,12 +379,12 @@ public class VerzikDataTracker extends RoomDataTracker {
                 break;
 
             case P2:
-                if (redCrabSpawnCount > 0) {
+                if (verzikAttacksUntilSpecial > 0) {
                     verzikAttacksUntilSpecial--;
-                    if (verzikAttacksUntilSpecial == 0) {
-                        // Last auto before the next reds phase.
-                        nextVerzikAttackTick = -1;
-                    }
+                }
+                if (redCrabSpawnCount > 0 && verzikAttacksUntilSpecial == 0) {
+                    // Last auto before the next reds phase.
+                    nextVerzikAttackTick = -1;
                 }
                 break;
 
