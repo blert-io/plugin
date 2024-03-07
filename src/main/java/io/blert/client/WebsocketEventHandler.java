@@ -36,9 +36,16 @@ import java.util.List;
 @Slf4j
 
 public class WebsocketEventHandler implements EventHandler {
+    enum Status {
+        IDLE,
+        RAID_STARTING,
+        RAID_ACTIVE,
+    }
+
     private final WebSocketClient webSocketClient;
     private final JsonEventHandler jsonEventHandler;
 
+    private Status status = Status.IDLE;
     private String raidId = null;
 
     private int currentTick = 0;
@@ -63,6 +70,7 @@ public class WebsocketEventHandler implements EventHandler {
 
                 var jsonEvent = io.blert.json.Event.fromBlert(event);
                 sendRaidEvents(jsonEvent);
+                status = Status.RAID_STARTING;
                 break;
             }
 
@@ -77,6 +85,7 @@ public class WebsocketEventHandler implements EventHandler {
 
                 sendRaidEvents(evt);
 
+                status = Status.IDLE;
                 jsonEventHandler.setRaidId(null);
                 raidId = null;
                 break;
@@ -86,7 +95,7 @@ public class WebsocketEventHandler implements EventHandler {
                 // Forward other events to the JSON handler to be serialized and sent to the server.
                 jsonEventHandler.handleEvent(clientTick, event);
 
-                if (webSocketClient.isOpen()) {
+                if (status == Status.RAID_ACTIVE) {
                     if (event.getType() == EventType.ROOM_STATUS) {
                         // Room status events indicate the start or completion of a room, and should be sent to the
                         // server immediately.
@@ -123,9 +132,15 @@ public class WebsocketEventHandler implements EventHandler {
     private void handleMessage(String message) {
         Gson gson = new Gson();
         ServerMessage serverMessage = gson.fromJson(message, ServerMessage.class);
-        if (serverMessage.getType() == ServerMessage.Type.RAID_START_RESPONSE) {
+
+        if (status == Status.RAID_STARTING && serverMessage.getType() == ServerMessage.Type.RAID_START_RESPONSE) {
             raidId = serverMessage.getRaidId();
             jsonEventHandler.setRaidId(raidId);
+            status = Status.RAID_ACTIVE;
+
+            if (jsonEventHandler.hasEvents()) {
+                sendRaidEvents(jsonEventHandler.flushEventsUpTo(currentTick));
+            }
         }
     }
 }

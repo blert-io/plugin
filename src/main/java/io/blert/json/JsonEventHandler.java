@@ -25,7 +25,6 @@ package io.blert.json;
 
 import com.google.gson.Gson;
 import io.blert.events.EventHandler;
-import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -44,8 +43,19 @@ public class JsonEventHandler implements EventHandler {
     private final Map<Integer, List<Event>> eventsByTick = new HashMap<>();
     private int lastTick = 0;
 
-    @Setter
     private @Nullable String raidId;
+
+    public void setRaidId(@Nullable String raidId) {
+        this.raidId = raidId;
+
+        if (raidId != null) {
+            eventsByTick.values().forEach(events -> events.forEach(event -> {
+                if (event.getRaidId() == null) {
+                    event.setRaidId(raidId);
+                }
+            }));
+        }
+    }
 
     @Override
     public void handleEvent(int clientTick, io.blert.events.Event event) {

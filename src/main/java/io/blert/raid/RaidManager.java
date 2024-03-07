@@ -50,10 +50,7 @@ import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,6 +76,7 @@ public class RaidManager {
 
     @Setter
     private @Nullable EventHandler eventHandler = null;
+    List<Event> pendingRaidEvents = new ArrayList<>();
 
     private Location location = Location.ELSEWHERE;
     private RaidState state = RaidState.INACTIVE;
@@ -151,6 +149,13 @@ public class RaidManager {
     }
 
     public void dispatchEvent(Event event) {
+        if (state.isInactive()) {
+            if (event.getType() != EventType.RAID_START && event.getType() != EventType.RAID_END) {
+                pendingRaidEvents.add(event);
+                return;
+            }
+        }
+
         if (eventHandler != null) {
             eventHandler.handleEvent(client.getTickCount(), event);
         }
@@ -184,6 +189,10 @@ public class RaidManager {
 
             List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
             dispatchEvent(new RaidStartEvent(names, raidMode));
+
+            // Dispatch any pending events that were queued before the raid started.
+            pendingRaidEvents.forEach(this::dispatchEvent);
+            pendingRaidEvents.clear();
         });
     }
 
