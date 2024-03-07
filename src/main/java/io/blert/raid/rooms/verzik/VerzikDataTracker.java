@@ -109,11 +109,11 @@ public class VerzikDataTracker extends RoomDataTracker {
                 .flatMap(npc -> TobNpc.withId(npc.getId()))
                 .ifPresent(tobNpc -> {
                     if (tobNpc.isVerzikP1()) {
-                        startVerzikPhase(VerzikPhase.P1, getRoomTick());
+                        startVerzikPhase(VerzikPhase.P1, getRoomTick(), true);
                     } else if (tobNpc.isVerzikP2()) {
-                        startVerzikPhase(VerzikPhase.P2, getRoomTick());
+                        startVerzikPhase(VerzikPhase.P2, getRoomTick(), true);
                     } else if (tobNpc.isVerzikP3()) {
-                        startVerzikPhase(VerzikPhase.P3, getRoomTick());
+                        startVerzikPhase(VerzikPhase.P3, getRoomTick(), true);
                     }
                 });
     }
@@ -234,6 +234,12 @@ public class VerzikDataTracker extends RoomDataTracker {
             return roomNpc instanceof VerzikCrab && explodingCrabs.remove(roomNpc);
         }
 
+        if (TobNpc.isVerzikP1(npc.getId())) {
+            final int tick = getRoomTick();
+            log.debug("P1: {} ({})", tick, formattedRoomTime());
+            dispatchEvent(new VerzikPhaseEvent(tick, VerzikPhase.P2));
+        }
+
         // Verzik despawns between phases, but it should not be counted as a final despawn until the end of the fight.
         return roomNpc == verzik && phase == VerzikPhase.P3;
     }
@@ -256,9 +262,8 @@ public class VerzikDataTracker extends RoomDataTracker {
             return;
         }
 
-        if (TobNpc.isVerzikP1(beforeId) && tobNpc.isVerzikP2()) {
-            startVerzikPhase(VerzikPhase.P2, tick);
-            log.debug("P2: {} ({})", tick, formattedRoomTime());
+        if (TobNpc.isVerzikP1Transition(beforeId) && tobNpc.isVerzikP2()) {
+            startVerzikPhase(VerzikPhase.P2, tick, false);
 
             // A transition from P1 to P2 does not spawn a new NPC. Simply reset Verzik's HP to its P2 value.
             verzik.setHitpoints(new Hitpoints(tobNpc, raidManager.getRaidScale()));
@@ -277,8 +282,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         final int tick = getRoomTick();
 
         if (phase == VerzikPhase.P2 && TobNpc.isVerzikP2(npcId) && animationId == P3_TRANSITION_ANIMATION) {
-            startVerzikPhase(VerzikPhase.P3, tick);
-            log.debug("P3: {} ({})", tick, formattedRoomTime());
+            startVerzikPhase(VerzikPhase.P3, tick, true);
+            log.debug("P2: {} ({})", tick, formattedRoomTime());
             return;
         }
 
@@ -469,7 +474,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
     }
 
-    private void startVerzikPhase(VerzikPhase phase, int tick) {
+    private void startVerzikPhase(VerzikPhase phase, int tick, boolean dispatchPhaseEvent) {
         this.phase = phase;
         nextVerzikAttack = null;
         unidentifiedVerzikAttackTick = -1;
@@ -486,7 +491,7 @@ public class VerzikDataTracker extends RoomDataTracker {
             nextVerzikAttackTick = -1;
         }
 
-        if (phase != VerzikPhase.P1) {
+        if (dispatchPhaseEvent && phase != VerzikPhase.P1) {
             dispatchEvent(new VerzikPhaseEvent(tick, phase));
         }
     }

@@ -139,10 +139,14 @@ public enum TobNpc {
     VERZIK_IDLE_REGULAR(8369, 1, Mode.REGULAR, new int[]{1500, 1750, 2000}),
     VERZIK_IDLE_HARD(10847, 1, Mode.HARD, new int[]{1500, 1750, 2000}),
 
-    // Verzik P1, including the transition to P2.
-    VERZIK_P1_ENTRY(10831, 2, Mode.ENTRY, 240),
-    VERZIK_P1_REGULAR(8370, 2, Mode.REGULAR, new int[]{1500, 1750, 2000}),
-    VERZIK_P1_HARD(10848, 2, Mode.HARD, new int[]{1500, 1750, 2000}),
+    // Verzik P1.
+    VERZIK_P1_ENTRY(10831, 1, Mode.ENTRY, 240),
+    VERZIK_P1_REGULAR(8370, 1, Mode.REGULAR, new int[]{1500, 1750, 2000}),
+    VERZIK_P1_HARD(10848, 1, Mode.HARD, new int[]{1500, 1750, 2000}),
+
+    VERZIK_P1_TRANSITION_ENTRY(10832, 1, Mode.ENTRY, 0),
+    VERZIK_P1_TRANSITION_REGULAR(8371, 1, Mode.REGULAR, 0),
+    VERZIK_P1_TRANSITION_HARD(10849, 1, Mode.HARD, 0),
 
     // Verzik P2, including the transition to P3.
     VERZIK_P2_ENTRY(10833, 2, Mode.ENTRY, 320),
@@ -385,6 +389,14 @@ public enum TobNpc {
         return isVerzikP1(this.id);
     }
 
+    public static boolean isVerzikP1Transition(int id) {
+        return idMatches(id, VERZIK_P1_TRANSITION_ENTRY, VERZIK_P1_TRANSITION_REGULAR, VERZIK_P1_TRANSITION_HARD);
+    }
+
+    public boolean isVerzikP1Transition() {
+        return isVerzikP1Transition(this.id);
+    }
+
     public static boolean isVerzikP2(int id) {
         return idMatches(id, VERZIK_P2_ENTRY, VERZIK_P2_REGULAR, VERZIK_P2_HARD);
     }
@@ -402,7 +414,7 @@ public enum TobNpc {
     }
 
     public static boolean isAnyVerzik(int id) {
-        return isVerzikIdle(id) || isVerzikP1(id) || isVerzikP2(id) || isVerzikP3(id);
+        return isVerzikIdle(id) || isVerzikP1(id) || isVerzikP1Transition(id) || isVerzikP2(id) || isVerzikP3(id);
     }
 
     public boolean isAnyVerzik() {
