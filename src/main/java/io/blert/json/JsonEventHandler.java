@@ -23,8 +23,8 @@
 
 package io.blert.json;
 
-import io.blert.events.EventHandler;
 import com.google.gson.Gson;
+import io.blert.events.EventHandler;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
 
@@ -63,6 +63,16 @@ public class JsonEventHandler implements EventHandler {
         return !eventsByTick.isEmpty();
     }
 
+    public List<Event> flushEventsUpTo(int clientTick) {
+        return eventsByTick
+                .keySet()
+                .stream()
+                .filter(tick -> tick <= clientTick)
+                .sorted()
+                .map(eventsByTick::remove)
+                .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
+    }
+
     /**
      * Returns a JSON array of all stored events occurring up to and including the specified tick, and clears the events
      * from this handler.
@@ -70,14 +80,7 @@ public class JsonEventHandler implements EventHandler {
      * @param clientTick The tick up to which events should be consumed, inclusive.
      * @return Serialized JSON array of the consumed events.
      */
-    public String flushEventsUpTo(int clientTick) {
-        List<Event> events = eventsByTick
-                .keySet()
-                .stream()
-                .filter(tick -> tick <= clientTick)
-                .sorted()
-                .map(eventsByTick::remove)
-                .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
-        return new Gson().toJson(events);
+    public String flushAndSerializeEventsUpTo(int clientTick) {
+        return new Gson().toJson(flushEventsUpTo(clientTick));
     }
 }

@@ -23,12 +23,15 @@
 
 package io.blert.client;
 
+import com.google.gson.Gson;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.EventType;
 import io.blert.json.JsonEventHandler;
-import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 
@@ -58,20 +61,21 @@ public class WebsocketEventHandler implements EventHandler {
                 // Starting a new raid. Discard any buffered events.
                 jsonEventHandler.flushEventsUpTo(clientTick);
 
-                var json = io.blert.json.Event.fromBlert(event).encode();
-                webSocketClient.sendMessage(json);
+                var jsonEvent = io.blert.json.Event.fromBlert(event);
+                sendRaidEvents(jsonEvent);
                 break;
             }
 
             case RAID_END: {
                 // Flush any pending events, then indicate that the raid has ended.
                 if (jsonEventHandler.hasEvents()) {
-                    webSocketClient.sendMessage(jsonEventHandler.flushEventsUpTo(clientTick));
+                    sendRaidEvents(jsonEventHandler.flushEventsUpTo(clientTick));
                 }
 
                 var evt = io.blert.json.Event.fromBlert(event);
                 evt.setRaidId(raidId);
-                webSocketClient.sendMessage(evt.encode());
+
+                sendRaidEvents(evt);
 
                 jsonEventHandler.setRaidId(null);
                 raidId = null;
@@ -86,10 +90,10 @@ public class WebsocketEventHandler implements EventHandler {
                     if (event.getType() == EventType.ROOM_STATUS) {
                         // Room status events indicate the start or completion of a room, and should be sent to the
                         // server immediately.
-                        webSocketClient.sendMessage(jsonEventHandler.flushEventsUpTo(clientTick));
+                        sendRaidEvents(jsonEventHandler.flushEventsUpTo(clientTick));
                     } else if (currentTick != clientTick) {
                         // All other events are collected and sent in a single batch at the end of a tick.
-                        webSocketClient.sendMessage(jsonEventHandler.flushEventsUpTo(currentTick));
+                        sendRaidEvents(jsonEventHandler.flushEventsUpTo(clientTick));
                     }
                 }
 
@@ -97,6 +101,18 @@ public class WebsocketEventHandler implements EventHandler {
         }
 
         currentTick = clientTick;
+    }
+
+    private void sendRaidEvents(io.blert.json.Event event) {
+        sendRaidEvents(Collections.singletonList(event));
+    }
+
+    private void sendRaidEvents(List<io.blert.json.Event> events) {
+        if (webSocketClient.isOpen()) {
+            ServerMessage message = new ServerMessage(ServerMessage.Type.RAID_EVENTS);
+            message.setEvents(events);
+            webSocketClient.sendMessage(message.encode());
+        }
     }
 
     /**

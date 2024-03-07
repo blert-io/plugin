@@ -21,37 +21,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.client;
+package io.blert;
 
-import com.google.gson.Gson;
-import io.blert.json.Event;
-import lombok.Getter;
-import lombok.Setter;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.List;
-
-@Getter
-@Setter
-class ServerMessage {
-    enum Type {
-        RAID_START_RESPONSE,
-        RAID_EVENTS,
-    }
-
-    private Type type;
-    private @Nullable String raidId;
-
-    /**
-     * Serialized JSON string of raid events.
-     */
-    private @Nullable List<Event> events;
-
-    ServerMessage(Type type) {
-        this.type = type;
-    }
-
-    public String encode() {
-        return new Gson().toJson(this);
-    }
+public class BlertPanel {
 }
