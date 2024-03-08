@@ -23,11 +23,10 @@
 
 package io.blert;
 
+import com.google.inject.Provides;
 import io.blert.client.WebSocketClient;
 import io.blert.client.WebsocketEventHandler;
-import io.blert.events.EventHandler;
 import io.blert.raid.RaidManager;
-import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -38,8 +37,12 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
+import net.runelite.client.util.ImageUtil;
 
 import javax.inject.Inject;
+import java.awt.image.BufferedImage;
 
 @Slf4j
 @PluginDescriptor(
@@ -52,25 +55,41 @@ public class BlertPlugin extends Plugin {
     private Client client;
 
     @Inject
+    private ClientToolbar clientToolbar;
+
+    @Inject
     private BlertConfig config;
+
+    private BlertPluginPanel sidePanel;
+    private NavigationButton sidePanelButton;
 
     @Inject
     private RaidManager raidManager;
 
-    private EventHandler handler;
+    private WebsocketEventHandler handler;
 
     private WebSocketClient wsClient;
 
     @Override
     protected void startUp() throws Exception {
+        sidePanel = new BlertPluginPanel(this, config);
+        final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/blert.png");
+        sidePanelButton = NavigationButton.builder().tooltip("Blert").priority(6).icon(icon).panel(sidePanel).build();
+        clientToolbar.addNavigation(sidePanelButton);
+        sidePanel.startPanel();
+
         if (config.apiKey() != null) {
             initializeWebSocketClient();
         }
+
         raidManager.initialize(handler);
     }
 
     @Override
     protected void shutDown() throws Exception {
+        clientToolbar.removeNavigation(sidePanelButton);
+        sidePanel = null;
+
         if (wsClient != null && wsClient.isOpen()) {
             wsClient.close();
         }
@@ -96,14 +115,15 @@ public class BlertPlugin extends Plugin {
 
     @Subscribe
     private void onConfigChanged(ConfigChanged changed) {
-        if (changed.getKey().equals("apiKey") || changed.getKey().equals("serverUrl")
-                || changed.getKey().equals("dontConnect")) {
+        String key = changed.getKey();
+        if (key.equals("apiKey") || key.equals("serverUrl") || key.equals("dontConnect")) {
             initializeWebSocketClient();
         }
     }
 
-    private void initializeWebSocketClient() {
+    public void initializeWebSocketClient() {
         if (wsClient != null && wsClient.isOpen()) {
+            sidePanel.updateUser(null);
             try {
                 wsClient.close();
             } catch (Exception e) {
@@ -121,12 +141,10 @@ public class BlertPlugin extends Plugin {
         }
 
         wsClient = new WebSocketClient(hostname, config.apiKey());
-        handler = new WebsocketEventHandler(wsClient);
+        handler = new WebsocketEventHandler(wsClient, sidePanel);
         raidManager.setEventHandler(handler);
 
-        if (client.getGameState() == GameState.LOGGED_IN) {
-            wsClient.open();
-        }
+        wsClient.open();
     }
 
     @Provides

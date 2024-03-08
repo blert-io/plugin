@@ -46,6 +46,9 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
     @Setter
     private @Nullable Consumer<String> messageCallback = null;
 
+    @Setter
+    private @Nullable Runnable disconnectCallback = null;
+
     public WebSocketClient(@NotNull String hostname, @NotNull String apiKey) {
         this.apiKey = apiKey.getBytes(StandardCharsets.UTF_8);
         this.hostname = hostname;
@@ -100,18 +103,27 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
     public void onClosed(WebSocket webSocket, int status, String reason) {
         log.info("Blert websocket {} closed: {} ({})", webSocket, status, reason);
         socket = null;
+        onDisconnect();
     }
 
     @Override
     public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, Response response) {
         log.warn("Blert websocket {} failed: {}", webSocket, response, t);
         socket = null;
+        onDisconnect();
     }
 
     @Override
     public void close() throws Exception {
         if (socket != null) {
             socket.close(1000, null);
+            onDisconnect();
+        }
+    }
+
+    private void onDisconnect() {
+        if (this.disconnectCallback != null) {
+            this.disconnectCallback.run();
         }
     }
 }

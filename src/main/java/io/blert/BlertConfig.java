@@ -62,7 +62,7 @@ public interface BlertConfig extends Config {
     @ConfigItem(
             keyName = "serverUrl",
             name = "Custom server URL",
-            description = "Overrides the default server hostname (blert.io)",
+            description = "Overrides the default server hostname (socket.blert.io)",
             position = 1,
             section = DEVELOPER_SECTION
     )
@@ -70,12 +70,22 @@ public interface BlertConfig extends Config {
         return null;
     }
 
+    @ConfigItem(
+            keyName = "webUrl",
+            name = "Custom Blert website URL",
+            description = "Overrides the default website URL (blert.io)",
+            position = 2,
+            section = DEVELOPER_SECTION
+    )
+    default @Nullable String webUrl() {
+        return null;
+    }
 
     @ConfigItem(
             keyName = "dontConnect",
             name = "Don't connect to a Blert server",
             description = "If set, will not attempt to open a socket or stream events",
-            position = 2,
+            position = 3,
             section = DEVELOPER_SECTION
     )
     default boolean dontConnect() {

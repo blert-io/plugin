@@ -25,6 +25,8 @@ package io.blert.client;
 
 import com.google.gson.Gson;
 import io.blert.json.Event;
+import io.blert.raid.Mode;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.jetbrains.annotations.Nullable;
@@ -33,19 +35,105 @@ import java.util.List;
 
 @Getter
 @Setter
-class ServerMessage {
+public class ServerMessage {
     enum Type {
+        CONNECTION_RESPONSE,
+        RAID_HISTORY_REQUEST,
+        RAID_HISTORY_RESPONSE,
         RAID_START_RESPONSE,
         RAID_EVENTS,
     }
 
+    @Getter
+    @AllArgsConstructor
+    static class User {
+        private String id;
+        private String name;
+    }
+
+    public enum RaidStatus {
+        IN_PROGRESS,
+        COMPLETED,
+        MAIDEN_RESET,
+        MAIDEN_WIPE,
+        BLOAT_RESET,
+        BLOAT_WIPE,
+        NYLOCAS_RESET,
+        NYLOCAS_WIPE,
+        SOTETSEG_RESET,
+        SOTETSEG_WIPE,
+        XARPUS_RESET,
+        XARPUS_WIPE,
+        VERZIK_WIPE;
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case IN_PROGRESS:
+                    return "In Progress";
+                case COMPLETED:
+                    return "Completion";
+                case MAIDEN_RESET:
+                    return "Maiden Reset";
+                case MAIDEN_WIPE:
+                    return "Maiden Wipe";
+                case BLOAT_RESET:
+                    return "Bloat Reset";
+                case BLOAT_WIPE:
+                    return "Bloat Wipe";
+                case NYLOCAS_RESET:
+                    return "Nylocas Reset";
+                case NYLOCAS_WIPE:
+                    return "Nylocas Wipe";
+                case SOTETSEG_RESET:
+                    return "Sotetseg Reset";
+                case SOTETSEG_WIPE:
+                    return "Sotetseg Wipe";
+                case XARPUS_RESET:
+                    return "Xarpus Reset";
+                case XARPUS_WIPE:
+                    return "Xarpus Wipe";
+                case VERZIK_WIPE:
+                    return "Verzik Wipe";
+                default:
+                    return "Unknown";
+            }
+        }
+
+        public boolean isCompletion() {
+            return this == COMPLETED;
+        }
+
+        public boolean isWipe() {
+            return this == MAIDEN_WIPE || this == BLOAT_WIPE || this == NYLOCAS_WIPE
+                    || this == SOTETSEG_WIPE || this == XARPUS_WIPE || this == VERZIK_WIPE;
+        }
+
+        public boolean isReset() {
+            return this == MAIDEN_RESET || this == BLOAT_RESET || this == NYLOCAS_RESET
+                    || this == SOTETSEG_RESET || this == XARPUS_RESET;
+        }
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class PastRaid {
+        private String id;
+        private RaidStatus status;
+        private Mode mode;
+        private List<String> party;
+    }
+
     private Type type;
+    private @Nullable User user;
     private @Nullable String raidId;
 
     /**
      * Serialized JSON string of raid events.
      */
     private @Nullable List<Event> events;
+
+    private @Nullable List<PastRaid> history;
 
     ServerMessage(Type type) {
         this.type = type;

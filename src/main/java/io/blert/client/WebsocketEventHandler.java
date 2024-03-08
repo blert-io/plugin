@@ -24,19 +24,21 @@
 package io.blert.client;
 
 import com.google.gson.Gson;
+import io.blert.BlertPluginPanel;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.EventType;
 import io.blert.json.JsonEventHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
 @Slf4j
 
 public class WebsocketEventHandler implements EventHandler {
-    enum Status {
+    public enum Status {
         IDLE,
         RAID_STARTING,
         RAID_ACTIVE,
@@ -44,9 +46,10 @@ public class WebsocketEventHandler implements EventHandler {
 
     private final WebSocketClient webSocketClient;
     private final JsonEventHandler jsonEventHandler;
+    private final BlertPluginPanel sidePanel;
 
     private Status status = Status.IDLE;
-    private String raidId = null;
+    private @Nullable String raidId = null;
 
     private int currentTick = 0;
 
@@ -55,10 +58,12 @@ public class WebsocketEventHandler implements EventHandler {
      *
      * @param webSocketClient Websocket client connected and authenticated to the blert server.
      */
-    public WebsocketEventHandler(WebSocketClient webSocketClient) {
+    public WebsocketEventHandler(WebSocketClient webSocketClient, BlertPluginPanel sidePanel) {
         this.webSocketClient = webSocketClient;
         this.webSocketClient.setMessageCallback(this::handleMessage);
+        this.webSocketClient.setDisconnectCallback(this::handleDisconnect);
         jsonEventHandler = new JsonEventHandler();
+        this.sidePanel = sidePanel;
     }
 
     @Override
@@ -68,9 +73,11 @@ public class WebsocketEventHandler implements EventHandler {
                 // Starting a new raid. Discard any buffered events.
                 jsonEventHandler.flushEventsUpTo(clientTick);
 
-                var jsonEvent = io.blert.json.Event.fromBlert(event);
-                sendRaidEvents(jsonEvent);
-                status = Status.RAID_STARTING;
+                if (webSocketClient.isOpen()) {
+                    var jsonEvent = io.blert.json.Event.fromBlert(event);
+                    sendRaidEvents(jsonEvent);
+                    setStatus(Status.RAID_STARTING);
+                }
                 break;
             }
 
@@ -85,9 +92,11 @@ public class WebsocketEventHandler implements EventHandler {
 
                 sendRaidEvents(evt);
 
-                status = Status.IDLE;
+                setStatus(Status.IDLE);
                 jsonEventHandler.setRaidId(null);
                 raidId = null;
+
+                sendRaidHistoryRequest();
                 break;
             }
 
@@ -124,6 +133,13 @@ public class WebsocketEventHandler implements EventHandler {
         }
     }
 
+    private void sendRaidHistoryRequest() {
+        if (webSocketClient.isOpen()) {
+            ServerMessage message = new ServerMessage(ServerMessage.Type.RAID_HISTORY_REQUEST);
+            webSocketClient.sendMessage(message.encode());
+        }
+    }
+
     /**
      * Processes a message arriving from the server.
      *
@@ -133,14 +149,58 @@ public class WebsocketEventHandler implements EventHandler {
         Gson gson = new Gson();
         ServerMessage serverMessage = gson.fromJson(message, ServerMessage.class);
 
-        if (status == Status.RAID_STARTING && serverMessage.getType() == ServerMessage.Type.RAID_START_RESPONSE) {
-            raidId = serverMessage.getRaidId();
-            jsonEventHandler.setRaidId(raidId);
-            status = Status.RAID_ACTIVE;
+        switch (serverMessage.getType()) {
+            case CONNECTION_RESPONSE:
+                ServerMessage.User user = serverMessage.getUser();
+                if (user != null) {
+                    sidePanel.updateUser(user.getName());
+                    sendRaidHistoryRequest();
+                } else {
+                    log.warn("Received invalid connection response from server");
+                    try {
+                        webSocketClient.close();
+                    } catch (Exception e) {
+                        // Ignore.
+                    }
+                    sidePanel.updateUser(null);
+                }
+                break;
 
-            if (jsonEventHandler.hasEvents()) {
-                sendRaidEvents(jsonEventHandler.flushEventsUpTo(currentTick));
-            }
+            case RAID_HISTORY_RESPONSE:
+                sidePanel.setRaidHistory(serverMessage.getHistory());
+                break;
+
+            case RAID_START_RESPONSE:
+                if (status != Status.RAID_STARTING) {
+                    log.warn("Received unexpected raid start response from server");
+                    return;
+                }
+
+                raidId = serverMessage.getRaidId();
+                jsonEventHandler.setRaidId(raidId);
+                setStatus(Status.RAID_ACTIVE);
+
+                if (jsonEventHandler.hasEvents()) {
+                    sendRaidEvents(jsonEventHandler.flushEventsUpTo(currentTick));
+                }
+                break;
+
+            default:
+                log.warn("Received unexpected message from server: {}", serverMessage.getType());
+                break;
         }
+    }
+
+    private void handleDisconnect() {
+        raidId = null;
+        jsonEventHandler.setRaidId(null);
+        setStatus(Status.IDLE);
+        sidePanel.updateUser(null);
+        sidePanel.setRaidHistory(null);
+    }
+
+    private void setStatus(Status status) {
+        this.status = status;
+        sidePanel.updateRaidStatus(status, raidId);
     }
 }
