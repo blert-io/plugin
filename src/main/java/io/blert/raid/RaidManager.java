@@ -187,8 +187,10 @@ public class RaidManager {
         clientThread.invokeLater(() -> {
             initializeParty();
 
+            boolean isSpectator = !playerIsInRaid(client.getLocalPlayer().getName());
+
             List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
-            dispatchEvent(new RaidStartEvent(names, raidMode));
+            dispatchEvent(new RaidStartEvent(names, raidMode, isSpectator));
 
             // Dispatch any pending events that were queued before the raid started.
             pendingRaidEvents.forEach(this::dispatchEvent);

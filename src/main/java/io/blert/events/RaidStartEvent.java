@@ -32,11 +32,13 @@ import java.util.List;
 public class RaidStartEvent extends Event {
     private final List<String> party;
     private final Mode mode;
+    private final boolean isSpectator;
 
-    public RaidStartEvent(List<String> party, Mode mode) {
+    public RaidStartEvent(List<String> party, Mode mode, boolean isSpectator) {
         super(EventType.RAID_START);
         this.party = party;
         this.mode = mode;
+        this.isSpectator = isSpectator;
     }
 
     @Override

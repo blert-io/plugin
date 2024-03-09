@@ -75,12 +75,13 @@ public class Event {
         switch (event.getType()) {
             case RAID_START:
                 RaidStartEvent raidStartEvent = (RaidStartEvent) blertEvent;
-                event.raidInfo = new RaidInfo(raidStartEvent.getParty(), raidStartEvent.getMode());
+                event.raidInfo = new RaidInfo(
+                        raidStartEvent.getParty(), raidStartEvent.getMode(), raidStartEvent.isSpectator());
                 break;
 
             case RAID_UPDATE:
                 RaidUpdateEvent raidUpdateEvent = (RaidUpdateEvent) blertEvent;
-                event.raidInfo = new RaidInfo(new ArrayList<>(), raidUpdateEvent.getMode());
+                event.raidInfo = new RaidInfo(new ArrayList<>(), raidUpdateEvent.getMode(), false);
                 break;
 
             case ROOM_STATUS:

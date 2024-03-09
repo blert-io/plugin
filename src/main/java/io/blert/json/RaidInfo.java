@@ -35,4 +35,5 @@ import java.util.List;
 public class RaidInfo {
     private List<String> party;
     private @Nullable Mode mode;
+    private boolean isSpectator;
 }

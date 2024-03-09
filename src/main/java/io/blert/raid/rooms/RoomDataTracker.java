@@ -184,8 +184,7 @@ public abstract class RoomDataTracker {
         if (state == State.NOT_STARTED && this.startOnEntry) {
             if (playersAreInRoom()) {
                 log.debug("Room " + room + " started because player entered");
-                // Players seem to enter the room boundary one tick after the in-game room timer starts.
-                startRoom(-1, true);
+                startRoom();
             }
         }
     }
