@@ -131,14 +131,30 @@ public abstract class RoomDataTracker {
      * Finishes tracking data for the room and performs any necessary cleanup.
      */
     public void finishRoom() {
+        finishRoom(-1);
+    }
+
+    /**
+     * Finishes tracking data for the room and performs any necessary cleanup.
+     *
+     * @param inGameRoomTicks The number of in-game ticks the room took to complete, or -1 if the in-game timer is not
+     *                        available. If provided, it is used to verify the accuracy of the recorded room time.
+     */
+    private void finishRoom(int inGameRoomTicks) {
         if (state != State.IN_PROGRESS) {
             return;
         }
 
         state = State.COMPLETED;
-        int finalRoomTick = getRoomTick();
+        int lastRecordedRoomTick = getRoomTick();
 
-        log.debug("Room {} finished in {} ticks ({})", room, finalRoomTick, formattedRoomTime());
+        if (inGameRoomTicks != -1 && inGameRoomTicks != lastRecordedRoomTick) {
+            log.warn("Room {} completion time mismatch: in-game room ticks = {}, recorded ticks = {}",
+                    room, inGameRoomTicks, lastRecordedRoomTick);
+            lastRecordedRoomTick = inGameRoomTicks;
+        } else {
+            log.debug("Room {} finished in {} ticks ({})", room, lastRecordedRoomTick, formattedRoomTime());
+        }
 
         long deadRaiders = raidManager.getRaiders().stream().filter(Raider::isDead).count();
         var roomStatus = deadRaiders == raidManager.getRaidScale()
@@ -147,9 +163,13 @@ public abstract class RoomDataTracker {
 
         // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
         // own events first.
+        final int finalRoomTick = lastRecordedRoomTick;
         clientThread.invokeLater(() -> dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus)));
     }
 
+    /**
+     * Prepares the room tracker for cleanup, preventing any further events from being processed.
+     */
     public void terminate() {
         if (state == State.IN_PROGRESS) {
             finishRoom();
@@ -157,6 +177,9 @@ public abstract class RoomDataTracker {
         state = State.TERMINATING;
     }
 
+    /**
+     * Checks whether players are in the room and starts the room if they are.
+     */
     public void checkEntry() {
         if (state == State.NOT_STARTED && this.startOnEntry) {
             if (playersAreInRoom()) {
@@ -424,7 +447,13 @@ public abstract class RoomDataTracker {
         String stripped = Text.removeTags(chatMessage.getMessage());
         Matcher matcher = waveEndRegex.matcher(stripped);
         if (matcher.find()) {
-            finishRoom();
+            try {
+                String inGameTime = matcher.group(1);
+                finishRoom(Tick.fromTimeString(inGameTime));
+            } catch (IndexOutOfBoundsException e) {
+                log.warn("Could not parse timestamp from wave end message: {}", stripped);
+                finishRoom();
+            }
         }
     }
 
@@ -616,11 +645,6 @@ public abstract class RoomDataTracker {
     }
 
     protected String formattedRoomTime() {
-        int milliseconds = getRoomTick() * 600;
-        int seconds = (milliseconds / 1000) % 60;
-        int minutes = milliseconds / 1000 / 60;
-        int deciseconds = (milliseconds % 1000) / 100;
-
-        return String.format("%d:%02d.%d", minutes, seconds, deciseconds);
+        return Tick.asTimeString(getRoomTick());
     }
 }
