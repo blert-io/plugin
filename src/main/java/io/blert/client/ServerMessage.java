@@ -58,10 +58,10 @@ public class ServerMessage {
         MAIDEN_WIPE,
         BLOAT_RESET,
         BLOAT_WIPE,
-        NYLOCAS_RESET,
-        NYLOCAS_WIPE,
-        SOTETSEG_RESET,
-        SOTETSEG_WIPE,
+        NYLO_RESET,
+        NYLO_WIPE,
+        SOTE_RESET,
+        SOTE_WIPE,
         XARPUS_RESET,
         XARPUS_WIPE,
         VERZIK_WIPE;
@@ -81,13 +81,13 @@ public class ServerMessage {
                     return "Bloat Reset";
                 case BLOAT_WIPE:
                     return "Bloat Wipe";
-                case NYLOCAS_RESET:
+                case NYLO_RESET:
                     return "Nylocas Reset";
-                case NYLOCAS_WIPE:
+                case NYLO_WIPE:
                     return "Nylocas Wipe";
-                case SOTETSEG_RESET:
+                case SOTE_RESET:
                     return "Sotetseg Reset";
-                case SOTETSEG_WIPE:
+                case SOTE_WIPE:
                     return "Sotetseg Wipe";
                 case XARPUS_RESET:
                     return "Xarpus Reset";
@@ -105,13 +105,13 @@ public class ServerMessage {
         }
 
         public boolean isWipe() {
-            return this == MAIDEN_WIPE || this == BLOAT_WIPE || this == NYLOCAS_WIPE
-                    || this == SOTETSEG_WIPE || this == XARPUS_WIPE || this == VERZIK_WIPE;
+            return this == MAIDEN_WIPE || this == BLOAT_WIPE || this == NYLO_WIPE
+                    || this == SOTE_WIPE || this == XARPUS_WIPE || this == VERZIK_WIPE;
         }
 
         public boolean isReset() {
-            return this == MAIDEN_RESET || this == BLOAT_RESET || this == NYLOCAS_RESET
-                    || this == SOTETSEG_RESET || this == XARPUS_RESET;
+            return this == MAIDEN_RESET || this == BLOAT_RESET || this == NYLO_RESET
+                    || this == SOTE_RESET || this == XARPUS_RESET;
         }
     }
 

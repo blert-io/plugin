@@ -109,7 +109,7 @@ public class MaidenCrab extends RoomNpc {
             position = Position.S2;
             scuffed = false;
         } else if (location.equals(S2_SCUFFED_SPAWN)) {
-            position = Position.S1;
+            position = Position.S2;
             scuffed = true;
         } else if (location.equals(S3_SPAWN)) {
             position = Position.S3;
