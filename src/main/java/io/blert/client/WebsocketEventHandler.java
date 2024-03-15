@@ -166,6 +166,11 @@ public class WebsocketEventHandler implements EventHandler {
                 }
                 break;
 
+            case HEARTBEAT_PING:
+                webSocketClient.sendMessage(new ServerMessage(ServerMessage.Type.HEARTBEAT_PONG).encode());
+                log.debug("Received heartbeat ping from server; responding with pong");
+                break;
+
             case RAID_HISTORY_RESPONSE:
                 sidePanel.setRaidHistory(serverMessage.getHistory());
                 break;

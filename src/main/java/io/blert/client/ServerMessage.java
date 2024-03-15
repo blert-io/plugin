@@ -37,6 +37,8 @@ import java.util.List;
 @Setter
 public class ServerMessage {
     enum Type {
+        HEARTBEAT_PING,
+        HEARTBEAT_PONG,
         CONNECTION_RESPONSE,
         RAID_HISTORY_REQUEST,
         RAID_HISTORY_RESPONSE,

@@ -27,6 +27,7 @@ import com.google.inject.Provides;
 import io.blert.client.WebSocketClient;
 import io.blert.client.WebsocketEventHandler;
 import io.blert.raid.RaidManager;
+import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -50,6 +51,7 @@ import java.awt.image.BufferedImage;
 )
 public class BlertPlugin extends Plugin {
     static final String DEFAULT_BLERT_HOSTNAME = "blert.io";
+    static final String DEFAULT_SERVER_HOSTNAME = "socket.blert.io";
 
     @Inject
     private Client client;
@@ -136,8 +138,12 @@ public class BlertPlugin extends Plugin {
         }
 
         String hostname = config.serverUrl();
-        if (hostname == null) {
-            hostname = DEFAULT_BLERT_HOSTNAME;
+        if (Strings.isNullOrEmpty(hostname)) {
+            hostname = DEFAULT_SERVER_HOSTNAME;
+        }
+
+        if (!hostname.startsWith("http://") && !hostname.startsWith("https://")) {
+            hostname = "https://" + hostname;
         }
 
         wsClient = new WebSocketClient(hostname, config.apiKey());

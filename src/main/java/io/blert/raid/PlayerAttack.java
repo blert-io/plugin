@@ -76,7 +76,8 @@ public enum PlayerAttack {
     // TRIDENT must come before TRIDENT_BARRAGE as it is the default assumption when the animation is unknown.
     TRIDENT(new int[]{ItemID.TRIDENT_OF_THE_SEAS, ItemID.TRIDENT_OF_THE_SEAS_E}, 1167, 4),
     TRIDENT_BARRAGE(new int[]{ItemID.TRIDENT_OF_THE_SEAS, ItemID.TRIDENT_OF_THE_SEAS_E}, 1979, 5),
-    TWISTED_BOW(ItemID.TWISTED_BOW, 426, 5),
+    TuISTED_BOW(ItemID.TWISTED_BOW, 426, 5),
+    VOLATILE_NM_BARRAGE(ItemID.VOLATILE_NIGHTMARE_STAFF, 1979, 5),
     // TODO(frolv): Seems that autos and specs share an animation so we'd have to look at the projectile.
     ZCB(ItemID.ZARYTE_CROSSBOW, 9168, 5),
 

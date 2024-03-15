@@ -66,7 +66,7 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
 
     public void open() {
         Request request = new Request.Builder()
-                .url("ws://" + hostname + "/ws")
+                .url(hostname)
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(apiKey))
                 .build();
         socket = client.newWebSocket(request, this);

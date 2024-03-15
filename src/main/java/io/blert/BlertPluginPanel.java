@@ -330,7 +330,12 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     private String raidUrl(String raidId) {
-        String hostname = config.webUrl() != null ? config.webUrl() : BlertPlugin.DEFAULT_BLERT_HOSTNAME;
+        String hostname = !Strings.isNullOrEmpty(config.webUrl())
+                ? config.webUrl()
+                : BlertPlugin.DEFAULT_BLERT_HOSTNAME;
+        if (!hostname.startsWith("http://") && !hostname.startsWith("https://")) {
+            hostname = "https://" + hostname;
+        }
 
         return String.format("%s/raids/tob/%s/overview", hostname, raidId);
     }
