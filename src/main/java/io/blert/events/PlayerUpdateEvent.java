@@ -30,12 +30,13 @@ import io.blert.raid.Raider;
 import io.blert.raid.rooms.Room;
 import lombok.Getter;
 import net.runelite.api.Client;
-import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Getter
 public class PlayerUpdateEvent extends Event {
@@ -77,7 +78,6 @@ public class PlayerUpdateEvent extends Event {
      * @return Event containing information about the queried player.
      */
     public static PlayerUpdateEvent fromRaider(Room room, int tick, WorldPoint point, Client client, Raider raider) {
-        Player player = Objects.requireNonNull(raider.getPlayer());
         Source source = raider.isLocalPlayer() ? Source.PRIMARY : Source.SECONDARY;
 
         PlayerUpdateEvent evt = new PlayerUpdateEvent(room, tick, point, source, raider.getUsername());
@@ -105,16 +105,6 @@ public class PlayerUpdateEvent extends Event {
      */
     public Optional<Hitpoints> getHitpoints() {
         return Optional.ofNullable(hitpoints);
-    }
-
-    private static void getVisibleEquipment(Map<EquipmentSlot, Item> equipment, Client client, Player player) {
-        Arrays.stream(EquipmentSlot.values()).filter(slot -> slot.getKitType() != null).forEach(slot -> {
-            int id = player.getPlayerComposition().getEquipmentId(slot.getKitType());
-            if (id != -1) {
-                var comp = client.getItemDefinition(id);
-                equipment.put(slot, new Item(comp.getId(), comp.getName(), 1));
-            }
-        });
     }
 
     @Override

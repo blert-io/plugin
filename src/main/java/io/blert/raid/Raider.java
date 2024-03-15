@@ -193,8 +193,7 @@ public class Raider {
             for (EquipmentSlot slot : EquipmentSlot.values()) {
                 var item = equippedItems.getItem(slot.getInventorySlotIndex());
                 if (item != null) {
-                    var comp = client.getItemDefinition(item.getId());
-                    equipment.put(slot, new io.blert.raid.Item(item.getId(), comp.getName(), item.getQuantity()));
+                    equipment.put(slot, new io.blert.raid.Item(item.getId(), item.getQuantity()));
                 }
             }
         } else {
@@ -207,7 +206,7 @@ public class Raider {
             int id = Objects.requireNonNull(player).getPlayerComposition().getEquipmentId(slot.getKitType());
             if (id != -1) {
                 var comp = client.getItemDefinition(id);
-                equipment.put(slot, new Item(comp.getId(), comp.getName(), 1));
+                equipment.put(slot, new Item(comp.getId(), 1));
             }
         });
     }
