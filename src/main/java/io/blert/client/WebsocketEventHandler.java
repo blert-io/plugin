@@ -168,7 +168,7 @@ public class WebsocketEventHandler implements EventHandler {
 
             case HEARTBEAT_PING:
                 webSocketClient.sendMessage(new ServerMessage(ServerMessage.Type.HEARTBEAT_PONG).encode());
-                log.debug("Received heartbeat ping from server; responding with pong");
+                log.info("Received heartbeat ping from server; responding with pong");
                 break;
 
             case RAID_HISTORY_RESPONSE:

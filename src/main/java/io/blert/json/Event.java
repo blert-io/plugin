@@ -51,6 +51,7 @@ public class Event {
     // All possible sub-objects whose data can be stored in an event. These are optional; a null value will not be
     // serialized.
     private @Nullable RaidInfo raidInfo = null;
+    private @Nullable CompletedRaid completedRaid = null;
     private @Nullable RoomStatusEvent.Status roomStatus = null;
     private @Nullable Player player = null;
     private @Nullable Npc npc = null;
@@ -82,6 +83,11 @@ public class Event {
             case RAID_UPDATE:
                 RaidUpdateEvent raidUpdateEvent = (RaidUpdateEvent) blertEvent;
                 event.raidInfo = new RaidInfo(new ArrayList<>(), raidUpdateEvent.getMode(), false);
+                break;
+
+            case RAID_END:
+                RaidEndEvent raidEndEvent = (RaidEndEvent) blertEvent;
+                event.completedRaid = new CompletedRaid(raidEndEvent.getOverallTime());
                 break;
 
             case ROOM_STATUS:

@@ -63,6 +63,8 @@ public class RaidManager {
 
     private static final Pattern RAID_ENTRY_REGEX =
             Pattern.compile("You enter the Theatre of Blood \\((\\w+) Mode\\)\\.\\.\\.");
+    private static final Pattern RAID_COMPLETION_REGEX =
+            Pattern.compile("Theatre of Blood total completion time: ([0-9:.]+)");
 
     @Inject
     private Client client;
@@ -92,6 +94,9 @@ public class RaidManager {
     private RoomState roomState = RoomState.INACTIVE;
     @Nullable
     RoomDataTracker roomDataTracker = null;
+
+    private Runnable deferredTask = null;
+    private int deferredTaskTimer = -1;
 
     public void initialize(EventHandler handler) {
         this.eventHandler = handler;
@@ -146,6 +151,17 @@ public class RaidManager {
 
             roomDataTracker.tick();
         }
+
+        if (deferredTaskTimer != -1) {
+            deferredTaskTimer--;
+            if (deferredTaskTimer == 0) {
+                if (deferredTask != null) {
+                    deferredTask.run();
+                }
+                deferredTask = null;
+                deferredTaskTimer = -1;
+            }
+        }
     }
 
     public void dispatchEvent(Event event) {
@@ -198,15 +214,24 @@ public class RaidManager {
         });
     }
 
-    private void endRaid() {
-        log.debug("Raid completed");
+    private void queueRaidEnd(RaidState state) {
+        queueRaidEnd(state, -1);
+    }
 
-        dispatchEvent(new RaidEndEvent());
+    private void queueRaidEnd(RaidState state, int overallTime) {
+        this.deferredTaskTimer = 5;
+        this.deferredTask = () -> endRaid(state, overallTime);
+    }
+
+    private void endRaid(RaidState state, int overallTime) {
+        log.info("Raid completed; overall time {}", overallTime == -1 ? "unknown" : Tick.asTimeString(overallTime));
 
         clearRoomDataTracker();
-        state = RaidState.INACTIVE;
+        this.state = state;
         raidMode = null;
         party.clear();
+
+        clientThread.invokeAtTickEnd(() -> dispatchEvent(new RaidEndEvent(overallTime)));
     }
 
     /**
@@ -226,8 +251,8 @@ public class RaidManager {
             return false;
         }
 
-        location = loc;
         log.debug("Location changed to " + loc);
+        location = loc;
 
         clearRoomDataTracker();
 
@@ -271,8 +296,12 @@ public class RaidManager {
             if (state.isInactive() && varbit.getValue() == 2) {
                 startRaid(null);
             } else if (state.isActive() && varbit.getValue() < 2) {
-                // The raid has finished; clean up.
-                endRaid();
+                if (state == RaidState.COMPLETE) {
+                    state = RaidState.INACTIVE;
+                } else {
+                    // The raid has finished; clean up.
+                    queueRaidEnd(RaidState.INACTIVE);
+                }
             }
         }
 
@@ -290,7 +319,7 @@ public class RaidManager {
         }
     }
 
-    @Subscribe(priority = 10)
+    @Subscribe(priority = 5)
     private void onChatMessage(ChatMessage message) {
         updateLocation();
 
@@ -298,10 +327,18 @@ public class RaidManager {
             return;
         }
 
+        String stripped = Text.removeTags(message.getMessage());
+
         if (state.isInactive()) {
-            Matcher matcher = RAID_ENTRY_REGEX.matcher(message.getMessage());
+            Matcher matcher = RAID_ENTRY_REGEX.matcher(stripped);
             if (matcher.matches()) {
                 startRaid(Mode.parse(matcher.group(1)).orElse(null));
+            }
+        } else {
+            Matcher matcher = RAID_COMPLETION_REGEX.matcher(stripped);
+            if (matcher.matches()) {
+                int overallTime = Tick.fromTimeString(matcher.group(1));
+                queueRaidEnd(RaidState.COMPLETE, overallTime);
             }
         }
     }

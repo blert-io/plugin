@@ -42,7 +42,8 @@ public enum Location {
     XARPUS_INSTANCE,
     XARPUS_ROOM,
     VERZIK_INSTANCE,
-    VERZIK_ROOM;
+    VERZIK_ROOM,
+    LOOT_ROOM;
 
     private static final int LOBBY_REGION_ID = 14642;
 
@@ -56,6 +57,8 @@ public enum Location {
     private static final int SOTETSEG_MAZE_REGION_ID = 13379;
     private static final int XARPUS_REGION_ID = 12612;
     private static final int VERZIK_REGION_ID = 12611;
+
+    private static final int LOOT_ROOM_REGION_ID = 12867;
 
     private static final WorldArea MAIDEN_ROOM_AREA = new WorldArea(3159, 4434, 29, 25, 0);
     private static final WorldArea MAIDEN_STAIRCASE_AREA = new WorldArea(3185, 4444, 3, 6, 0);
@@ -91,6 +94,8 @@ public enum Location {
                 return XARPUS_ROOM_AREA.contains2D(worldPoint) ? XARPUS_ROOM : XARPUS_INSTANCE;
             case VERZIK_REGION_ID:
                 return VERZIK_ROOM_AREA.contains2D(worldPoint) ? VERZIK_ROOM : VERZIK_INSTANCE;
+            case LOOT_ROOM_REGION_ID:
+                return LOOT_ROOM;
             default:
                 return ELSEWHERE;
         }

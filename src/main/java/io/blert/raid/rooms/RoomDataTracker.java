@@ -437,7 +437,7 @@ public abstract class RoomDataTracker {
         }
     }
 
-    @Subscribe
+    @Subscribe(priority = 10)
     protected final void onChatMessage(ChatMessage chatMessage) {
         if (state != State.IN_PROGRESS || chatMessage.getType() != ChatMessageType.GAMEMESSAGE) {
             return;

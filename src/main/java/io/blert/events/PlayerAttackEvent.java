@@ -36,14 +36,14 @@ import javax.annotation.Nullable;
 @Getter
 public class PlayerAttackEvent extends Event {
     private final PlayerAttack attack;
-    private final Item weapon;
+    private final @Nullable Item weapon;
     private final String username;
     private final int targetNpcId;
     private final long targetRoomId;
     private final int distanceToTarget;
 
-    public PlayerAttackEvent(Room room, int tick, WorldPoint playerPoint, PlayerAttack attack, Item weapon,
-                             Raider raider, @Nullable RoomNpc roomNpc, int distanceToNpc) {
+    public PlayerAttackEvent(Room room, int tick, WorldPoint playerPoint, PlayerAttack attack,
+                             @Nullable Item weapon, Raider raider, @Nullable RoomNpc roomNpc, int distanceToNpc) {
         super(EventType.PLAYER_ATTACK, room, tick, playerPoint);
         this.attack = attack;
         this.weapon = weapon;

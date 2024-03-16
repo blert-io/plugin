@@ -142,8 +142,8 @@ public class BlertPlugin extends Plugin {
             hostname = DEFAULT_SERVER_HOSTNAME;
         }
 
-        if (!hostname.startsWith("http://") && !hostname.startsWith("https://")) {
-            hostname = "https://" + hostname;
+        if (!hostname.startsWith("ws://") && !hostname.startsWith("wss://")) {
+            hostname = "wss://" + hostname;
         }
 
         wsClient = new WebSocketClient(hostname, config.apiKey());
