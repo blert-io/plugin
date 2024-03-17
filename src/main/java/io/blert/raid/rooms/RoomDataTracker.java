@@ -130,8 +130,8 @@ public abstract class RoomDataTracker {
     /**
      * Finishes tracking data for the room and performs any necessary cleanup.
      */
-    public void finishRoom() {
-        finishRoom(-1);
+    public void finishRoom(boolean completion) {
+        finishRoom(completion, -1);
     }
 
     /**
@@ -140,7 +140,7 @@ public abstract class RoomDataTracker {
      * @param inGameRoomTicks The number of in-game ticks the room took to complete, or -1 if the in-game timer is not
      *                        available. If provided, it is used to verify the accuracy of the recorded room time.
      */
-    private void finishRoom(int inGameRoomTicks) {
+    private void finishRoom(boolean completion, int inGameRoomTicks) {
         if (state != State.IN_PROGRESS) {
             return;
         }
@@ -156,10 +156,7 @@ public abstract class RoomDataTracker {
             log.debug("Room {} finished in {} ticks ({})", room, lastRecordedRoomTick, formattedRoomTime());
         }
 
-        long deadRaiders = raidManager.getRaiders().stream().filter(Raider::isDead).count();
-        var roomStatus = deadRaiders == raidManager.getRaidScale()
-                ? RoomStatusEvent.Status.WIPED
-                : RoomStatusEvent.Status.COMPLETED;
+        var roomStatus = completion ? RoomStatusEvent.Status.COMPLETED : RoomStatusEvent.Status.WIPED;
 
         // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
         // own events first.
@@ -172,7 +169,7 @@ public abstract class RoomDataTracker {
      */
     public void terminate() {
         if (state == State.IN_PROGRESS) {
-            finishRoom();
+            finishRoom(false);
         }
         state = State.TERMINATING;
     }
@@ -448,10 +445,10 @@ public abstract class RoomDataTracker {
         if (matcher.find()) {
             try {
                 String inGameTime = matcher.group(1);
-                finishRoom(Tick.fromTimeString(inGameTime));
+                finishRoom(true, Tick.fromTimeString(inGameTime));
             } catch (IndexOutOfBoundsException e) {
                 log.warn("Could not parse timestamp from wave end message: {}", stripped);
-                finishRoom();
+                finishRoom(true);
             }
         }
     }
