@@ -27,6 +27,7 @@ import io.blert.events.PlayerUpdateEvent;
 import io.blert.raid.EquipmentSlot;
 import io.blert.raid.Hitpoints;
 import io.blert.raid.Item;
+import io.blert.raid.SkillLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,6 +41,12 @@ public class Player {
     private String name;
     private @Nullable Hitpoints hitpoints = null;
     private Map<EquipmentSlot, Item> equipment = new HashMap<>();
+    private @Nullable SkillLevel prayer = null;
+    private @Nullable SkillLevel attack = null;
+    private @Nullable SkillLevel strength = null;
+    private @Nullable SkillLevel defence = null;
+    private @Nullable SkillLevel ranged = null;
+    private @Nullable SkillLevel magic = null;
     private int offCooldownTick;
 
     public Player(String name) {
@@ -48,9 +55,18 @@ public class Player {
 
     public static Player fromBlertEvent(PlayerUpdateEvent event) {
         Player player = new Player(event.getUsername());
+
         event.getHitpoints().ifPresent(player::setHitpoints);
+        event.getPrayer().ifPresent(player::setPrayer);
+        event.getAttack().ifPresent(player::setAttack);
+        event.getStrength().ifPresent(player::setStrength);
+        event.getDefence().ifPresent(player::setDefence);
+        event.getRanged().ifPresent(player::setRanged);
+        event.getMagic().ifPresent(player::setMagic);
+
         player.equipment = event.getEquipment();
         player.offCooldownTick = event.getOffCooldownTick();
+
         return player;
     }
 }

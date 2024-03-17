@@ -25,4 +25,10 @@ package io.blert.raid;
 
 public enum Skill {
     HITPOINTS,
+    ATTACK,
+    STRENGTH,
+    DEFENCE,
+    RANGED,
+    MAGIC,
+    PRAYER,
 }

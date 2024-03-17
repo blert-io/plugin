@@ -23,14 +23,10 @@
 
 package io.blert.events;
 
-import io.blert.raid.EquipmentSlot;
-import io.blert.raid.Hitpoints;
-import io.blert.raid.Item;
-import io.blert.raid.Raider;
+import io.blert.raid.*;
 import io.blert.raid.rooms.Room;
 import lombok.Getter;
 import net.runelite.api.Client;
-import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
@@ -62,6 +58,12 @@ public class PlayerUpdateEvent extends Event {
     private final String username;
 
     private @Nullable Hitpoints hitpoints = null;
+    private @Nullable SkillLevel prayer = null;
+    private @Nullable SkillLevel attack = null;
+    private @Nullable SkillLevel strength = null;
+    private @Nullable SkillLevel defence = null;
+    private @Nullable SkillLevel ranged = null;
+    private @Nullable SkillLevel magic = null;
 
     @Getter
     private final Map<EquipmentSlot, Item> equipment = new HashMap<>();
@@ -86,8 +88,32 @@ public class PlayerUpdateEvent extends Event {
 
         if (raider.isLocalPlayer()) {
             evt.hitpoints = new Hitpoints(
-                    client.getBoostedSkillLevel(Skill.HITPOINTS),
-                    client.getRealSkillLevel(Skill.HITPOINTS));
+                    client.getBoostedSkillLevel(net.runelite.api.Skill.HITPOINTS),
+                    client.getRealSkillLevel(net.runelite.api.Skill.HITPOINTS));
+            evt.prayer = new SkillLevel(
+                    Skill.PRAYER,
+                    client.getBoostedSkillLevel(net.runelite.api.Skill.PRAYER),
+                    client.getRealSkillLevel(net.runelite.api.Skill.PRAYER));
+            evt.attack = new SkillLevel(
+                    Skill.ATTACK,
+                    client.getBoostedSkillLevel(net.runelite.api.Skill.ATTACK),
+                    client.getRealSkillLevel(net.runelite.api.Skill.ATTACK));
+            evt.strength = new SkillLevel(
+                    Skill.STRENGTH,
+                    client.getBoostedSkillLevel(net.runelite.api.Skill.STRENGTH),
+                    client.getRealSkillLevel(net.runelite.api.Skill.STRENGTH));
+            evt.defence = new SkillLevel(
+                    Skill.DEFENCE,
+                    client.getBoostedSkillLevel(net.runelite.api.Skill.DEFENCE),
+                    client.getRealSkillLevel(net.runelite.api.Skill.DEFENCE));
+            evt.ranged = new SkillLevel(
+                    Skill.RANGED,
+                    client.getBoostedSkillLevel(net.runelite.api.Skill.RANGED),
+                    client.getRealSkillLevel(net.runelite.api.Skill.RANGED));
+            evt.magic = new SkillLevel(
+                    Skill.MAGIC,
+                    client.getBoostedSkillLevel(net.runelite.api.Skill.MAGIC),
+                    client.getRealSkillLevel(net.runelite.api.Skill.MAGIC));
         }
 
         return evt;
@@ -105,6 +131,30 @@ public class PlayerUpdateEvent extends Event {
      */
     public Optional<Hitpoints> getHitpoints() {
         return Optional.ofNullable(hitpoints);
+    }
+
+    public Optional<SkillLevel> getPrayer() {
+        return Optional.ofNullable(prayer);
+    }
+
+    public Optional<SkillLevel> getAttack() {
+        return Optional.ofNullable(attack);
+    }
+
+    public Optional<SkillLevel> getStrength() {
+        return Optional.ofNullable(strength);
+    }
+
+    public Optional<SkillLevel> getDefence() {
+        return Optional.ofNullable(defence);
+    }
+
+    public Optional<SkillLevel> getRanged() {
+        return Optional.ofNullable(ranged);
+    }
+
+    public Optional<SkillLevel> getMagic() {
+        return Optional.ofNullable(magic);
     }
 
     @Override
