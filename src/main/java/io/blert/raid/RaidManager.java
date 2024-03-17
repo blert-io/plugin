@@ -181,7 +181,7 @@ public class RaidManager {
     }
 
     public void dispatchEvent(Event event) {
-        if (state.isInactive()) {
+        if (state == RaidState.INACTIVE || state == RaidState.STARTING) {
             if (event.getType() != EventType.RAID_START && event.getType() != EventType.RAID_END) {
                 pendingRaidEvents.add(event);
                 return;
