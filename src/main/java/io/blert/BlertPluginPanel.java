@@ -96,7 +96,7 @@ public class BlertPluginPanel extends PluginPanel {
         userPanel.setLayout(new BorderLayout());
         userPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        userPanel.add(createHeading("Server Status"), BorderLayout.NORTH);
+        userPanel.add(createHeading("- Server Status- "), BorderLayout.NORTH);
 
         JLabel connectionLabel = new JLabel();
         connectionLabel.setForeground(Color.WHITE);
@@ -165,7 +165,7 @@ public class BlertPluginPanel extends PluginPanel {
         raidHistoryPanel.setLayout(new BorderLayout());
         raidHistoryPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
 
-        raidHistoryPanel.add(createHeading("Recent Raids"), BorderLayout.NORTH);
+        raidHistoryPanel.add(createHeading("- Previously Recorded Raids- "), BorderLayout.NORTH);
 
         raidHistoryContainer = new JPanel();
         raidHistoryContainer.setLayout(new BorderLayout());
@@ -224,19 +224,19 @@ public class BlertPluginPanel extends PluginPanel {
 
         switch (status) {
             case IDLE:
-                raidStatusText.setText("Not in a raid");
+                raidStatusText.setText("Not in a raid.");
                 break;
             case RAID_STARTING:
-                raidStatusText.setText("Starting raid");
+                raidStatusText.setText("Starting raid...");
                 raidStatusText.setForeground(Color.YELLOW);
                 break;
             case RAID_ACTIVE:
-                raidStatusText.setText("Streaming raid data");
+                raidStatusText.setText("Streaming raid data!");
                 raidStatusText.setForeground(Color.GREEN);
                 break;
         }
 
-        currentStatePanel.add(createHeading("Raid Status"), BorderLayout.NORTH);
+        currentStatePanel.add(createHeading("- Current Raid -"), BorderLayout.NORTH);
         currentStatePanel.add(raidStatusText, BorderLayout.CENTER);
         return currentStatePanel;
     }
