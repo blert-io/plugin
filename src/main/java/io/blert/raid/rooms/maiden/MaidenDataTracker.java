@@ -27,10 +27,7 @@ import io.blert.events.MaidenBloodSplatsEvent;
 import io.blert.events.MaidenCrabLeakEvent;
 import io.blert.events.NpcAttackEvent;
 import io.blert.raid.*;
-import io.blert.raid.rooms.BasicRoomNpc;
-import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.RoomDataTracker;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -47,6 +44,8 @@ public class MaidenDataTracker extends RoomDataTracker {
 
     private final static int MAIDEN_BLOOD_THROW_ANIMATION = 8091;
     private final static int MAIDEN_AUTO_ANIMATION = 8092;
+
+    private final static WorldPoint MAIDEN_WORLD_LOCATION = new WorldPoint(3162, 4444, 0);
 
     private CrabSpawn currentSpawn = CrabSpawn.SEVENTIES;
     private final int[] spawnTicks = new int[3];
@@ -132,7 +131,10 @@ public class MaidenDataTracker extends RoomDataTracker {
         return TobNpc.withId(npc.getId()).flatMap(tobNpc -> {
             if (TobNpc.isMaiden(tobNpc.getId())) {
                 startRoom();
-                maiden = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+
+                // Due to the loading line at Maiden (thanks Jagex), use a static location for her ID.
+                long roomId = RoomNpcCollection.npcRoomId(getRoomTick(), npc.getId(), MAIDEN_WORLD_LOCATION);
+                maiden = new BasicRoomNpc(npc, tobNpc, roomId,
                         new Hitpoints(tobNpc.getBaseHitpoints(raidManager.getRaidScale())));
                 return Optional.of(maiden);
             }

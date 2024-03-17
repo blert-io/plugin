@@ -138,6 +138,22 @@ public class RaidManager {
             return;
         }
 
+        if (state == RaidState.STARTING) {
+            if (!initializeParty()) {
+                return;
+            }
+
+            state = RaidState.ACTIVE;
+            boolean isSpectator = !playerIsInRaid(client.getLocalPlayer().getName());
+
+            List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
+            dispatchEvent(new RaidStartEvent(names, raidMode, isSpectator));
+
+            // Dispatch any pending events that were queued before the raid started.
+            pendingRaidEvents.forEach(this::dispatchEvent);
+            pendingRaidEvents.clear();
+        }
+
         updatePartyInformation();
 
         if (roomDataTracker != null) {
@@ -196,22 +212,8 @@ public class RaidManager {
 
     private void startRaid(@Nullable Mode mode) {
         log.debug("Starting new raid");
-        state = RaidState.ACTIVE;
+        state = RaidState.STARTING;
         raidMode = mode;
-
-        // Defer sending the raid start event as party information is not always immediately available.
-        clientThread.invokeLater(() -> {
-            initializeParty();
-
-            boolean isSpectator = !playerIsInRaid(client.getLocalPlayer().getName());
-
-            List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
-            dispatchEvent(new RaidStartEvent(names, raidMode, isSpectator));
-
-            // Dispatch any pending events that were queued before the raid started.
-            pendingRaidEvents.forEach(this::dispatchEvent);
-            pendingRaidEvents.clear();
-        });
     }
 
     private void queueRaidEnd(RaidState state) {
@@ -254,29 +256,10 @@ public class RaidManager {
         log.debug("Location changed to " + loc);
         location = loc;
 
-        clearRoomDataTracker();
-
-        if (location.inMaidenInstance()) {
-            roomDataTracker = new MaidenDataTracker(this, client);
-        } else if (location.inBloatInstance()) {
-            roomDataTracker = new BloatDataTracker(this, client);
-        } else if (location.inNylocasInstance()) {
-            roomDataTracker = new NylocasDataTracker(this, client);
-        } else if (location.inSotetsegInstance()) {
-            roomDataTracker = new SotetsegDataTracker(this, client);
-        } else if (location.inXarpusInstance()) {
-            roomDataTracker = new XarpusDataTracker(this, client);
-        } else if (location.inVerzikInstance()) {
-            roomDataTracker = new VerzikDataTracker(this, client);
+        if (roomDataTracker == null || !location.inRoomInstance(roomDataTracker.getRoom())) {
+            // When entering a new instance for the first time, its room data tracker must be initialized.
+            initializeRoomDataTracker();
         }
-
-        if (roomDataTracker != null) {
-            eventBus.register(roomDataTracker);
-            // TODO(frolv): If the raid has not yet started, this event should be queued to be sent after the
-            // raid start event.
-            dispatchEvent(new RoomStatusEvent(roomDataTracker.getRoom(), 0, RoomStatusEvent.Status.ENTERED));
-        }
-
         return true;
     }
 
@@ -343,12 +326,13 @@ public class RaidManager {
         }
     }
 
-    private void initializeParty() {
+    private boolean initializeParty() {
         String localPlayer = client.getLocalPlayer().getName();
         forEachOrb((orb, username) -> {
             String normalized = Text.standardize(username);
             party.put(normalized, new Raider(username, username.equals(localPlayer)));
         });
+        return !party.isEmpty();
     }
 
     private void updatePartyInformation() {
@@ -367,6 +351,30 @@ public class RaidManager {
             roomDataTracker.terminate();
             eventBus.unregister(roomDataTracker);
             roomDataTracker = null;
+        }
+    }
+
+    private void initializeRoomDataTracker() {
+        clearRoomDataTracker();
+
+        if (location.inMaidenInstance()) {
+            roomDataTracker = new MaidenDataTracker(this, client);
+        } else if (location.inBloatInstance()) {
+            roomDataTracker = new BloatDataTracker(this, client);
+        } else if (location.inNylocasInstance()) {
+            roomDataTracker = new NylocasDataTracker(this, client);
+        } else if (location.inSotetsegInstance()) {
+            roomDataTracker = new SotetsegDataTracker(this, client);
+        } else if (location.inXarpusInstance()) {
+            roomDataTracker = new XarpusDataTracker(this, client);
+        } else if (location.inVerzikInstance()) {
+            roomDataTracker = new VerzikDataTracker(this, client);
+        }
+
+        if (roomDataTracker != null) {
+            log.info("Initialized room data tracker for {} from {}", roomDataTracker.getRoom(), location);
+            eventBus.register(roomDataTracker);
+            dispatchEvent(new RoomStatusEvent(roomDataTracker.getRoom(), 0, RoomStatusEvent.Status.ENTERED));
         }
     }
 }

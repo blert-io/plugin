@@ -25,6 +25,7 @@ package io.blert.raid;
 
 public enum RaidState {
     INACTIVE,
+    STARTING,
     ACTIVE,
     COMPLETE;
 

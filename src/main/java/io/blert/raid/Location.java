@@ -120,6 +120,25 @@ public enum Location {
         }
     }
 
+    public boolean inRoomInstance(Room room) {
+        switch (room) {
+            case MAIDEN:
+                return inMaidenInstance();
+            case BLOAT:
+                return inBloatInstance();
+            case NYLOCAS:
+                return inNylocasInstance();
+            case SOTETSEG:
+                return inSotetsegInstance();
+            case XARPUS:
+                return inXarpusInstance();
+            case VERZIK:
+                return inVerzikInstance();
+            default:
+                return false;
+        }
+    }
+
     public boolean inRaid() {
         return this != ELSEWHERE && this != LOBBY;
     }
@@ -170,5 +189,10 @@ public enum Location {
 
     public boolean inVerzik() {
         return this == VERZIK_ROOM;
+    }
+
+    public boolean isInstance() {
+        return this == MAIDEN_INSTANCE || this == BLOAT_INSTANCE || this == NYLOCAS_INSTANCE
+                || this == SOTETSEG_INSTANCE || this == XARPUS_INSTANCE || this == VERZIK_INSTANCE;
     }
 }
