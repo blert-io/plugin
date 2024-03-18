@@ -138,22 +138,6 @@ public class RaidManager {
             return;
         }
 
-        if (state == RaidState.STARTING) {
-            if (!initializeParty()) {
-                return;
-            }
-
-            state = RaidState.ACTIVE;
-            boolean isSpectator = !playerIsInRaid(client.getLocalPlayer().getName());
-
-            List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
-            dispatchEvent(new RaidStartEvent(names, raidMode, isSpectator));
-
-            // Dispatch any pending events that were queued before the raid started.
-            pendingRaidEvents.forEach(this::dispatchEvent);
-            pendingRaidEvents.clear();
-        }
-
         updatePartyInformation();
 
         if (roomDataTracker != null) {
@@ -161,6 +145,10 @@ public class RaidManager {
 
             if (roomDataTracker.notStarted() && roomState.isActive() && roomDataTracker.playersAreInRoom()) {
                 // The room may already be active when entered (e.g. as a spectator); start its tracker.
+                if (state == RaidState.STARTING) {
+                    startRaid();
+                }
+
                 roomDataTracker.startRoomInaccurate();
                 log.debug("Room " + roomDataTracker.getRoom() + " started via activity check");
             }
@@ -210,10 +198,36 @@ public class RaidManager {
         }
     }
 
-    private void startRaid(@Nullable Mode mode) {
-        log.debug("Starting new raid");
+    private void queueRaidStart(@Nullable Mode mode) {
+        log.info("Starting new raid");
         state = RaidState.STARTING;
         raidMode = mode;
+
+        // When players join the raid, the orb list does not immediately update, nor does it update all at once.
+        // (Some players may take longer to load in, thanks Jagex!) Therefore, wait a few ticks before starting.
+        // This value is arbitrary and may need to be adjusted.
+        deferredTaskTimer = 5;
+        deferredTask = this::startRaid;
+    }
+
+    private void startRaid() {
+        initializeParty();
+
+        state = RaidState.ACTIVE;
+        boolean spectator = !playerIsInRaid(client.getLocalPlayer().getName());
+
+        List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
+        dispatchEvent(new RaidStartEvent(names, raidMode, spectator));
+
+        if (this.roomDataTracker != null) {
+            // Raid scale information is not immediately available when the raid starts, so if any NPCs have already
+            // spawned, their hitpoints must be corrected after the scale is known.
+            this.roomDataTracker.correctNpcHitpointsForScale(getRaidScale());
+        }
+
+        // Dispatch any pending events that were queued before the raid started.
+        pendingRaidEvents.forEach(this::dispatchEvent);
+        pendingRaidEvents.clear();
     }
 
     private void queueRaidEnd(RaidState state) {
@@ -277,7 +291,7 @@ public class RaidManager {
 
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
             if (state.isInactive() && varbit.getValue() == 2) {
-                startRaid(null);
+                queueRaidStart(null);
             } else if (state.isActive() && varbit.getValue() < 2) {
                 if (state == RaidState.COMPLETE) {
                     state = RaidState.INACTIVE;
@@ -315,7 +329,7 @@ public class RaidManager {
         if (state.isInactive()) {
             Matcher matcher = RAID_ENTRY_REGEX.matcher(stripped);
             if (matcher.matches()) {
-                startRaid(Mode.parse(matcher.group(1)).orElse(null));
+                queueRaidStart(Mode.parse(matcher.group(1)).orElse(null));
             }
         } else {
             Matcher matcher = RAID_COMPLETION_REGEX.matcher(stripped);
@@ -326,13 +340,13 @@ public class RaidManager {
         }
     }
 
-    private boolean initializeParty() {
+    private void initializeParty() {
+        party.clear();
         String localPlayer = client.getLocalPlayer().getName();
         forEachOrb((orb, username) -> {
             String normalized = Text.standardize(username);
             party.put(normalized, new Raider(username, username.equals(localPlayer)));
         });
-        return !party.isEmpty();
     }
 
     private void updatePartyInformation() {

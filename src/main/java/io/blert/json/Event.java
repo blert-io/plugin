@@ -52,7 +52,7 @@ public class Event {
     // serialized.
     private @Nullable RaidInfo raidInfo = null;
     private @Nullable CompletedRaid completedRaid = null;
-    private @Nullable RoomStatusEvent.Status roomStatus = null;
+    private @Nullable RoomStatus roomStatus = null;
     private @Nullable Player player = null;
     private @Nullable Npc npc = null;
     private @Nullable NpcAttack npcAttack = null;
@@ -91,7 +91,8 @@ public class Event {
                 break;
 
             case ROOM_STATUS:
-                event.roomStatus = ((RoomStatusEvent) blertEvent).getStatus();
+                RoomStatusEvent roomStatusEvent = (RoomStatusEvent) blertEvent;
+                event.roomStatus = new RoomStatus(roomStatusEvent.getStatus(), roomStatusEvent.isAccurate());
                 break;
 
             case PLAYER_UPDATE:

@@ -96,7 +96,7 @@ public class BlertPluginPanel extends PluginPanel {
         userPanel.setLayout(new BorderLayout());
         userPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        userPanel.add(createHeading("- Server Status- "), BorderLayout.NORTH);
+        userPanel.add(createHeading("Server Status"), BorderLayout.NORTH);
 
         JLabel connectionLabel = new JLabel();
         connectionLabel.setForeground(Color.WHITE);
@@ -165,7 +165,7 @@ public class BlertPluginPanel extends PluginPanel {
         raidHistoryPanel.setLayout(new BorderLayout());
         raidHistoryPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
 
-        raidHistoryPanel.add(createHeading("- Previously Recorded Raids- "), BorderLayout.NORTH);
+        raidHistoryPanel.add(createHeading("Previously Recorded Raids"), BorderLayout.NORTH);
 
         raidHistoryContainer = new JPanel();
         raidHistoryContainer.setLayout(new BorderLayout());
@@ -236,7 +236,7 @@ public class BlertPluginPanel extends PluginPanel {
                 break;
         }
 
-        currentStatePanel.add(createHeading("- Current Raid -"), BorderLayout.NORTH);
+        currentStatePanel.add(createHeading("Current Raid"), BorderLayout.NORTH);
         currentStatePanel.add(raidStatusText, BorderLayout.CENTER);
         return currentStatePanel;
     }
@@ -264,7 +264,7 @@ public class BlertPluginPanel extends PluginPanel {
         headingPanel.setLayout(new BorderLayout());
         headingPanel.setBorder(new EmptyBorder(0, 0, 5, 0));
 
-        JLabel heading = new JLabel(title);
+        JLabel heading = new JLabel(String.format("— %s —", title));
         heading.setForeground(Color.WHITE);
         heading.setHorizontalAlignment(SwingConstants.CENTER);
         heading.setFont(heading.getFont().deriveFont(Font.BOLD));

@@ -182,6 +182,13 @@ public class WebsocketEventHandler implements EventHandler {
                 }
 
                 raidId = serverMessage.getRaidId();
+                if (raidId == null) {
+                    log.warn("Failed to start raid");
+                    jsonEventHandler.setRaidId(null);
+                    setStatus(Status.IDLE);
+                    return;
+                }
+
                 jsonEventHandler.setRaidId(raidId);
                 setStatus(Status.RAID_ACTIVE);
 

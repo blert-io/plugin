@@ -49,6 +49,7 @@ public class MaidenDataTracker extends RoomDataTracker {
 
     private CrabSpawn currentSpawn = CrabSpawn.SEVENTIES;
     private final int[] spawnTicks = new int[3];
+    private boolean crabsSpawnedThisTick = false;
 
     private @Nullable BasicRoomNpc maiden;
 
@@ -100,6 +101,8 @@ public class MaidenDataTracker extends RoomDataTracker {
                 dispatchEvent(new MaidenCrabLeakEvent(tick, getWorldLocation(crabNpc), crab));
             }
         }
+
+        crabsSpawnedThisTick = false;
     }
 
     @Override
@@ -190,11 +193,9 @@ public class MaidenDataTracker extends RoomDataTracker {
     }
 
     private Optional<MaidenCrab> handleMaidenCrabSpawn(NPC npc) {
-        if (spawnTicks[currentSpawn.ordinal()] == 0) {
+        if (!crabsSpawnedThisTick) {
             markNewSpawn();
-        } else if (spawnTicks[currentSpawn.ordinal()] != getRoomTick()) {
-            currentSpawn = currentSpawn.next();
-            markNewSpawn();
+            crabsSpawnedThisTick = true;
         }
 
         WorldPoint spawnLocation = getWorldLocation(npc);
@@ -211,6 +212,20 @@ public class MaidenDataTracker extends RoomDataTracker {
     }
 
     private void markNewSpawn() {
+        if (maiden != null) {
+            // Correct the crab spawn based on Maiden's current hitpoints in case the room was started late.
+            // The percentage thresholds are set higher than the spawn in case Maiden has already healed when
+            // joining the room, but not high enough to be falsely triggered by a deep proc.
+            double hp = maiden.getHitpoints().percentage();
+            if (hp < 39.0) {
+                currentSpawn = CrabSpawn.THIRTIES;
+            } else if (hp < 59.0) {
+                currentSpawn = CrabSpawn.FIFTIES;
+            } else {
+                currentSpawn = CrabSpawn.SEVENTIES;
+            }
+        }
+
         spawnTicks[currentSpawn.ordinal()] = getRoomTick();
         log.debug("Maiden " + currentSpawn + " spawned on tick " + getRoomTick() + " (" + formattedRoomTime() + ")");
     }

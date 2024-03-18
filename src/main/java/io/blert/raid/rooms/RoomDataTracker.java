@@ -147,13 +147,16 @@ public abstract class RoomDataTracker {
 
         state = State.COMPLETED;
         int lastRecordedRoomTick = getRoomTick();
+        boolean accurate;
 
         if (inGameRoomTicks != -1 && inGameRoomTicks != lastRecordedRoomTick) {
             log.warn("Room {} completion time mismatch: in-game room ticks = {}, recorded ticks = {}",
                     room, inGameRoomTicks, lastRecordedRoomTick);
+            accurate = false;
             lastRecordedRoomTick = inGameRoomTicks;
         } else {
             log.debug("Room {} finished in {} ticks ({})", room, lastRecordedRoomTick, formattedRoomTime());
+            accurate = true;
         }
 
         var roomStatus = completion ? RoomStatusEvent.Status.COMPLETED : RoomStatusEvent.Status.WIPED;
@@ -161,7 +164,7 @@ public abstract class RoomDataTracker {
         // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
         // own events first.
         final int finalRoomTick = lastRecordedRoomTick;
-        clientThread.invokeLater(() -> dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus)));
+        clientThread.invokeLater(() -> dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus, accurate)));
     }
 
     /**
@@ -235,6 +238,26 @@ public abstract class RoomDataTracker {
         return client.getPlayers().stream()
                 .filter(player -> raidManager.playerIsInRaid(player.getName()))
                 .anyMatch(player -> Location.fromWorldPoint(getWorldLocation(player)).inRoom(room));
+    }
+
+    /**
+     * Updates the base and current hitpoints of all NPCs in the room to match the given raid scale.
+     *
+     * @param scale The raid scale.
+     */
+    public void correctNpcHitpointsForScale(int scale) {
+        roomNpcs.forEach(roomNpc -> {
+            NPC npc = roomNpc.getNpc();
+            int healthRatio = npc.getHealthRatio();
+            int healthScale = npc.getHealthScale();
+
+            if (healthScale > 0 && healthRatio != -1) {
+                double percent = healthRatio / (double) healthScale;
+                TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+                roomNpc.setHitpoints(Hitpoints.fromRatio(percent, tobNpc.getBaseHitpoints(scale)));
+            }
+        });
+
     }
 
     /**
@@ -381,9 +404,7 @@ public abstract class RoomDataTracker {
 
             // Update the raid mode on the first NPC seen in a room, in case the client joined the raid late, and it
             // has not been set.
-            if (roomNpcs.size() == 1) {
-                raidManager.updateRaidMode(roomNpc.getRaidMode());
-            }
+            raidManager.updateRaidMode(roomNpc.getRaidMode());
         });
     }
 

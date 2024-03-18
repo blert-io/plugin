@@ -21,35 +21,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.json;
 
-import io.blert.raid.rooms.Room;
-import lombok.Getter;
+import io.blert.events.RoomStatusEvent;
+import lombok.AllArgsConstructor;
 
-@Getter
-public class RoomStatusEvent extends Event {
-    public enum Status {
-        ENTERED,
-        STARTED,
-        COMPLETED,
-        WIPED,
-    }
-
-    private final Status status;
-    private final boolean accurate;
-
-    public RoomStatusEvent(Room room, int tick, Status status) {
-        this(room, tick, status, true);
-    }
-
-    public RoomStatusEvent(Room room, int tick, Status status, boolean accurate) {
-        super(EventType.ROOM_STATUS, room, tick, null);
-        this.status = status;
-        this.accurate = accurate;
-    }
-
-    @Override
-    protected String eventDataString() {
-        return "status=" + status;
-    }
+@AllArgsConstructor
+public class RoomStatus {
+    RoomStatusEvent.Status status;
+    boolean accurate;
 }
