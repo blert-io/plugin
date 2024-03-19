@@ -62,7 +62,7 @@ public interface BlertConfig extends Config {
     @ConfigItem(
             keyName = "serverUrl",
             name = "Custom server URL",
-            description = "Overrides the default server hostname (socket.blert.io)",
+            description = "Overrides the default server hostname (wave32.blert.io)",
             position = 1,
             section = DEVELOPER_SECTION
     )

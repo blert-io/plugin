@@ -51,7 +51,7 @@ import java.awt.image.BufferedImage;
 )
 public class BlertPlugin extends Plugin {
     static final String DEFAULT_BLERT_HOSTNAME = "blert.io";
-    static final String DEFAULT_SERVER_HOSTNAME = "socket.blert.io";
+    static final String DEFAULT_SERVER_HOSTNAME = "wave32.blert.io";
 
     @Inject
     private Client client;
