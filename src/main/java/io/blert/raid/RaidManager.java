@@ -31,6 +31,7 @@ import io.blert.raid.rooms.nylocas.NylocasDataTracker;
 import io.blert.raid.rooms.sotetseg.SotetsegDataTracker;
 import io.blert.raid.rooms.verzik.VerzikDataTracker;
 import io.blert.raid.rooms.xarpus.XarpusDataTracker;
+import io.blert.util.DeferredTask;
 import joptsimple.internal.Strings;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,9 +61,12 @@ import java.util.stream.Collectors;
 
 public class RaidManager {
     private static final int TOB_ROOM_STATUS_VARBIT = 6447;
+    private static final int TOB_PARTY_LIST_COMPONENT_ID = 1835020;
 
-    private static final Pattern RAID_ENTRY_REGEX =
+    private static final Pattern RAID_ENTRY_REGEX_1P =
             Pattern.compile("You enter the Theatre of Blood \\((\\w+) Mode\\)\\.\\.\\.");
+    private static final Pattern RAID_ENTRY_REGEX_3P =
+            Pattern.compile("(.+) has entered the Theatre of Blood \\((\\w+) Mode\\). Step inside to join (her|him|them)\\.\\.\\.");
     private static final Pattern RAID_COMPLETION_REGEX =
             Pattern.compile("Theatre of Blood total completion time: ([0-9:.]+)");
 
@@ -95,8 +99,7 @@ public class RaidManager {
     @Nullable
     RoomDataTracker roomDataTracker = null;
 
-    private Runnable deferredTask = null;
-    private int deferredTaskTimer = -1;
+    private @Nullable DeferredTask deferredTask = null;
 
     public void initialize(EventHandler handler) {
         this.eventHandler = handler;
@@ -134,6 +137,11 @@ public class RaidManager {
     public void tick() {
         updateLocation();
 
+        if (location == Location.LOBBY && client.getVarbitValue(Varbits.THEATRE_OF_BLOOD) == 1) {
+            // If the player is in a party in the raid lobby, grab the party information from the party widget.
+            initializePartyFromLobby();
+        }
+
         if (!inRaid()) {
             return;
         }
@@ -156,15 +164,8 @@ public class RaidManager {
             roomDataTracker.tick();
         }
 
-        if (deferredTaskTimer != -1) {
-            deferredTaskTimer--;
-            if (deferredTaskTimer == 0) {
-                if (deferredTask != null) {
-                    deferredTask.run();
-                }
-                deferredTask = null;
-                deferredTaskTimer = -1;
-            }
+        if (deferredTask != null) {
+            deferredTask.tick();
         }
     }
 
@@ -198,21 +199,26 @@ public class RaidManager {
         }
     }
 
-    private void queueRaidStart(@Nullable Mode mode) {
+    private void queueRaidStart(@Nullable Mode mode, boolean reinitializeParty) {
         log.info("Starting new raid");
         state = RaidState.STARTING;
         raidMode = mode;
 
-        // When players join the raid, the orb list does not immediately update, nor does it update all at once.
-        // (Some players may take longer to load in, thanks Jagex!) Therefore, wait a few ticks before starting.
-        // This value is arbitrary and may need to be adjusted.
-        deferredTaskTimer = 5;
-        deferredTask = this::startRaid;
+        if (reinitializeParty) {
+            // When players join the raid, the orb list does not immediately update, nor does it update all at once.
+            // (Some players may take longer to load in, thanks Jagex!) Therefore, wait a few ticks before starting.
+            // This value is arbitrary and may need to be adjusted.
+            final int TICKS_TO_DELAY_ORB_CHECK = 5;
+            deferredTask = new DeferredTask(() -> {
+                initializePartyFromOrbs();
+                startRaid();
+            }, TICKS_TO_DELAY_ORB_CHECK);
+        } else {
+            deferredTask = new DeferredTask(this::startRaid, 1);
+        }
     }
 
     private void startRaid() {
-        initializeParty();
-
         state = RaidState.ACTIVE;
         boolean spectator = !playerIsInRaid(client.getLocalPlayer().getName());
 
@@ -235,8 +241,7 @@ public class RaidManager {
     }
 
     private void queueRaidEnd(RaidState state, int overallTime) {
-        this.deferredTaskTimer = 5;
-        this.deferredTask = () -> endRaid(state, overallTime);
+        deferredTask = new DeferredTask(() -> endRaid(state, overallTime), 5);
     }
 
     private void endRaid(RaidState state, int overallTime) {
@@ -291,7 +296,10 @@ public class RaidManager {
 
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
             if (state.isInactive() && varbit.getValue() == 2) {
-                queueRaidStart(null);
+                // A raid start due to a varbit change usually means that the player is joining late, rejoining, or
+                // spectating. Party and mode information is not immediately available.
+                log.debug("Raid started via varbit change");
+                queueRaidStart(null, true);
             } else if (state.isActive() && varbit.getValue() < 2) {
                 if (state == RaidState.COMPLETE) {
                     state = RaidState.INACTIVE;
@@ -327,20 +335,49 @@ public class RaidManager {
         String stripped = Text.removeTags(message.getMessage());
 
         if (state.isInactive()) {
-            Matcher matcher = RAID_ENTRY_REGEX.matcher(stripped);
+            // Listen for a chat message indicating the start of a raid, and queue the start action immediately
+            // instead of waiting to enter.
+            Matcher matcher = RAID_ENTRY_REGEX_1P.matcher(stripped);
             if (matcher.matches()) {
-                queueRaidStart(Mode.parse(matcher.group(1)).orElse(null));
+                log.debug("Raid started via 1p chat message (mode: {})", matcher.group(1));
+                queueRaidStart(Mode.parse(matcher.group(1)).orElse(null), party.isEmpty());
+                return;
             }
-        } else {
-            Matcher matcher = RAID_COMPLETION_REGEX.matcher(stripped);
+
+            matcher = RAID_ENTRY_REGEX_3P.matcher(stripped);
             if (matcher.matches()) {
-                int overallTime = Tick.fromTimeString(matcher.group(1));
-                queueRaidEnd(RaidState.COMPLETE, overallTime);
+                log.debug("Raid started via 3p chat message (leader: {} mode: {})", matcher.group(1), matcher.group(2));
+                queueRaidStart(Mode.parse(matcher.group(2)).orElse(null), party.isEmpty());
             }
+            return;
+        }
+
+        Matcher matcher = RAID_COMPLETION_REGEX.matcher(stripped);
+        if (matcher.matches()) {
+            int overallTime = Tick.fromTimeString(matcher.group(1));
+            queueRaidEnd(RaidState.COMPLETE, overallTime);
         }
     }
 
-    private void initializeParty() {
+    /**
+     * Collects party members' names from the lobby party widget.
+     */
+    private void initializePartyFromLobby() {
+        var tobPartyWidget = client.getWidget(TOB_PARTY_LIST_COMPONENT_ID);
+        if (tobPartyWidget == null) {
+            return;
+        }
+
+        party.clear();
+
+        Arrays.stream(tobPartyWidget.getText().split("<br>"))
+                .filter(s -> !s.equals("-"))
+                .map(Text::sanitize)
+                .forEach(s -> party.put(Text.standardize(s),
+                        new Raider(s, s.equals(client.getLocalPlayer().getName()))));
+    }
+
+    private void initializePartyFromOrbs() {
         party.clear();
         String localPlayer = client.getLocalPlayer().getName();
         forEachOrb((orb, username) -> {

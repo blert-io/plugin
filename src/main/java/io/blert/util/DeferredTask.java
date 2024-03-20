@@ -21,18 +21,50 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert;
+package io.blert.util;
 
-import net.runelite.client.RuneLite;
-import net.runelite.client.externalplugins.ExternalPluginManager;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
+/**
+ * Delays execution of a task by a specified number of ticks.
+ * <p>
+ * Progression towards execution is made by calling the {@link DeferredTask#tick()} method,
+ * typically from some {@code onTick} handler.
+ */
+public class DeferredTask {
+    private final @NotNull Runnable task;
+    private int ticks;
 
-public class BlertPluginTest {
-    public static void main(String[] args) throws Exception {
-        ExternalPluginManager.loadBuiltin(BlertPlugin.class);
-        String[] debugArgs = Arrays.copyOf(args, args.length + 1);
-        debugArgs[args.length] = "--developer-mode";
-        RuneLite.main(debugArgs);
+    public DeferredTask(@NotNull Runnable task, int ticks) {
+        this.task = task;
+        this.ticks = ticks;
+    }
+
+    /**
+     * Decrements the number of ticks remaining before the task is executed.
+     */
+    public void tick() {
+        ticks = Math.max(-1, ticks - 1);
+
+        if (ticks == 0) {
+            task.run();
+            ticks = -1;
+        }
+    }
+
+    /**
+     * Cancels the task, preventing it from being executed.
+     */
+    public void cancel() {
+        ticks = -1;
+    }
+
+    /**
+     * Resets the number of ticks remaining before the task is executed.
+     *
+     * @param ticks Updated number of ticks.
+     */
+    public void reset(int ticks) {
+        this.ticks = Math.max(-1, ticks);
     }
 }
