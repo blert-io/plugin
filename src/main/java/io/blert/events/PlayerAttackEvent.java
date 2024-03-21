@@ -23,11 +23,11 @@
 
 package io.blert.events;
 
-import io.blert.raid.Item;
-import io.blert.raid.PlayerAttack;
-import io.blert.raid.Raider;
-import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.TrackedNpc;
+import io.blert.core.Item;
+import io.blert.core.PlayerAttack;
+import io.blert.core.Raider;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.core.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 

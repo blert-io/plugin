@@ -24,14 +24,14 @@
 package io.blert.json;
 
 import io.blert.events.PlayerAttackEvent;
-import io.blert.raid.Item;
+import io.blert.core.Item;
 import lombok.Getter;
 
 import javax.annotation.Nullable;
 
 @Getter
 public class PlayerAttack {
-    private final io.blert.raid.PlayerAttack type;
+    private final io.blert.core.PlayerAttack type;
     private @Nullable Item weapon;
     private @Nullable Npc target;
     private int distanceToTarget;
@@ -46,7 +46,7 @@ public class PlayerAttack {
         return attack;
     }
 
-    private PlayerAttack(io.blert.raid.PlayerAttack attack) {
+    private PlayerAttack(io.blert.core.PlayerAttack attack) {
         this.type = attack;
     }
 }

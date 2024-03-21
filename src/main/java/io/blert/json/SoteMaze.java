@@ -23,7 +23,7 @@
 
 package io.blert.json;
 
-import io.blert.raid.rooms.sotetseg.Maze;
+import io.blert.challenges.tob.rooms.sotetseg.Maze;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor

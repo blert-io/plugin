@@ -26,7 +26,7 @@ package io.blert;
 import com.google.inject.Provides;
 import io.blert.client.WebSocketClient;
 import io.blert.client.WebsocketEventHandler;
-import io.blert.raid.RaidManager;
+import io.blert.challenges.tob.RaidManager;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;

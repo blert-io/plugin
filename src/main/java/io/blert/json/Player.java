@@ -23,11 +23,11 @@
 
 package io.blert.json;
 
+import io.blert.core.Hitpoints;
+import io.blert.core.Item;
+import io.blert.core.SkillLevel;
+import io.blert.core.EquipmentSlot;
 import io.blert.events.PlayerUpdateEvent;
-import io.blert.raid.EquipmentSlot;
-import io.blert.raid.Hitpoints;
-import io.blert.raid.Item;
-import io.blert.raid.SkillLevel;
 import lombok.Getter;
 import lombok.Setter;
 

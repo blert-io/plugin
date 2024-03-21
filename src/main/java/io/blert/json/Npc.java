@@ -24,14 +24,14 @@
 package io.blert.json;
 
 import io.blert.events.NpcEvent;
-import io.blert.raid.Hitpoints;
-import io.blert.raid.rooms.TrackedNpc;
-import io.blert.raid.rooms.maiden.CrabSpawn;
-import io.blert.raid.rooms.maiden.MaidenCrab;
-import io.blert.raid.rooms.nylocas.Nylo;
-import io.blert.raid.rooms.nylocas.SpawnType;
-import io.blert.raid.rooms.verzik.VerzikCrab;
-import io.blert.raid.rooms.verzik.VerzikPhase;
+import io.blert.core.Hitpoints;
+import io.blert.core.TrackedNpc;
+import io.blert.challenges.tob.rooms.maiden.CrabSpawn;
+import io.blert.challenges.tob.rooms.maiden.MaidenCrab;
+import io.blert.challenges.tob.rooms.nylocas.Nylo;
+import io.blert.challenges.tob.rooms.nylocas.SpawnType;
+import io.blert.challenges.tob.rooms.verzik.VerzikCrab;
+import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;

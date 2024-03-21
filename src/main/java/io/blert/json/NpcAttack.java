@@ -29,6 +29,6 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class NpcAttack {
-    io.blert.raid.NpcAttack attack;
+    io.blert.challenges.tob.NpcAttack attack;
     String target;
 }

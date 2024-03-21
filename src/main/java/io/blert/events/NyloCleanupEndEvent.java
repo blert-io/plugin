@@ -23,7 +23,7 @@
 
 package io.blert.events;
 
-import io.blert.raid.rooms.Room;
+import io.blert.challenges.tob.rooms.Room;
 
 public class NyloCleanupEndEvent extends Event {
     public NyloCleanupEndEvent(int tick) {

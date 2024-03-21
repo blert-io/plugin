@@ -23,7 +23,7 @@
 
 package io.blert.events;
 
-import io.blert.raid.rooms.Room;
+import io.blert.challenges.tob.rooms.Room;
 import lombok.Getter;
 
 @Getter

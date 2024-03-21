@@ -23,9 +23,9 @@
 
 package io.blert.events;
 
-import io.blert.raid.Hitpoints;
-import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.TrackedNpc;
+import io.blert.core.Hitpoints;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.core.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 

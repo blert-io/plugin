@@ -25,9 +25,9 @@ package io.blert.json;
 
 import com.google.gson.Gson;
 import io.blert.events.*;
-import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.verzik.VerzikPhase;
-import io.blert.raid.rooms.xarpus.XarpusPhase;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
+import io.blert.challenges.tob.rooms.xarpus.XarpusPhase;
 import lombok.Getter;
 import lombok.Setter;
 

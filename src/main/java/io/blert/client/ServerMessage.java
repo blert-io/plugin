@@ -25,7 +25,7 @@ package io.blert.client;
 
 import com.google.gson.Gson;
 import io.blert.json.Event;
-import io.blert.raid.Mode;
+import io.blert.challenges.tob.Mode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;

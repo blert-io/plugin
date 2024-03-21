@@ -23,8 +23,8 @@
 
 package io.blert.events;
 
-import io.blert.raid.*;
-import io.blert.raid.rooms.Room;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.core.*;
 import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;

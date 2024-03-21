@@ -23,7 +23,7 @@
 
 package io.blert.events;
 
-import io.blert.raid.Mode;
+import io.blert.challenges.tob.Mode;
 import lombok.Getter;
 
 import java.util.List;

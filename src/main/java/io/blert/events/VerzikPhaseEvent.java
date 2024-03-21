@@ -23,8 +23,8 @@
 
 package io.blert.events;
 
-import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.verzik.VerzikPhase;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
 import lombok.Getter;
 
 @Getter

@@ -23,9 +23,9 @@
 
 package io.blert.events;
 
-import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.maiden.CrabSpawn;
-import io.blert.raid.rooms.maiden.MaidenCrab;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.maiden.CrabSpawn;
+import io.blert.challenges.tob.rooms.maiden.MaidenCrab;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 

@@ -25,7 +25,7 @@ package io.blert;
 
 import io.blert.client.ServerMessage;
 import io.blert.client.WebsocketEventHandler;
-import io.blert.raid.Mode;
+import io.blert.challenges.tob.Mode;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
