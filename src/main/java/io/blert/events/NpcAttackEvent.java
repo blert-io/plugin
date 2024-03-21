@@ -25,7 +25,7 @@ package io.blert.events;
 
 import io.blert.raid.NpcAttack;
 import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.Actor;
 import net.runelite.api.Player;
@@ -40,7 +40,7 @@ public class NpcAttackEvent extends Event {
     private final long roomId;
     private final @Nullable String target;
 
-    public NpcAttackEvent(@Nullable Room room, int tick, @Nullable WorldPoint point, NpcAttack attack, RoomNpc npc) {
+    public NpcAttackEvent(@Nullable Room room, int tick, @Nullable WorldPoint point, NpcAttack attack, TrackedNpc npc) {
         super(EventType.NPC_ATTACK, room, tick, point);
         this.attack = attack;
         this.npcId = npc.getNpcId();

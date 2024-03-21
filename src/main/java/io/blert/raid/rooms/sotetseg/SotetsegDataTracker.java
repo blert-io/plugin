@@ -29,10 +29,10 @@ import io.blert.raid.Hitpoints;
 import io.blert.raid.NpcAttack;
 import io.blert.raid.RaidManager;
 import io.blert.raid.TobNpc;
-import io.blert.raid.rooms.BasicRoomNpc;
+import io.blert.raid.rooms.BasicTrackedNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -56,7 +56,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private @Nullable NpcAttack attackThisTick = null;
     private int lastAttackTick = -1;
     private int deathBallSpawnTick = -1;
-    private @Nullable BasicRoomNpc sotetseg = null;
+    private @Nullable BasicTrackedNpc sotetseg = null;
 
     public SotetsegDataTracker(RaidManager manager, Client client) {
         super(manager, client, Room.SOTETSEG);
@@ -92,20 +92,20 @@ public class SotetsegDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event) {
+    protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
         NPC npc = event.getNpc();
 
         return TobNpc.withId(npc.getId())
                 .filter(tobNpc -> TobNpc.isSotetsegIdle(tobNpc.getId()))
                 .map(tobNpc -> {
-                    sotetseg = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                    sotetseg = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
                             new Hitpoints(tobNpc, raidManager.getRaidScale()));
                     return sotetseg;
                 });
     }
 
     @Override
-    protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
+    protected boolean onNpcDespawn(NpcDespawned event, TrackedNpc trackedNpc) {
         return true;
     }
 

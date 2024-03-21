@@ -25,7 +25,7 @@ package io.blert.raid.rooms.nylocas;
 
 import io.blert.raid.Hitpoints;
 import io.blert.raid.TobNpc;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -39,10 +39,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 
 @Slf4j
-public class Nylo extends RoomNpc {
+public class Nylo extends TrackedNpc {
     @AllArgsConstructor
     @Getter
-    public static class Properties extends RoomNpc.Properties {
+    public static class Properties extends TrackedNpc.Properties {
         private long roomId;
         private long parentRoomId;
         private int wave;
@@ -100,7 +100,7 @@ public class Nylo extends RoomNpc {
     }
 
     @Override
-    public @NotNull RoomNpc.Properties getProperties() {
+    public @NotNull TrackedNpc.Properties getProperties() {
         long parentRoomId = parent != null ? parent.getRoomId() : 0;
         return new Properties(getRoomId(), parentRoomId, wave, spawnType, style);
     }

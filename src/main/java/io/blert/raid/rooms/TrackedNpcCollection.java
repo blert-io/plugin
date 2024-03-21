@@ -33,18 +33,18 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Optional;
 
-public class RoomNpcCollection implements Collection<RoomNpc> {
-    private final HashMap<Long, RoomNpc> byRoomId = new HashMap<>();
-    private final HashMap<Integer, RoomNpc> byNpc = new HashMap<>();
+public class TrackedNpcCollection implements Collection<TrackedNpc> {
+    private final HashMap<Long, TrackedNpc> byRoomId = new HashMap<>();
+    private final HashMap<Integer, TrackedNpc> byNpc = new HashMap<>();
 
-    public RoomNpcCollection() {
+    public TrackedNpcCollection() {
     }
 
-    public Optional<RoomNpc> getByRoomId(long roomId) {
+    public Optional<TrackedNpc> getByRoomId(long roomId) {
         return Optional.ofNullable(byRoomId.get(roomId));
     }
 
-    public Optional<RoomNpc> getByNpc(NPC npc) {
+    public Optional<TrackedNpc> getByNpc(NPC npc) {
         return Optional.ofNullable(byNpc.get(npc.hashCode()));
     }
 
@@ -60,24 +60,24 @@ public class RoomNpcCollection implements Collection<RoomNpc> {
 
     @Override
     public boolean contains(Object o) {
-        if (!(o instanceof RoomNpc)) {
+        if (!(o instanceof TrackedNpc)) {
             return false;
         }
 
-        RoomNpc roomNpc = (RoomNpc) o;
-        return byRoomId.containsKey(roomNpc.getRoomId());
+        TrackedNpc trackedNpc = (TrackedNpc) o;
+        return byRoomId.containsKey(trackedNpc.getRoomId());
     }
 
     @NotNull
     @Override
-    public Iterator<RoomNpc> iterator() {
+    public Iterator<TrackedNpc> iterator() {
         return byRoomId.values().iterator();
     }
 
     @NotNull
     @Override
-    public RoomNpc @NotNull [] toArray() {
-        return byRoomId.values().toArray(new RoomNpc[0]);
+    public TrackedNpc @NotNull [] toArray() {
+        return byRoomId.values().toArray(new TrackedNpc[0]);
     }
 
     @NotNull
@@ -87,21 +87,21 @@ public class RoomNpcCollection implements Collection<RoomNpc> {
     }
 
     @Override
-    public boolean add(RoomNpc roomNpc) {
-        byRoomId.put(roomNpc.getRoomId(), roomNpc);
-        byNpc.put(roomNpc.getNpc().hashCode(), roomNpc);
+    public boolean add(TrackedNpc trackedNpc) {
+        byRoomId.put(trackedNpc.getRoomId(), trackedNpc);
+        byNpc.put(trackedNpc.getNpc().hashCode(), trackedNpc);
         return true;
     }
 
     @Override
     public boolean remove(Object o) {
-        if (!(o instanceof RoomNpc)) {
+        if (!(o instanceof TrackedNpc)) {
             return false;
         }
 
-        RoomNpc roomNpc = (RoomNpc) o;
-        byNpc.remove(roomNpc.getNpc().hashCode());
-        return byRoomId.remove(roomNpc.getRoomId()) != null;
+        TrackedNpc trackedNpc = (TrackedNpc) o;
+        byNpc.remove(trackedNpc.getNpc().hashCode());
+        return byRoomId.remove(trackedNpc.getRoomId()) != null;
     }
 
     @Override
@@ -110,7 +110,7 @@ public class RoomNpcCollection implements Collection<RoomNpc> {
     }
 
     @Override
-    public boolean addAll(@NotNull Collection<? extends RoomNpc> collection) {
+    public boolean addAll(@NotNull Collection<? extends TrackedNpc> collection) {
         int sizeBefore = byRoomId.size();
         collection.forEach(this::add);
         return byRoomId.size() != sizeBefore;

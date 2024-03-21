@@ -30,10 +30,10 @@ import io.blert.raid.Hitpoints;
 import io.blert.raid.NpcAttack;
 import io.blert.raid.RaidManager;
 import io.blert.raid.TobNpc;
-import io.blert.raid.rooms.BasicRoomNpc;
+import io.blert.raid.rooms.BasicTrackedNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -58,7 +58,7 @@ public class BloatDataTracker extends RoomDataTracker {
     }
 
     private State state;
-    private BasicRoomNpc bloat;
+    private BasicTrackedNpc bloat;
 
     private int currentDown;
     private int currentDownTick;
@@ -102,21 +102,21 @@ public class BloatDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event) {
+    protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
         NPC npc = event.getNpc();
 
         return TobNpc.withId(npc.getId())
                 .filter(tobNpc -> TobNpc.isBloat(tobNpc.getId()))
                 .map(tobNpc -> {
-                    bloat = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                    bloat = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
                             new Hitpoints(tobNpc, raidManager.getRaidScale()));
                     return bloat;
                 });
     }
 
     @Override
-    protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
-        return roomNpc == bloat;
+    protected boolean onNpcDespawn(NpcDespawned event, TrackedNpc trackedNpc) {
+        return trackedNpc == bloat;
     }
 
     @Override

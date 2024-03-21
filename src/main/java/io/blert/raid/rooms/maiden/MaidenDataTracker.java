@@ -51,7 +51,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     private final int[] spawnTicks = new int[3];
     private boolean crabsSpawnedThisTick = false;
 
-    private @Nullable BasicRoomNpc maiden;
+    private @Nullable BasicTrackedNpc maiden;
 
     private final Set<GameObject> bloodTrails = new HashSet<>();
     private final Map<Integer, MaidenCrab> crabs = new HashMap<>();
@@ -129,15 +129,15 @@ public class MaidenDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned spawned) {
+    protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned spawned) {
         NPC npc = spawned.getNpc();
         return TobNpc.withId(npc.getId()).flatMap(tobNpc -> {
             if (TobNpc.isMaiden(tobNpc.getId())) {
                 startRoom();
 
                 // Due to the loading line at Maiden (thanks Jagex), use a static location for her ID.
-                long roomId = RoomNpcCollection.npcRoomId(getRoomTick(), npc.getId(), MAIDEN_WORLD_LOCATION);
-                maiden = new BasicRoomNpc(npc, tobNpc, roomId,
+                long roomId = TrackedNpcCollection.npcRoomId(getRoomTick(), npc.getId(), MAIDEN_WORLD_LOCATION);
+                maiden = new BasicTrackedNpc(npc, tobNpc, roomId,
                         new Hitpoints(tobNpc.getBaseHitpoints(raidManager.getRaidScale())));
                 return Optional.of(maiden);
             }
@@ -155,7 +155,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected boolean onNpcDespawn(NpcDespawned despawned, RoomNpc roomNpc) {
+    protected boolean onNpcDespawn(NpcDespawned despawned, TrackedNpc trackedNpc) {
         NPC npc = despawned.getNpc();
         crabs.remove(npc.hashCode());
         // Every maiden NPC despawn is final.
@@ -186,9 +186,9 @@ public class MaidenDataTracker extends RoomDataTracker {
         dispatchEvent(new NpcAttackEvent(getRoom(), tick, getWorldLocation(actor), attack, maiden));
     }
 
-    private Optional<RoomNpc> handleMaidenBloodSpawnSpawn(NPC npc) {
+    private Optional<TrackedNpc> handleMaidenBloodSpawnSpawn(NPC npc) {
         return TobNpc.withId(npc.getId()).map(tobNpc ->
-                new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+                new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc.getBaseHitpoints(raidManager.getRaidScale()))));
     }
 

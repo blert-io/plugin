@@ -27,7 +27,7 @@ import io.blert.raid.Item;
 import io.blert.raid.PlayerAttack;
 import io.blert.raid.Raider;
 import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
@@ -43,16 +43,16 @@ public class PlayerAttackEvent extends Event {
     private final int distanceToTarget;
 
     public PlayerAttackEvent(Room room, int tick, WorldPoint playerPoint, PlayerAttack attack,
-                             @Nullable Item weapon, Raider raider, @Nullable RoomNpc roomNpc, int distanceToNpc) {
+                             @Nullable Item weapon, Raider raider, @Nullable TrackedNpc trackedNpc, int distanceToNpc) {
         super(EventType.PLAYER_ATTACK, room, tick, playerPoint);
         this.attack = attack;
         this.weapon = weapon;
         this.username = raider.getUsername();
         this.distanceToTarget = distanceToNpc;
 
-        if (roomNpc != null) {
-            this.targetNpcId = roomNpc.getNpcId();
-            this.targetRoomId = roomNpc.getRoomId();
+        if (trackedNpc != null) {
+            this.targetNpcId = trackedNpc.getNpcId();
+            this.targetRoomId = trackedNpc.getRoomId();
         } else {
             this.targetNpcId = 0;
             this.targetRoomId = 0;

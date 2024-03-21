@@ -25,14 +25,14 @@ package io.blert.raid.rooms.nylocas;
 
 import io.blert.raid.Hitpoints;
 import io.blert.raid.TobNpc;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.NPC;
 import org.jetbrains.annotations.NotNull;
 
 @Getter
-public class NyloBoss extends RoomNpc {
-    public static class NyloBossProperties extends RoomNpc.Properties {
+public class NyloBoss extends TrackedNpc {
+    public static class NyloBossProperties extends TrackedNpc.Properties {
     }
 
     private final boolean prince;

@@ -25,14 +25,14 @@ package io.blert.raid.rooms.verzik;
 
 import io.blert.raid.Hitpoints;
 import io.blert.raid.TobNpc;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
 import org.jetbrains.annotations.NotNull;
 
-public class VerzikCrab extends RoomNpc {
+public class VerzikCrab extends TrackedNpc {
     public enum Spawn {
         // TODO(frolv): This is incomplete.
         NORTH,
@@ -48,7 +48,7 @@ public class VerzikCrab extends RoomNpc {
 
     @AllArgsConstructor
     @Getter
-    public static class Properties extends RoomNpc.Properties {
+    public static class Properties extends TrackedNpc.Properties {
         private final VerzikPhase phase;
         private final Spawn spawn;
     }
@@ -56,7 +56,7 @@ public class VerzikCrab extends RoomNpc {
     private final Properties properties;
 
     @Override
-    public @NotNull RoomNpc.Properties getProperties() {
+    public @NotNull TrackedNpc.Properties getProperties() {
         return properties;
     }
 

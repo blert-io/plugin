@@ -33,13 +33,14 @@ import net.runelite.api.NPC;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A {@code RoomNpc} is an NPC within a Theatre of Blood room whose data is trackable and reported via
- * {@link NpcEvent}s. The {@code RoomNpc} wraps an existing Runelite {@link NPC} with additional raid-specific
- * data fields. Each {@code RoomNpc} also has an ID which uniquely identifies it among all NPCs within the raid room.
+ * A {@code TrackedNpc} is an NPC within a PVM challenge room whose data is trackable and reported via
+ * {@link NpcEvent}s. The {@code TrackedNpc} wraps an existing Runelite {@link NPC} with additional Blert-specific
+ * data fields. Each {@code TrackedNpc} also has an ID which uniquely identifies it among all NPCs within its
+ * environment.
  */
-public abstract class RoomNpc {
+public abstract class TrackedNpc {
     /**
-     * Properties are an immutable copy of NPC-specific data fields for a {@link RoomNpc}.
+     * Properties are an immutable copy of NPC-specific data fields for a {@link TrackedNpc}.
      */
     public abstract static class Properties {
     }
@@ -61,7 +62,7 @@ public abstract class RoomNpc {
     @Setter
     private int spawnTick;
 
-    protected RoomNpc(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
+    protected TrackedNpc(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         this.npc = npc;
         this.mode = tobNpc.getMode();
         this.roomId = roomId;

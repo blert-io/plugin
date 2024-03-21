@@ -28,7 +28,7 @@ import io.blert.events.*;
 import io.blert.raid.*;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -119,7 +119,7 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned spawned) {
+    protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned spawned) {
         NPC npc = spawned.getNpc();
 
         if (NYLOCAS_PILLAR_NPC_IDS.contains(npc.getId())) {
@@ -164,7 +164,7 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected boolean onNpcDespawn(NpcDespawned despawned, RoomNpc roomNpc) {
+    protected boolean onNpcDespawn(NpcDespawned despawned, TrackedNpc trackedNpc) {
         NPC npc = despawned.getNpc();
 
         if (TobNpc.isDroppingNyloBoss(npc.getId())) {
@@ -178,7 +178,7 @@ public class NylocasDataTracker extends RoomDataTracker {
             return true;
         }
 
-        if (roomNpc == nyloBoss) {
+        if (trackedNpc == nyloBoss) {
             nyloBoss = null;
             return true;
         }
@@ -191,7 +191,7 @@ public class NylocasDataTracker extends RoomDataTracker {
         if (nylo == null) {
             return false;
         }
-        assert nylo == roomNpc;
+        assert nylo == trackedNpc;
 
         final int tick = getRoomTick();
 

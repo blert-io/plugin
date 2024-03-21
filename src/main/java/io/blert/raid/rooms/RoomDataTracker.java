@@ -63,7 +63,7 @@ public abstract class RoomDataTracker {
     private int startClientTick;
     private boolean startingTickAccurate;
 
-    private final RoomNpcCollection roomNpcs = new RoomNpcCollection();
+    private final TrackedNpcCollection trackedNpcs = new TrackedNpcCollection();
 
     private final SpecialAttackTracker specialAttackTracker = new SpecialAttackTracker(this::onSpecialAttack);
 
@@ -209,7 +209,7 @@ public abstract class RoomDataTracker {
 
         // Send out an update for every tracked NPC. This must be done after `onTick` to ensure any
         // implementation-specific changes to the NPC are complete.
-        roomNpcs.forEach(this::sendNpcUpdate);
+        trackedNpcs.forEach(this::sendNpcUpdate);
     }
 
     /**
@@ -246,15 +246,15 @@ public abstract class RoomDataTracker {
      * @param scale The raid scale.
      */
     public void correctNpcHitpointsForScale(int scale) {
-        roomNpcs.forEach(roomNpc -> {
-            NPC npc = roomNpc.getNpc();
+        trackedNpcs.forEach(trackedNpc -> {
+            NPC npc = trackedNpc.getNpc();
             int healthRatio = npc.getHealthRatio();
             int healthScale = npc.getHealthScale();
 
             if (healthScale > 0 && healthRatio != -1) {
                 double percent = healthRatio / (double) healthScale;
                 TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
-                roomNpc.setHitpoints(Hitpoints.fromRatio(percent, tobNpc.getBaseHitpoints(scale)));
+                trackedNpc.setHitpoints(Hitpoints.fromRatio(percent, tobNpc.getBaseHitpoints(scale)));
             }
         });
 
@@ -272,25 +272,24 @@ public abstract class RoomDataTracker {
 
     /**
      * Event handler invoked when a new NPC spawns. If the spawned NPC should be tracked and have its data reported,
-     * returns a {@link RoomNpc} describing it. Otherwise, returns {@link Optional#empty()}, performing any desired
+     * returns a {@link TrackedNpc} describing it. Otherwise, returns {@link Optional#empty()}, performing any desired
      * actions to handle the spawn.
      *
      * @param event The Runelite NPC spawn event.
-     * @return The room NPC to track if desired.
+     * @return The tracked NPC to track if desired.
      */
-    protected abstract Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event);
+    protected abstract Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event);
 
     /**
-     * Event handler invoked when an NPC in the room despawns. If the NPC was being tracked as a room NPC, and is now
-     * completely dead or otherwise inactive, returns {@code true} to indicate that it should be removed from
-     * tracking.
+     * Event handler invoked when an NPC in the room despawns. If the NPC was being tracked, and is now completely
+     * dead or otherwise inactive, returns {@code true} to indicate that it should be removed from tracking.
      *
-     * @param event   The event.
-     * @param roomNpc The room NPC corresponding to the despawned NPC, if it is tracked.
+     * @param event      The event.
+     * @param trackedNpc The tracked NPC corresponding to the despawned NPC, if it is tracked.
      * @return {@code true} if the NPC should no longer be tracked, {@code false} if it should not (e.g. this despawn
      * indicates a phase change).
      */
-    protected abstract boolean onNpcDespawn(NpcDespawned event, @Nullable RoomNpc roomNpc);
+    protected abstract boolean onNpcDespawn(NpcDespawned event, @Nullable TrackedNpc trackedNpc);
 
     /**
      * Implementation-specific equivalent of the {@code onNpcChanged} Runelite event handler.
@@ -371,8 +370,8 @@ public abstract class RoomDataTracker {
         return getWorldLocation(actor.getWorldLocation());
     }
 
-    protected WorldPoint getWorldLocation(@NotNull RoomNpc roomNpc) {
-        return getWorldLocation(roomNpc.getNpc());
+    protected WorldPoint getWorldLocation(@NotNull TrackedNpc trackedNpc) {
+        return getWorldLocation(trackedNpc.getNpc());
     }
 
     protected WorldPoint getWorldLocation(@NotNull GameObject object) {
@@ -380,7 +379,7 @@ public abstract class RoomDataTracker {
     }
 
     protected long generateRoomId(@NotNull NPC npc) {
-        return RoomNpcCollection.npcRoomId(getRoomTick(), npc.getId(), getWorldLocation(npc));
+        return TrackedNpcCollection.npcRoomId(getRoomTick(), npc.getId(), getWorldLocation(npc));
     }
 
     @Subscribe
@@ -389,22 +388,22 @@ public abstract class RoomDataTracker {
             return;
         }
 
-        onNpcSpawn(event).ifPresent(roomNpc -> {
-            boolean existing = roomNpcs.remove(roomNpc);
+        onNpcSpawn(event).ifPresent(trackedNpc -> {
+            boolean existing = trackedNpcs.remove(trackedNpc);
             if (!existing) {
-                roomNpc.setSpawnTick(getRoomTick());
+                trackedNpc.setSpawnTick(getRoomTick());
             }
-            roomNpcs.add(roomNpc);
+            trackedNpcs.add(trackedNpc);
 
             if (state == State.NOT_STARTED) {
                 // NPCs which spawn before the room begins must be reported immediately as the `onTick` handler
                 // is not yet active.
-                dispatchEvent(NpcEvent.spawn(room, 0, getWorldLocation(roomNpc), roomNpc));
+                dispatchEvent(NpcEvent.spawn(room, 0, getWorldLocation(trackedNpc), trackedNpc));
             }
 
             // Update the raid mode on the first NPC seen in a room, in case the client joined the raid late, and it
             // has not been set.
-            raidManager.updateRaidMode(roomNpc.getRaidMode());
+            raidManager.updateRaidMode(trackedNpc.getRaidMode());
         });
     }
 
@@ -414,9 +413,9 @@ public abstract class RoomDataTracker {
             return;
         }
 
-        Optional<RoomNpc> maybeRoomNpc = roomNpcs.getByNpc(event.getNpc());
-        if (onNpcDespawn(event, maybeRoomNpc.orElse(null))) {
-            maybeRoomNpc.ifPresent(this::despawnRoomNpc);
+        Optional<TrackedNpc> maybeTrackedNpc = trackedNpcs.getByNpc(event.getNpc());
+        if (onNpcDespawn(event, maybeTrackedNpc.orElse(null))) {
+            maybeTrackedNpc.ifPresent(this::despawnTrackedNpc);
         }
     }
 
@@ -487,11 +486,11 @@ public abstract class RoomDataTracker {
         }
 
         if (target instanceof NPC) {
-            roomNpcs.getByNpc((NPC) target).ifPresent(roomNpc -> {
+            trackedNpcs.getByNpc((NPC) target).ifPresent(trackedNpc -> {
                 if (hitsplat.getHitsplatType() == HitsplatID.HEAL) {
-                    roomNpc.getHitpoints().boost(hitsplat.getAmount());
+                    trackedNpc.getHitpoints().boost(hitsplat.getAmount());
                 } else {
-                    roomNpc.getHitpoints().drain(hitsplat.getAmount());
+                    trackedNpc.getHitpoints().drain(hitsplat.getAmount());
                 }
             });
         }
@@ -635,7 +634,7 @@ public abstract class RoomDataTracker {
         maybeAttack.ifPresent(attack -> {
             raider.recordAttack(tick, attack);
 
-            RoomNpc roomTarget = target.flatMap(roomNpcs::getByNpc).orElse(null);
+            TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
             int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);
             dispatchEvent(new PlayerAttackEvent(room, tick, point, attack, weapon.orElse(null),
                     raider, roomTarget, distanceToNpc));
@@ -645,20 +644,20 @@ public abstract class RoomDataTracker {
     /**
      * Sends an {@link NpcEvent} about an NPC in the room.
      */
-    protected void sendNpcUpdate(RoomNpc roomNpc) {
+    protected void sendNpcUpdate(TrackedNpc trackedNpc) {
         final int tick = getRoomTick();
-        WorldPoint point = getWorldLocation(roomNpc);
+        WorldPoint point = getWorldLocation(trackedNpc);
 
-        if (roomNpc.getSpawnTick() == tick) {
-            dispatchEvent(NpcEvent.spawn(room, tick, point, roomNpc));
+        if (trackedNpc.getSpawnTick() == tick) {
+            dispatchEvent(NpcEvent.spawn(room, tick, point, trackedNpc));
         } else {
-            dispatchEvent(NpcEvent.update(room, tick, point, roomNpc));
+            dispatchEvent(NpcEvent.update(room, tick, point, trackedNpc));
         }
     }
 
-    protected void despawnRoomNpc(RoomNpc roomNpc) {
-        dispatchEvent(NpcEvent.death(room, getRoomTick(), getWorldLocation(roomNpc), roomNpc));
-        roomNpcs.remove(roomNpc);
+    protected void despawnTrackedNpc(TrackedNpc trackedNpc) {
+        dispatchEvent(NpcEvent.death(room, getRoomTick(), getWorldLocation(trackedNpc), trackedNpc));
+        trackedNpcs.remove(trackedNpc);
     }
 
     protected String formattedRoomTime() {

@@ -26,10 +26,10 @@ package io.blert.raid.rooms.xarpus;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.XarpusPhaseEvent;
 import io.blert.raid.*;
-import io.blert.raid.rooms.BasicRoomNpc;
+import io.blert.raid.rooms.BasicTrackedNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
@@ -48,7 +48,7 @@ public class XarpusDataTracker extends RoomDataTracker {
     private static final int TICKS_PER_TURN_P3 = 8;
 
     private XarpusPhase phase;
-    private @Nullable BasicRoomNpc xarpus = null;
+    private @Nullable BasicTrackedNpc xarpus = null;
 
     private int nextTurnTick = -1;
 
@@ -87,12 +87,12 @@ public class XarpusDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event) {
+    protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
         NPC npc = event.getNpc();
 
         Optional<TobNpc> maybeXarpus = TobNpc.withId(npc.getId()).filter(TobNpc::isAnyXarpus);
         if (maybeXarpus.isPresent()) {
-            xarpus = new BasicRoomNpc(npc, maybeXarpus.get(), generateRoomId(npc),
+            xarpus = new BasicTrackedNpc(npc, maybeXarpus.get(), generateRoomId(npc),
                     new Hitpoints(maybeXarpus.get(), raidManager.getRaidScale()));
             return Optional.of(xarpus);
         }
@@ -101,8 +101,8 @@ public class XarpusDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
-        if (roomNpc == xarpus) {
+    protected boolean onNpcDespawn(NpcDespawned event, TrackedNpc trackedNpc) {
+        if (trackedNpc == xarpus) {
             nextTurnTick = -1;
             return true;
         }

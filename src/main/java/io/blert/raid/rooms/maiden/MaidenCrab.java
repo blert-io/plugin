@@ -25,7 +25,7 @@ package io.blert.raid.rooms.maiden;
 
 import io.blert.raid.Hitpoints;
 import io.blert.raid.TobNpc;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.runelite.api.NPC;
@@ -34,10 +34,10 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
-public class MaidenCrab extends RoomNpc {
+public class MaidenCrab extends TrackedNpc {
     @AllArgsConstructor
     @Getter
-    public static class Properties extends RoomNpc.Properties {
+    public static class Properties extends TrackedNpc.Properties {
         private final CrabSpawn spawn;
         private final Position position;
         private final boolean scuffed;
@@ -145,7 +145,7 @@ public class MaidenCrab extends RoomNpc {
     }
 
     @Override
-    public @NotNull RoomNpc.Properties getProperties() {
+    public @NotNull TrackedNpc.Properties getProperties() {
         return properties;
     }
 

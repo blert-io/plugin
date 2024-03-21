@@ -29,13 +29,13 @@ import net.runelite.api.NPC;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A room NPC without any special properties, existing as a simple wrapper around a Runelite NPC.
+ * A tracked NPC without any special properties, existing as a simple wrapper around a Runelite NPC.
  */
-public final class BasicRoomNpc extends RoomNpc {
-    public static class EmptyProperties extends RoomNpc.Properties {
+public final class BasicTrackedNpc extends TrackedNpc {
+    public static class EmptyProperties extends TrackedNpc.Properties {
     }
 
-    public BasicRoomNpc(@NotNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
+    public BasicTrackedNpc(@NotNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
     }
 

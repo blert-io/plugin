@@ -29,10 +29,10 @@ import io.blert.events.VerzikAttackStyleEvent;
 import io.blert.events.VerzikPhaseEvent;
 import io.blert.events.VerzikRedsSpawnEvent;
 import io.blert.raid.*;
-import io.blert.raid.rooms.BasicRoomNpc;
+import io.blert.raid.rooms.BasicTrackedNpc;
 import io.blert.raid.rooms.Room;
 import io.blert.raid.rooms.RoomDataTracker;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -69,7 +69,7 @@ public class VerzikDataTracker extends RoomDataTracker {
     private static final ImmutableSet<Integer> VERZIK_WEB_IDS = ImmutableSet.of(8376, 10837, 10854);
     private static final int VERZIK_YELLOW_OBJECT_ID = 1595;
 
-    private BasicRoomNpc verzik;
+    private BasicTrackedNpc verzik;
 
     private VerzikPhase phase;
 
@@ -83,9 +83,9 @@ public class VerzikDataTracker extends RoomDataTracker {
 
     private int redCrabsTick;
     private int redCrabSpawnCount;
-    private final List<BasicRoomNpc> pillars = new ArrayList<>();
+    private final List<BasicTrackedNpc> pillars = new ArrayList<>();
     private final Set<VerzikCrab> explodingCrabs = new HashSet<>();
-    private final Set<BasicRoomNpc> specialCrabs = new HashSet<>();
+    private final Set<BasicTrackedNpc> specialCrabs = new HashSet<>();
     private final List<WorldPoint> yellowPools = new ArrayList<>();
 
     public VerzikDataTracker(RaidManager manager, Client client) {
@@ -153,7 +153,7 @@ public class VerzikDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected Optional<? extends RoomNpc> onNpcSpawn(NpcSpawned event) {
+    protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
         NPC npc = event.getNpc();
         final int tick = getRoomTick();
 
@@ -163,7 +163,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         if (npc.getId() == NpcID.SUPPORTING_PILLAR) {
-            BasicRoomNpc pillar = new BasicRoomNpc(npc, TobNpc.VERZIK_PILLAR, generateRoomId(npc), new Hitpoints(0));
+            BasicTrackedNpc pillar = new BasicTrackedNpc(npc, TobNpc.VERZIK_PILLAR, generateRoomId(npc), new Hitpoints(0));
             pillars.add(pillar);
             return Optional.of(pillar);
         }
@@ -175,7 +175,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                     .findFirst()
                     .ifPresent(collapsed -> {
                         pillars.remove(collapsed);
-                        despawnRoomNpc(collapsed);
+                        despawnTrackedNpc(collapsed);
                     });
             return Optional.empty();
         }
@@ -188,7 +188,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
         if (tobNpc.isAnyVerzik()) {
             long roomId = verzik != null ? verzik.getRoomId() : generateRoomId(npc);
-            verzik = new BasicRoomNpc(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            verzik = new BasicTrackedNpc(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidManager.getRaidScale()));
             return Optional.of(verzik);
         }
 
@@ -202,7 +202,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         if (tobNpc.isVerzikAthanatos()) {
-            BasicRoomNpc purpleCrab = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+            BasicTrackedNpc purpleCrab = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
                     new Hitpoints(tobNpc, raidManager.getRaidScale()));
             specialCrabs.add(purpleCrab);
             return Optional.of(purpleCrab);
@@ -213,7 +213,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                 startNewRedsPhase(tick);
             }
 
-            BasicRoomNpc crab = new BasicRoomNpc(npc, tobNpc, generateRoomId(npc),
+            BasicTrackedNpc crab = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
                     new Hitpoints(tobNpc, raidManager.getRaidScale()));
             specialCrabs.add(crab);
             return Optional.of(crab);
@@ -223,15 +223,15 @@ public class VerzikDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected boolean onNpcDespawn(NpcDespawned event, RoomNpc roomNpc) {
+    protected boolean onNpcDespawn(NpcDespawned event, TrackedNpc trackedNpc) {
         NPC npc = event.getNpc();
 
         if (TobNpc.isVerzikMatomenos(npc.getId()) || TobNpc.isVerzikAthanatos(npc.getId())) {
-            return roomNpc instanceof BasicRoomNpc && specialCrabs.remove(roomNpc);
+            return trackedNpc instanceof BasicTrackedNpc && specialCrabs.remove(trackedNpc);
         }
 
         if (TobNpc.isVerzikCrab(npc.getId())) {
-            return roomNpc instanceof VerzikCrab && explodingCrabs.remove(roomNpc);
+            return trackedNpc instanceof VerzikCrab && explodingCrabs.remove(trackedNpc);
         }
 
         if (TobNpc.isVerzikP1(npc.getId())) {
@@ -241,7 +241,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         // Verzik despawns between phases, but it should not be counted as a final despawn until the end of the fight.
-        return roomNpc == verzik && phase == VerzikPhase.P3;
+        return trackedNpc == verzik && phase == VerzikPhase.P3;
     }
 
     @Override

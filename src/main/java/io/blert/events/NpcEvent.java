@@ -25,7 +25,7 @@ package io.blert.events;
 
 import io.blert.raid.Hitpoints;
 import io.blert.raid.rooms.Room;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
@@ -34,26 +34,26 @@ public class NpcEvent extends Event {
     private final long roomId;
     private final int npcId;
     private final Hitpoints hitpoints;
-    private final RoomNpc.Properties properties;
+    private final TrackedNpc.Properties properties;
 
-    public static NpcEvent spawn(Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
-        return new NpcEvent(EventType.NPC_SPAWN, room, tick, point, roomNpc);
+    public static NpcEvent spawn(Room room, int tick, WorldPoint point, TrackedNpc trackedNpc) {
+        return new NpcEvent(EventType.NPC_SPAWN, room, tick, point, trackedNpc);
     }
 
-    public static NpcEvent update(Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
-        return new NpcEvent(EventType.NPC_UPDATE, room, tick, point, roomNpc);
+    public static NpcEvent update(Room room, int tick, WorldPoint point, TrackedNpc trackedNpc) {
+        return new NpcEvent(EventType.NPC_UPDATE, room, tick, point, trackedNpc);
     }
 
-    public static NpcEvent death(Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
-        return new NpcEvent(EventType.NPC_DEATH, room, tick, point, roomNpc);
+    public static NpcEvent death(Room room, int tick, WorldPoint point, TrackedNpc trackedNpc) {
+        return new NpcEvent(EventType.NPC_DEATH, room, tick, point, trackedNpc);
     }
 
-    protected NpcEvent(EventType type, Room room, int tick, WorldPoint point, RoomNpc roomNpc) {
+    protected NpcEvent(EventType type, Room room, int tick, WorldPoint point, TrackedNpc trackedNpc) {
         super(type, room, tick, point);
-        this.roomId = roomNpc.getRoomId();
-        this.npcId = roomNpc.getNpcId();
-        this.hitpoints = roomNpc.getHitpoints();
-        this.properties = roomNpc.getProperties();
+        this.roomId = trackedNpc.getRoomId();
+        this.npcId = trackedNpc.getNpcId();
+        this.hitpoints = trackedNpc.getHitpoints();
+        this.properties = trackedNpc.getProperties();
     }
 
     @Override

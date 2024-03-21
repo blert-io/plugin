@@ -25,7 +25,7 @@ package io.blert.json;
 
 import io.blert.events.NpcEvent;
 import io.blert.raid.Hitpoints;
-import io.blert.raid.rooms.RoomNpc;
+import io.blert.raid.rooms.TrackedNpc;
 import io.blert.raid.rooms.maiden.CrabSpawn;
 import io.blert.raid.rooms.maiden.MaidenCrab;
 import io.blert.raid.rooms.nylocas.Nylo;
@@ -84,7 +84,7 @@ public class Npc {
     private @Nullable VerzikNylo verzikCrab = null;
 
     static Npc fromNpcEvent(NpcEvent event) {
-        RoomNpc.Properties properties = event.getProperties();
+        TrackedNpc.Properties properties = event.getProperties();
 
         if (properties instanceof MaidenCrab.Properties) {
             var crab = (MaidenCrab.Properties) properties;
