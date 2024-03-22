@@ -23,14 +23,15 @@
 
 package io.blert;
 
-import io.blert.client.ServerMessage;
 import io.blert.client.WebsocketEventHandler;
-import io.blert.challenges.tob.Mode;
+import io.blert.proto.ChallengeMode;
+import io.blert.proto.ServerMessage;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.LinkBrowser;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -48,11 +49,11 @@ public class BlertPluginPanel extends PluginPanel {
     private final BlertConfig config;
 
     private JPanel userPanel;
-    private JPanel raidStatusPanel;
-    private JPanel raidHistoryPanel;
-    private JPanel raidHistoryContainer;
+    private JPanel challengeStatusPanel;
+    private JPanel recentRecordingsPanel;
+    private JPanel recentRecordingsContainer;
 
-    private final List<ServerMessage.PastRaid> raidHistory = new ArrayList<>();
+    private final List<ServerMessage.PastChallenge> recentRecordings = new ArrayList<>();
 
     public BlertPluginPanel(BlertPlugin plugin, BlertConfig config) {
         this.plugin = plugin;
@@ -66,25 +67,25 @@ public class BlertPluginPanel extends PluginPanel {
         setFocusable(false);
 
         createUserPanel(null);
-        createRaidStatusPanel(this, WebsocketEventHandler.Status.IDLE, null);
-        createRaidHistoryPanel(this);
-        populateRaidHistoryPanel();
+        createChallengeStatusPanel(this, WebsocketEventHandler.Status.IDLE, null);
+        createRecentRecordingsPanel(this);
+        populateRecentRecordingsPanel();
     }
 
     public void updateUser(@Nullable String username) {
         createUserPanel(username);
     }
 
-    public void updateRaidStatus(WebsocketEventHandler.Status status, @Nullable String raidId) {
-        createRaidStatusPanel(this, status, raidId);
+    public void updateChallengeStatus(WebsocketEventHandler.Status status, @Nullable String challengeId) {
+        createChallengeStatusPanel(this, status, challengeId);
     }
 
-    public void setRaidHistory(@Nullable List<ServerMessage.PastRaid> raidHistory) {
-        this.raidHistory.clear();
-        if (raidHistory != null) {
-            this.raidHistory.addAll(raidHistory);
+    public void setRecentRecordings(@Nullable List<ServerMessage.PastChallenge> recentRecordings) {
+        this.recentRecordings.clear();
+        if (recentRecordings != null) {
+            this.recentRecordings.addAll(recentRecordings);
         }
-        populateRaidHistoryPanel();
+        populateRecentRecordingsPanel();
     }
 
     private void createUserPanel(@Nullable String username) {
@@ -136,126 +137,127 @@ public class BlertPluginPanel extends PluginPanel {
         add(userPanel, BorderLayout.NORTH);
     }
 
-    private void createRaidStatusPanel(JPanel parent, WebsocketEventHandler.Status status, @Nullable String raidId) {
-        if (raidStatusPanel != null) {
-            parent.remove(raidStatusPanel);
+    private void createChallengeStatusPanel(
+            JPanel parent, WebsocketEventHandler.Status status, @Nullable String challengeId) {
+        if (challengeStatusPanel != null) {
+            parent.remove(challengeStatusPanel);
         }
 
-        raidStatusPanel = new JPanel();
-        raidStatusPanel.setLayout(new BorderLayout());
-        raidStatusPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        challengeStatusPanel = new JPanel();
+        challengeStatusPanel.setLayout(new BorderLayout());
+        challengeStatusPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JPanel currentStatePanel = createCurrentRaidStatePanel(status);
+        JPanel currentStatePanel = createCurrentChallengeStatePanel(status);
 
-        if (status == WebsocketEventHandler.Status.RAID_ACTIVE) {
-            JPanel actionsPanel = createRaidActionsPanel(raidId);
-            raidStatusPanel.add(actionsPanel, BorderLayout.SOUTH);
+        if (status == WebsocketEventHandler.Status.CHALLENGE_ACTIVE) {
+            JPanel actionsPanel = createChallengeActionsPanel(challengeId);
+            challengeStatusPanel.add(actionsPanel, BorderLayout.SOUTH);
         }
 
-        raidStatusPanel.add(currentStatePanel, BorderLayout.CENTER);
-        parent.add(raidStatusPanel, BorderLayout.CENTER);
+        challengeStatusPanel.add(currentStatePanel, BorderLayout.CENTER);
+        parent.add(challengeStatusPanel, BorderLayout.CENTER);
     }
 
-    private void createRaidHistoryPanel(JPanel parent) {
-        if (raidHistoryPanel != null) {
-            parent.remove(raidHistoryPanel);
+    private void createRecentRecordingsPanel(JPanel parent) {
+        if (recentRecordingsPanel != null) {
+            parent.remove(recentRecordingsPanel);
         }
 
-        raidHistoryPanel = new JPanel();
-        raidHistoryPanel.setLayout(new BorderLayout());
-        raidHistoryPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
+        recentRecordingsPanel = new JPanel();
+        recentRecordingsPanel.setLayout(new BorderLayout());
+        recentRecordingsPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
 
-        raidHistoryPanel.add(createHeading("Previously Recorded Raids"), BorderLayout.NORTH);
+        recentRecordingsPanel.add(createHeading("Previous Recordings"), BorderLayout.NORTH);
 
-        raidHistoryContainer = new JPanel();
-        raidHistoryContainer.setLayout(new BorderLayout());
-        raidHistoryContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        recentRecordingsContainer = new JPanel();
+        recentRecordingsContainer.setLayout(new BorderLayout());
+        recentRecordingsContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
-        JScrollPane scrollPane = new JScrollPane(raidHistoryContainer,
+        JScrollPane scrollPane = new JScrollPane(recentRecordingsContainer,
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setPreferredSize(new Dimension(0, 600));
         scrollPane.setBorder(new LineBorder(ColorScheme.BORDER_COLOR));
-        raidHistoryPanel.add(scrollPane, BorderLayout.CENTER);
+        recentRecordingsPanel.add(scrollPane, BorderLayout.CENTER);
 
-        parent.add(raidHistoryPanel, BorderLayout.SOUTH);
+        parent.add(recentRecordingsPanel, BorderLayout.SOUTH);
     }
 
-    private void populateRaidHistoryPanel() {
-        if (raidHistoryContainer == null) {
+    private void populateRecentRecordingsPanel() {
+        if (recentRecordingsContainer == null) {
             return;
         }
 
-        raidHistoryContainer.removeAll();
+        recentRecordingsContainer.removeAll();
 
-        if (raidHistory.isEmpty()) {
-            JLabel noRaidHistoryLabel = new JLabel("No past raids available.");
-            noRaidHistoryLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
-            noRaidHistoryLabel.setForeground(Color.GRAY);
-            noRaidHistoryLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            raidHistoryContainer.add(noRaidHistoryLabel, BorderLayout.NORTH);
+        if (recentRecordings.isEmpty()) {
+            JLabel noRecordingsLabel = new JLabel("No past recordings.");
+            noRecordingsLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
+            noRecordingsLabel.setForeground(Color.GRAY);
+            noRecordingsLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            recentRecordingsContainer.add(noRecordingsLabel, BorderLayout.NORTH);
         } else {
-            JPanel raidHistoryList = new JPanel();
-            raidHistoryList.setLayout(new GridBagLayout());
-            raidHistoryList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+            JPanel recentRecordingsList = new JPanel();
+            recentRecordingsList.setLayout(new GridBagLayout());
+            recentRecordingsList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
             int gridy = 0;
-            for (ServerMessage.PastRaid raid : raidHistory) {
+            for (ServerMessage.PastChallenge challenge : recentRecordings) {
                 GridBagConstraints constraints = new GridBagConstraints();
                 constraints.anchor = GridBagConstraints.FIRST_LINE_START;
                 constraints.gridy = gridy++;
                 constraints.fill = GridBagConstraints.HORIZONTAL;
                 constraints.insets = new Insets(4, 4, 4, 4);
-                raidHistoryList.add(createPastRaidEntry(raid), constraints);
+                recentRecordingsList.add(createPastChallengeEntry(challenge), constraints);
             }
 
-            raidHistoryContainer.add(raidHistoryList, BorderLayout.NORTH);
+            recentRecordingsContainer.add(recentRecordingsList, BorderLayout.NORTH);
         }
     }
 
     @NotNull
-    private static JPanel createCurrentRaidStatePanel(WebsocketEventHandler.Status status) {
+    private static JPanel createCurrentChallengeStatePanel(WebsocketEventHandler.Status status) {
         JPanel currentStatePanel = new JPanel();
         currentStatePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         currentStatePanel.setLayout(new BorderLayout());
 
-        JLabel raidStatusText = new JLabel();
-        raidStatusText.setHorizontalAlignment(SwingConstants.CENTER);
+        JLabel challengeStatusText = new JLabel();
+        challengeStatusText.setHorizontalAlignment(SwingConstants.CENTER);
 
         switch (status) {
             case IDLE:
-                raidStatusText.setText("Not in a raid.");
+                challengeStatusText.setText("Not in a PvM challenge.");
                 break;
-            case RAID_STARTING:
-                raidStatusText.setText("Starting raid...");
-                raidStatusText.setForeground(Color.YELLOW);
+            case CHALLENGE_STARTING:
+                challengeStatusText.setText("Starting...");
+                challengeStatusText.setForeground(Color.YELLOW);
                 break;
-            case RAID_ACTIVE:
-                raidStatusText.setText("Streaming raid data!");
-                raidStatusText.setForeground(Color.GREEN);
+            case CHALLENGE_ACTIVE:
+                challengeStatusText.setText("Streaming challenge data!");
+                challengeStatusText.setForeground(Color.GREEN);
                 break;
         }
 
-        currentStatePanel.add(createHeading("Current Raid"), BorderLayout.NORTH);
-        currentStatePanel.add(raidStatusText, BorderLayout.CENTER);
+        currentStatePanel.add(createHeading("Current Challenge"), BorderLayout.NORTH);
+        currentStatePanel.add(challengeStatusText, BorderLayout.CENTER);
         return currentStatePanel;
     }
 
     @NotNull
-    private JPanel createRaidActionsPanel(@Nullable String raidId) {
+    private JPanel createChallengeActionsPanel(@Nullable String challengeId) {
         JPanel actionsPanel = new JPanel();
         actionsPanel.setLayout(new GridLayout(1, 0, 5, 0));
 
-        JButton raidLinkButton = new JButton("View Raid");
-        raidLinkButton.addActionListener(e -> LinkBrowser.browse(raidUrl(raidId)));
-        actionsPanel.add(raidLinkButton);
+        JButton linkButton = new JButton("View Raid");
+        linkButton.addActionListener(e -> LinkBrowser.browse(challengeUrl(challengeId)));
+        actionsPanel.add(linkButton);
 
-        JButton copyRaidLinkButton = new JButton("Copy Link");
-        copyRaidLinkButton.addActionListener(e ->
+        JButton copyLinkButton = new JButton("Copy Link");
+        copyLinkButton.addActionListener(e ->
                 Toolkit.getDefaultToolkit()
                         .getSystemClipboard()
-                        .setContents(new StringSelection(raidUrl(raidId)), null));
-        actionsPanel.add(copyRaidLinkButton);
+                        .setContents(new StringSelection(challengeUrl(challengeId)), null));
+        actionsPanel.add(copyLinkButton);
         return actionsPanel;
     }
 
@@ -272,64 +274,105 @@ public class BlertPluginPanel extends PluginPanel {
         return headingPanel;
     }
 
-    private JPanel createPastRaidEntry(ServerMessage.PastRaid raid) {
-        JPanel raidPanel = new JPanel();
-        raidPanel.setLayout(new BorderLayout());
-        raidPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+    private Pair<String, Color> getChallengeStatusInfo(String challengeStatus) {
+        switch (challengeStatus) {
+            case "IN_PROGRESS":
+                return Pair.of("In Progress", Color.WHITE);
+            case "COMPLETED":
+                return Pair.of("Completed", Color.GREEN);
+            case "MAIDEN_RESET":
+                return Pair.of("Maiden Reset", Color.GRAY);
+            case "BLOAT_RESET":
+                return Pair.of("Bloat Reset", Color.GRAY);
+            case "NYLO_RESET":
+                return Pair.of("Nylocas Reset", Color.GRAY);
+            case "SOTE_RESET":
+                return Pair.of("Sotetseg Reset", Color.GRAY);
+            case "XARPUS_RESET":
+                return Pair.of("Xarpus Reset", Color.GRAY);
+            case "MAIDEN_WIPE":
+                return Pair.of("Maiden Wipe", Color.RED);
+            case "BLOAT_WIPE":
+                return Pair.of("Bloat Wipe", Color.RED);
+            case "NYLO_WIPE":
+                return Pair.of("Nylocas Wipe", Color.RED);
+            case "SOTE_WIPE":
+                return Pair.of("Sotetseg Wipe", Color.RED);
+            case "XARPUS_WIPE":
+                return Pair.of("Xarpus Wipe", Color.RED);
+            case "VERZIK_WIPE":
+                return Pair.of("Verzik Wipe", Color.RED);
+        }
+
+        return Pair.of("Unknown", Color.WHITE);
+    }
+
+    private String challengeModeToString(ChallengeMode mode) {
+        switch (mode) {
+            case TOB_ENTRY:
+                return "Entry Mode";
+            case TOB_REGULAR:
+                return "Regular Mode";
+            case TOB_HARD:
+                return "Hard Mode";
+
+            case COX_REGULAR:
+            case COX_CHALLENGE:
+            case TOA_ENTRY:
+            case TOA_NORMAL:
+            case TOA_EXPERT:
+                break;
+        }
+
+        return "Unknown";
+    }
+
+    private JPanel createPastChallengeEntry(ServerMessage.PastChallenge challenge) {
+        JPanel challengePanel = new JPanel();
+        challengePanel.setLayout(new BorderLayout());
+        challengePanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 
         JPanel statusPanel = new JPanel();
         statusPanel.setLayout(new GridLayout(1, 0, 5, 0));
 
+
+        Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.getStatus());
         JLabel statusLabel = new JLabel();
-        if (raid.getStatus().isCompletion()) {
-            statusLabel.setForeground(Color.GREEN);
-        } else if (raid.getStatus().isWipe()) {
-            statusLabel.setForeground(Color.RED);
-        } else if (raid.getStatus().isReset()) {
-            statusLabel.setForeground(Color.GRAY);
-        } else {
-            statusLabel.setForeground(Color.WHITE);
-        }
-        statusLabel.setText(raid.getStatus().toString());
+        statusLabel.setForeground(statusInfo.getRight());
+        statusLabel.setText(statusInfo.getLeft());
         statusPanel.add(statusLabel);
 
         JLabel modeLabel = new JLabel();
         modeLabel.setForeground(Color.WHITE);
         modeLabel.setFont(modeLabel.getFont().deriveFont(Font.ITALIC));
         modeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        Mode mode = raid.getMode();
-        if (mode != null) {
-            String modeText = mode.toString().charAt(0) + mode.toString().substring(1).toLowerCase();
-            modeLabel.setText(modeText + " Mode");
-        } else {
-            modeLabel.setText("Unknown Mode");
-        }
+        modeLabel.setText(challengeModeToString(challenge.getMode()));
         statusPanel.add(modeLabel);
 
-        raidPanel.add(statusPanel, BorderLayout.NORTH);
+        challengePanel.add(statusPanel, BorderLayout.NORTH);
 
         JPanel partyPanel = new JPanel();
 
         partyPanel.setLayout(new BorderLayout());
         partyPanel.setBorder(new EmptyBorder(8, 0, 8, 0));
-        JLabel partyHeading = new JLabel("Party (" + raid.getParty().size() + "):");
+        JLabel partyHeading = new JLabel("Party (" + challenge.getPartyCount() + "):");
         partyHeading.setFont(partyHeading.getFont().deriveFont(Font.BOLD));
         partyHeading.setForeground(Color.WHITE);
         partyPanel.add(partyHeading, BorderLayout.NORTH);
 
         JLabel partyLabel = new JLabel();
         partyLabel.setForeground(Color.WHITE);
-        String party = String.join(", ", raid.getParty());
+        String party = String.join(", ", challenge.getPartyList());
         partyLabel.setText(wrapHtml("<p style=\"width: 150px\">" + party + "</p>"));
         partyPanel.add(partyLabel, BorderLayout.CENTER);
-        raidPanel.add(partyPanel, BorderLayout.CENTER);
+        challengePanel.add(partyPanel, BorderLayout.CENTER);
 
-        raidPanel.add(createRaidActionsPanel(raid.getId()), BorderLayout.SOUTH);
+        challengePanel.add(createChallengeActionsPanel(challenge.getId()), BorderLayout.SOUTH);
 
-        return raidPanel;
+        return challengePanel;
     }
 
-    private String raidUrl(String raidId) {
+    private String challengeUrl(String challengeId) {
         String hostname = !Strings.isNullOrEmpty(config.webUrl())
                 ? config.webUrl()
                 : BlertPlugin.DEFAULT_BLERT_HOSTNAME;
@@ -337,7 +380,7 @@ public class BlertPluginPanel extends PluginPanel {
             hostname = "https://" + hostname;
         }
 
-        return String.format("%s/raids/tob/%s/overview", hostname, raidId);
+        return String.format("%s/raids/tob/%s/overview", hostname, challengeId);
     }
 
     static String wrapHtml(String content) {

@@ -44,7 +44,10 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
     private WebSocket socket;
 
     @Setter
-    private @Nullable Consumer<String> messageCallback = null;
+    private @Nullable Consumer<byte[]> binaryMessageCallback = null;
+
+    @Setter
+    private @Nullable Consumer<String> textMessageCallback = null;
 
     @Setter
     private @Nullable Runnable disconnectCallback = null;
@@ -77,9 +80,20 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
      *
      * @param message The text to send.
      */
-    public void sendMessage(String message) {
+    public void sendTextMessage(String message) {
         if (isOpen()) {
             socket.send(message);
+        }
+    }
+
+    /**
+     * Sends a binary message through the open websocket.
+     *
+     * @param message The binary message to send.
+     */
+    public void sendMessage(byte[] message) {
+        if (isOpen()) {
+            socket.send(okio.ByteString.of(message));
         }
     }
 
@@ -91,10 +105,18 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
 
     @Override
     @EverythingIsNonNull
+    public void onMessage(WebSocket webSocket, okio.ByteString bytes) {
+        if (this.binaryMessageCallback != null) {
+            this.binaryMessageCallback.accept(bytes.toByteArray());
+        }
+    }
+
+    @Override
+    @EverythingIsNonNull
     public void onMessage(WebSocket webSocket, String text) {
         log.debug("Blert websocket {} received message {}", webSocket, text);
-        if (this.messageCallback != null) {
-            this.messageCallback.accept(text);
+        if (this.textMessageCallback != null) {
+            this.textMessageCallback.accept(text);
         }
     }
 

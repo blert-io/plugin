@@ -43,15 +43,15 @@ public class JsonEventHandler implements EventHandler {
     private final Map<Integer, List<Event>> eventsByTick = new HashMap<>();
     private int lastTick = 0;
 
-    private @Nullable String raidId;
+    private @Nullable String challengeId;
 
-    public void setRaidId(@Nullable String raidId) {
-        this.raidId = raidId;
+    public void setChallengeId(@Nullable String challengeId) {
+        this.challengeId = challengeId;
 
-        if (raidId != null) {
+        if (challengeId != null) {
             eventsByTick.values().forEach(events -> events.forEach(event -> {
                 if (event.getRaidId() == null) {
-                    event.setRaidId(raidId);
+                    event.setRaidId(challengeId);
                 }
             }));
         }
@@ -61,8 +61,8 @@ public class JsonEventHandler implements EventHandler {
     public void handleEvent(int clientTick, io.blert.events.Event event) {
         eventsByTick.putIfAbsent(clientTick, new ArrayList<>());
         Event evt = Event.fromBlert(event);
-        if (raidId != null) {
-            evt.setRaidId(raidId);
+        if (challengeId != null) {
+            evt.setRaidId(challengeId);
         }
         eventsByTick.get(clientTick).add(evt);
 
