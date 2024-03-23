@@ -21,35 +21,24 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
-import io.blert.challenges.tob.rooms.maiden.CrabSpawn;
-import io.blert.challenges.tob.rooms.maiden.MaidenCrab;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
+import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
+import io.blert.events.EventType;
 
-@Getter
-public class MaidenCrabLeakEvent extends NpcEvent {
-    public MaidenCrabLeakEvent(int tick, WorldPoint point, MaidenCrab crab) {
-        super(EventType.MAIDEN_CRAB_LEAK, Room.MAIDEN, tick, point, crab);
-    }
-
-    @Override
-    public MaidenCrab.Properties getProperties() {
-        return (MaidenCrab.Properties) super.getProperties();
-    }
-
-    public CrabSpawn getSpawn() {
-        return getProperties().getSpawn();
-    }
-
-    public MaidenCrab.Position getPosition() {
-        return getProperties().getPosition();
+public class VerzikRedsSpawnEvent extends TobEvent {
+    public VerzikRedsSpawnEvent(int tick) {
+        super(EventType.VERZIK_REDS_SPAWN, Room.VERZIK, tick, null);
     }
 
     @Override
     protected String eventDataString() {
-        return "crab_leak=(crab=" + getSpawn() + ' ' + getPosition() + ", hp=" + getHitpoints().getCurrent() + ')';
+        return null;
+    }
+
+    public VerzikPhase getPhase() {
+        // Reds only spawn during P2.
+        return VerzikPhase.P2;
     }
 }

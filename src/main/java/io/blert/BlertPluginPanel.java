@@ -26,6 +26,7 @@ package io.blert;
 import io.blert.client.WebsocketEventHandler;
 import io.blert.proto.ChallengeMode;
 import io.blert.proto.ServerMessage;
+import io.blert.proto.Stage;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
@@ -274,37 +275,40 @@ public class BlertPluginPanel extends PluginPanel {
         return headingPanel;
     }
 
-    private Pair<String, Color> getChallengeStatusInfo(String challengeStatus) {
-        switch (challengeStatus) {
-            case "IN_PROGRESS":
-                return Pair.of("In Progress", Color.WHITE);
-            case "COMPLETED":
-                return Pair.of("Completed", Color.GREEN);
-            case "MAIDEN_RESET":
-                return Pair.of("Maiden Reset", Color.GRAY);
-            case "BLOAT_RESET":
-                return Pair.of("Bloat Reset", Color.GRAY);
-            case "NYLO_RESET":
-                return Pair.of("Nylocas Reset", Color.GRAY);
-            case "SOTE_RESET":
-                return Pair.of("Sotetseg Reset", Color.GRAY);
-            case "XARPUS_RESET":
-                return Pair.of("Xarpus Reset", Color.GRAY);
-            case "MAIDEN_WIPE":
-                return Pair.of("Maiden Wipe", Color.RED);
-            case "BLOAT_WIPE":
-                return Pair.of("Bloat Wipe", Color.RED);
-            case "NYLO_WIPE":
-                return Pair.of("Nylocas Wipe", Color.RED);
-            case "SOTE_WIPE":
-                return Pair.of("Sotetseg Wipe", Color.RED);
-            case "XARPUS_WIPE":
-                return Pair.of("Xarpus Wipe", Color.RED);
-            case "VERZIK_WIPE":
-                return Pair.of("Verzik Wipe", Color.RED);
+    private Pair<String, Color> getChallengeStatusInfo(ServerMessage.PastChallenge.Status status, Stage stage) {
+        if (status == ServerMessage.PastChallenge.Status.IN_PROGRESS) {
+            return Pair.of("In Progress", Color.WHITE);
+        }
+        if (status == ServerMessage.PastChallenge.Status.COMPLETED) {
+            return Pair.of("Completed", Color.GREEN);
         }
 
-        return Pair.of("Unknown", Color.WHITE);
+        String boss = "Unknown";
+        switch (stage) {
+            case TOB_MAIDEN:
+                boss = "Maiden";
+                break;
+            case TOB_BLOAT:
+                boss = "Bloat";
+                break;
+            case TOB_NYLOCAS:
+                boss = "Nylocas";
+                break;
+            case TOB_SOTETSEG:
+                boss = "Sotetseg";
+                break;
+            case TOB_XARPUS:
+                boss = "Xarpus";
+                break;
+            case TOB_VERZIK:
+                boss = "Verzik";
+                break;
+        }
+
+        if (status == ServerMessage.PastChallenge.Status.WIPED) {
+            return Pair.of(boss + " Wipe", Color.RED);
+        }
+        return Pair.of(boss + " Reset", Color.GRAY);
     }
 
     private String challengeModeToString(ChallengeMode mode) {
@@ -336,7 +340,7 @@ public class BlertPluginPanel extends PluginPanel {
         statusPanel.setLayout(new GridLayout(1, 0, 5, 0));
 
 
-        Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.getStatus());
+        Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.getStatus(), challenge.getStage());
         JLabel statusLabel = new JLabel();
         statusLabel.setForeground(statusInfo.getRight());
         statusLabel.setText(statusInfo.getLeft());

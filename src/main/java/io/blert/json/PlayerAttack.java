@@ -23,8 +23,8 @@
 
 package io.blert.json;
 
-import io.blert.events.PlayerAttackEvent;
 import io.blert.core.Item;
+import io.blert.events.PlayerAttackEvent;
 import lombok.Getter;
 
 import javax.annotation.Nullable;
@@ -38,7 +38,7 @@ public class PlayerAttack {
 
     public static PlayerAttack fromPlayerAttackEvent(PlayerAttackEvent event) {
         PlayerAttack attack = new PlayerAttack(event.getAttack());
-        attack.weapon = event.getWeapon();
+        attack.weapon = event.getWeapon().orElse(null);
         attack.distanceToTarget = event.getDistanceToTarget();
         if (event.getTargetNpcId() != -1) {
             attack.target = new Npc(event.getTargetNpcId(), event.getTargetRoomId());

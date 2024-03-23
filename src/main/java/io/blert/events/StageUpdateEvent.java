@@ -23,16 +23,33 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.rooms.Room;
-import net.runelite.api.coords.WorldPoint;
+import io.blert.core.Stage;
+import lombok.Getter;
 
-public class NyloBossSpawnEvent extends Event {
-    public NyloBossSpawnEvent(int tick, WorldPoint spawnPoint) {
-        super(EventType.NYLO_BOSS_SPAWN, Room.NYLOCAS, tick, spawnPoint);
+@Getter
+public class StageUpdateEvent extends Event {
+    public enum Status {
+        ENTERED,
+        STARTED,
+        COMPLETED,
+        WIPED,
+    }
+
+    private final Status status;
+    private final boolean accurate;
+
+    public StageUpdateEvent(Stage stage, int tick, Status status) {
+        this(stage, tick, status, true);
+    }
+
+    public StageUpdateEvent(Stage stage, int tick, Status status, boolean accurate) {
+        super(EventType.ROOM_STATUS, stage, tick, null);
+        this.status = status;
+        this.accurate = accurate;
     }
 
     @Override
     protected String eventDataString() {
-        return null;
+        return "status=" + status;
     }
 }

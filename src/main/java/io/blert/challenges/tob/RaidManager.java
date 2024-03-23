@@ -30,6 +30,7 @@ import io.blert.challenges.tob.rooms.nylocas.NylocasDataTracker;
 import io.blert.challenges.tob.rooms.sotetseg.SotetsegDataTracker;
 import io.blert.challenges.tob.rooms.verzik.VerzikDataTracker;
 import io.blert.challenges.tob.rooms.xarpus.XarpusDataTracker;
+import io.blert.core.ChallengeMode;
 import io.blert.core.Raider;
 import io.blert.events.*;
 import io.blert.util.DeferredTask;
@@ -90,7 +91,7 @@ public class RaidManager {
     private RaidState state = RaidState.INACTIVE;
 
     @Getter
-    private Mode raidMode = null;
+    private ChallengeMode raidMode = null;
 
     /**
      * Players in the raid party, stored in orb order.
@@ -128,11 +129,11 @@ public class RaidManager {
         return party.values();
     }
 
-    public void updateRaidMode(Mode mode) {
+    public void updateRaidMode(ChallengeMode mode) {
         if (raidMode != mode) {
             log.debug("Raid mode set to " + mode);
             raidMode = mode;
-            dispatchEvent(new RaidUpdateEvent(mode));
+            dispatchEvent(new ChallengeUpdateEvent(mode));
         }
     }
 
@@ -201,7 +202,7 @@ public class RaidManager {
         }
     }
 
-    private void queueRaidStart(@Nullable Mode mode, boolean reinitializeParty) {
+    private void queueRaidStart(@Nullable ChallengeMode mode, boolean reinitializeParty) {
         log.info("Starting new raid");
         state = RaidState.STARTING;
         raidMode = mode;
@@ -225,7 +226,7 @@ public class RaidManager {
         boolean spectator = !playerIsInRaid(client.getLocalPlayer().getName());
 
         List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
-        dispatchEvent(new RaidStartEvent(names, raidMode, spectator));
+        dispatchEvent(new ChallengeStartEvent(names, raidMode, spectator));
 
         if (this.roomDataTracker != null) {
             // Raid scale information is not immediately available when the raid starts, so if any NPCs have already
@@ -254,7 +255,7 @@ public class RaidManager {
         raidMode = null;
         party.clear();
 
-        clientThread.invokeAtTickEnd(() -> dispatchEvent(new RaidEndEvent(overallTime)));
+        clientThread.invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(overallTime)));
     }
 
     /**
@@ -342,14 +343,14 @@ public class RaidManager {
             Matcher matcher = RAID_ENTRY_REGEX_1P.matcher(stripped);
             if (matcher.matches()) {
                 log.debug("Raid started via 1p chat message (mode: {})", matcher.group(1));
-                queueRaidStart(Mode.parse(matcher.group(1)).orElse(null), party.isEmpty());
+                queueRaidStart(ChallengeMode.parseTob(matcher.group(1)).orElse(null), party.isEmpty());
                 return;
             }
 
             matcher = RAID_ENTRY_REGEX_3P.matcher(stripped);
             if (matcher.matches()) {
                 log.debug("Raid started via 3p chat message (leader: {} mode: {})", matcher.group(1), matcher.group(2));
-                queueRaidStart(Mode.parse(matcher.group(2)).orElse(null), party.isEmpty());
+                queueRaidStart(ChallengeMode.parseTob(matcher.group(2)).orElse(null), party.isEmpty());
             }
             return;
         }
@@ -427,7 +428,7 @@ public class RaidManager {
         if (roomDataTracker != null) {
             log.info("Initialized room data tracker for {} from {}", roomDataTracker.getRoom(), location);
             eventBus.register(roomDataTracker);
-            dispatchEvent(new RoomStatusEvent(roomDataTracker.getRoom(), 0, RoomStatusEvent.Status.ENTERED));
+            dispatchEvent(new StageUpdateEvent(roomDataTracker.getStage(), 0, StageUpdateEvent.Status.ENTERED));
         }
     }
 }

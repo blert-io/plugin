@@ -21,23 +21,35 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
-import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
+import io.blert.events.EventType;
 import lombok.Getter;
 
 @Getter
-public class VerzikPhaseEvent extends Event {
-    private final VerzikPhase phase;
+public class NyloWaveEvent extends TobEvent {
+    private final int wave;
+    private final int nyloCount;
+    private final int nyloCap;
 
-    public VerzikPhaseEvent(int tick, VerzikPhase phase) {
-        super(EventType.VERZIK_PHASE, Room.VERZIK, tick, null);
-        this.phase = phase;
+    public static NyloWaveEvent spawn(int tick, int wave, int nyloCount, int nyloCap) {
+        return new NyloWaveEvent(EventType.NYLO_WAVE_SPAWN, tick, wave, nyloCount, nyloCap);
+    }
+
+    public static NyloWaveEvent stall(int tick, int wave, int nyloCount, int nyloCap) {
+        return new NyloWaveEvent(EventType.NYLO_WAVE_STALL, tick, wave, nyloCount, nyloCap);
+    }
+
+    private NyloWaveEvent(EventType type, int tick, int wave, int nyloCount, int nyloCap) {
+        super(EventType.NYLO_WAVE_STALL, Room.NYLOCAS, tick, null);
+        this.wave = wave;
+        this.nyloCount = nyloCount;
+        this.nyloCap = nyloCap;
     }
 
     @Override
     protected String eventDataString() {
-        return "phase=" + phase;
+        return "wave=" + wave + ", nylos_alive=" + nyloCount;
     }
 }

@@ -21,30 +21,24 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
+import io.blert.events.EventType;
 import lombok.Getter;
 
 @Getter
-public class VerzikAttackStyleEvent extends Event {
-    public enum Style {
-        MELEE,
-        RANGE,
-        MAGE,
-    }
+public class VerzikPhaseEvent extends TobEvent {
+    private final VerzikPhase phase;
 
-    private final Style style;
-    private final int attackTick;
-
-    public VerzikAttackStyleEvent(int tick, Style style, int attackTick) {
-        super(EventType.VERZIK_ATTACK_STYLE, Room.VERZIK, tick, null);
-        this.style = style;
-        this.attackTick = attackTick;
+    public VerzikPhaseEvent(int tick, VerzikPhase phase) {
+        super(EventType.VERZIK_PHASE, Room.VERZIK, tick, null);
+        this.phase = phase;
     }
 
     @Override
     protected String eventDataString() {
-        return "verzik_attack=(style=" + style + ", tick=" + attackTick + ")";
+        return "phase=" + phase;
     }
 }

@@ -23,17 +23,17 @@
 
 package io.blert.challenges.tob.rooms.bloat;
 
-import io.blert.challenges.tob.NpcAttack;
 import io.blert.challenges.tob.RaidManager;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
 import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
+import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
-import io.blert.events.BloatDownEvent;
-import io.blert.events.BloatUpEvent;
 import io.blert.events.NpcAttackEvent;
+import io.blert.events.tob.BloatDownEvent;
+import io.blert.events.tob.BloatUpEvent;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -96,7 +96,7 @@ public class BloatDataTracker extends RoomDataTracker {
 
             if (currentDownTick == BLOAT_STOMP_TICK && bloat != null) {
                 WorldPoint point = getWorldLocation(bloat);
-                dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.BLOAT_STOMP, bloat));
+                dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.BLOAT_STOMP, bloat));
             }
         }
     }
@@ -145,7 +145,7 @@ public class BloatDataTracker extends RoomDataTracker {
         lastDownTick = tick;
         log.debug("Bloat down {} tick {}", currentDown, lastDownTick);
 
-        dispatchEvent(new BloatDownEvent(tick, getWorldLocation(bloat), tick - lastUpTick));
+        dispatchEvent(new BloatDownEvent(tick, getWorldLocation(bloat), currentDown, tick - lastUpTick));
     }
 
     private void handleBloatUp(NPC bloat, int tick) {

@@ -24,10 +24,13 @@
 package io.blert.json;
 
 import com.google.gson.Gson;
-import io.blert.events.*;
+import io.blert.challenges.tob.Mode;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
 import io.blert.challenges.tob.rooms.xarpus.XarpusPhase;
+import io.blert.core.Stage;
+import io.blert.events.*;
+import io.blert.events.tob.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -65,34 +68,83 @@ public class Event {
     private @Nullable VerzikPhase verzikPhase = null;
     private @Nullable VerzikAttack verzikAttack = null;
 
+    private static Room stageToTobRoom(@Nullable Stage stage) {
+        if (stage == null) {
+            return null;
+        }
+
+        switch (stage) {
+            case TOB_MAIDEN:
+                return Room.MAIDEN;
+            case TOB_BLOAT:
+                return Room.BLOAT;
+            case TOB_NYLOCAS:
+                return Room.NYLOCAS;
+            case TOB_SOTETSEG:
+                return Room.SOTETSEG;
+            case TOB_XARPUS:
+                return Room.XARPUS;
+            case TOB_VERZIK:
+                return Room.VERZIK;
+            default:
+                return null;
+        }
+    }
+
     public static Event fromBlert(io.blert.events.Event blertEvent) {
         Event event = new Event();
         event.type = blertEvent.getType();
-        event.room = blertEvent.getRoom().orElse(null);
+        event.room = blertEvent.getStage().map(Event::stageToTobRoom).orElse(null);
         event.tick = blertEvent.getTick();
         event.xCoord = blertEvent.getXCoord();
         event.yCoord = blertEvent.getYCoord();
 
         switch (event.getType()) {
-            case RAID_START:
-                RaidStartEvent raidStartEvent = (RaidStartEvent) blertEvent;
+            case RAID_START: {
+                ChallengeStartEvent challengeStartEvent = (ChallengeStartEvent) blertEvent;
+                Mode mode = challengeStartEvent.getMode().map(m -> {
+                    switch (m) {
+                        case TOB_ENTRY:
+                            return Mode.ENTRY;
+                        case TOB_REGULAR:
+                            return Mode.REGULAR;
+                        case TOB_HARD:
+                            return Mode.HARD;
+                        default:
+                            return null;
+                    }
+                }).orElse(null);
                 event.raidInfo = new RaidInfo(
-                        raidStartEvent.getParty(), raidStartEvent.getMode(), raidStartEvent.isSpectator());
+                        challengeStartEvent.getParty(), mode, challengeStartEvent.isSpectator());
                 break;
+            }
 
-            case RAID_UPDATE:
-                RaidUpdateEvent raidUpdateEvent = (RaidUpdateEvent) blertEvent;
-                event.raidInfo = new RaidInfo(new ArrayList<>(), raidUpdateEvent.getMode(), false);
+            case RAID_UPDATE: {
+                ChallengeUpdateEvent challengeUpdateEvent = (ChallengeUpdateEvent) blertEvent;
+                Mode mode = null;
+                switch (challengeUpdateEvent.getMode()) {
+                    case TOB_ENTRY:
+                        mode = Mode.ENTRY;
+                        break;
+                    case TOB_REGULAR:
+                        mode = Mode.REGULAR;
+                        break;
+                    case TOB_HARD:
+                        mode = Mode.HARD;
+                        break;
+                }
+                event.raidInfo = new RaidInfo(new ArrayList<>(), mode, false);
                 break;
+            }
 
             case RAID_END:
-                RaidEndEvent raidEndEvent = (RaidEndEvent) blertEvent;
-                event.completedRaid = new CompletedRaid(raidEndEvent.getOverallTime());
+                ChallengeEndEvent challengeEndEvent = (ChallengeEndEvent) blertEvent;
+                event.completedRaid = new CompletedRaid(challengeEndEvent.getOverallTime());
                 break;
 
             case ROOM_STATUS:
-                RoomStatusEvent roomStatusEvent = (RoomStatusEvent) blertEvent;
-                event.roomStatus = new RoomStatus(roomStatusEvent.getStatus(), roomStatusEvent.isAccurate());
+                StageUpdateEvent stageUpdateEvent = (StageUpdateEvent) blertEvent;
+                event.roomStatus = new RoomStatus(stageUpdateEvent.getStatus(), stageUpdateEvent.isAccurate());
                 break;
 
             case PLAYER_UPDATE:
@@ -140,12 +192,8 @@ public class Event {
                 break;
 
             case NYLO_WAVE_SPAWN:
-                NyloWaveSpawnEvent waveSpawn = (NyloWaveSpawnEvent) blertEvent;
-                event.nyloWave = new NyloWave(waveSpawn.getWave(), waveSpawn.getNyloCount(), waveSpawn.getNyloCap());
-                break;
-
             case NYLO_WAVE_STALL:
-                NyloWaveStallEvent waveStall = (NyloWaveStallEvent) blertEvent;
+                NyloWaveEvent waveStall = (NyloWaveEvent) blertEvent;
                 event.nyloWave = new NyloWave(waveStall.getWave(), waveStall.getNyloCount(), waveStall.getNyloCap());
                 break;
 

@@ -21,17 +21,26 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
-public class NyloCleanupEndEvent extends Event {
-    public NyloCleanupEndEvent(int tick) {
-        super(EventType.NYLO_CLEANUP_END, Room.NYLOCAS, tick, null);
+@Getter
+public class BloatDownEvent extends TobEvent {
+    final int downNumber;
+    final int uptime;
+
+    public BloatDownEvent(int tick, WorldPoint point, int downNumber, int uptime) {
+        super(EventType.BLOAT_DOWN, Room.BLOAT, tick, point);
+        this.downNumber = downNumber;
+        this.uptime = uptime;
     }
 
     @Override
     protected String eventDataString() {
-        return null;
+        return "uptime=" + uptime;
     }
 }

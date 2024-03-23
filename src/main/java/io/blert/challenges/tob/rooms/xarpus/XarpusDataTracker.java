@@ -23,17 +23,13 @@
 
 package io.blert.challenges.tob.rooms.xarpus;
 
-import io.blert.challenges.tob.Mode;
-import io.blert.challenges.tob.NpcAttack;
 import io.blert.challenges.tob.RaidManager;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
-import io.blert.core.BasicTrackedNpc;
-import io.blert.core.Hitpoints;
-import io.blert.core.TrackedNpc;
+import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
-import io.blert.events.XarpusPhaseEvent;
+import io.blert.events.tob.XarpusPhaseEvent;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
@@ -80,11 +76,11 @@ public class XarpusDataTracker extends RoomDataTracker {
             WorldPoint point = getWorldLocation(xarpus);
             if (phase == XarpusPhase.P2) {
                 nextTurnTick += TICKS_PER_TURN_P2;
-                dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.XARPUS_SPIT, xarpus));
+                dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.XARPUS_SPIT, xarpus));
             } else if (phase == XarpusPhase.P3) {
-                if (raidManager.getRaidMode() != Mode.HARD) {
+                if (raidManager.getRaidMode() != ChallengeMode.TOB_HARD) {
                     nextTurnTick += TICKS_PER_TURN_P3;
-                    dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.XARPUS_TURN, xarpus));
+                    dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.XARPUS_TURN, xarpus));
                 }
             }
         }

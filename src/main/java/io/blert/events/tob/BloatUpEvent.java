@@ -21,12 +21,13 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
 import net.runelite.api.coords.WorldPoint;
 
-public class BloatUpEvent extends Event {
+public class BloatUpEvent extends TobEvent {
     public BloatUpEvent(int tick, WorldPoint point) {
         super(EventType.BLOAT_UP, Room.BLOAT, tick, point);
     }

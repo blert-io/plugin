@@ -21,26 +21,31 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
 import lombok.Getter;
 
 @Getter
-public class NyloWaveStallEvent extends Event {
-    private final int wave;
-    private final int nyloCount;
-    private final int nyloCap;
+public class VerzikAttackStyleEvent extends TobEvent {
+    public enum Style {
+        MELEE,
+        RANGE,
+        MAGE,
+    }
 
-    public NyloWaveStallEvent(int tick, int wave, int nyloCount, int nyloCap) {
-        super(EventType.NYLO_WAVE_STALL, Room.NYLOCAS, tick, null);
-        this.wave = wave;
-        this.nyloCount = nyloCount;
-        this.nyloCap = nyloCap;
+    private final Style style;
+    private final int attackTick;
+
+    public VerzikAttackStyleEvent(int tick, Style style, int attackTick) {
+        super(EventType.VERZIK_ATTACK_STYLE, Room.VERZIK, tick, null);
+        this.style = style;
+        this.attackTick = attackTick;
     }
 
     @Override
     protected String eventDataString() {
-        return "wave=" + wave + ", nylos=" + nyloCount;
+        return "verzik_attack=(style=" + style + ", tick=" + attackTick + ")";
     }
 }

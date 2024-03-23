@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Alexei Frolov
+ * Copyright (c) 2023-2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -21,23 +21,31 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
-import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
+import io.blert.events.EventType;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
-public class VerzikRedsSpawnEvent extends Event {
-    public VerzikRedsSpawnEvent(int tick) {
-        super(EventType.VERZIK_REDS_SPAWN, Room.VERZIK, tick, null);
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Getter
+public class MaidenBloodSplatsEvent extends TobEvent {
+    private final List<WorldPoint> bloodSplats;
+
+    public MaidenBloodSplatsEvent(int tick, List<WorldPoint> bloodSplats) {
+        super(EventType.MAIDEN_BLOOD_SPLATS, Room.MAIDEN, tick, null);
+        this.bloodSplats = bloodSplats;
     }
 
     @Override
     protected String eventDataString() {
-        return null;
-    }
-
-    public VerzikPhase getPhase() {
-        // Reds only spawn during P2.
-        return VerzikPhase.P2;
+        String splats = bloodSplats
+                .stream()
+                .map(wp -> "(" + wp.getX() + "," + wp.getY() + ")")
+                .collect(Collectors.joining(","));
+        return "blood_splats=[" + splats + ']';
     }
 }

@@ -23,7 +23,7 @@
 
 package io.blert.json;
 
-import io.blert.events.VerzikAttackStyleEvent;
+import io.blert.events.tob.VerzikAttackStyleEvent;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

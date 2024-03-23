@@ -23,21 +23,33 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.rooms.Room;
-import io.blert.challenges.tob.rooms.sotetseg.Maze;
+import io.blert.core.ChallengeMode;
 import lombok.Getter;
 
-@Getter
-public class SoteMazeProcEvent extends Event {
-    private final Maze maze;
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Optional;
 
-    public SoteMazeProcEvent(int tick, Maze maze) {
-        super(EventType.SOTE_MAZE_PROC, Room.SOTETSEG, tick, null);
-        this.maze = maze;
+public class ChallengeStartEvent extends Event {
+    @Getter
+    private final List<String> party;
+    private final @Nullable ChallengeMode mode;
+    @Getter
+    private final boolean isSpectator;
+
+    public ChallengeStartEvent(List<String> party, @Nullable ChallengeMode mode, boolean isSpectator) {
+        super(EventType.RAID_START);
+        this.party = party;
+        this.mode = mode;
+        this.isSpectator = isSpectator;
+    }
+
+    public Optional<ChallengeMode> getMode() {
+        return Optional.ofNullable(mode);
     }
 
     @Override
     protected String eventDataString() {
-        return null;
+        return "party=" + party.toString() + ", mode=" + mode;
     }
 }

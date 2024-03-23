@@ -21,26 +21,24 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.sotetseg.Maze;
+import io.blert.events.EventType;
 import lombok.Getter;
 
 @Getter
-public class NyloWaveSpawnEvent extends Event {
-    private final int wave;
-    private final int nyloCount;
-    private final int nyloCap;
+public class SoteMazeProcEvent extends TobEvent {
+    private final Maze maze;
 
-    public NyloWaveSpawnEvent(int tick, int wave, int nyloCount, int nyloCap) {
-        super(EventType.NYLO_WAVE_SPAWN, Room.NYLOCAS, tick, null);
-        this.wave = wave;
-        this.nyloCount = nyloCount;
-        this.nyloCap = nyloCap;
+    public SoteMazeProcEvent(int tick, Maze maze) {
+        super(EventType.SOTE_MAZE_PROC, Room.SOTETSEG, tick, null);
+        this.maze = maze;
     }
 
     @Override
     protected String eventDataString() {
-        return "wave=" + wave;
+        return null;
     }
 }

@@ -23,6 +23,8 @@
 
 package io.blert.challenges.tob.rooms;
 
+import io.blert.core.Stage;
+
 /**
  * Rooms in the Theatre of Blood.
  */
@@ -54,5 +56,24 @@ public enum Room {
             default:
                 return "";
         }
+    }
+
+    public Stage toStage() {
+        switch (this) {
+            case MAIDEN:
+                return Stage.TOB_MAIDEN;
+            case BLOAT:
+                return Stage.TOB_BLOAT;
+            case NYLOCAS:
+                return Stage.TOB_NYLOCAS;
+            case SOTETSEG:
+                return Stage.TOB_SOTETSEG;
+            case XARPUS:
+                return Stage.TOB_XARPUS;
+            case VERZIK:
+                return Stage.TOB_VERZIK;
+        }
+
+        return null;
     }
 }

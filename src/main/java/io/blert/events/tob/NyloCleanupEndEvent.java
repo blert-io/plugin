@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 Alexei Frolov
+ * Copyright (c) 2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -21,30 +21,18 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
+import io.blert.events.EventType;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-@Getter
-public class MaidenBloodSplatsEvent extends Event {
-    private final List<WorldPoint> bloodSplats;
-
-    public MaidenBloodSplatsEvent(int tick, List<WorldPoint> bloodSplats) {
-        super(EventType.MAIDEN_BLOOD_SPLATS, Room.MAIDEN, tick, null);
-        this.bloodSplats = bloodSplats;
+public class NyloCleanupEndEvent extends TobEvent {
+    public NyloCleanupEndEvent(int tick) {
+        super(EventType.NYLO_CLEANUP_END, Room.NYLOCAS, tick, null);
     }
 
     @Override
     protected String eventDataString() {
-        String splats = bloodSplats
-                .stream()
-                .map(wp -> "(" + wp.getX() + "," + wp.getY() + ")")
-                .collect(Collectors.joining(","));
-        return "blood_splats=[" + splats + ']';
+        return null;
     }
 }

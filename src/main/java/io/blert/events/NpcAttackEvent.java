@@ -23,8 +23,8 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.NpcAttack;
-import io.blert.challenges.tob.rooms.Room;
+import io.blert.core.NpcAttack;
+import io.blert.core.Stage;
 import io.blert.core.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.Actor;
@@ -40,8 +40,8 @@ public class NpcAttackEvent extends Event {
     private final long roomId;
     private final @Nullable String target;
 
-    public NpcAttackEvent(@Nullable Room room, int tick, @Nullable WorldPoint point, NpcAttack attack, TrackedNpc npc) {
-        super(EventType.NPC_ATTACK, room, tick, point);
+    public NpcAttackEvent(Stage stage, int tick, @Nullable WorldPoint point, NpcAttack attack, TrackedNpc npc) {
+        super(EventType.NPC_ATTACK, stage, tick, point);
         this.attack = attack;
         this.npcId = npc.getNpcId();
         this.roomId = npc.getRoomId();

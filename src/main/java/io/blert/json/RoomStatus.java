@@ -23,11 +23,11 @@
 
 package io.blert.json;
 
-import io.blert.events.RoomStatusEvent;
+import io.blert.events.StageUpdateEvent;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class RoomStatus {
-    RoomStatusEvent.Status status;
+    StageUpdateEvent.Status status;
     boolean accurate;
 }

@@ -23,20 +23,19 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.Mode;
 import lombok.Getter;
 
 @Getter
-public class RaidUpdateEvent extends Event {
-    private final Mode mode;
+public class ChallengeEndEvent extends Event {
+    private final int overallTime;
 
-    public RaidUpdateEvent(Mode mode) {
-        super(EventType.RAID_UPDATE);
-        this.mode = mode;
+    public ChallengeEndEvent(int overallTime) {
+        super(EventType.RAID_END);
+        this.overallTime = overallTime;
     }
 
     @Override
     protected String eventDataString() {
-        return "mode=" + mode;
+        return null;
     }
 }

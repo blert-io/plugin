@@ -21,23 +21,18 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
-import lombok.Getter;
+import io.blert.events.Event;
+import io.blert.events.EventType;
 import net.runelite.api.coords.WorldPoint;
+import org.jetbrains.annotations.NotNull;
 
-@Getter
-public class BloatDownEvent extends Event {
-    final int uptime;
+import javax.annotation.Nullable;
 
-    public BloatDownEvent(int tick, WorldPoint point, int uptime) {
-        super(EventType.BLOAT_DOWN, Room.BLOAT, tick, point);
-        this.uptime = uptime;
-    }
-
-    @Override
-    protected String eventDataString() {
-        return "uptime=" + uptime;
+public abstract class TobEvent extends Event {
+    protected TobEvent(EventType type, @NotNull Room room, int tick, @Nullable WorldPoint point) {
+        super(type, room.toStage(), tick, point);
     }
 }

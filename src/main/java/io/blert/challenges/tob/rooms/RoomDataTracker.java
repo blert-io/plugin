@@ -73,7 +73,7 @@ public abstract class RoomDataTracker extends DataTracker {
     }
 
     protected RoomDataTracker(RaidManager raidManager, Client client, Room room, boolean startOnEntry) {
-        super(client, raidManager.getClientThread());
+        super(client, raidManager.getClientThread(), room.toStage());
         this.raidManager = raidManager;
         this.room = room;
         this.waveEndRegex = Pattern.compile(
@@ -120,7 +120,7 @@ public abstract class RoomDataTracker extends DataTracker {
             }
         });
 
-        dispatchEvent(new RoomStatusEvent(room, 0, RoomStatusEvent.Status.STARTED));
+        dispatchEvent(new StageUpdateEvent(stage, 0, StageUpdateEvent.Status.STARTED));
 
         onRoomStart();
     }
@@ -157,12 +157,12 @@ public abstract class RoomDataTracker extends DataTracker {
             accurate = true;
         }
 
-        var roomStatus = completion ? RoomStatusEvent.Status.COMPLETED : RoomStatusEvent.Status.WIPED;
+        var roomStatus = completion ? StageUpdateEvent.Status.COMPLETED : StageUpdateEvent.Status.WIPED;
 
         // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
         // own events first.
         final int finalRoomTick = lastRecordedRoomTick;
-        clientThread.invokeLater(() -> dispatchEvent(new RoomStatusEvent(room, finalRoomTick, roomStatus, accurate)));
+        clientThread.invokeLater(() -> dispatchEvent(new StageUpdateEvent(stage, finalRoomTick, roomStatus, accurate)));
     }
 
     /**
@@ -387,12 +387,12 @@ public abstract class RoomDataTracker extends DataTracker {
             if (state == State.NOT_STARTED) {
                 // NPCs which spawn before the room begins must be reported immediately as the `onTick` handler
                 // is not yet active.
-                dispatchEvent(NpcEvent.spawn(room, 0, getWorldLocation(trackedNpc), trackedNpc));
+                dispatchEvent(NpcEvent.spawn(stage, 0, getWorldLocation(trackedNpc), trackedNpc));
             }
 
             // Update the raid mode on the first NPC seen in a room, in case the client joined the raid late, and it
             // has not been set.
-            raidManager.updateRaidMode(trackedNpc.getRaidMode());
+            raidManager.updateRaidMode(trackedNpc.getMode());
         });
     }
 
@@ -558,7 +558,7 @@ public abstract class RoomDataTracker extends DataTracker {
                 raider.setDead(true);
                 if (raider.getPlayer() != null) {
                     dispatchEvent(new PlayerDeathEvent(
-                            room, getTick(), getWorldLocation(raider.getPlayer()), raider.getUsername()));
+                            stage, getTick(), getWorldLocation(raider.getPlayer()), raider.getUsername()));
                 }
             }
         });
@@ -575,7 +575,7 @@ public abstract class RoomDataTracker extends DataTracker {
 
             raider.updateState(client, player, tick);
 
-            dispatchEvent(PlayerUpdateEvent.fromRaider(room, tick, getWorldLocation(player), client, raider));
+            dispatchEvent(PlayerUpdateEvent.fromRaider(stage, tick, getWorldLocation(player), client, raider));
         });
     }
 
@@ -625,7 +625,7 @@ public abstract class RoomDataTracker extends DataTracker {
 
             TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
             int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);
-            dispatchEvent(new PlayerAttackEvent(room, tick, point, attack, weapon.orElse(null),
+            dispatchEvent(new PlayerAttackEvent(stage, tick, point, attack, weapon.orElse(null),
                     raider, roomTarget, distanceToNpc));
         });
     }
@@ -638,14 +638,14 @@ public abstract class RoomDataTracker extends DataTracker {
         WorldPoint point = getWorldLocation(trackedNpc);
 
         if (trackedNpc.getSpawnTick() == tick) {
-            dispatchEvent(NpcEvent.spawn(room, tick, point, trackedNpc));
+            dispatchEvent(NpcEvent.spawn(stage, tick, point, trackedNpc));
         } else {
-            dispatchEvent(NpcEvent.update(room, tick, point, trackedNpc));
+            dispatchEvent(NpcEvent.update(stage, tick, point, trackedNpc));
         }
     }
 
     protected void despawnTrackedNpc(TrackedNpc trackedNpc) {
-        dispatchEvent(NpcEvent.death(room, getTick(), getWorldLocation(trackedNpc), trackedNpc));
+        dispatchEvent(NpcEvent.death(stage, getTick(), getWorldLocation(trackedNpc), trackedNpc));
         trackedNpcs.remove(trackedNpc);
     }
 

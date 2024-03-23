@@ -23,6 +23,7 @@
 
 package io.blert.core;
 
+import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.client.callback.ClientThread;
 
@@ -32,9 +33,13 @@ public abstract class DataTracker {
 
     private int startClientTick;
 
-    public DataTracker(Client client, ClientThread clientThread) {
+    @Getter
+    protected final Stage stage;
+
+    public DataTracker(Client client, ClientThread clientThread, Stage stage) {
         this.client = client;
         this.clientThread = clientThread;
+        this.stage = stage;
     }
 
     /**

@@ -21,28 +21,25 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
-import io.blert.challenges.tob.Mode;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.xarpus.XarpusPhase;
+import io.blert.events.EventType;
 import lombok.Getter;
-
-import java.util.List;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
-public class RaidStartEvent extends Event {
-    private final List<String> party;
-    private final Mode mode;
-    private final boolean isSpectator;
+public class XarpusPhaseEvent extends TobEvent {
+    private final XarpusPhase phase;
 
-    public RaidStartEvent(List<String> party, Mode mode, boolean isSpectator) {
-        super(EventType.RAID_START);
-        this.party = party;
-        this.mode = mode;
-        this.isSpectator = isSpectator;
+    public XarpusPhaseEvent(int tick, WorldPoint point, XarpusPhase phase) {
+        super(EventType.XARPUS_PHASE, Room.XARPUS, tick, point);
+        this.phase = phase;
     }
 
     @Override
     protected String eventDataString() {
-        return "party=" + party.toString() + ", mode=" + mode;
+        return "phase=" + phase;
     }
 }
