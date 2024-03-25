@@ -42,7 +42,7 @@ public class NyloWaveEvent extends TobEvent {
     }
 
     private NyloWaveEvent(EventType type, int tick, int wave, int nyloCount, int nyloCap) {
-        super(EventType.NYLO_WAVE_STALL, Room.NYLOCAS, tick, null);
+        super(type, Room.NYLOCAS, tick, null);
         this.wave = wave;
         this.nyloCount = nyloCount;
         this.nyloCap = nyloCap;

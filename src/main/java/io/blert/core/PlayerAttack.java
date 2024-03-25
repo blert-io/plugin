@@ -142,7 +142,7 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.SCYTHE
     ),
     SCYTHE_UNCHARGED(
-            ItemID.SCYTHE_OF_VITUR_UNCHARGED,
+            new int[]{ItemID.SCYTHE_OF_VITUR_UNCHARGED, ItemID.HOLY_SCYTHE_OF_VITUR_UNCHARGED, ItemID.SANGUINE_SCYTHE_OF_VITUR_UNCHARGED},
             8056,
             5,
             io.blert.proto.PlayerAttack.SCYTHE_UNCHARGED
