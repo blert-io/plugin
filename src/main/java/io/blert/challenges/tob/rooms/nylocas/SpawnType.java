@@ -26,10 +26,10 @@ package io.blert.challenges.tob.rooms.nylocas;
 import net.runelite.api.coords.WorldPoint;
 
 public enum SpawnType {
+    SPLIT,
     WEST,
     SOUTH,
-    EAST,
-    SPLIT;
+    EAST;
 
     private static final WorldPoint EAST_LANE_NORTH = new WorldPoint(3310, 4249, 0);
     private static final WorldPoint EAST_LANE_SOUTH = new WorldPoint(3310, 4248, 0);

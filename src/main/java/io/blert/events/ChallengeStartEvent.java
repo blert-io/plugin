@@ -23,19 +23,33 @@
 
 package io.blert.events;
 
+import io.blert.core.ChallengeMode;
 import lombok.Getter;
 
-@Getter
-public class RaidEndEvent extends Event {
-    private final int overallTime;
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Optional;
 
-    public RaidEndEvent(int overallTime) {
-        super(EventType.RAID_END);
-        this.overallTime = overallTime;
+public class ChallengeStartEvent extends Event {
+    @Getter
+    private final List<String> party;
+    private final @Nullable ChallengeMode mode;
+    @Getter
+    private final boolean isSpectator;
+
+    public ChallengeStartEvent(List<String> party, @Nullable ChallengeMode mode, boolean isSpectator) {
+        super(EventType.RAID_START);
+        this.party = party;
+        this.mode = mode;
+        this.isSpectator = isSpectator;
+    }
+
+    public Optional<ChallengeMode> getMode() {
+        return Optional.ofNullable(mode);
     }
 
     @Override
     protected String eventDataString() {
-        return null;
+        return "party=" + party.toString() + ", mode=" + mode;
     }
 }

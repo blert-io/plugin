@@ -21,14 +21,25 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.events.tob;
 
-import lombok.AllArgsConstructor;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.xarpus.XarpusPhase;
+import io.blert.events.EventType;
 import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
-@AllArgsConstructor
-public class NpcAttack {
-    io.blert.challenges.tob.NpcAttack attack;
-    String target;
+public class XarpusPhaseEvent extends TobEvent {
+    private final XarpusPhase phase;
+
+    public XarpusPhaseEvent(int tick, WorldPoint point, XarpusPhase phase) {
+        super(EventType.XARPUS_PHASE, Room.XARPUS, tick, point);
+        this.phase = phase;
+    }
+
+    @Override
+    protected String eventDataString() {
+        return "phase=" + phase;
+    }
 }

@@ -23,36 +23,50 @@
 
 package io.blert.events;
 
+import io.blert.proto.Event;
+
 public enum EventType {
-    RAID_START,
-    RAID_END,
-    RAID_UPDATE,
-    ROOM_STATUS,
-    PLAYER_UPDATE,
-    PLAYER_ATTACK,
-    PLAYER_DEATH,
-    NPC_SPAWN,
-    NPC_UPDATE,
-    NPC_DEATH,
-    NPC_ATTACK,
+    RAID_START(Event.Type.CHALLENGE_START),
+    RAID_END(Event.Type.CHALLENGE_END),
+    RAID_UPDATE(Event.Type.CHALLENGE_UPDATE),
+    ROOM_STATUS(Event.Type.STAGE_UPDATE),
+    PLAYER_UPDATE(Event.Type.PLAYER_UPDATE),
+    PLAYER_ATTACK(Event.Type.PLAYER_ATTACK),
+    PLAYER_DEATH(Event.Type.PLAYER_DEATH),
+    NPC_SPAWN(Event.Type.NPC_SPAWN),
+    NPC_UPDATE(Event.Type.NPC_UPDATE),
+    NPC_DEATH(Event.Type.NPC_DEATH),
+    NPC_ATTACK(Event.Type.NPC_ATTACK),
 
-    MAIDEN_CRAB_LEAK,
-    MAIDEN_BLOOD_SPLATS,
+    MAIDEN_CRAB_LEAK(Event.Type.TOB_MAIDEN_CRAB_LEAK),
+    MAIDEN_BLOOD_SPLATS(Event.Type.TOB_MAIDEN_BLOOD_SPLATS),
 
-    BLOAT_DOWN,
-    BLOAT_UP,
+    BLOAT_DOWN(Event.Type.TOB_BLOAT_DOWN),
+    BLOAT_UP(Event.Type.TOB_BLOAT_UP),
 
-    NYLO_WAVE_SPAWN,
-    NYLO_WAVE_STALL,
-    NYLO_CLEANUP_END,
-    NYLO_BOSS_SPAWN,
+    NYLO_WAVE_SPAWN(Event.Type.TOB_NYLO_WAVE_SPAWN),
+    NYLO_WAVE_STALL(Event.Type.TOB_NYLO_WAVE_STALL),
+    NYLO_CLEANUP_END(Event.Type.TOB_NYLO_CLEANUP_END),
+    NYLO_BOSS_SPAWN(Event.Type.TOB_NYLO_BOSS_SPAWN),
 
-    SOTE_MAZE_PROC,
-    SOTE_MAZE_PATH,
+    SOTE_MAZE_PROC(Event.Type.TOB_SOTE_MAZE_PROC),
+    SOTE_MAZE_PATH(Event.Type.TOB_SOTE_MAZE_PATH),
 
-    XARPUS_PHASE,
+    XARPUS_PHASE(Event.Type.TOB_XARPUS_PHASE),
 
-    VERZIK_PHASE,
-    VERZIK_REDS_SPAWN,
-    VERZIK_ATTACK_STYLE,
+    VERZIK_PHASE(Event.Type.TOB_VERZIK_PHASE),
+    VERZIK_REDS_SPAWN(Event.Type.TOB_VERZIK_REDS_SPAWN),
+    VERZIK_ATTACK_STYLE(Event.Type.TOB_VERZIK_ATTACK_STYLE),
+
+    ;
+
+    private final Event.Type protoValue;
+
+    EventType(Event.Type protoValue) {
+        this.protoValue = protoValue;
+    }
+
+    public Event.Type toProto() {
+        return protoValue;
+    }
 }

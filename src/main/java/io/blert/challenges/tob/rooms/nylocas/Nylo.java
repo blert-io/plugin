@@ -23,9 +23,9 @@
 
 package io.blert.challenges.tob.rooms.nylocas;
 
-import io.blert.core.TrackedNpc;
-import io.blert.core.Hitpoints;
 import io.blert.challenges.tob.TobNpc;
+import io.blert.core.Hitpoints;
+import io.blert.core.TrackedNpc;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,6 +46,7 @@ public class Nylo extends TrackedNpc {
         private long roomId;
         private long parentRoomId;
         private int wave;
+        private boolean big;
         private SpawnType spawnType;
         private Style style;
     }
@@ -102,7 +103,7 @@ public class Nylo extends TrackedNpc {
     @Override
     public @NotNull TrackedNpc.Properties getProperties() {
         long parentRoomId = parent != null ? parent.getRoomId() : 0;
-        return new Properties(getRoomId(), parentRoomId, wave, spawnType, style);
+        return new Properties(getRoomId(), parentRoomId, wave, big, spawnType, style);
     }
 
     public boolean isSplit() {

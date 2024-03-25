@@ -21,32 +21,24 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.events.tob;
 
-import io.blert.events.PlayerAttackEvent;
-import io.blert.core.Item;
-import lombok.Getter;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
+import io.blert.events.EventType;
 
-import javax.annotation.Nullable;
-
-@Getter
-public class PlayerAttack {
-    private final io.blert.core.PlayerAttack type;
-    private @Nullable Item weapon;
-    private @Nullable Npc target;
-    private int distanceToTarget;
-
-    public static PlayerAttack fromPlayerAttackEvent(PlayerAttackEvent event) {
-        PlayerAttack attack = new PlayerAttack(event.getAttack());
-        attack.weapon = event.getWeapon();
-        attack.distanceToTarget = event.getDistanceToTarget();
-        if (event.getTargetNpcId() != -1) {
-            attack.target = new Npc(event.getTargetNpcId(), event.getTargetRoomId());
-        }
-        return attack;
+public class VerzikRedsSpawnEvent extends TobEvent {
+    public VerzikRedsSpawnEvent(int tick) {
+        super(EventType.VERZIK_REDS_SPAWN, Room.VERZIK, tick, null);
     }
 
-    private PlayerAttack(io.blert.core.PlayerAttack attack) {
-        this.type = attack;
+    @Override
+    protected String eventDataString() {
+        return null;
+    }
+
+    public VerzikPhase getPhase() {
+        // Reds only spawn during P2.
+        return VerzikPhase.P2;
     }
 }

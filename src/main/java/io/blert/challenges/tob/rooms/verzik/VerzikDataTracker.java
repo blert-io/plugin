@@ -24,20 +24,15 @@
 package io.blert.challenges.tob.rooms.verzik;
 
 import com.google.common.collect.ImmutableSet;
-import io.blert.challenges.tob.Mode;
-import io.blert.challenges.tob.NpcAttack;
 import io.blert.challenges.tob.RaidManager;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
-import io.blert.core.BasicTrackedNpc;
-import io.blert.core.Hitpoints;
-import io.blert.core.Raider;
-import io.blert.core.TrackedNpc;
+import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
-import io.blert.events.VerzikAttackStyleEvent;
-import io.blert.events.VerzikPhaseEvent;
-import io.blert.events.VerzikRedsSpawnEvent;
+import io.blert.events.tob.VerzikAttackStyleEvent;
+import io.blert.events.tob.VerzikPhaseEvent;
+import io.blert.events.tob.VerzikRedsSpawnEvent;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -306,7 +301,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             if (animationId == P2_BOUNCE_ANIMATION && phase == VerzikPhase.P2) {
                 WorldPoint point = getWorldLocation(verzik);
-                dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.VERZIK_P2_BOUNCE, verzik));
+                dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.VERZIK_P2_BOUNCE, verzik));
             }
         }
     }
@@ -369,7 +364,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         long totalYellows = raidManager.getRaiders().stream().filter(Raider::isAlive).count();
-        if (raidManager.getRaidMode() == Mode.HARD) {
+        if (raidManager.getRaidMode() == ChallengeMode.TOB_HARD) {
             totalYellows *= 3;
         }
 
@@ -416,7 +411,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                             // ticks total.
                             // TODO(frolv): `unidentifiedVerzikAttackTick` is deliberately not set here, as the green
                             // ball projectile seems to hide the regular attack projectiles. Investigate this further.
-                            dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, NpcAttack.VERZIK_P3_BALL, verzik));
+                            dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.VERZIK_P3_BALL, verzik));
                             nextSpecial = nextSpecial.next();
                             verzikAttacksUntilSpecial += 1;
                             nextVerzikAttackTick += P3_GREEN_BALL_TICK_DELAY - attackSpeed();
@@ -434,7 +429,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                             NpcAttack attack = nextSpecial == VerzikSpecial.WEBS
                                     ? NpcAttack.VERZIK_P3_WEBS
                                     : NpcAttack.VERZIK_P3_YELLOWS;
-                            dispatchEvent(new NpcAttackEvent(getRoom(), tick, point, attack, verzik));
+                            dispatchEvent(new NpcAttackEvent(stage, tick, point, attack, verzik));
 
                             // Other specials pause the attack cycle until they are completed.
                             nextSpecial = nextSpecial.next();
@@ -459,7 +454,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         if (nextVerzikAttack != null && verzik != null) {
-            dispatchEvent(new NpcAttackEvent(getRoom(), tick, getWorldLocation(verzik), nextVerzikAttack, verzik));
+            dispatchEvent(new NpcAttackEvent(stage, tick, getWorldLocation(verzik), nextVerzikAttack, verzik));
         }
 
         nextVerzikAttackTick += attackSpeed();

@@ -23,7 +23,7 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.rooms.Room;
+import io.blert.core.Stage;
 import joptsimple.internal.Strings;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
@@ -33,7 +33,7 @@ import java.util.Optional;
 
 public abstract class Event {
     private final @Getter EventType type;
-    private final @Nullable Room room;
+    private final @Nullable Stage stage;
     private final @Getter int tick;
     private final @Nullable WorldPoint coords;
 
@@ -41,15 +41,15 @@ public abstract class Event {
         this(type, null, 0, null);
     }
 
-    protected Event(EventType type, @Nullable Room room, int tick, @Nullable WorldPoint point) {
+    protected Event(EventType type, @Nullable Stage stage, int tick, @Nullable WorldPoint point) {
         this.type = type;
-        this.room = room;
+        this.stage = stage;
         this.tick = tick;
         this.coords = point;
     }
 
-    public Optional<Room> getRoom() {
-        return Optional.ofNullable(room);
+    public Optional<Stage> getStage() {
+        return Optional.ofNullable(stage);
     }
 
     public int getXCoord() {
@@ -71,7 +71,7 @@ public abstract class Event {
         } else {
             string.append("null");
         }
-        string.append(", room=").append(room);
+        string.append(", stage=").append(stage);
 
         String eventData = eventDataString();
         if (!Strings.isNullOrEmpty(eventData)) {

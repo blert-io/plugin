@@ -21,11 +21,21 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.events;
 
-import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@AllArgsConstructor
-public class BloatStatus {
-    int walkTime;
+@Getter
+public class ChallengeEndEvent extends Event {
+    private final int overallTime;
+
+    public ChallengeEndEvent(int overallTime) {
+        super(EventType.RAID_END);
+        this.overallTime = overallTime;
+    }
+
+    @Override
+    protected String eventDataString() {
+        return null;
+    }
 }

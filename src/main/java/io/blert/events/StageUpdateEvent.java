@@ -23,22 +23,33 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.rooms.Room;
-import io.blert.challenges.tob.rooms.xarpus.XarpusPhase;
+import io.blert.core.Stage;
 import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
 
 @Getter
-public class XarpusPhaseEvent extends Event {
-    private final XarpusPhase phase;
+public class StageUpdateEvent extends Event {
+    public enum Status {
+        ENTERED,
+        STARTED,
+        COMPLETED,
+        WIPED,
+    }
 
-    public XarpusPhaseEvent(int tick, WorldPoint point, XarpusPhase phase) {
-        super(EventType.XARPUS_PHASE, Room.XARPUS, tick, point);
-        this.phase = phase;
+    private final Status status;
+    private final boolean accurate;
+
+    public StageUpdateEvent(Stage stage, int tick, Status status) {
+        this(stage, tick, status, true);
+    }
+
+    public StageUpdateEvent(Stage stage, int tick, Status status, boolean accurate) {
+        super(EventType.ROOM_STATUS, stage, tick, null);
+        this.status = status;
+        this.accurate = accurate;
     }
 
     @Override
     protected String eventDataString() {
-        return "phase=" + phase;
+        return "status=" + status;
     }
 }

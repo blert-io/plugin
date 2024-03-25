@@ -24,15 +24,18 @@
 package io.blert.challenges.tob.rooms.nylocas;
 
 import com.google.common.collect.ImmutableSet;
-import io.blert.challenges.tob.Mode;
-import io.blert.challenges.tob.NpcAttack;
 import io.blert.challenges.tob.RaidManager;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
+import io.blert.core.ChallengeMode;
 import io.blert.core.Hitpoints;
+import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
-import io.blert.events.*;
+import io.blert.events.NpcAttackEvent;
+import io.blert.events.tob.NyloBossSpawnEvent;
+import io.blert.events.tob.NyloCleanupEndEvent;
+import io.blert.events.tob.NyloWaveEvent;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -87,14 +90,15 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     private int waveCap() {
-        if (raidManager.getRaidMode() == Mode.HARD) {
+        if (raidManager.getRaidMode() == ChallengeMode.TOB_HARD) {
             return currentWave < CAP_INCREASE_WAVE ? 15 : 24;
         }
         return currentWave < CAP_INCREASE_WAVE ? 12 : 24;
     }
 
     private boolean isPrinceWave() {
-        return raidManager.getRaidMode() == Mode.HARD && (currentWave == 10 || currentWave == 20 || currentWave == 30);
+        return raidManager.getRaidMode() == ChallengeMode.TOB_HARD
+                && (currentWave == 10 || currentWave == 20 || currentWave == 30);
     }
 
     @Override
@@ -106,7 +110,7 @@ public class NylocasDataTracker extends RoomDataTracker {
         final int tick = getTick();
 
         if (waveSpawnTicks[currentWave] == tick) {
-            dispatchEvent(new NyloWaveSpawnEvent(tick, currentWave, roomNyloCount(), waveCap()));
+            dispatchEvent(NyloWaveEvent.spawn(tick, currentWave, roomNyloCount(), waveCap()));
         }
 
         if (currentWave < LAST_NYLO_WAVE && tick == nextWaveSpawnCheckTick) {
@@ -115,7 +119,7 @@ public class NylocasDataTracker extends RoomDataTracker {
             nextWaveSpawnCheckTick += WAVE_TICK_CYCLE;
 
             log.debug("Stalled wave {} ({}/{})", currentWave, roomNyloCount(), waveCap());
-            dispatchEvent(new NyloWaveStallEvent(tick, currentWave, roomNyloCount(), waveCap()));
+            dispatchEvent(NyloWaveEvent.stall(tick, currentWave, roomNyloCount(), waveCap()));
         }
 
         assignParentsToSplits();
@@ -243,7 +247,7 @@ public class NylocasDataTracker extends RoomDataTracker {
                 return;
         }
 
-        dispatchEvent(new NpcAttackEvent(getRoom(), tick, getWorldLocation(actor), attack, nyloBoss));
+        dispatchEvent(new NpcAttackEvent(stage, tick, getWorldLocation(actor), attack, nyloBoss));
     }
 
     private Optional<Nylo> handleNylocasSpawn(NPC npc) {

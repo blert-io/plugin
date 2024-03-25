@@ -21,12 +21,35 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.events.tob;
 
-import io.blert.challenges.tob.rooms.sotetseg.Maze;
-import lombok.AllArgsConstructor;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
+import lombok.Getter;
 
-@AllArgsConstructor
-public class SoteMaze {
-    private Maze maze;
+@Getter
+public class NyloWaveEvent extends TobEvent {
+    private final int wave;
+    private final int nyloCount;
+    private final int nyloCap;
+
+    public static NyloWaveEvent spawn(int tick, int wave, int nyloCount, int nyloCap) {
+        return new NyloWaveEvent(EventType.NYLO_WAVE_SPAWN, tick, wave, nyloCount, nyloCap);
+    }
+
+    public static NyloWaveEvent stall(int tick, int wave, int nyloCount, int nyloCap) {
+        return new NyloWaveEvent(EventType.NYLO_WAVE_STALL, tick, wave, nyloCount, nyloCap);
+    }
+
+    private NyloWaveEvent(EventType type, int tick, int wave, int nyloCount, int nyloCap) {
+        super(type, Room.NYLOCAS, tick, null);
+        this.wave = wave;
+        this.nyloCount = nyloCount;
+        this.nyloCap = nyloCap;
+    }
+
+    @Override
+    protected String eventDataString() {
+        return "wave=" + wave + ", nylos_alive=" + nyloCount;
+    }
 }

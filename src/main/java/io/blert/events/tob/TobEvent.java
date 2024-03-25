@@ -21,19 +21,18 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.events.tob;
 
-import io.blert.challenges.tob.Mode;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.Event;
+import io.blert.events.EventType;
+import net.runelite.api.coords.WorldPoint;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.List;
 
-@AllArgsConstructor
-@Getter
-public class RaidInfo {
-    private List<String> party;
-    private @Nullable Mode mode;
-    private boolean isSpectator;
+public abstract class TobEvent extends Event {
+    protected TobEvent(EventType type, @NotNull Room room, int tick, @Nullable WorldPoint point) {
+        super(type, room.toStage(), tick, point);
+    }
 }

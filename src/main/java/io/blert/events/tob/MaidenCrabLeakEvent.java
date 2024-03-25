@@ -21,15 +21,37 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.events.tob;
 
-import io.blert.events.VerzikAttackStyleEvent;
-import lombok.AllArgsConstructor;
+import io.blert.challenges.tob.rooms.maiden.CrabSpawn;
+import io.blert.challenges.tob.rooms.maiden.MaidenCrab;
+import io.blert.core.Stage;
+import io.blert.events.EventType;
+import io.blert.events.NpcEvent;
 import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
-@AllArgsConstructor
 @Getter
-public class VerzikAttack {
-    private VerzikAttackStyleEvent.Style style;
-    private int npcAttackTick;
+public class MaidenCrabLeakEvent extends NpcEvent {
+    public MaidenCrabLeakEvent(int tick, WorldPoint point, MaidenCrab crab) {
+        super(EventType.MAIDEN_CRAB_LEAK, Stage.TOB_MAIDEN, tick, point, crab);
+    }
+
+    @Override
+    public MaidenCrab.Properties getProperties() {
+        return (MaidenCrab.Properties) super.getProperties();
+    }
+
+    public CrabSpawn getSpawn() {
+        return getProperties().getSpawn();
+    }
+
+    public MaidenCrab.Position getPosition() {
+        return getProperties().getPosition();
+    }
+
+    @Override
+    protected String eventDataString() {
+        return "crab_leak=(crab=" + getSpawn() + ' ' + getPosition() + ", hp=" + getHitpoints().getCurrent() + ')';
+    }
 }

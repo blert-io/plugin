@@ -21,13 +21,19 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.events.tob;
 
-import io.blert.events.RoomStatusEvent;
-import lombok.AllArgsConstructor;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
+import net.runelite.api.coords.WorldPoint;
 
-@AllArgsConstructor
-public class RoomStatus {
-    RoomStatusEvent.Status status;
-    boolean accurate;
+public class BloatUpEvent extends TobEvent {
+    public BloatUpEvent(int tick, WorldPoint point) {
+        super(EventType.BLOAT_UP, Room.BLOAT, tick, point);
+    }
+
+    @Override
+    protected String eventDataString() {
+        return null;
+    }
 }

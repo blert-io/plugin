@@ -21,17 +21,31 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
+import lombok.Getter;
 
-public class NyloCleanupEndEvent extends Event {
-    public NyloCleanupEndEvent(int tick) {
-        super(EventType.NYLO_CLEANUP_END, Room.NYLOCAS, tick, null);
+@Getter
+public class VerzikAttackStyleEvent extends TobEvent {
+    public enum Style {
+        MELEE,
+        RANGE,
+        MAGE,
+    }
+
+    private final Style style;
+    private final int attackTick;
+
+    public VerzikAttackStyleEvent(int tick, Style style, int attackTick) {
+        super(EventType.VERZIK_ATTACK_STYLE, Room.VERZIK, tick, null);
+        this.style = style;
+        this.attackTick = attackTick;
     }
 
     @Override
     protected String eventDataString() {
-        return null;
+        return "verzik_attack=(style=" + style + ", tick=" + attackTick + ")";
     }
 }

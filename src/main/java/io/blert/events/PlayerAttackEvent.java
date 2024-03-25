@@ -23,15 +23,12 @@
 
 package io.blert.events;
 
-import io.blert.core.Item;
-import io.blert.core.PlayerAttack;
-import io.blert.core.Raider;
-import io.blert.challenges.tob.rooms.Room;
-import io.blert.core.TrackedNpc;
+import io.blert.core.*;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 
 @Getter
 public class PlayerAttackEvent extends Event {
@@ -42,9 +39,9 @@ public class PlayerAttackEvent extends Event {
     private final long targetRoomId;
     private final int distanceToTarget;
 
-    public PlayerAttackEvent(Room room, int tick, WorldPoint playerPoint, PlayerAttack attack,
+    public PlayerAttackEvent(Stage stage, int tick, WorldPoint playerPoint, PlayerAttack attack,
                              @Nullable Item weapon, Raider raider, @Nullable TrackedNpc trackedNpc, int distanceToNpc) {
-        super(EventType.PLAYER_ATTACK, room, tick, playerPoint);
+        super(EventType.PLAYER_ATTACK, stage, tick, playerPoint);
         this.attack = attack;
         this.weapon = weapon;
         this.username = raider.getUsername();
@@ -57,6 +54,10 @@ public class PlayerAttackEvent extends Event {
             this.targetNpcId = 0;
             this.targetRoomId = 0;
         }
+    }
+
+    public Optional<Item> getWeapon() {
+        return Optional.ofNullable(weapon);
     }
 
     @Override

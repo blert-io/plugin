@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Alexei Frolov
+ * Copyright (c) 2023-2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -21,28 +21,31 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
-import io.blert.challenges.tob.Mode;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
 import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
-public class RaidStartEvent extends Event {
-    private final List<String> party;
-    private final Mode mode;
-    private final boolean isSpectator;
+public class MaidenBloodSplatsEvent extends TobEvent {
+    private final List<WorldPoint> bloodSplats;
 
-    public RaidStartEvent(List<String> party, Mode mode, boolean isSpectator) {
-        super(EventType.RAID_START);
-        this.party = party;
-        this.mode = mode;
-        this.isSpectator = isSpectator;
+    public MaidenBloodSplatsEvent(int tick, List<WorldPoint> bloodSplats) {
+        super(EventType.MAIDEN_BLOOD_SPLATS, Room.MAIDEN, tick, null);
+        this.bloodSplats = bloodSplats;
     }
 
     @Override
     protected String eventDataString() {
-        return "party=" + party.toString() + ", mode=" + mode;
+        String splats = bloodSplats
+                .stream()
+                .map(wp -> "(" + wp.getX() + "," + wp.getY() + ")")
+                .collect(Collectors.joining(","));
+        return "blood_splats=[" + splats + ']';
     }
 }

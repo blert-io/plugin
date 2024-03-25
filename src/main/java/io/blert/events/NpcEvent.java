@@ -24,7 +24,7 @@
 package io.blert.events;
 
 import io.blert.core.Hitpoints;
-import io.blert.challenges.tob.rooms.Room;
+import io.blert.core.Stage;
 import io.blert.core.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
@@ -36,20 +36,20 @@ public class NpcEvent extends Event {
     private final Hitpoints hitpoints;
     private final TrackedNpc.Properties properties;
 
-    public static NpcEvent spawn(Room room, int tick, WorldPoint point, TrackedNpc trackedNpc) {
-        return new NpcEvent(EventType.NPC_SPAWN, room, tick, point, trackedNpc);
+    public static NpcEvent spawn(Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
+        return new NpcEvent(EventType.NPC_SPAWN, stage, tick, point, trackedNpc);
     }
 
-    public static NpcEvent update(Room room, int tick, WorldPoint point, TrackedNpc trackedNpc) {
-        return new NpcEvent(EventType.NPC_UPDATE, room, tick, point, trackedNpc);
+    public static NpcEvent update(Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
+        return new NpcEvent(EventType.NPC_UPDATE, stage, tick, point, trackedNpc);
     }
 
-    public static NpcEvent death(Room room, int tick, WorldPoint point, TrackedNpc trackedNpc) {
-        return new NpcEvent(EventType.NPC_DEATH, room, tick, point, trackedNpc);
+    public static NpcEvent death(Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
+        return new NpcEvent(EventType.NPC_DEATH, stage, tick, point, trackedNpc);
     }
 
-    protected NpcEvent(EventType type, Room room, int tick, WorldPoint point, TrackedNpc trackedNpc) {
-        super(type, room, tick, point);
+    protected NpcEvent(EventType type, Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
+        super(type, stage, tick, point);
         this.roomId = trackedNpc.getRoomId();
         this.npcId = trackedNpc.getNpcId();
         this.hitpoints = trackedNpc.getHitpoints();

@@ -23,9 +23,8 @@
 
 package io.blert.core;
 
-import io.blert.events.NpcEvent;
-import io.blert.challenges.tob.Mode;
 import io.blert.challenges.tob.TobNpc;
+import io.blert.events.NpcEvent;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.api.NPC;
@@ -51,7 +50,8 @@ public abstract class TrackedNpc {
     @Setter
     private @NotNull NPC npc;
 
-    private final @NotNull Mode mode;
+    @Getter
+    private final @NotNull ChallengeMode mode;
 
     @Getter
     @Setter
@@ -82,9 +82,5 @@ public abstract class TrackedNpc {
 
     public String getName() {
         return npc.getName();
-    }
-
-    public Mode getRaidMode() {
-        return mode;
     }
 }

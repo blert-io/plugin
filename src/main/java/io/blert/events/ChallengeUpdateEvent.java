@@ -23,24 +23,20 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.rooms.Room;
+import io.blert.core.ChallengeMode;
 import lombok.Getter;
 
 @Getter
-public class NyloWaveSpawnEvent extends Event {
-    private final int wave;
-    private final int nyloCount;
-    private final int nyloCap;
+public class ChallengeUpdateEvent extends Event {
+    private final ChallengeMode mode;
 
-    public NyloWaveSpawnEvent(int tick, int wave, int nyloCount, int nyloCap) {
-        super(EventType.NYLO_WAVE_SPAWN, Room.NYLOCAS, tick, null);
-        this.wave = wave;
-        this.nyloCount = nyloCount;
-        this.nyloCap = nyloCap;
+    public ChallengeUpdateEvent(ChallengeMode mode) {
+        super(EventType.RAID_UPDATE);
+        this.mode = mode;
     }
 
     @Override
     protected String eventDataString() {
-        return "wave=" + wave;
+        return "mode=" + mode;
     }
 }

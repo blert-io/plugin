@@ -23,7 +23,6 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.rooms.Room;
 import io.blert.core.*;
 import lombok.Getter;
 import net.runelite.api.Client;
@@ -73,16 +72,16 @@ public class PlayerUpdateEvent extends Event {
     /**
      * Returns a PlayerUpdateEvent populated with information about a player in the raid.
      *
-     * @param room   Room in which the event occurred.
+     * @param stage  Stage during which the event occurred.
      * @param tick   Room tick at which the event occurred.
      * @param client Local client instance.
      * @param raider The player in question.
      * @return Event containing information about the queried player.
      */
-    public static PlayerUpdateEvent fromRaider(Room room, int tick, WorldPoint point, Client client, Raider raider) {
+    public static PlayerUpdateEvent fromRaider(Stage stage, int tick, WorldPoint point, Client client, Raider raider) {
         Source source = raider.isLocalPlayer() ? Source.PRIMARY : Source.SECONDARY;
 
-        PlayerUpdateEvent evt = new PlayerUpdateEvent(room, tick, point, source, raider.getUsername());
+        PlayerUpdateEvent evt = new PlayerUpdateEvent(stage, tick, point, source, raider.getUsername());
         evt.equipment.putAll(raider.getEquipment());
         evt.offCooldownTick = raider.getOffCooldownTick();
 
@@ -120,8 +119,8 @@ public class PlayerUpdateEvent extends Event {
     }
 
 
-    private PlayerUpdateEvent(Room room, int tick, WorldPoint point, Source source, String username) {
-        super(EventType.PLAYER_UPDATE, room, tick, point);
+    private PlayerUpdateEvent(Stage stage, int tick, WorldPoint point, Source source, String username) {
+        super(EventType.PLAYER_UPDATE, stage, tick, point);
         this.source = source;
         this.username = username;
     }

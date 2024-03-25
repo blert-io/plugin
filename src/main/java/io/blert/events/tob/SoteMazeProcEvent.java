@@ -21,11 +21,24 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.events.tob;
 
-import lombok.AllArgsConstructor;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.challenges.tob.rooms.sotetseg.Maze;
+import io.blert.events.EventType;
+import lombok.Getter;
 
-@AllArgsConstructor
-public class CompletedRaid {
-    int overallTime;
+@Getter
+public class SoteMazeProcEvent extends TobEvent {
+    private final Maze maze;
+
+    public SoteMazeProcEvent(int tick, Maze maze) {
+        super(EventType.SOTE_MAZE_PROC, Room.SOTETSEG, tick, null);
+        this.maze = maze;
+    }
+
+    @Override
+    protected String eventDataString() {
+        return null;
+    }
 }

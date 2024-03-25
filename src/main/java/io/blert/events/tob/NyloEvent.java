@@ -21,11 +21,12 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.nylocas.Nylo;
 import io.blert.challenges.tob.rooms.nylocas.SpawnType;
+import io.blert.events.EventType;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
@@ -33,7 +34,7 @@ import net.runelite.api.coords.WorldPoint;
  * Base class for events containing information about a {@link Nylo}.
  */
 @Getter
-public abstract class NyloEvent extends Event {
+public abstract class NyloEvent extends TobEvent {
     protected final long roomId;
     protected final long parentRoomId;
     protected final int wave;

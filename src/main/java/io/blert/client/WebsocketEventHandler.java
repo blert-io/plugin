@@ -23,13 +23,13 @@
 
 package io.blert.client;
 
-import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.blert.BlertPluginPanel;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.EventType;
-import io.blert.json.JsonEventHandler;
+import io.blert.proto.EventTranslator;
+import io.blert.proto.ProtoEventHandler;
 import io.blert.proto.ServerMessage;
 import lombok.extern.slf4j.Slf4j;
 
@@ -47,7 +47,7 @@ public class WebsocketEventHandler implements EventHandler {
     }
 
     private final WebSocketClient webSocketClient;
-    private final JsonEventHandler jsonEventHandler;
+    private final ProtoEventHandler protoEventHandler;
     private final BlertPluginPanel sidePanel;
 
     private Status status = Status.IDLE;
@@ -64,7 +64,7 @@ public class WebsocketEventHandler implements EventHandler {
         this.webSocketClient = webSocketClient;
         this.webSocketClient.setBinaryMessageCallback(this::handleProtoMessage);
         this.webSocketClient.setDisconnectCallback(this::handleDisconnect);
-        jsonEventHandler = new JsonEventHandler();
+        this.protoEventHandler = new ProtoEventHandler();
         this.sidePanel = sidePanel;
     }
 
@@ -73,11 +73,10 @@ public class WebsocketEventHandler implements EventHandler {
         switch (event.getType()) {
             case RAID_START: {
                 // Starting a new raid. Discard any buffered events.
-                jsonEventHandler.flushEventsUpTo(clientTick);
+                protoEventHandler.flushEventsUpTo(clientTick);
 
                 if (webSocketClient.isOpen()) {
-                    var jsonEvent = io.blert.json.Event.fromBlert(event);
-                    sendEvents(jsonEvent);
+                    sendEvents(EventTranslator.toProto(event, null));
                     setStatus(Status.CHALLENGE_STARTING);
                 }
                 break;
@@ -85,17 +84,14 @@ public class WebsocketEventHandler implements EventHandler {
 
             case RAID_END: {
                 // Flush any pending events, then indicate that the raid has ended.
-                if (jsonEventHandler.hasEvents()) {
-                    sendEvents(jsonEventHandler.flushEventsUpTo(clientTick));
+                if (protoEventHandler.hasEvents()) {
+                    sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
                 }
 
-                var evt = io.blert.json.Event.fromBlert(event);
-                evt.setRaidId(challengeId);
-
-                sendEvents(evt);
+                sendEvents(EventTranslator.toProto(event, challengeId));
 
                 setStatus(Status.IDLE);
-                jsonEventHandler.setChallengeId(null);
+                protoEventHandler.setChallengeId(null);
                 challengeId = null;
 
                 sendRaidHistoryRequest();
@@ -103,17 +99,17 @@ public class WebsocketEventHandler implements EventHandler {
             }
 
             default:
-                // Forward other events to the JSON handler to be serialized and sent to the server.
-                jsonEventHandler.handleEvent(clientTick, event);
+                // Forward other events to the protobuf handler to be serialized and sent to the server.
+                protoEventHandler.handleEvent(clientTick, event);
 
                 if (status == Status.CHALLENGE_ACTIVE) {
                     if (event.getType() == EventType.ROOM_STATUS) {
                         // Room status events indicate the start or completion of a room, and should be sent to the
                         // server immediately.
-                        sendEvents(jsonEventHandler.flushEventsUpTo(clientTick));
+                        sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
                     } else if (currentTick != clientTick) {
                         // All other events are collected and sent in a single batch at the end of a tick.
-                        sendEvents(jsonEventHandler.flushEventsUpTo(clientTick));
+                        sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
                     }
                 }
 
@@ -169,18 +165,18 @@ public class WebsocketEventHandler implements EventHandler {
 
                 if (!serverMessage.hasActiveChallengeId()) {
                     log.warn("Failed to start raid");
-                    jsonEventHandler.setChallengeId(null);
+                    protoEventHandler.setChallengeId(null);
                     setStatus(Status.IDLE);
                     return;
                 }
 
                 challengeId = serverMessage.getActiveChallengeId();
 
-                jsonEventHandler.setChallengeId(challengeId);
+                protoEventHandler.setChallengeId(challengeId);
                 setStatus(Status.CHALLENGE_ACTIVE);
 
-                if (jsonEventHandler.hasEvents()) {
-                    sendEvents(jsonEventHandler.flushEventsUpTo(currentTick));
+                if (protoEventHandler.hasEvents()) {
+                    sendEvents(protoEventHandler.flushEventsUpTo(currentTick));
                 }
                 break;
 
@@ -196,15 +192,15 @@ public class WebsocketEventHandler implements EventHandler {
         }
     }
 
-    private void sendEvents(io.blert.json.Event event) {
+    private void sendEvents(io.blert.proto.Event event) {
         sendEvents(Collections.singletonList(event));
     }
 
-    private void sendEvents(List<io.blert.json.Event> events) {
+    private void sendEvents(List<io.blert.proto.Event> events) {
         if (webSocketClient.isOpen()) {
             ServerMessage message = ServerMessage.newBuilder()
                     .setType(ServerMessage.Type.EVENT_STREAM)
-                    .setSerializedRaidEvents((new Gson()).toJson(events))
+                    .addAllChallengeEvents(events)
                     .build();
             webSocketClient.sendMessage(message.toByteArray());
         }
@@ -224,7 +220,7 @@ public class WebsocketEventHandler implements EventHandler {
 
     private void handleDisconnect() {
         challengeId = null;
-        jsonEventHandler.setChallengeId(null);
+        protoEventHandler.setChallengeId(null);
         setStatus(Status.IDLE);
         sidePanel.updateUser(null);
         sidePanel.setRecentRecordings(null);

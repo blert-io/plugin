@@ -21,23 +21,24 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.verzik.VerzikPhase;
+import io.blert.events.EventType;
+import lombok.Getter;
 
-public class VerzikRedsSpawnEvent extends Event {
-    public VerzikRedsSpawnEvent(int tick) {
-        super(EventType.VERZIK_REDS_SPAWN, Room.VERZIK, tick, null);
+@Getter
+public class VerzikPhaseEvent extends TobEvent {
+    private final VerzikPhase phase;
+
+    public VerzikPhaseEvent(int tick, VerzikPhase phase) {
+        super(EventType.VERZIK_PHASE, Room.VERZIK, tick, null);
+        this.phase = phase;
     }
 
     @Override
     protected String eventDataString() {
-        return null;
-    }
-
-    public VerzikPhase getPhase() {
-        // Reds only spawn during P2.
-        return VerzikPhase.P2;
+        return "phase=" + phase;
     }
 }

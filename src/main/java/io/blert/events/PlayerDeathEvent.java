@@ -23,7 +23,7 @@
 
 package io.blert.events;
 
-import io.blert.challenges.tob.rooms.Room;
+import io.blert.core.Stage;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
@@ -31,8 +31,8 @@ import net.runelite.api.coords.WorldPoint;
 public class PlayerDeathEvent extends Event {
     final String username;
 
-    public PlayerDeathEvent(Room room, int tick, WorldPoint point, String username) {
-        super(EventType.PLAYER_DEATH, room, tick, point);
+    public PlayerDeathEvent(Stage stage, int tick, WorldPoint point, String username) {
+        super(EventType.PLAYER_DEATH, stage, tick, point);
         this.username = username;
     }
 

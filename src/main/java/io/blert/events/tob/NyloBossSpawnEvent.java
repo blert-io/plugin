@@ -21,28 +21,19 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.tob;
+package io.blert.events.tob;
 
-public enum NpcAttack {
-    MAIDEN_AUTO,
-    MAIDEN_BLOOD_THROW,
-    BLOAT_STOMP,
-    NYLO_BOSS_MELEE,
-    NYLO_BOSS_RANGE,
-    NYLO_BOSS_MAGE,
-    SOTE_MELEE,
-    SOTE_BALL,
-    SOTE_DEATH_BALL,
-    XARPUS_SPIT,
-    XARPUS_TURN,
-    VERZIK_P1_AUTO,
-    VERZIK_P2_BOUNCE,
-    VERZIK_P2_CABBAGE,
-    VERZIK_P2_ZAP,
-    VERZIK_P2_PURPLE,
-    VERZIK_P2_MAGE,
-    VERZIK_P3_AUTO,
-    VERZIK_P3_WEBS,
-    VERZIK_P3_YELLOWS,
-    VERZIK_P3_BALL,
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
+import net.runelite.api.coords.WorldPoint;
+
+public class NyloBossSpawnEvent extends TobEvent {
+    public NyloBossSpawnEvent(int tick, WorldPoint spawnPoint) {
+        super(EventType.NYLO_BOSS_SPAWN, Room.NYLOCAS, tick, spawnPoint);
+    }
+
+    @Override
+    protected String eventDataString() {
+        return null;
+    }
 }

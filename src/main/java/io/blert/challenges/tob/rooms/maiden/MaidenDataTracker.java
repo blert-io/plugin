@@ -24,18 +24,14 @@
 package io.blert.challenges.tob.rooms.maiden;
 
 import io.blert.challenges.tob.Location;
-import io.blert.challenges.tob.NpcAttack;
 import io.blert.challenges.tob.RaidManager;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
-import io.blert.core.BasicTrackedNpc;
-import io.blert.core.Hitpoints;
-import io.blert.core.TrackedNpc;
-import io.blert.core.TrackedNpcCollection;
-import io.blert.events.MaidenBloodSplatsEvent;
-import io.blert.events.MaidenCrabLeakEvent;
+import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
+import io.blert.events.tob.MaidenBloodSplatsEvent;
+import io.blert.events.tob.MaidenCrabLeakEvent;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -71,7 +67,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (maiden != null) {
-            raidManager.updateRaidMode(maiden.getRaidMode());
+            raidManager.updateRaidMode(maiden.getMode());
         }
     }
 
@@ -191,7 +187,7 @@ public class MaidenDataTracker extends RoomDataTracker {
                 return;
         }
 
-        dispatchEvent(new NpcAttackEvent(getRoom(), tick, getWorldLocation(actor), attack, maiden));
+        dispatchEvent(new NpcAttackEvent(stage, tick, getWorldLocation(actor), attack, maiden));
     }
 
     private Optional<TrackedNpc> handleMaidenBloodSpawnSpawn(NPC npc) {
