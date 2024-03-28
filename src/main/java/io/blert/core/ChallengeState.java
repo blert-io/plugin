@@ -21,9 +21,9 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.tob;
+package io.blert.core;
 
-public enum RaidState {
+public enum ChallengeState {
     INACTIVE,
     STARTING,
     ACTIVE,

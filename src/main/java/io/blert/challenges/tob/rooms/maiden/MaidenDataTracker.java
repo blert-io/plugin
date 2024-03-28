@@ -24,7 +24,7 @@
 package io.blert.challenges.tob.rooms.maiden;
 
 import io.blert.challenges.tob.Location;
-import io.blert.challenges.tob.RaidManager;
+import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
@@ -60,14 +60,14 @@ public class MaidenDataTracker extends RoomDataTracker {
     private final Set<GameObject> bloodTrails = new HashSet<>();
     private final Map<Integer, MaidenCrab> crabs = new HashMap<>();
 
-    public MaidenDataTracker(RaidManager manager, Client client) {
+    public MaidenDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.MAIDEN);
     }
 
     @Override
     protected void onRoomStart() {
         if (maiden != null) {
-            raidManager.updateRaidMode(maiden.getMode());
+            theatreChallenge.updateRaidMode(maiden.getMode());
         }
     }
 
@@ -142,7 +142,7 @@ public class MaidenDataTracker extends RoomDataTracker {
                 // Due to the loading line at Maiden (thanks Jagex), use a static location for her ID.
                 long roomId = TrackedNpcCollection.npcRoomId(getTick(), npc.getId(), MAIDEN_WORLD_LOCATION);
                 maiden = new BasicTrackedNpc(npc, tobNpc, roomId,
-                        new Hitpoints(tobNpc.getBaseHitpoints(raidManager.getRaidScale())));
+                        new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getRaidScale())));
                 return Optional.of(maiden);
             }
 
@@ -193,7 +193,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     private Optional<TrackedNpc> handleMaidenBloodSpawnSpawn(NPC npc) {
         return TobNpc.withId(npc.getId()).map(tobNpc ->
                 new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                        new Hitpoints(tobNpc.getBaseHitpoints(raidManager.getRaidScale()))));
+                        new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getRaidScale()))));
     }
 
     private Optional<MaidenCrab> handleMaidenCrabSpawn(NPC npc) {
@@ -205,7 +205,7 @@ public class MaidenDataTracker extends RoomDataTracker {
         WorldPoint spawnLocation = getWorldLocation(npc);
 
         Optional<MaidenCrab> maybeCrab = MaidenCrab.fromSpawnLocation(
-                raidManager.getRaidScale(), npc, generateRoomId(npc), currentSpawn, spawnLocation);
+                theatreChallenge.getRaidScale(), npc, generateRoomId(npc), currentSpawn, spawnLocation);
         if (maybeCrab.isPresent()) {
             MaidenCrab maidenCrab = maybeCrab.get();
             log.debug("Crab position: " + maidenCrab.getPosition() + " scuffed: " + maidenCrab.isScuffed());

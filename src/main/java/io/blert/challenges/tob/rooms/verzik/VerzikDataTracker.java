@@ -24,7 +24,7 @@
 package io.blert.challenges.tob.rooms.verzik;
 
 import com.google.common.collect.ImmutableSet;
-import io.blert.challenges.tob.RaidManager;
+import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
@@ -88,7 +88,7 @@ public class VerzikDataTracker extends RoomDataTracker {
     private final Set<BasicTrackedNpc> specialCrabs = new HashSet<>();
     private final List<WorldPoint> yellowPools = new ArrayList<>();
 
-    public VerzikDataTracker(RaidManager manager, Client client) {
+    public VerzikDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.VERZIK);
         this.phase = VerzikPhase.IDLE;
         this.unidentifiedVerzikAttackTick = -1;
@@ -188,14 +188,14 @@ public class VerzikDataTracker extends RoomDataTracker {
 
         if (tobNpc.isAnyVerzik()) {
             long roomId = verzik != null ? verzik.getRoomId() : generateRoomId(npc);
-            verzik = new BasicTrackedNpc(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            verzik = new BasicTrackedNpc(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
             return Optional.of(verzik);
         }
 
         if (tobNpc.isVerzikCrab()) {
             WorldPoint point = getWorldLocation(npc);
             long roomId = generateRoomId(npc);
-            VerzikCrab crab = VerzikCrab.fromSpawnedNpc(npc, tobNpc, roomId, point, raidManager.getRaidScale(), phase);
+            VerzikCrab crab = VerzikCrab.fromSpawnedNpc(npc, tobNpc, roomId, point, theatreChallenge.getRaidScale(), phase);
 
             explodingCrabs.add(crab);
             return Optional.of(crab);
@@ -203,7 +203,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
         if (tobNpc.isVerzikAthanatos()) {
             BasicTrackedNpc purpleCrab = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                    new Hitpoints(tobNpc, raidManager.getRaidScale()));
+                    new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
             specialCrabs.add(purpleCrab);
             return Optional.of(purpleCrab);
         }
@@ -214,7 +214,7 @@ public class VerzikDataTracker extends RoomDataTracker {
             }
 
             BasicTrackedNpc crab = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                    new Hitpoints(tobNpc, raidManager.getRaidScale()));
+                    new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
             specialCrabs.add(crab);
             return Optional.of(crab);
         }
@@ -266,7 +266,7 @@ public class VerzikDataTracker extends RoomDataTracker {
             startVerzikPhase(VerzikPhase.P2, tick, false);
 
             // A transition from P1 to P2 does not spawn a new NPC. Simply reset Verzik's HP to its P2 value.
-            verzik.setHitpoints(new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            verzik.setHitpoints(new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
         }
     }
 
@@ -363,8 +363,8 @@ public class VerzikDataTracker extends RoomDataTracker {
             return;
         }
 
-        long totalYellows = raidManager.getRaiders().stream().filter(Raider::isAlive).count();
-        if (raidManager.getRaidMode() == ChallengeMode.TOB_HARD) {
+        long totalYellows = theatreChallenge.getRaiders().stream().filter(Raider::isAlive).count();
+        if (theatreChallenge.getRaidMode() == ChallengeMode.TOB_HARD) {
             totalYellows *= 3;
         }
 

@@ -43,7 +43,7 @@ public class StageUpdateEvent extends Event {
     }
 
     public StageUpdateEvent(Stage stage, int tick, Status status, boolean accurate) {
-        super(EventType.ROOM_STATUS, stage, tick, null);
+        super(EventType.STAGE_UPDATE, stage, tick, null);
         this.status = status;
         this.accurate = accurate;
     }

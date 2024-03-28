@@ -38,7 +38,7 @@ public class ChallengeStartEvent extends Event {
     private final boolean isSpectator;
 
     public ChallengeStartEvent(List<String> party, @Nullable ChallengeMode mode, boolean isSpectator) {
-        super(EventType.RAID_START);
+        super(EventType.CHALLENGE_START);
         this.party = party;
         this.mode = mode;
         this.isSpectator = isSpectator;

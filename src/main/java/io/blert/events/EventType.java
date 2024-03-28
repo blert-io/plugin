@@ -26,10 +26,10 @@ package io.blert.events;
 import io.blert.proto.Event;
 
 public enum EventType {
-    RAID_START(Event.Type.CHALLENGE_START),
-    RAID_END(Event.Type.CHALLENGE_END),
-    RAID_UPDATE(Event.Type.CHALLENGE_UPDATE),
-    ROOM_STATUS(Event.Type.STAGE_UPDATE),
+    CHALLENGE_START(Event.Type.CHALLENGE_START),
+    CHALLENGE_END(Event.Type.CHALLENGE_END),
+    CHALLENGE_UPDATE(Event.Type.CHALLENGE_UPDATE),
+    STAGE_UPDATE(Event.Type.STAGE_UPDATE),
     PLAYER_UPDATE(Event.Type.PLAYER_UPDATE),
     PLAYER_ATTACK(Event.Type.PLAYER_ATTACK),
     PLAYER_DEATH(Event.Type.PLAYER_DEATH),

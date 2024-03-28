@@ -24,7 +24,7 @@
 package io.blert.challenges.tob.rooms;
 
 import io.blert.challenges.tob.Location;
-import io.blert.challenges.tob.RaidManager;
+import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.core.Item;
 import io.blert.core.*;
@@ -34,7 +34,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.eventbus.Subscribe;
@@ -49,7 +48,7 @@ import java.util.regex.Pattern;
 @Slf4j
 
 public abstract class RoomDataTracker extends DataTracker {
-    protected final RaidManager raidManager;
+    protected final TheatreChallenge theatreChallenge;
 
     @Getter
     private final Room room;
@@ -72,9 +71,9 @@ public abstract class RoomDataTracker extends DataTracker {
         TERMINATING,
     }
 
-    protected RoomDataTracker(RaidManager raidManager, Client client, Room room, boolean startOnEntry) {
-        super(client, raidManager.getClientThread(), room.toStage());
-        this.raidManager = raidManager;
+    protected RoomDataTracker(TheatreChallenge theatreChallenge, Client client, Room room, boolean startOnEntry) {
+        super(client, theatreChallenge.getClientThread(), room.toStage());
+        this.theatreChallenge = theatreChallenge;
         this.room = room;
         this.waveEndRegex = Pattern.compile(
                 "Wave '" + room.waveName() + "' \\(\\w+ Mode\\) complete!Duration: ([0-9:.]+)"
@@ -83,8 +82,8 @@ public abstract class RoomDataTracker extends DataTracker {
         this.startOnEntry = startOnEntry;
     }
 
-    protected RoomDataTracker(RaidManager raidManager, Client client, Room room) {
-        this(raidManager, client, room, false);
+    protected RoomDataTracker(TheatreChallenge theatreChallenge, Client client, Room room) {
+        this(theatreChallenge, client, room, false);
     }
 
     /**
@@ -113,7 +112,7 @@ public abstract class RoomDataTracker extends DataTracker {
         startingTickAccurate = accurate;
 
         client.getPlayers().forEach(player -> {
-            Raider raider = raidManager.getRaider(player.getName());
+            Raider raider = theatreChallenge.getRaider(player.getName());
             if (raider != null) {
                 raider.resetForNewRoom();
                 raider.setPlayer(player);
@@ -198,7 +197,7 @@ public abstract class RoomDataTracker extends DataTracker {
         updatePartyStatus();
         updatePlayers();
 
-        raidManager.getRaiders().forEach(this::checkForPlayerAttack);
+        theatreChallenge.getRaiders().forEach(this::checkForPlayerAttack);
 
         specialAttackTracker.processPendingSpecial();
 
@@ -225,7 +224,7 @@ public abstract class RoomDataTracker extends DataTracker {
      */
     public boolean playersAreInRoom() {
         return client.getPlayers().stream()
-                .filter(player -> raidManager.playerIsInRaid(player.getName()))
+                .filter(player -> theatreChallenge.playerIsInRaid(player.getName()))
                 .anyMatch(player -> Location.fromWorldPoint(getWorldLocation(player)).inRoom(room));
     }
 
@@ -347,24 +346,7 @@ public abstract class RoomDataTracker extends DataTracker {
      * Sends an event to the registered event handler, if any.
      */
     protected void dispatchEvent(Event event) {
-        raidManager.dispatchEvent(event);
-    }
-
-    private WorldPoint getWorldLocation(WorldPoint instanceUnawareWorldPoint) {
-        LocalPoint local = LocalPoint.fromWorld(client, instanceUnawareWorldPoint);
-        return local != null ? WorldPoint.fromLocalInstance(client, local) : null;
-    }
-
-    protected WorldPoint getWorldLocation(@NotNull Actor actor) {
-        return getWorldLocation(actor.getWorldLocation());
-    }
-
-    protected WorldPoint getWorldLocation(@NotNull TrackedNpc trackedNpc) {
-        return getWorldLocation(trackedNpc.getNpc());
-    }
-
-    protected WorldPoint getWorldLocation(@NotNull GameObject object) {
-        return getWorldLocation(object.getWorldLocation());
+        theatreChallenge.dispatchEvent(event);
     }
 
     protected long generateRoomId(@NotNull NPC npc) {
@@ -392,7 +374,7 @@ public abstract class RoomDataTracker extends DataTracker {
 
             // Update the raid mode on the first NPC seen in a room, in case the client joined the raid late, and it
             // has not been set.
-            raidManager.updateRaidMode(trackedNpc.getMode());
+            theatreChallenge.updateRaidMode(trackedNpc.getMode());
         });
     }
 
@@ -529,7 +511,7 @@ public abstract class RoomDataTracker extends DataTracker {
 
         Actor actor = event.getActor();
         if (actor instanceof Player) {
-            Raider raider = raidManager.getRaider(actor.getName());
+            Raider raider = theatreChallenge.getRaider(actor.getName());
             if (raider != null) {
                 raider.setAnimation(getTick(), actor.getAnimation());
             }
@@ -544,8 +526,8 @@ public abstract class RoomDataTracker extends DataTracker {
     }
 
     private void updatePartyStatus() {
-        raidManager.forEachOrb((orb, username) -> {
-            Raider raider = raidManager.getRaider(Text.standardize(username));
+        theatreChallenge.forEachOrb((orb, username) -> {
+            Raider raider = theatreChallenge.getRaider(Text.standardize(username));
 
             // ToB orb health. 0 = hide, 1-27 = health percentage (0-100%), 30 = dead.
             int orbHealth = client.getVarbitValue(Varbits.THEATRE_OF_BLOOD_ORB1 + orb);
@@ -568,7 +550,7 @@ public abstract class RoomDataTracker extends DataTracker {
         int tick = getTick();
 
         client.getPlayers().forEach(player -> {
-            Raider raider = raidManager.getRaider(player.getName());
+            Raider raider = theatreChallenge.getRaider(player.getName());
             if (raider == null || raider.isDead()) {
                 return;
             }

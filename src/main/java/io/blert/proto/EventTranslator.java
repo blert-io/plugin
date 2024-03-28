@@ -52,7 +52,7 @@ public class EventTranslator {
         }
 
         switch (event.getType()) {
-            case RAID_START: {
+            case CHALLENGE_START: {
                 ChallengeStartEvent challengeStartEvent = (ChallengeStartEvent) event;
                 Event.ChallengeInfo.Builder builder = Event.ChallengeInfo.newBuilder()
                         .addAllParty(challengeStartEvent.getParty())
@@ -62,7 +62,7 @@ public class EventTranslator {
                 break;
             }
 
-            case RAID_UPDATE: {
+            case CHALLENGE_UPDATE: {
                 ChallengeUpdateEvent challengeUpdateEvent = (ChallengeUpdateEvent) event;
                 Event.ChallengeInfo.Builder builder = Event.ChallengeInfo.newBuilder()
                         .setMode(challengeUpdateEvent.getMode().toProto());
@@ -70,7 +70,7 @@ public class EventTranslator {
                 break;
             }
 
-            case RAID_END: {
+            case CHALLENGE_END: {
                 ChallengeEndEvent challengeEndEvent = (ChallengeEndEvent) event;
                 Event.CompletedChallenge.Builder builder = Event.CompletedChallenge.newBuilder()
                         .setOverallTimeTicks(challengeEndEvent.getOverallTime());
@@ -78,7 +78,7 @@ public class EventTranslator {
                 break;
             }
 
-            case ROOM_STATUS: {
+            case STAGE_UPDATE: {
                 StageUpdateEvent stageUpdateEvent = (StageUpdateEvent) event;
                 Event.StageUpdate.Builder builder = Event.StageUpdate.newBuilder()
                         .setStatus(translateStageStatus(stageUpdateEvent.getStatus()))

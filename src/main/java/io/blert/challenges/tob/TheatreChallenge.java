@@ -31,13 +31,17 @@ import io.blert.challenges.tob.rooms.sotetseg.SotetsegDataTracker;
 import io.blert.challenges.tob.rooms.verzik.VerzikDataTracker;
 import io.blert.challenges.tob.rooms.xarpus.XarpusDataTracker;
 import io.blert.core.ChallengeMode;
+import io.blert.core.ChallengeState;
 import io.blert.core.Raider;
-import io.blert.events.*;
+import io.blert.core.RecordableChallenge;
+import io.blert.events.ChallengeEndEvent;
+import io.blert.events.ChallengeStartEvent;
+import io.blert.events.ChallengeUpdateEvent;
+import io.blert.events.StageUpdateEvent;
 import io.blert.util.DeferredTask;
 import io.blert.util.Tick;
 import joptsimple.internal.Strings;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -53,7 +57,6 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -62,7 +65,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 
-public class RaidManager {
+public class TheatreChallenge extends RecordableChallenge {
     private static final int TOB_ROOM_STATUS_VARBIT = 6447;
     private static final int TOB_PARTY_LIST_COMPONENT_ID = 1835020;
 
@@ -71,24 +74,9 @@ public class RaidManager {
     private static final Pattern RAID_ENTRY_REGEX_3P =
             Pattern.compile("(.+) has entered the Theatre of Blood \\((\\w+) Mode\\). Step inside to join (her|him|them)\\.\\.\\.");
     private static final Pattern RAID_COMPLETION_REGEX =
-            Pattern.compile("Theatre of Blood total completion time: ([0-9:.]+)");
-
-    @Inject
-    private Client client;
-
-    @Inject
-    private EventBus eventBus;
-
-    @Inject
-    @Getter
-    private ClientThread clientThread;
-
-    @Setter
-    private @Nullable EventHandler eventHandler = null;
-    List<Event> pendingRaidEvents = new ArrayList<>();
+            Pattern.compile("Theatre of Blood total completion time: ([0-9:.]+).*");
 
     private Location location = Location.ELSEWHERE;
-    private RaidState state = RaidState.INACTIVE;
 
     @Getter
     private ChallengeMode raidMode = null;
@@ -104,17 +92,17 @@ public class RaidManager {
 
     private @Nullable DeferredTask deferredTask = null;
 
-    public void initialize(EventHandler handler) {
-        this.eventHandler = handler;
-        eventBus.register(this);
+    public TheatreChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
+        super("Theatre of Blood", client, eventBus, clientThread);
     }
 
-    public boolean inRaid() {
-        return state.isActive();
+    @Override
+    public boolean containsLocation(WorldPoint worldPoint) {
+        return Location.fromWorldPoint(worldPoint) != Location.ELSEWHERE;
     }
 
     public int getRaidScale() {
-        return inRaid() ? party.size() : 0;
+        return inChallenge() ? party.size() : 0;
     }
 
     public boolean playerIsInRaid(@Nullable String username) {
@@ -137,7 +125,8 @@ public class RaidManager {
         }
     }
 
-    public void tick() {
+    @Override
+    protected void onTick() {
         updateLocation();
 
         if (location == Location.LOBBY && client.getVarbitValue(Varbits.THEATRE_OF_BLOOD) == 1) {
@@ -145,7 +134,7 @@ public class RaidManager {
             initializePartyFromLobby();
         }
 
-        if (!inRaid()) {
+        if (!inChallenge()) {
             return;
         }
 
@@ -156,7 +145,7 @@ public class RaidManager {
 
             if (roomDataTracker.notStarted() && roomState.isActive() && roomDataTracker.playersAreInRoom()) {
                 // The room may already be active when entered (e.g. as a spectator); start its tracker.
-                if (state == RaidState.STARTING) {
+                if (getState() == ChallengeState.STARTING) {
                     startRaid();
                 }
 
@@ -169,19 +158,6 @@ public class RaidManager {
 
         if (deferredTask != null) {
             deferredTask.tick();
-        }
-    }
-
-    public void dispatchEvent(Event event) {
-        if (state == RaidState.INACTIVE || state == RaidState.STARTING) {
-            if (event.getType() != EventType.RAID_START && event.getType() != EventType.RAID_END) {
-                pendingRaidEvents.add(event);
-                return;
-            }
-        }
-
-        if (eventHandler != null) {
-            eventHandler.handleEvent(client.getTickCount(), event);
         }
     }
 
@@ -204,7 +180,7 @@ public class RaidManager {
 
     private void queueRaidStart(@Nullable ChallengeMode mode, boolean reinitializeParty) {
         log.info("Starting new raid");
-        state = RaidState.STARTING;
+        setState(ChallengeState.STARTING);
         raidMode = mode;
 
         if (reinitializeParty) {
@@ -222,7 +198,7 @@ public class RaidManager {
     }
 
     private void startRaid() {
-        state = RaidState.ACTIVE;
+        setState(ChallengeState.ACTIVE);
         boolean spectator = !playerIsInRaid(client.getLocalPlayer().getName());
 
         List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
@@ -234,28 +210,27 @@ public class RaidManager {
             this.roomDataTracker.correctNpcHitpointsForScale(getRaidScale());
         }
 
-        // Dispatch any pending events that were queued before the raid started.
-        pendingRaidEvents.forEach(this::dispatchEvent);
-        pendingRaidEvents.clear();
+        // Dispatch any events that were queued before the raid started.
+        dispatchPendingEvents();
     }
 
-    private void queueRaidEnd(RaidState state) {
+    private void queueRaidEnd(ChallengeState state) {
         queueRaidEnd(state, -1);
     }
 
-    private void queueRaidEnd(RaidState state, int overallTime) {
+    private void queueRaidEnd(ChallengeState state, int overallTime) {
         deferredTask = new DeferredTask(() -> endRaid(state, overallTime), 5);
     }
 
-    private void endRaid(RaidState state, int overallTime) {
+    private void endRaid(ChallengeState state, int overallTime) {
         log.info("Raid completed; overall time {}", overallTime == -1 ? "unknown" : Tick.asTimeString(overallTime));
 
         clearRoomDataTracker();
-        this.state = state;
+        setState(state);
         raidMode = null;
         party.clear();
 
-        clientThread.invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(overallTime)));
+        getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(overallTime)));
     }
 
     /**
@@ -298,17 +273,17 @@ public class RaidManager {
         updateLocation();
 
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
-            if (state.isInactive() && varbit.getValue() == 2) {
+            if (getState().isInactive() && varbit.getValue() == 2) {
                 // A raid start due to a varbit change usually means that the player is joining late, rejoining, or
                 // spectating. Party and mode information is not immediately available.
                 log.debug("Raid started via varbit change");
                 queueRaidStart(null, true);
-            } else if (state.isActive() && varbit.getValue() < 2) {
-                if (state == RaidState.COMPLETE) {
-                    state = RaidState.INACTIVE;
+            } else if (getState().isActive() && varbit.getValue() < 2) {
+                if (getState() == ChallengeState.COMPLETE) {
+                    setState(ChallengeState.INACTIVE);
                 } else {
                     // The raid has finished; clean up.
-                    queueRaidEnd(RaidState.INACTIVE);
+                    queueRaidEnd(ChallengeState.INACTIVE);
                 }
             }
         }
@@ -337,7 +312,7 @@ public class RaidManager {
 
         String stripped = Text.removeTags(message.getMessage());
 
-        if (state.isInactive()) {
+        if (getState().isInactive()) {
             // Listen for a chat message indicating the start of a raid, and queue the start action immediately
             // instead of waiting to enter.
             Matcher matcher = RAID_ENTRY_REGEX_1P.matcher(stripped);
@@ -358,7 +333,7 @@ public class RaidManager {
         Matcher matcher = RAID_COMPLETION_REGEX.matcher(stripped);
         if (matcher.matches()) {
             int overallTime = Tick.fromTimeString(matcher.group(1));
-            queueRaidEnd(RaidState.COMPLETE, overallTime);
+            queueRaidEnd(ChallengeState.COMPLETE, overallTime);
         }
     }
 
@@ -403,7 +378,7 @@ public class RaidManager {
     private void clearRoomDataTracker() {
         if (roomDataTracker != null) {
             roomDataTracker.terminate();
-            eventBus.unregister(roomDataTracker);
+            getEventBus().unregister(roomDataTracker);
             roomDataTracker = null;
         }
     }
@@ -427,7 +402,7 @@ public class RaidManager {
 
         if (roomDataTracker != null) {
             log.info("Initialized room data tracker for {} from {}", roomDataTracker.getRoom(), location);
-            eventBus.register(roomDataTracker);
+            getEventBus().register(roomDataTracker);
             dispatchEvent(new StageUpdateEvent(roomDataTracker.getStage(), 0, StageUpdateEvent.Status.ENTERED));
         }
     }

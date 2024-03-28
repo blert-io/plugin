@@ -21,21 +21,28 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.challenges.colosseum;
 
-import lombok.Getter;
+import io.blert.core.RecordableChallenge;
+import net.runelite.api.Client;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.callback.ClientThread;
+import net.runelite.client.eventbus.EventBus;
 
-@Getter
-public class ChallengeEndEvent extends Event {
-    private final int overallTime;
+public final class ColosseumChallenge extends RecordableChallenge {
+    static final int COLOSSEUM_REGION_ID = 7216;
+    static final int COLOSSEUM_LOBBY_REGION_ID = 7316;
 
-    public ChallengeEndEvent(int overallTime) {
-        super(EventType.CHALLENGE_END);
-        this.overallTime = overallTime;
+    public ColosseumChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
+        super("Colosseum", client, eventBus, clientThread);
     }
 
     @Override
-    protected String eventDataString() {
-        return null;
+    public boolean containsLocation(WorldPoint worldPoint) {
+        return worldPoint.getRegionID() == COLOSSEUM_REGION_ID || worldPoint.getRegionID() == COLOSSEUM_LOBBY_REGION_ID;
+    }
+
+    @Override
+    protected void onTick() {
     }
 }

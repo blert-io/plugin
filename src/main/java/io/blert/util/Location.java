@@ -21,21 +21,15 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.util;
 
-import lombok.Getter;
+import net.runelite.api.Client;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 
-@Getter
-public class ChallengeEndEvent extends Event {
-    private final int overallTime;
-
-    public ChallengeEndEvent(int overallTime) {
-        super(EventType.CHALLENGE_END);
-        this.overallTime = overallTime;
-    }
-
-    @Override
-    protected String eventDataString() {
-        return null;
+public class Location {
+    public static WorldPoint getWorldLocation(Client client, WorldPoint instanceUnawareWorldPoint) {
+        LocalPoint local = LocalPoint.fromWorld(client, instanceUnawareWorldPoint);
+        return local != null ? WorldPoint.fromLocalInstance(client, local) : null;
     }
 }

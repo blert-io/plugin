@@ -24,16 +24,22 @@
 package io.blert;
 
 import com.google.inject.Provides;
+import io.blert.challenges.colosseum.ColosseumChallenge;
+import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.client.WebSocketClient;
 import io.blert.client.WebsocketEventHandler;
-import io.blert.challenges.tob.RaidManager;
+import io.blert.core.RecordableChallenge;
+import io.blert.util.Location;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
@@ -42,8 +48,11 @@ import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @PluginDescriptor(
@@ -57,6 +66,12 @@ public class BlertPlugin extends Plugin {
     private Client client;
 
     @Inject
+    private ClientThread clientThread;
+
+    @Inject
+    private EventBus eventBus;
+
+    @Inject
     private ClientToolbar clientToolbar;
 
     @Inject
@@ -65,8 +80,8 @@ public class BlertPlugin extends Plugin {
     private BlertPluginPanel sidePanel;
     private NavigationButton sidePanelButton;
 
-    @Inject
-    private RaidManager raidManager;
+    private final List<RecordableChallenge> challenges = new ArrayList<>();
+    private @Nullable RecordableChallenge activeChallenge = null;
 
     private WebsocketEventHandler handler;
 
@@ -84,13 +99,20 @@ public class BlertPlugin extends Plugin {
             initializeWebSocketClient();
         }
 
-        raidManager.initialize(handler);
+        challenges.add(new TheatreChallenge(client, eventBus, clientThread));
+        challenges.add(new ColosseumChallenge(client, eventBus, clientThread));
     }
 
     @Override
     protected void shutDown() throws Exception {
         clientToolbar.removeNavigation(sidePanelButton);
         sidePanel = null;
+
+        if (activeChallenge != null) {
+            activeChallenge.terminate();
+        }
+
+        challenges.clear();
 
         if (wsClient != null && wsClient.isOpen()) {
             wsClient.close();
@@ -99,7 +121,11 @@ public class BlertPlugin extends Plugin {
 
     @Subscribe(priority = 10)
     public void onGameTick(GameTick gameTick) {
-        raidManager.tick();
+        updateActiveChallenge();
+
+        if (activeChallenge != null) {
+            activeChallenge.tick();
+        }
     }
 
     @Subscribe
@@ -148,7 +174,10 @@ public class BlertPlugin extends Plugin {
 
         wsClient = new WebSocketClient(hostname, config.apiKey());
         handler = new WebsocketEventHandler(wsClient, sidePanel);
-        raidManager.setEventHandler(handler);
+
+        if (activeChallenge != null) {
+            activeChallenge.setEventHandler(handler);
+        }
 
         wsClient.open();
     }
@@ -156,5 +185,34 @@ public class BlertPlugin extends Plugin {
     @Provides
     BlertConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(BlertConfig.class);
+    }
+
+    /**
+     * Updates the active challenge based on the player's game location.
+     */
+    private void updateActiveChallenge() {
+        WorldPoint playerLocation = Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
+
+        var maybeChallenge = challenges.stream().filter(c -> c.containsLocation(playerLocation)).findFirst();
+        if (maybeChallenge.isPresent()) {
+            RecordableChallenge challenge = maybeChallenge.get();
+            if (activeChallenge == challenge) {
+                return;
+            }
+
+            if (activeChallenge != null) {
+                activeChallenge.terminate();
+            }
+
+            activeChallenge = challenge;
+            activeChallenge.initialize(handler);
+
+            log.info("Entered challenge \"{}\"", activeChallenge.getName());
+        } else if (activeChallenge != null) {
+            log.info("Exited challenge \"{}\"", activeChallenge.getName());
+
+            activeChallenge.terminate();
+            activeChallenge = null;
+        }
     }
 }

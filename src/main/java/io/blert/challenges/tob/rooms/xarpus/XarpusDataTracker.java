@@ -23,7 +23,7 @@
 
 package io.blert.challenges.tob.rooms.xarpus;
 
-import io.blert.challenges.tob.RaidManager;
+import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
@@ -52,7 +52,7 @@ public class XarpusDataTracker extends RoomDataTracker {
 
     private int nextTurnTick = -1;
 
-    public XarpusDataTracker(RaidManager manager, Client client) {
+    public XarpusDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.XARPUS);
     }
 
@@ -78,7 +78,7 @@ public class XarpusDataTracker extends RoomDataTracker {
                 nextTurnTick += TICKS_PER_TURN_P2;
                 dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.XARPUS_SPIT, xarpus));
             } else if (phase == XarpusPhase.P3) {
-                if (raidManager.getRaidMode() != ChallengeMode.TOB_HARD) {
+                if (theatreChallenge.getRaidMode() != ChallengeMode.TOB_HARD) {
                     nextTurnTick += TICKS_PER_TURN_P3;
                     dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.XARPUS_TURN, xarpus));
                 }
@@ -93,7 +93,7 @@ public class XarpusDataTracker extends RoomDataTracker {
         Optional<TobNpc> maybeXarpus = TobNpc.withId(npc.getId()).filter(TobNpc::isAnyXarpus);
         if (maybeXarpus.isPresent()) {
             xarpus = new BasicTrackedNpc(npc, maybeXarpus.get(), generateRoomId(npc),
-                    new Hitpoints(maybeXarpus.get(), raidManager.getRaidScale()));
+                    new Hitpoints(maybeXarpus.get(), theatreChallenge.getRaidScale()));
             return Optional.of(xarpus);
         }
 

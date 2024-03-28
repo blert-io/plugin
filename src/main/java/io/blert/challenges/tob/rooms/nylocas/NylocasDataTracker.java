@@ -24,7 +24,7 @@
 package io.blert.challenges.tob.rooms.nylocas;
 
 import com.google.common.collect.ImmutableSet;
-import io.blert.challenges.tob.RaidManager;
+import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
@@ -78,7 +78,7 @@ public class NylocasDataTracker extends RoomDataTracker {
             NullNpcID.NULL_8358,
             NullNpcID.NULL_10811);
 
-    public NylocasDataTracker(RaidManager manager, Client client) {
+    public NylocasDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.NYLOCAS);
         currentWave = 0;
         nextWaveSpawnCheckTick = -1;
@@ -90,14 +90,14 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     private int waveCap() {
-        if (raidManager.getRaidMode() == ChallengeMode.TOB_HARD) {
+        if (theatreChallenge.getRaidMode() == ChallengeMode.TOB_HARD) {
             return currentWave < CAP_INCREASE_WAVE ? 15 : 24;
         }
         return currentWave < CAP_INCREASE_WAVE ? 12 : 24;
     }
 
     private boolean isPrinceWave() {
-        return raidManager.getRaidMode() == ChallengeMode.TOB_HARD
+        return theatreChallenge.getRaidMode() == ChallengeMode.TOB_HARD
                 && (currentWave == 10 || currentWave == 20 || currentWave == 30);
     }
 
@@ -147,7 +147,7 @@ public class NylocasDataTracker extends RoomDataTracker {
 
         if (TobNpc.isNylocasPrinkipas(tobNpc.getId())) {
             long roomId = generateRoomId(npc);
-            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
             return Optional.of(nyloBoss);
         }
 
@@ -164,7 +164,7 @@ public class NylocasDataTracker extends RoomDataTracker {
                 roomId = generateRoomId(npc);
             }
 
-            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidManager.getRaidScale()));
+            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
             return Optional.of(nyloBoss);
         }
 
@@ -266,7 +266,7 @@ public class NylocasDataTracker extends RoomDataTracker {
         }
 
         Nylo nylo = new Nylo(npc, tobNpc.get(), generateRoomId(npc), point, tick,
-                currentWave, tobNpc.get().getBaseHitpoints(raidManager.getRaidScale()));
+                currentWave, tobNpc.get().getBaseHitpoints(theatreChallenge.getRaidScale()));
         nylosInRoom.put(npc.hashCode(), nylo);
         return Optional.of(nylo);
     }

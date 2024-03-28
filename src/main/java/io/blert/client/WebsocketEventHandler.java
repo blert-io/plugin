@@ -71,7 +71,7 @@ public class WebsocketEventHandler implements EventHandler {
     @Override
     public void handleEvent(int clientTick, Event event) {
         switch (event.getType()) {
-            case RAID_START: {
+            case CHALLENGE_START: {
                 // Starting a new raid. Discard any buffered events.
                 protoEventHandler.flushEventsUpTo(clientTick);
 
@@ -82,7 +82,7 @@ public class WebsocketEventHandler implements EventHandler {
                 break;
             }
 
-            case RAID_END: {
+            case CHALLENGE_END: {
                 // Flush any pending events, then indicate that the raid has ended.
                 if (protoEventHandler.hasEvents()) {
                     sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
@@ -103,7 +103,7 @@ public class WebsocketEventHandler implements EventHandler {
                 protoEventHandler.handleEvent(clientTick, event);
 
                 if (status == Status.CHALLENGE_ACTIVE) {
-                    if (event.getType() == EventType.ROOM_STATUS) {
+                    if (event.getType() == EventType.STAGE_UPDATE) {
                         // Room status events indicate the start or completion of a room, and should be sent to the
                         // server immediately.
                         sendEvents(protoEventHandler.flushEventsUpTo(clientTick));

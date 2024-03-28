@@ -31,7 +31,7 @@ public class ChallengeUpdateEvent extends Event {
     private final ChallengeMode mode;
 
     public ChallengeUpdateEvent(ChallengeMode mode) {
-        super(EventType.RAID_UPDATE);
+        super(EventType.CHALLENGE_UPDATE);
         this.mode = mode;
     }
 

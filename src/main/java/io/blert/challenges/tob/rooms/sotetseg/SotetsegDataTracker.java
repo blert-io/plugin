@@ -23,7 +23,7 @@
 
 package io.blert.challenges.tob.rooms.sotetseg;
 
-import io.blert.challenges.tob.RaidManager;
+import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
@@ -58,7 +58,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private int deathBallSpawnTick = -1;
     private @Nullable BasicTrackedNpc sotetseg = null;
 
-    public SotetsegDataTracker(RaidManager manager, Client client) {
+    public SotetsegDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.SOTETSEG);
     }
 
@@ -99,7 +99,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
                 .filter(tobNpc -> TobNpc.isSotetsegIdle(tobNpc.getId()))
                 .map(tobNpc -> {
                     sotetseg = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                            new Hitpoints(tobNpc, raidManager.getRaidScale()));
+                            new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
                     return sotetseg;
                 });
     }

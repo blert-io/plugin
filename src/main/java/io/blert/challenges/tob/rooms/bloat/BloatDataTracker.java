@@ -23,7 +23,7 @@
 
 package io.blert.challenges.tob.rooms.bloat;
 
-import io.blert.challenges.tob.RaidManager;
+import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
@@ -65,7 +65,7 @@ public class BloatDataTracker extends RoomDataTracker {
     private int lastDownTick;
     private int lastUpTick;
 
-    public BloatDataTracker(RaidManager manager, Client client) {
+    public BloatDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.BLOAT, true);
         state = State.WALKING;
         currentDown = 0;
@@ -109,7 +109,7 @@ public class BloatDataTracker extends RoomDataTracker {
                 .filter(tobNpc -> TobNpc.isBloat(tobNpc.getId()))
                 .map(tobNpc -> {
                     bloat = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                            new Hitpoints(tobNpc, raidManager.getRaidScale()));
+                            new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
                     return bloat;
                 });
     }

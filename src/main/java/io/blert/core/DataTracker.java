@@ -23,9 +23,14 @@
 
 package io.blert.core;
 
+import io.blert.util.Location;
 import lombok.Getter;
+import net.runelite.api.Actor;
 import net.runelite.api.Client;
+import net.runelite.api.GameObject;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.callback.ClientThread;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class DataTracker {
     protected final Client client;
@@ -56,5 +61,17 @@ public abstract class DataTracker {
      */
     public int getTick() {
         return client.getTickCount() - this.startClientTick;
+    }
+
+    protected WorldPoint getWorldLocation(@NotNull Actor actor) {
+        return Location.getWorldLocation(client, actor.getWorldLocation());
+    }
+
+    protected WorldPoint getWorldLocation(@NotNull TrackedNpc trackedNpc) {
+        return getWorldLocation(trackedNpc.getNpc());
+    }
+
+    protected WorldPoint getWorldLocation(@NotNull GameObject object) {
+        return Location.getWorldLocation(client, object.getWorldLocation());
     }
 }
