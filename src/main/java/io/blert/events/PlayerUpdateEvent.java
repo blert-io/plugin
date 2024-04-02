@@ -64,6 +64,8 @@ public class PlayerUpdateEvent extends Event {
     private @Nullable SkillLevel ranged = null;
     private @Nullable SkillLevel magic = null;
 
+    private @Nullable PrayerSet activePrayers = null;
+
     @Getter
     private final Map<EquipmentSlot, Item> equipment = new HashMap<>();
     @Getter
@@ -113,6 +115,14 @@ public class PlayerUpdateEvent extends Event {
                     Skill.MAGIC,
                     client.getBoostedSkillLevel(net.runelite.api.Skill.MAGIC),
                     client.getRealSkillLevel(net.runelite.api.Skill.MAGIC));
+
+            evt.activePrayers = getPrayersFromClient(client);
+        } else {
+            if (raider.getOverheadPrayer() != null) {
+                PrayerSet prayers = new PrayerSet(Prayer.PRAYER_BOOK_NORMAL);
+                prayers.add(raider.getOverheadPrayer());
+                evt.activePrayers = prayers;
+            }
         }
 
         return evt;
@@ -156,6 +166,10 @@ public class PlayerUpdateEvent extends Event {
         return Optional.ofNullable(magic);
     }
 
+    public Optional<PrayerSet> getActivePrayers() {
+        return Optional.ofNullable(activePrayers);
+    }
+
     @Override
     protected String eventDataString() {
         StringBuilder string = new StringBuilder("player=(");
@@ -165,5 +179,17 @@ public class PlayerUpdateEvent extends Event {
 
         string.append(')');
         return string.toString();
+    }
+
+    private static PrayerSet getPrayersFromClient(Client client) {
+        PrayerSet set = new PrayerSet(Prayer.PRAYER_BOOK_NORMAL);
+
+        for (Prayer prayer : Prayer.values()) {
+            if (client.isPrayerActive(prayer.getRunelitePrayer())) {
+                set.add(prayer);
+            }
+        }
+
+        return set;
     }
 }

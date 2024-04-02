@@ -34,10 +34,12 @@ import io.blert.core.*;
 import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
 import io.blert.events.tob.*;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 
 import javax.annotation.Nullable;
 
+@Slf4j
 public class EventTranslator {
     public static Event toProto(io.blert.events.Event event, @Nullable String challengeId) {
         var eventBuilder = Event.newBuilder()
@@ -102,6 +104,8 @@ public class EventTranslator {
                 playerUpdateEvent.getDefence().ifPresent(sl -> builder.setDefence(translateSkillLevel(sl)));
                 playerUpdateEvent.getRanged().ifPresent(sl -> builder.setRanged(translateSkillLevel(sl)));
                 playerUpdateEvent.getMagic().ifPresent(sl -> builder.setMagic(translateSkillLevel(sl)));
+
+                playerUpdateEvent.getActivePrayers().ifPresent(prayers -> builder.setActivePrayers(prayers.getValue()));
 
                 playerUpdateEvent.getEquipment().forEach(
                         (slot, item) -> builder.addEquipment(translateEquippedItem(slot, item)));

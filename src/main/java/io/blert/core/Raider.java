@@ -74,10 +74,14 @@ public class Raider {
     @Getter
     int offCooldownTick;
 
+    @Getter
+    private @Nullable Prayer overheadPrayer;
+
     public Raider(@NotNull String username, boolean localPlayer) {
         this.username = username;
         this.localPlayer = localPlayer;
         this.active = true;
+        this.overheadPrayer = null;
     }
 
     public Raider(@NotNull Player player, boolean localPlayer) {
@@ -104,6 +108,7 @@ public class Raider {
         animationTick = 0;
         lastAttack = null;
         offCooldownTick = 0;
+        overheadPrayer = null;
     }
 
     public boolean isBlowpiping() {
@@ -145,6 +150,8 @@ public class Raider {
         if (blowpiping == BlowpipeState.STOPPED_PIPING) {
             blowpiping = BlowpipeState.NOT_PIPING;
         }
+
+        updateOverheadPrayer();
 
         equipment.clear();
 
@@ -214,5 +221,42 @@ public class Raider {
                 equipment.put(slot, new Item(comp.getId(), 1));
             }
         });
+    }
+
+    private void updateOverheadPrayer() {
+        if (player == null) {
+            overheadPrayer = null;
+            return;
+        }
+
+        HeadIcon overheadIcon = player.getOverheadIcon();
+        if (overheadIcon == null) {
+            overheadPrayer = null;
+            return;
+        }
+
+        switch (overheadIcon) {
+            case MAGIC:
+                overheadPrayer = Prayer.PROTECT_FROM_MAGIC;
+                break;
+            case MELEE:
+                overheadPrayer = Prayer.PROTECT_FROM_MELEE;
+                break;
+            case RANGED:
+                overheadPrayer = Prayer.PROTECT_FROM_MISSILES;
+                break;
+            case REDEMPTION:
+                overheadPrayer = Prayer.REDEMPTION;
+                break;
+            case RETRIBUTION:
+                overheadPrayer = Prayer.RETRIBUTION;
+                break;
+            case SMITE:
+                overheadPrayer = Prayer.SMITE;
+                break;
+            default:
+                overheadPrayer = null;
+                break;
+        }
     }
 }
