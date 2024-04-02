@@ -85,6 +85,7 @@ public class BloatDataTracker extends RoomDataTracker {
 
     @Override
     protected void onTick() {
+        super.onTick();
         final int tick = getTick();
 
         if (state == State.DOWN) {
@@ -96,7 +97,7 @@ public class BloatDataTracker extends RoomDataTracker {
 
             if (currentDownTick == BLOAT_STOMP_TICK && bloat != null) {
                 WorldPoint point = getWorldLocation(bloat);
-                dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.BLOAT_STOMP, bloat));
+                dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_BLOAT_STOMP, bloat));
             }
         }
     }
@@ -109,7 +110,7 @@ public class BloatDataTracker extends RoomDataTracker {
                 .filter(tobNpc -> TobNpc.isBloat(tobNpc.getId()))
                 .map(tobNpc -> {
                     bloat = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                            new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
+                            new Hitpoints(tobNpc, theatreChallenge.getScale()));
                     return bloat;
                 });
     }

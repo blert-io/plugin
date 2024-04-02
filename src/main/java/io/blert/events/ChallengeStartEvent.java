@@ -23,29 +23,25 @@
 
 package io.blert.events;
 
+import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
 import lombok.Getter;
 
-import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Optional;
 
+@Getter
 public class ChallengeStartEvent extends Event {
-    @Getter
+    private final Challenge challenge;
+    private final ChallengeMode mode;
     private final List<String> party;
-    private final @Nullable ChallengeMode mode;
-    @Getter
     private final boolean isSpectator;
 
-    public ChallengeStartEvent(List<String> party, @Nullable ChallengeMode mode, boolean isSpectator) {
+    public ChallengeStartEvent(Challenge challenge, ChallengeMode mode, List<String> party, boolean isSpectator) {
         super(EventType.CHALLENGE_START);
-        this.party = party;
+        this.challenge = challenge;
         this.mode = mode;
+        this.party = party;
         this.isSpectator = isSpectator;
-    }
-
-    public Optional<ChallengeMode> getMode() {
-        return Optional.ofNullable(mode);
     }
 
     @Override

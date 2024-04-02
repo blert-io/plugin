@@ -90,14 +90,14 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     private int waveCap() {
-        if (theatreChallenge.getRaidMode() == ChallengeMode.TOB_HARD) {
+        if (theatreChallenge.getChallengeMode() == ChallengeMode.TOB_HARD) {
             return currentWave < CAP_INCREASE_WAVE ? 15 : 24;
         }
         return currentWave < CAP_INCREASE_WAVE ? 12 : 24;
     }
 
     private boolean isPrinceWave() {
-        return theatreChallenge.getRaidMode() == ChallengeMode.TOB_HARD
+        return theatreChallenge.getChallengeMode() == ChallengeMode.TOB_HARD
                 && (currentWave == 10 || currentWave == 20 || currentWave == 30);
     }
 
@@ -107,6 +107,7 @@ public class NylocasDataTracker extends RoomDataTracker {
 
     @Override
     protected void onTick() {
+        super.onTick();
         final int tick = getTick();
 
         if (waveSpawnTicks[currentWave] == tick) {
@@ -147,7 +148,7 @@ public class NylocasDataTracker extends RoomDataTracker {
 
         if (TobNpc.isNylocasPrinkipas(tobNpc.getId())) {
             long roomId = generateRoomId(npc);
-            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
+            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getScale()));
             return Optional.of(nyloBoss);
         }
 
@@ -164,7 +165,7 @@ public class NylocasDataTracker extends RoomDataTracker {
                 roomId = generateRoomId(npc);
             }
 
-            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
+            nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getScale()));
             return Optional.of(nyloBoss);
         }
 
@@ -235,19 +236,19 @@ public class NylocasDataTracker extends RoomDataTracker {
         NpcAttack attack;
         switch (actor.getAnimation()) {
             case NYLO_BOSS_MAGE_ANIMATION:
-                attack = NpcAttack.NYLO_BOSS_MAGE;
+                attack = NpcAttack.TOB_NYLO_BOSS_MAGE;
                 break;
             case NYLO_BOSS_RANGE_ANIMATION:
-                attack = NpcAttack.NYLO_BOSS_RANGE;
+                attack = NpcAttack.TOB_NYLO_BOSS_RANGE;
                 break;
             case NYLO_BOSS_MELEE_ANIMATION:
-                attack = NpcAttack.NYLO_BOSS_MELEE;
+                attack = NpcAttack.TOB_NYLO_BOSS_MELEE;
                 break;
             default:
                 return;
         }
 
-        dispatchEvent(new NpcAttackEvent(stage, tick, getWorldLocation(actor), attack, nyloBoss));
+        dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(actor), attack, nyloBoss));
     }
 
     private Optional<Nylo> handleNylocasSpawn(NPC npc) {
@@ -266,7 +267,7 @@ public class NylocasDataTracker extends RoomDataTracker {
         }
 
         Nylo nylo = new Nylo(npc, tobNpc.get(), generateRoomId(npc), point, tick,
-                currentWave, tobNpc.get().getBaseHitpoints(theatreChallenge.getRaidScale()));
+                currentWave, tobNpc.get().getBaseHitpoints(theatreChallenge.getScale()));
         nylosInRoom.put(npc.hashCode(), nylo);
         return Optional.of(nylo);
     }

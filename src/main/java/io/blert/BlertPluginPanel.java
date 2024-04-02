@@ -24,6 +24,7 @@
 package io.blert;
 
 import io.blert.client.WebsocketEventHandler;
+import io.blert.proto.Challenge;
 import io.blert.proto.ChallengeMode;
 import io.blert.proto.ServerMessage;
 import io.blert.proto.Stage;
@@ -68,7 +69,7 @@ public class BlertPluginPanel extends PluginPanel {
         setFocusable(false);
 
         createUserPanel(null);
-        createChallengeStatusPanel(this, WebsocketEventHandler.Status.IDLE, null);
+        createChallengeStatusPanel(this, WebsocketEventHandler.Status.IDLE, Challenge.UNKNOWN_CHALLENGE, null);
         createRecentRecordingsPanel(this);
         populateRecentRecordingsPanel();
     }
@@ -77,8 +78,9 @@ public class BlertPluginPanel extends PluginPanel {
         createUserPanel(username);
     }
 
-    public void updateChallengeStatus(WebsocketEventHandler.Status status, @Nullable String challengeId) {
-        createChallengeStatusPanel(this, status, challengeId);
+    public void updateChallengeStatus(
+            WebsocketEventHandler.Status status, Challenge challenge, @Nullable String challengeId) {
+        createChallengeStatusPanel(this, status, challenge, challengeId);
     }
 
     public void setRecentRecordings(@Nullable List<ServerMessage.PastChallenge> recentRecordings) {
@@ -139,7 +141,7 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     private void createChallengeStatusPanel(
-            JPanel parent, WebsocketEventHandler.Status status, @Nullable String challengeId) {
+            JPanel parent, WebsocketEventHandler.Status status, Challenge challenge, @Nullable String challengeId) {
         if (challengeStatusPanel != null) {
             parent.remove(challengeStatusPanel);
         }
@@ -151,7 +153,7 @@ public class BlertPluginPanel extends PluginPanel {
         JPanel currentStatePanel = createCurrentChallengeStatePanel(status);
 
         if (status == WebsocketEventHandler.Status.CHALLENGE_ACTIVE) {
-            JPanel actionsPanel = createChallengeActionsPanel(challengeId);
+            JPanel actionsPanel = createChallengeActionsPanel(challenge, challengeId);
             challengeStatusPanel.add(actionsPanel, BorderLayout.SOUTH);
         }
 
@@ -245,19 +247,19 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     @NotNull
-    private JPanel createChallengeActionsPanel(@Nullable String challengeId) {
+    private JPanel createChallengeActionsPanel(Challenge challenge, @Nullable String challengeId) {
         JPanel actionsPanel = new JPanel();
         actionsPanel.setLayout(new GridLayout(1, 0, 5, 0));
 
         JButton linkButton = new JButton("View Raid");
-        linkButton.addActionListener(e -> LinkBrowser.browse(challengeUrl(challengeId)));
+        linkButton.addActionListener(e -> LinkBrowser.browse(challengeUrl(challenge, challengeId)));
         actionsPanel.add(linkButton);
 
         JButton copyLinkButton = new JButton("Copy Link");
         copyLinkButton.addActionListener(e ->
                 Toolkit.getDefaultToolkit()
                         .getSystemClipboard()
-                        .setContents(new StringSelection(challengeUrl(challengeId)), null));
+                        .setContents(new StringSelection(challengeUrl(challenge, challengeId)), null));
         actionsPanel.add(copyLinkButton);
         return actionsPanel;
     }
@@ -303,6 +305,43 @@ public class BlertPluginPanel extends PluginPanel {
             case TOB_VERZIK:
                 boss = "Verzik";
                 break;
+
+            case COLOSSEUM_WAVE_1:
+                boss = "Wave 1";
+                break;
+            case COLOSSEUM_WAVE_2:
+                boss = "Wave 2";
+                break;
+            case COLOSSEUM_WAVE_3:
+                boss = "Wave 3";
+                break;
+            case COLOSSEUM_WAVE_4:
+                boss = "Wave 4";
+                break;
+            case COLOSSEUM_WAVE_5:
+                boss = "Wave 5";
+                break;
+            case COLOSSEUM_WAVE_6:
+                boss = "Wave 6";
+                break;
+            case COLOSSEUM_WAVE_7:
+                boss = "Wave 7";
+                break;
+            case COLOSSEUM_WAVE_8:
+                boss = "Wave 8";
+                break;
+            case COLOSSEUM_WAVE_9:
+                boss = "Wave 9";
+                break;
+            case COLOSSEUM_WAVE_10:
+                boss = "Wave 10";
+                break;
+            case COLOSSEUM_WAVE_11:
+                boss = "Wave 11";
+                break;
+            case COLOSSEUM_WAVE_12:
+                boss = "Sol Heredit";
+                break;
         }
 
         if (status == ServerMessage.PastChallenge.Status.WIPED) {
@@ -311,7 +350,14 @@ public class BlertPluginPanel extends PluginPanel {
         return Pair.of(boss + " Reset", Color.GRAY);
     }
 
-    private String challengeModeToString(ChallengeMode mode) {
+    private String challengeModeToString(Challenge challenge, ChallengeMode mode) {
+        if (challenge == Challenge.COLOSSEUM) {
+            return "Colosseum";
+        }
+        if (challenge == Challenge.INFERNO) {
+            return "Inferno";
+        }
+
         switch (mode) {
             case TOB_ENTRY:
                 return "Entry Mode";
@@ -321,11 +367,16 @@ public class BlertPluginPanel extends PluginPanel {
                 return "Hard Mode";
 
             case COX_REGULAR:
+                return "Cox Regular";
             case COX_CHALLENGE:
+                return "CoX CM";
+
             case TOA_ENTRY:
+                return "TOA Entry";
             case TOA_NORMAL:
+                return "TOA Normal";
             case TOA_EXPERT:
-                break;
+                return "TOA Expert";
         }
 
         return "Unknown";
@@ -350,7 +401,7 @@ public class BlertPluginPanel extends PluginPanel {
         modeLabel.setForeground(Color.WHITE);
         modeLabel.setFont(modeLabel.getFont().deriveFont(Font.ITALIC));
         modeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        modeLabel.setText(challengeModeToString(challenge.getMode()));
+        modeLabel.setText(challengeModeToString(challenge.getChallenge(), challenge.getMode()));
         statusPanel.add(modeLabel);
 
         challengePanel.add(statusPanel, BorderLayout.NORTH);
@@ -371,12 +422,12 @@ public class BlertPluginPanel extends PluginPanel {
         partyPanel.add(partyLabel, BorderLayout.CENTER);
         challengePanel.add(partyPanel, BorderLayout.CENTER);
 
-        challengePanel.add(createChallengeActionsPanel(challenge.getId()), BorderLayout.SOUTH);
+        challengePanel.add(createChallengeActionsPanel(challenge.getChallenge(), challenge.getId()), BorderLayout.SOUTH);
 
         return challengePanel;
     }
 
-    private String challengeUrl(String challengeId) {
+    private String challengeUrl(Challenge challenge, String challengeId) {
         String hostname = !Strings.isNullOrEmpty(config.webUrl())
                 ? config.webUrl()
                 : BlertPlugin.DEFAULT_BLERT_HOSTNAME;
@@ -384,7 +435,23 @@ public class BlertPluginPanel extends PluginPanel {
             hostname = "https://" + hostname;
         }
 
-        return String.format("%s/raids/tob/%s/overview", hostname, challengeId);
+        switch (challenge) {
+            case TOB:
+                return String.format("%s/raids/tob/%s/overview", hostname, challengeId);
+            case COX:
+                return String.format("%s/raids/cox/%s/overview", hostname, challengeId);
+            case TOA:
+                return String.format("%s/raids/toa/%s/overview", hostname, challengeId);
+            case COLOSSEUM:
+                return String.format("%s/challenges/colosseum/%s/overview", hostname, challengeId);
+            case INFERNO:
+                return String.format("%s/challenges/inferno/%s/overview", hostname, challengeId);
+            case UNRECOGNIZED:
+            case UNKNOWN_CHALLENGE:
+                return hostname;
+        }
+
+        return hostname;
     }
 
     static String wrapHtml(String content) {

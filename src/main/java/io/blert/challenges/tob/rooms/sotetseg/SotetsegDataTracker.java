@@ -68,7 +68,9 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     @Override
     protected void onTick() {
+        super.onTick();
         final int tick = getTick();
+
         if (mazeTicks[maze.ordinal()] == tick) {
             // Advance to the next maze after all the teleport animation handlers have run.
             maze = Maze.MAZE_33;
@@ -83,10 +85,10 @@ public class SotetsegDataTracker extends RoomDataTracker {
             if (deathBallSpawnTick == tick) {
                 // A regular attack animation may have occurred at the same time as the death ball; the death ball
                 // should take priority.
-                attackThisTick = NpcAttack.SOTE_DEATH_BALL;
+                attackThisTick = NpcAttack.TOB_SOTE_DEATH_BALL;
             }
             lastAttackTick = tick;
-            dispatchEvent(new NpcAttackEvent(stage, tick, getWorldLocation(sotetseg), attackThisTick, sotetseg));
+            dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(sotetseg), attackThisTick, sotetseg));
             attackThisTick = null;
         }
     }
@@ -99,7 +101,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
                 .filter(tobNpc -> TobNpc.isSotetsegIdle(tobNpc.getId()))
                 .map(tobNpc -> {
                     sotetseg = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                            new Hitpoints(tobNpc, theatreChallenge.getRaidScale()));
+                            new Hitpoints(tobNpc, theatreChallenge.getScale()));
                     return sotetseg;
                 });
     }
@@ -132,9 +134,9 @@ public class SotetsegDataTracker extends RoomDataTracker {
             }
 
             if (animationId == SOTE_MELEE_ANIMATION) {
-                attackThisTick = NpcAttack.SOTE_MELEE;
+                attackThisTick = NpcAttack.TOB_SOTE_MELEE;
             } else if (animationId == SOTE_BALL_ANIMATION) {
-                attackThisTick = NpcAttack.SOTE_BALL;
+                attackThisTick = NpcAttack.TOB_SOTE_BALL;
             }
             return;
         }
@@ -154,7 +156,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
     protected void onProjectile(ProjectileMoved event) {
         if (event.getProjectile().getId() == SOTE_DEATH_BALL_PROJECTILE && deathBallSpawnTick == -1) {
             deathBallSpawnTick = getTick();
-            attackThisTick = NpcAttack.SOTE_DEATH_BALL;
+            attackThisTick = NpcAttack.TOB_SOTE_DEATH_BALL;
         }
     }
 }

@@ -21,18 +21,28 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.util;
+package io.blert.core;
 
-import net.runelite.api.Client;
-import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.coords.WorldPoint;
+import lombok.Getter;
 
-import javax.annotation.Nullable;
+public enum Challenge {
+    TOB("Theatre of Blood", io.blert.proto.Challenge.TOB),
+    COX("Chambers of Xeric", io.blert.proto.Challenge.COX),
+    TOA("Tombs of Amascut", io.blert.proto.Challenge.TOA),
+    COLOSSEUM("Colosseum", io.blert.proto.Challenge.COLOSSEUM),
+    INFERNO("Inferno", io.blert.proto.Challenge.INFERNO),
+    ;
 
-public class Location {
-    @Nullable
-    public static WorldPoint getWorldLocation(Client client, WorldPoint instanceUnawareWorldPoint) {
-        LocalPoint local = LocalPoint.fromWorld(client, instanceUnawareWorldPoint);
-        return local != null ? WorldPoint.fromLocalInstance(client, local) : null;
+    @Getter
+    private final String name;
+    private final io.blert.proto.Challenge protoValue;
+
+    public io.blert.proto.Challenge toProto() {
+        return protoValue;
+    }
+
+    Challenge(String name, io.blert.proto.Challenge protoValue) {
+        this.name = name;
+        this.protoValue = protoValue;
     }
 }

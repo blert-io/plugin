@@ -25,6 +25,8 @@ package io.blert.client;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.blert.BlertPluginPanel;
+import io.blert.core.Challenge;
+import io.blert.events.ChallengeStartEvent;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.EventType;
@@ -51,6 +53,7 @@ public class WebsocketEventHandler implements EventHandler {
     private final BlertPluginPanel sidePanel;
 
     private Status status = Status.IDLE;
+    private Challenge currentChallenge = null;
     private @Nullable String challengeId = null;
 
     private int currentTick = 0;
@@ -78,6 +81,7 @@ public class WebsocketEventHandler implements EventHandler {
                 if (webSocketClient.isOpen()) {
                     sendEvents(EventTranslator.toProto(event, null));
                     setStatus(Status.CHALLENGE_STARTING);
+                    this.currentChallenge = ((ChallengeStartEvent) event).getChallenge();
                 }
                 break;
             }
@@ -90,9 +94,10 @@ public class WebsocketEventHandler implements EventHandler {
 
                 sendEvents(EventTranslator.toProto(event, challengeId));
 
-                setStatus(Status.IDLE);
                 protoEventHandler.setChallengeId(null);
                 challengeId = null;
+                currentChallenge = null;
+                setStatus(Status.IDLE);
 
                 sendRaidHistoryRequest();
                 break;
@@ -166,6 +171,8 @@ public class WebsocketEventHandler implements EventHandler {
                 if (!serverMessage.hasActiveChallengeId()) {
                     log.warn("Failed to start raid");
                     protoEventHandler.setChallengeId(null);
+                    currentChallenge = null;
+                    challengeId = null;
                     setStatus(Status.IDLE);
                     return;
                 }
@@ -219,6 +226,7 @@ public class WebsocketEventHandler implements EventHandler {
     }
 
     private void handleDisconnect() {
+        currentChallenge = null;
         challengeId = null;
         protoEventHandler.setChallengeId(null);
         setStatus(Status.IDLE);
@@ -228,6 +236,9 @@ public class WebsocketEventHandler implements EventHandler {
 
     private void setStatus(Status status) {
         this.status = status;
-        sidePanel.updateChallengeStatus(status, challengeId);
+        var challenge = currentChallenge != null
+                ? currentChallenge.toProto()
+                : io.blert.proto.Challenge.UNKNOWN_CHALLENGE;
+        sidePanel.updateChallengeStatus(status, challenge, challengeId);
     }
 }

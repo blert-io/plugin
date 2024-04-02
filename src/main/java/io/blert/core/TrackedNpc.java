@@ -61,6 +61,14 @@ public abstract class TrackedNpc {
     @Setter
     private int spawnTick;
 
+    protected TrackedNpc(@NotNull NPC npc, long roomId, Hitpoints hitpoints) {
+        this.npc = npc;
+        this.mode = ChallengeMode.NO_MODE;
+        this.roomId = roomId;
+        this.hitpoints = hitpoints;
+        this.spawnTick = -1;
+    }
+
     protected TrackedNpc(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         this.npc = npc;
         this.mode = tobNpc.getMode();

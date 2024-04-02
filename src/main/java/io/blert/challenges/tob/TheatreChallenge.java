@@ -30,18 +30,13 @@ import io.blert.challenges.tob.rooms.nylocas.NylocasDataTracker;
 import io.blert.challenges.tob.rooms.sotetseg.SotetsegDataTracker;
 import io.blert.challenges.tob.rooms.verzik.VerzikDataTracker;
 import io.blert.challenges.tob.rooms.xarpus.XarpusDataTracker;
-import io.blert.core.ChallengeMode;
-import io.blert.core.ChallengeState;
-import io.blert.core.Raider;
-import io.blert.core.RecordableChallenge;
+import io.blert.core.*;
 import io.blert.events.ChallengeEndEvent;
 import io.blert.events.ChallengeStartEvent;
-import io.blert.events.ChallengeUpdateEvent;
 import io.blert.events.StageUpdateEvent;
 import io.blert.util.DeferredTask;
 import io.blert.util.Tick;
 import joptsimple.internal.Strings;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -57,7 +52,8 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -78,14 +74,6 @@ public class TheatreChallenge extends RecordableChallenge {
 
     private Location location = Location.ELSEWHERE;
 
-    @Getter
-    private ChallengeMode raidMode = null;
-
-    /**
-     * Players in the raid party, stored in orb order.
-     */
-    private final Map<String, Raider> party = new LinkedHashMap<>();
-
     private RoomState roomState = RoomState.INACTIVE;
     @Nullable
     RoomDataTracker roomDataTracker = null;
@@ -93,7 +81,7 @@ public class TheatreChallenge extends RecordableChallenge {
     private @Nullable DeferredTask deferredTask = null;
 
     public TheatreChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
-        super("Theatre of Blood", client, eventBus, clientThread);
+        super(Challenge.TOB, client, eventBus, clientThread);
     }
 
     @Override
@@ -101,28 +89,14 @@ public class TheatreChallenge extends RecordableChallenge {
         return Location.fromWorldPoint(worldPoint) != Location.ELSEWHERE;
     }
 
-    public int getRaidScale() {
-        return inChallenge() ? party.size() : 0;
+    @Override
+    protected void onInitialize() {
     }
 
-    public boolean playerIsInRaid(@Nullable String username) {
-        return username != null && party.containsKey(Text.standardize(username));
-    }
-
-    public Raider getRaider(@Nullable String username) {
-        return username != null ? party.get(Text.standardize(username)) : null;
-    }
-
-    public Collection<Raider> getRaiders() {
-        return party.values();
-    }
-
-    public void updateRaidMode(ChallengeMode mode) {
-        if (raidMode != mode) {
-            log.debug("Raid mode set to " + mode);
-            raidMode = mode;
-            dispatchEvent(new ChallengeUpdateEvent(mode));
-        }
+    @Override
+    protected void onTerminate() {
+        clearRoomDataTracker();
+        resetParty();
     }
 
     @Override
@@ -178,10 +152,10 @@ public class TheatreChallenge extends RecordableChallenge {
         }
     }
 
-    private void queueRaidStart(@Nullable ChallengeMode mode, boolean reinitializeParty) {
+    private void queueRaidStart(ChallengeMode mode, boolean reinitializeParty) {
         log.info("Starting new raid");
+        updateMode(mode);
         setState(ChallengeState.STARTING);
-        raidMode = mode;
 
         if (reinitializeParty) {
             // When players join the raid, the orb list does not immediately update, nor does it update all at once.
@@ -199,15 +173,15 @@ public class TheatreChallenge extends RecordableChallenge {
 
     private void startRaid() {
         setState(ChallengeState.ACTIVE);
-        boolean spectator = !playerIsInRaid(client.getLocalPlayer().getName());
+        boolean spectator = !playerIsInChallenge(client.getLocalPlayer().getName());
 
-        List<String> names = party.values().stream().map(Raider::getUsername).collect(Collectors.toList());
-        dispatchEvent(new ChallengeStartEvent(names, raidMode, spectator));
+        List<String> names = getParty().stream().map(Raider::getUsername).collect(Collectors.toList());
+        dispatchEvent(new ChallengeStartEvent(getChallenge(), getChallengeMode(), names, spectator));
 
         if (this.roomDataTracker != null) {
             // Raid scale information is not immediately available when the raid starts, so if any NPCs have already
             // spawned, their hitpoints must be corrected after the scale is known.
-            this.roomDataTracker.correctNpcHitpointsForScale(getRaidScale());
+            this.roomDataTracker.correctNpcHitpointsForScale(getScale());
         }
 
         // Dispatch any events that were queued before the raid started.
@@ -227,8 +201,8 @@ public class TheatreChallenge extends RecordableChallenge {
 
         clearRoomDataTracker();
         setState(state);
-        raidMode = null;
-        party.clear();
+        updateMode(ChallengeMode.NO_MODE);
+        resetParty();
 
         getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(overallTime)));
     }
@@ -277,7 +251,7 @@ public class TheatreChallenge extends RecordableChallenge {
                 // A raid start due to a varbit change usually means that the player is joining late, rejoining, or
                 // spectating. Party and mode information is not immediately available.
                 log.debug("Raid started via varbit change");
-                queueRaidStart(null, true);
+                queueRaidStart(ChallengeMode.NO_MODE, true);
             } else if (getState().isActive() && varbit.getValue() < 2) {
                 if (getState() == ChallengeState.COMPLETE) {
                     setState(ChallengeState.INACTIVE);
@@ -318,14 +292,16 @@ public class TheatreChallenge extends RecordableChallenge {
             Matcher matcher = RAID_ENTRY_REGEX_1P.matcher(stripped);
             if (matcher.matches()) {
                 log.debug("Raid started via 1p chat message (mode: {})", matcher.group(1));
-                queueRaidStart(ChallengeMode.parseTob(matcher.group(1)).orElse(null), party.isEmpty());
+                queueRaidStart(ChallengeMode.parseTob(matcher.group(1)).orElse(ChallengeMode.NO_MODE),
+                        getParty().isEmpty());
                 return;
             }
 
             matcher = RAID_ENTRY_REGEX_3P.matcher(stripped);
             if (matcher.matches()) {
                 log.debug("Raid started via 3p chat message (leader: {} mode: {})", matcher.group(1), matcher.group(2));
-                queueRaidStart(ChallengeMode.parseTob(matcher.group(2)).orElse(null), party.isEmpty());
+                queueRaidStart(ChallengeMode.parseTob(matcher.group(2)).orElse(ChallengeMode.NO_MODE),
+                        getParty().isEmpty());
             }
             return;
         }
@@ -346,29 +322,25 @@ public class TheatreChallenge extends RecordableChallenge {
             return;
         }
 
-        party.clear();
+        resetParty();
 
         Arrays.stream(tobPartyWidget.getText().split("<br>"))
                 .filter(s -> !s.equals("-"))
                 .map(Text::sanitize)
-                .forEach(s -> party.put(Text.standardize(s),
-                        new Raider(s, s.equals(client.getLocalPlayer().getName()))));
+                .forEach(s -> addRaider(new Raider(s, s.equals(client.getLocalPlayer().getName()))));
     }
 
     private void initializePartyFromOrbs() {
-        party.clear();
+        resetParty();
         String localPlayer = client.getLocalPlayer().getName();
-        forEachOrb((orb, username) -> {
-            String normalized = Text.standardize(username);
-            party.put(normalized, new Raider(username, username.equals(localPlayer)));
-        });
+        forEachOrb((orb, username) -> addRaider(new Raider(username, username.equals(localPlayer))));
     }
 
     private void updatePartyInformation() {
         // Toggle the players who are currently connected to the raid.
-        party.values().forEach(r -> r.setActive(false));
+        getParty().forEach(r -> r.setActive(false));
         forEachOrb((orb, username) -> {
-            Raider raider = party.get(Text.standardize(username));
+            Raider raider = getRaider(Text.standardize(username));
             if (raider != null) {
                 raider.setActive(true);
             }

@@ -63,6 +63,7 @@ public class XarpusDataTracker extends RoomDataTracker {
 
     @Override
     protected void onTick() {
+        super.onTick();
         final int tick = getTick();
 
         if (xarpus != null && xarpus.getNpc().getOverheadText() != null && phase != XarpusPhase.P3) {
@@ -76,11 +77,11 @@ public class XarpusDataTracker extends RoomDataTracker {
             WorldPoint point = getWorldLocation(xarpus);
             if (phase == XarpusPhase.P2) {
                 nextTurnTick += TICKS_PER_TURN_P2;
-                dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.XARPUS_SPIT, xarpus));
+                dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_XARPUS_SPIT, xarpus));
             } else if (phase == XarpusPhase.P3) {
-                if (theatreChallenge.getRaidMode() != ChallengeMode.TOB_HARD) {
+                if (theatreChallenge.getChallengeMode() != ChallengeMode.TOB_HARD) {
                     nextTurnTick += TICKS_PER_TURN_P3;
-                    dispatchEvent(new NpcAttackEvent(stage, tick, point, NpcAttack.XARPUS_TURN, xarpus));
+                    dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_XARPUS_TURN, xarpus));
                 }
             }
         }
@@ -93,7 +94,7 @@ public class XarpusDataTracker extends RoomDataTracker {
         Optional<TobNpc> maybeXarpus = TobNpc.withId(npc.getId()).filter(TobNpc::isAnyXarpus);
         if (maybeXarpus.isPresent()) {
             xarpus = new BasicTrackedNpc(npc, maybeXarpus.get(), generateRoomId(npc),
-                    new Hitpoints(maybeXarpus.get(), theatreChallenge.getRaidScale()));
+                    new Hitpoints(maybeXarpus.get(), theatreChallenge.getScale()));
             return Optional.of(xarpus);
         }
 

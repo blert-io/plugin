@@ -58,6 +58,7 @@ public enum EventType {
     VERZIK_REDS_SPAWN(Event.Type.TOB_VERZIK_REDS_SPAWN),
     VERZIK_ATTACK_STYLE(Event.Type.TOB_VERZIK_ATTACK_STYLE),
 
+    COLOSSEUM_HANDICAP_CHOICE(Event.Type.COLOSSEUM_HANDICAP_CHOICE),
     ;
 
     private final Event.Type protoValue;

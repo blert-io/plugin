@@ -23,23 +23,30 @@
 
 package io.blert.core;
 
+import io.blert.events.ChallengeUpdateEvent;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.EventType;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
+import net.runelite.client.util.Text;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
+import javax.annotation.Nullable;
+import java.util.*;
 
+@Slf4j
 public abstract class RecordableChallenge {
     @Getter
-    private final String name;
+    private final Challenge challenge;
+    @Getter
+    private @NotNull ChallengeMode challengeMode;
 
     protected final Client client;
 
@@ -57,8 +64,14 @@ public abstract class RecordableChallenge {
     @Getter(AccessLevel.PROTECTED)
     private ChallengeState state = ChallengeState.INACTIVE;
 
-    protected RecordableChallenge(String name, Client client, EventBus eventBus, ClientThread clientThread) {
-        this.name = name;
+    /**
+     * Players in the challenge party.
+     */
+    private final Map<String, Raider> party = new LinkedHashMap<>();
+
+    protected RecordableChallenge(Challenge challenge, Client client, EventBus eventBus, ClientThread clientThread) {
+        this.challenge = challenge;
+        this.challengeMode = ChallengeMode.NO_MODE;
         this.client = client;
         this.eventBus = eventBus;
         this.clientThread = clientThread;
@@ -73,11 +86,67 @@ public abstract class RecordableChallenge {
     public abstract boolean containsLocation(WorldPoint worldPoint);
 
     /**
+     * Implementation-specific initialization handler.
+     */
+    protected abstract void onInitialize();
+
+    /**
+     * Implementation-specific termination handler.
+     */
+    protected abstract void onTerminate();
+
+    /**
      * Implementation-specific game tick handler.
      */
     protected abstract void onTick();
 
+    public String getName() {
+        return challenge.getName();
+    }
+
+    public int getScale() {
+        return inChallenge() ? party.size() : 0;
+    }
+
+    public Collection<Raider> getParty() {
+        return party.values();
+    }
+
+    public boolean playerIsInChallenge(@Nullable String username) {
+        return username != null && party.containsKey(Text.standardize(username));
+    }
+
+    public @Nullable Raider getRaider(@Nullable String username) {
+        return username != null ? party.get(Text.standardize(username)) : null;
+    }
+
+    /**
+     * Updates the challenge mode. If the challenge is active and the mode has changed, an update event is dispatched.
+     *
+     * @param mode The new challenge mode.
+     */
+    public void updateMode(ChallengeMode mode) {
+        if (challengeMode != mode) {
+            log.debug("Raid mode set to " + mode);
+            challengeMode = mode;
+
+            if (state == ChallengeState.STARTING || state == ChallengeState.ACTIVE) {
+                dispatchEvent(new ChallengeUpdateEvent(mode));
+            }
+        }
+    }
+
+    protected void addRaider(Raider raider) {
+        party.put(Text.standardize(raider.getUsername()), raider);
+    }
+
+    protected void resetParty() {
+        party.clear();
+    }
+
     public void initialize(EventHandler handler) {
+        onInitialize();
+
         this.eventHandler = handler;
         eventBus.register(this);
     }
@@ -86,6 +155,9 @@ public abstract class RecordableChallenge {
         eventBus.unregister(this);
         this.eventHandler = null;
         state = ChallengeState.INACTIVE;
+        party.clear();
+
+        onTerminate();
     }
 
     public void tick() {

@@ -26,6 +26,8 @@ package io.blert.core;
 import java.util.Optional;
 
 public enum ChallengeMode {
+    NO_MODE(io.blert.proto.ChallengeMode.NO_MODE),
+
     TOB_ENTRY(io.blert.proto.ChallengeMode.TOB_ENTRY),
     TOB_REGULAR(io.blert.proto.ChallengeMode.TOB_REGULAR),
     TOB_HARD(io.blert.proto.ChallengeMode.TOB_HARD),

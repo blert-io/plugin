@@ -24,14 +24,15 @@
 package io.blert.proto;
 
 import com.google.protobuf.Empty;
+import io.blert.challenges.colosseum.Handicap;
 import io.blert.challenges.tob.rooms.maiden.MaidenCrab;
 import io.blert.challenges.tob.rooms.nylocas.Nylo;
 import io.blert.challenges.tob.rooms.sotetseg.Maze;
 import io.blert.challenges.tob.rooms.verzik.VerzikCrab;
-import io.blert.core.ChallengeMode;
 import io.blert.core.Stage;
 import io.blert.core.*;
 import io.blert.events.*;
+import io.blert.events.colosseum.HandicapChoiceEvent;
 import io.blert.events.tob.*;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -55,9 +56,10 @@ public class EventTranslator {
             case CHALLENGE_START: {
                 ChallengeStartEvent challengeStartEvent = (ChallengeStartEvent) event;
                 Event.ChallengeInfo.Builder builder = Event.ChallengeInfo.newBuilder()
+                        .setChallenge(challengeStartEvent.getChallenge().toProto())
+                        .setMode(challengeStartEvent.getMode().toProto())
                         .addAllParty(challengeStartEvent.getParty())
                         .setSpectator(challengeStartEvent.isSpectator());
-                challengeStartEvent.getMode().map(ChallengeMode::toProto).ifPresent(builder::setMode);
                 eventBuilder.setChallengeInfo(builder);
                 break;
             }
@@ -93,7 +95,7 @@ public class EventTranslator {
                         .setName(playerUpdateEvent.getUsername())
                         .setOffCooldownTick(playerUpdateEvent.getOffCooldownTick());
 
-                playerUpdateEvent.getHitpoints().ifPresent(sl -> builder.setPrayer(translateSkillLevel(sl)));
+                playerUpdateEvent.getHitpoints().ifPresent(sl -> builder.setHitpoints(translateSkillLevel(sl)));
                 playerUpdateEvent.getPrayer().ifPresent(sl -> builder.setPrayer(translateSkillLevel(sl)));
                 playerUpdateEvent.getAttack().ifPresent(sl -> builder.setAttack(translateSkillLevel(sl)));
                 playerUpdateEvent.getStrength().ifPresent(sl -> builder.setStrength(translateSkillLevel(sl)));
@@ -213,6 +215,15 @@ public class EventTranslator {
                 eventBuilder.setVerzikAttackStyle(Event.VerzikAttackStyle.newBuilder()
                         .setStyleValue(verzikAttackStyleEvent.getStyle().ordinal())
                         .setNpcAttackTick(verzikAttackStyleEvent.getAttackTick()));
+                break;
+            }
+
+            case COLOSSEUM_HANDICAP_CHOICE: {
+                HandicapChoiceEvent handicapChoiceEvent = (HandicapChoiceEvent) event;
+                eventBuilder.setHandicapValue(handicapChoiceEvent.getHandicap().getId());
+                for (Handicap option : handicapChoiceEvent.getHandicapOptions()) {
+                    eventBuilder.addHandicapOptionsValue(option.getId());
+                }
                 break;
             }
         }

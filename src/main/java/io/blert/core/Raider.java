@@ -23,9 +23,6 @@
 
 package io.blert.core;
 
-import io.blert.core.EquipmentSlot;
-import io.blert.core.Item;
-import io.blert.core.PlayerAttack;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -81,6 +78,11 @@ public class Raider {
         this.username = username;
         this.localPlayer = localPlayer;
         this.active = true;
+    }
+
+    public Raider(@NotNull Player player, boolean localPlayer) {
+        this(Objects.requireNonNull(player.getName()), localPlayer);
+        this.player = player;
     }
 
     public boolean isAlive() {

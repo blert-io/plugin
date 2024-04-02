@@ -67,12 +67,14 @@ public class MaidenDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (maiden != null) {
-            theatreChallenge.updateRaidMode(maiden.getMode());
+            theatreChallenge.updateMode(maiden.getMode());
         }
     }
 
     @Override
     protected void onTick() {
+        super.onTick();
+
         List<WorldPoint> bloodSplats = new ArrayList<>();
 
         // Search for active blood splats thrown by Maiden, and report them if they exist.
@@ -142,7 +144,7 @@ public class MaidenDataTracker extends RoomDataTracker {
                 // Due to the loading line at Maiden (thanks Jagex), use a static location for her ID.
                 long roomId = TrackedNpcCollection.npcRoomId(getTick(), npc.getId(), MAIDEN_WORLD_LOCATION);
                 maiden = new BasicTrackedNpc(npc, tobNpc, roomId,
-                        new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getRaidScale())));
+                        new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getScale())));
                 return Optional.of(maiden);
             }
 
@@ -178,22 +180,22 @@ public class MaidenDataTracker extends RoomDataTracker {
         NpcAttack attack;
         switch (actor.getAnimation()) {
             case MAIDEN_BLOOD_THROW_ANIMATION:
-                attack = NpcAttack.MAIDEN_BLOOD_THROW;
+                attack = NpcAttack.TOB_MAIDEN_BLOOD_THROW;
                 break;
             case MAIDEN_AUTO_ANIMATION:
-                attack = NpcAttack.MAIDEN_AUTO;
+                attack = NpcAttack.TOB_MAIDEN_AUTO;
                 break;
             default:
                 return;
         }
 
-        dispatchEvent(new NpcAttackEvent(stage, tick, getWorldLocation(actor), attack, maiden));
+        dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(actor), attack, maiden));
     }
 
     private Optional<TrackedNpc> handleMaidenBloodSpawnSpawn(NPC npc) {
         return TobNpc.withId(npc.getId()).map(tobNpc ->
                 new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                        new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getRaidScale()))));
+                        new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getScale()))));
     }
 
     private Optional<MaidenCrab> handleMaidenCrabSpawn(NPC npc) {
@@ -205,7 +207,7 @@ public class MaidenDataTracker extends RoomDataTracker {
         WorldPoint spawnLocation = getWorldLocation(npc);
 
         Optional<MaidenCrab> maybeCrab = MaidenCrab.fromSpawnLocation(
-                theatreChallenge.getRaidScale(), npc, generateRoomId(npc), currentSpawn, spawnLocation);
+                theatreChallenge.getScale(), npc, generateRoomId(npc), currentSpawn, spawnLocation);
         if (maybeCrab.isPresent()) {
             MaidenCrab maidenCrab = maybeCrab.get();
             log.debug("Crab position: " + maidenCrab.getPosition() + " scuffed: " + maidenCrab.isScuffed());

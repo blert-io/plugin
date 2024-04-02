@@ -21,18 +21,40 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.util;
+package io.blert.challenges.colosseum;
 
-import net.runelite.api.Client;
-import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.coords.WorldPoint;
+import lombok.Getter;
 
-import javax.annotation.Nullable;
+@Getter
+public enum Handicap {
+    DOOM_SCORPION(0),
+    REENTRY(1),
+    BEES(2),
+    VOLATILITY(3),
+    BLASPHEMY(4),
+    RELENTLESS(5),
+    QUARTET(6),
+    TOTEMIC(7),
+    DOOM(8),
+    DYNAMIC_DUO(9),
+    SOLARFLARE(10),
+    MYOPIA(11),
+    FRAILTY(12),
+    RED_FLAG(13),
+    ;
 
-public class Location {
-    @Nullable
-    public static WorldPoint getWorldLocation(Client client, WorldPoint instanceUnawareWorldPoint) {
-        LocalPoint local = LocalPoint.fromWorld(client, instanceUnawareWorldPoint);
-        return local != null ? WorldPoint.fromLocalInstance(client, local) : null;
+    private final int id;
+
+    Handicap(int id) {
+        this.id = id;
+    }
+
+    public static Handicap withId(int id) {
+        for (Handicap handicap : values()) {
+            if (handicap.id == id) {
+                return handicap;
+            }
+        }
+        return null;
     }
 }

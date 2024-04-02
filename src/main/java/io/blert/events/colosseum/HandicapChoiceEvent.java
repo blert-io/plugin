@@ -21,18 +21,27 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.util;
+package io.blert.events.colosseum;
 
-import net.runelite.api.Client;
-import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.coords.WorldPoint;
+import io.blert.challenges.colosseum.Handicap;
+import io.blert.core.Stage;
+import io.blert.events.Event;
+import io.blert.events.EventType;
+import lombok.Getter;
 
-import javax.annotation.Nullable;
+@Getter
+public class HandicapChoiceEvent extends Event {
+    private final Handicap handicap;
+    private final Handicap[] handicapOptions;
 
-public class Location {
-    @Nullable
-    public static WorldPoint getWorldLocation(Client client, WorldPoint instanceUnawareWorldPoint) {
-        LocalPoint local = LocalPoint.fromWorld(client, instanceUnawareWorldPoint);
-        return local != null ? WorldPoint.fromLocalInstance(client, local) : null;
+    public HandicapChoiceEvent(Stage stage, Handicap handicap, Handicap[] handicapOptions) {
+        super(EventType.COLOSSEUM_HANDICAP_CHOICE, stage, 0, null);
+        this.handicap = handicap;
+        this.handicapOptions = handicapOptions;
+    }
+
+    @Override
+    protected String eventDataString() {
+        return "handicap=" + handicap;
     }
 }

@@ -147,6 +147,18 @@ public enum PlayerAttack {
             5,
             io.blert.proto.PlayerAttack.SCYTHE_UNCHARGED
     ),
+    SGS_SMACK(
+            new int[]{ItemID.SARADOMIN_GODSWORD, ItemID.SARADOMIN_GODSWORD_OR},
+            7045,
+            6,
+            io.blert.proto.PlayerAttack.SGS_SMACK
+    ),
+    SGS_SPEC(
+            new int[]{ItemID.SARADOMIN_GODSWORD, ItemID.SARADOMIN_GODSWORD_OR},
+            7640,
+            6,
+            io.blert.proto.PlayerAttack.SGS_SPEC
+    ),
     SHADOW(
             ItemID.TUMEKENS_SHADOW,
             9493,
@@ -236,6 +248,7 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.TRIDENT_BARRAGE
     ),
     TWISTED_BOW(ItemID.TWISTED_BOW, 426, 5, io.blert.proto.PlayerAttack.TWISTED_BOW),
+    VENATOR_BOW(ItemID.VENATOR_BOW, 9858, 4, io.blert.proto.PlayerAttack.VENATOR_BOW),
     VOLATILE_NM_BARRAGE(
             ItemID.VOLATILE_NIGHTMARE_STAFF,
             1979,
