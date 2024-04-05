@@ -92,27 +92,21 @@ public class PlayerUpdateEvent extends Event {
                     client.getBoostedSkillLevel(net.runelite.api.Skill.HITPOINTS),
                     client.getRealSkillLevel(net.runelite.api.Skill.HITPOINTS));
             evt.prayer = new SkillLevel(
-                    Skill.PRAYER,
                     client.getBoostedSkillLevel(net.runelite.api.Skill.PRAYER),
                     client.getRealSkillLevel(net.runelite.api.Skill.PRAYER));
             evt.attack = new SkillLevel(
-                    Skill.ATTACK,
                     client.getBoostedSkillLevel(net.runelite.api.Skill.ATTACK),
                     client.getRealSkillLevel(net.runelite.api.Skill.ATTACK));
             evt.strength = new SkillLevel(
-                    Skill.STRENGTH,
                     client.getBoostedSkillLevel(net.runelite.api.Skill.STRENGTH),
                     client.getRealSkillLevel(net.runelite.api.Skill.STRENGTH));
             evt.defence = new SkillLevel(
-                    Skill.DEFENCE,
                     client.getBoostedSkillLevel(net.runelite.api.Skill.DEFENCE),
                     client.getRealSkillLevel(net.runelite.api.Skill.DEFENCE));
             evt.ranged = new SkillLevel(
-                    Skill.RANGED,
                     client.getBoostedSkillLevel(net.runelite.api.Skill.RANGED),
                     client.getRealSkillLevel(net.runelite.api.Skill.RANGED));
             evt.magic = new SkillLevel(
-                    Skill.MAGIC,
                     client.getBoostedSkillLevel(net.runelite.api.Skill.MAGIC),
                     client.getRealSkillLevel(net.runelite.api.Skill.MAGIC));
 

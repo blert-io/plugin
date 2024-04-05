@@ -34,15 +34,15 @@ public class Hitpoints extends SkillLevel {
     }
 
     public Hitpoints(int base) {
-        super(Skill.HITPOINTS, base, base);
+        super(base, base);
     }
 
     public Hitpoints(int current, int base) {
-        super(Skill.HITPOINTS, current, base);
+        super(current, base);
     }
 
     public Hitpoints(Hitpoints other) {
-        super(Skill.HITPOINTS, other.current, other.base);
+        super(other.current, other.base);
     }
 
     public Hitpoints(TobNpc tobNpc, int scale) {
@@ -50,6 +50,9 @@ public class Hitpoints extends SkillLevel {
     }
 
     public double percentage() {
+        if (base == 0) {
+            return Double.NaN;
+        }
         return current / (double) base * 100.0;
     }
 }

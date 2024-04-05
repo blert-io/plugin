@@ -23,19 +23,20 @@
 
 package io.blert.core;
 
-import io.blert.core.Skill;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
  * Represents a game skill, with a base level and boosted/drained current level.
  */
 @Getter
-@AllArgsConstructor
 public class SkillLevel {
-    private Skill skill;
-    protected int current;
-    protected int base;
+    int current;
+    int base;
+
+    public SkillLevel(int current, int base) {
+        this.current = Math.max(current, 0);
+        this.base = Math.max(base, 0);
+    }
 
     public void boost(int amount) {
         current += amount;
@@ -45,7 +46,11 @@ public class SkillLevel {
         current = Math.max(current - amount, 0);
     }
 
+    public int getValue() {
+        return (current << 16) | (base & 0xffff);
+    }
+
     public String toString() {
-        return String.valueOf(current) + "/" + base;
+        return current + "/" + base;
     }
 }

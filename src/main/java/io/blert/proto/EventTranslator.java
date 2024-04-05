@@ -29,8 +29,10 @@ import io.blert.challenges.tob.rooms.maiden.MaidenCrab;
 import io.blert.challenges.tob.rooms.nylocas.Nylo;
 import io.blert.challenges.tob.rooms.sotetseg.Maze;
 import io.blert.challenges.tob.rooms.verzik.VerzikCrab;
+import io.blert.core.EquipmentSlot;
+import io.blert.core.Item;
 import io.blert.core.Stage;
-import io.blert.core.*;
+import io.blert.core.TrackedNpc;
 import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
 import io.blert.events.tob.*;
@@ -97,13 +99,13 @@ public class EventTranslator {
                         .setName(playerUpdateEvent.getUsername())
                         .setOffCooldownTick(playerUpdateEvent.getOffCooldownTick());
 
-                playerUpdateEvent.getHitpoints().ifPresent(sl -> builder.setHitpoints(translateSkillLevel(sl)));
-                playerUpdateEvent.getPrayer().ifPresent(sl -> builder.setPrayer(translateSkillLevel(sl)));
-                playerUpdateEvent.getAttack().ifPresent(sl -> builder.setAttack(translateSkillLevel(sl)));
-                playerUpdateEvent.getStrength().ifPresent(sl -> builder.setStrength(translateSkillLevel(sl)));
-                playerUpdateEvent.getDefence().ifPresent(sl -> builder.setDefence(translateSkillLevel(sl)));
-                playerUpdateEvent.getRanged().ifPresent(sl -> builder.setRanged(translateSkillLevel(sl)));
-                playerUpdateEvent.getMagic().ifPresent(sl -> builder.setMagic(translateSkillLevel(sl)));
+                playerUpdateEvent.getHitpoints().ifPresent(sl -> builder.setHitpoints(sl.getValue()));
+                playerUpdateEvent.getPrayer().ifPresent(sl -> builder.setPrayer(sl.getValue()));
+                playerUpdateEvent.getAttack().ifPresent(sl -> builder.setAttack(sl.getValue()));
+                playerUpdateEvent.getStrength().ifPresent(sl -> builder.setStrength(sl.getValue()));
+                playerUpdateEvent.getDefence().ifPresent(sl -> builder.setDefence(sl.getValue()));
+                playerUpdateEvent.getRanged().ifPresent(sl -> builder.setRanged(sl.getValue()));
+                playerUpdateEvent.getMagic().ifPresent(sl -> builder.setMagic(sl.getValue()));
 
                 playerUpdateEvent.getActivePrayers().ifPresent(prayers -> builder.setActivePrayers(prayers.getValue()));
 
@@ -147,7 +149,7 @@ public class EventTranslator {
                 Event.Npc.Builder builder = Event.Npc.newBuilder()
                         .setId(npcEvent.getNpcId())
                         .setRoomId(npcEvent.getRoomId())
-                        .setHitpoints(translateSkillLevel(npcEvent.getHitpoints()));
+                        .setHitpoints(npcEvent.getHitpoints().getValue());
                 addTranslatedNpcProperties(builder, npcEvent);
 
                 eventBuilder.setNpc(builder);
@@ -248,10 +250,6 @@ public class EventTranslator {
             default:
                 throw new NotImplementedException("Stage status translation not implemented for " + status);
         }
-    }
-
-    private static Event.SkillLevel.Builder translateSkillLevel(SkillLevel skillLevel) {
-        return Event.SkillLevel.newBuilder().setBase(skillLevel.getBase()).setCurrent(skillLevel.getCurrent());
     }
 
     private static Event.Player.EquippedItem.Builder translateEquippedItem(EquipmentSlot slot, Item item) {
