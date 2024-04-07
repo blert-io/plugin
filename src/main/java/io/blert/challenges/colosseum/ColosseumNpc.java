@@ -42,7 +42,7 @@ public enum ColosseumNpc {
             Pair.of(10892, NpcAttack.COLOSSEUM_JAVELIN_AUTO),
             Pair.of(10893, NpcAttack.COLOSSEUM_JAVELIN_TOSS)
     ),
-    MANTICORE(12818, 250, Pair.of(10869, NpcAttack.COLOSSEUM_MANTICORE_AUTO)),  // loading 10868
+    MANTICORE(12818, 250),
     SHOCKWAVE_COLOSSUS(12819, 125, Pair.of(10903, NpcAttack.COLOSSEUM_SHOCKWAVE_AUTO)),
     SOL_HEREDIT(
             12821,
@@ -52,6 +52,7 @@ public enum ColosseumNpc {
             Pair.of(10885, NpcAttack.COLOSSEUM_HEREDIT_SLAM),
             Pair.of(10887, NpcAttack.COLOSSEUM_HEREDIT_COMBO)
     ),
+    SOLARFLARE(12826, 0),
     ;
 
     @Getter
@@ -76,6 +77,10 @@ public enum ColosseumNpc {
             }
         }
         return Optional.empty();
+    }
+
+    public boolean isManticore() {
+        return this == MANTICORE;
     }
 
     @SafeVarargs

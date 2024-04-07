@@ -69,15 +69,13 @@ public class WaveDataTracker extends DataTracker {
 
     @Override
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
-        Optional<ColosseumNpc> maybeNpc = ColosseumNpc.withId(event.getNpc().getId());
-        if (maybeNpc.isEmpty()) {
-            return Optional.empty();
-        }
-
-        NPC npc = event.getNpc();
-        ColosseumNpc colosseumNpc = maybeNpc.get();
-
-        return Optional.of(new BasicTrackedNpc(npc, generateRoomId(npc), new Hitpoints(colosseumNpc.getHitpoints())));
+        return ColosseumNpc.withId(event.getNpc().getId()).map(colosseumNpc -> {
+            NPC npc = event.getNpc();
+            if (colosseumNpc.isManticore()) {
+                return new Manticore(npc, generateRoomId(npc), new Hitpoints(colosseumNpc.getHitpoints()));
+            }
+            return new BasicTrackedNpc(npc, generateRoomId(npc), new Hitpoints(colosseumNpc.getHitpoints()));
+        });
     }
 
     @Override
@@ -101,6 +99,25 @@ public class WaveDataTracker extends DataTracker {
         ColosseumNpc colosseumNpc = maybeNpc.get();
         TrackedNpc trackedNpc = maybeTrackedNpc.get();
 
+        if (colosseumNpc.isManticore()) {
+            Manticore manticore = (Manticore) trackedNpc;
+            if (npc.getAnimation() == Manticore.ATTACK_ANIMATION) {
+                if (manticore.getStyle() == null) {
+                    log.warn("Manticore attack animation without style");
+                    return;
+                }
+
+                NpcAttack attack = manticore.getStyle() == Manticore.Style.MAGE
+                        ? NpcAttack.COLOSSEUM_MANTICORE_MAGE
+                        : NpcAttack.COLOSSEUM_MANTICORE_RANGE;
+
+                WorldPoint location = getWorldLocation(npc);
+                dispatchEvent(new NpcAttackEvent(getStage(), getTick(), location, attack, trackedNpc));
+                manticore.setStyle(null);
+            }
+            return;
+        }
+
         colosseumNpc.getAttack(npc.getAnimation()).ifPresent(attack -> {
             WorldPoint location = getWorldLocation(npc);
             dispatchEvent(new NpcAttackEvent(getStage(), getTick(), location, attack, trackedNpc));
@@ -109,6 +126,9 @@ public class WaveDataTracker extends DataTracker {
 
     @Override
     protected void onTick() {
+        getTrackedNpcs().stream()
+                .filter(trackedNpc -> trackedNpc instanceof Manticore)
+                .forEach(trackedNpc -> ((Manticore) trackedNpc).updateStyle());
     }
 
     @Override

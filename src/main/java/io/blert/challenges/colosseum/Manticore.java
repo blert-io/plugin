@@ -21,29 +21,46 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.core;
+package io.blert.challenges.colosseum;
 
-import io.blert.challenges.tob.TobNpc;
+import io.blert.core.BasicTrackedNpc;
+import io.blert.core.Hitpoints;
+import lombok.Getter;
+import lombok.Setter;
 import net.runelite.api.NPC;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-/**
- * A tracked NPC without any special properties, existing as a simple wrapper around a Runelite NPC.
- */
-public class BasicTrackedNpc extends TrackedNpc {
-    public static class EmptyProperties extends TrackedNpc.Properties {
+@Setter
+@Getter
+public class Manticore extends BasicTrackedNpc {
+    public final static int LOADING_ANIMATION = 10868;
+    public final static int ATTACK_ANIMATION = 10869;
+
+    private final static int MAGE_PROJECTILE = 2681;
+    private final static int RANGE_PROJECTILE = 2683;
+
+    enum Style {
+        MAGE,
+        RANGE,
     }
 
-    public BasicTrackedNpc(@NotNull NPC npc, long roomId, Hitpoints hitpoints) {
+    private @Nullable Style style = null;
+
+    public Manticore(@NotNull NPC npc, long roomId, Hitpoints hitpoints) {
         super(npc, roomId, hitpoints);
     }
 
-    public BasicTrackedNpc(@NotNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
-        super(npc, tobNpc, roomId, hitpoints);
-    }
-
-    @Override
-    public @NotNull Properties getProperties() {
-        return new EmptyProperties();
+    public void updateStyle() {
+        if (style != null) {
+            return;
+        }
+        if (getNpc().getAnimation() == LOADING_ANIMATION) {
+            if (getNpc().hasSpotAnim(MAGE_PROJECTILE)) {
+                style = Style.MAGE;
+            } else if (getNpc().hasSpotAnim(RANGE_PROJECTILE)) {
+                style = Style.RANGE;
+            }
+        }
     }
 }
