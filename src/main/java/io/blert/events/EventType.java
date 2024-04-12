@@ -51,6 +51,7 @@ public enum EventType {
 
     SOTE_MAZE_PROC(Event.Type.TOB_SOTE_MAZE_PROC),
     SOTE_MAZE_PATH(Event.Type.TOB_SOTE_MAZE_PATH),
+    SOTE_MAZE_END(Event.Type.TOB_SOTE_MAZE_END),
 
     XARPUS_PHASE(Event.Type.TOB_XARPUS_PHASE),
 

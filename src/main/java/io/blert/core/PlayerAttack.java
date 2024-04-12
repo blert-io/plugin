@@ -103,8 +103,10 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.HAMMER_SPEC
     ),
     HAM_JOINT(ItemID.HAM_JOINT, 401, 3, io.blert.proto.PlayerAttack.HAM_JOINT),
+    KICK(-1, 423, 4, io.blert.proto.PlayerAttack.KICK),
     KODAI_BARRAGE(ItemID.KODAI_WAND, 1979, 5, io.blert.proto.PlayerAttack.KODAI_BARRAGE),
     KODAI_BASH(ItemID.KODAI_WAND, 393, 5, io.blert.proto.PlayerAttack.KODAI_BASH),
+    PUNCH(-1, 422, 4, io.blert.proto.PlayerAttack.PUNCH),
     RAPIER(
             new int[]{ItemID.GHRAZI_RAPIER, ItemID.HOLY_GHRAZI_RAPIER},
             8145,
@@ -130,7 +132,17 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.SANG_BARRAGE
     ),
     SCEPTRE_BARRAGE(
-            new int[]{ItemID.ANCIENT_SCEPTRE, ItemID.SMOKE_ANCIENT_SCEPTRE, ItemID.SHADOW_ANCIENT_SCEPTRE, ItemID.BLOOD_ANCIENT_SCEPTRE, ItemID.ICE_ANCIENT_SCEPTRE, ItemID.ICE_ANCIENT_SCEPTRE_28262},
+            new int[]{
+                    ItemID.ANCIENT_SCEPTRE,
+                    ItemID.SMOKE_ANCIENT_SCEPTRE,
+                    ItemID.SMOKE_ANCIENT_SCEPTRE_28264,
+                    ItemID.SHADOW_ANCIENT_SCEPTRE,
+                    ItemID.SHADOW_ANCIENT_SCEPTRE_28266,
+                    ItemID.BLOOD_ANCIENT_SCEPTRE,
+                    ItemID.BLOOD_ANCIENT_SCEPTRE_28260,
+                    ItemID.ICE_ANCIENT_SCEPTRE,
+                    ItemID.ICE_ANCIENT_SCEPTRE_28262,
+            },
             1979,
             5,
             io.blert.proto.PlayerAttack.SCEPTRE_BARRAGE
@@ -207,6 +219,24 @@ public enum PlayerAttack {
             4,
             io.blert.proto.PlayerAttack.TENT_WHIP
     ),
+    TONALZTICS_AUTO(
+            new int[]{ItemID.TONALZTICS_OF_RALOS, ItemID.TONALZTICS_OF_RALOS_UNCHARGED},
+            new int[]{10922, 10923},
+            6,
+            io.blert.proto.PlayerAttack.TONALZTICS_AUTO
+    ),
+    TONALZTICS_SPEC(
+            new int[]{ItemID.TONALZTICS_OF_RALOS},
+            10914,
+            6,
+            io.blert.proto.PlayerAttack.TONALZTICS_SPEC
+    ),
+    TONALZTICS_UNCHARGED(
+            new int[]{ItemID.TONALZTICS_OF_RALOS_UNCHARGED},
+            10916,
+            6,
+            io.blert.proto.PlayerAttack.TONALZTICS_UNCHARGED
+    ),
     // TOXIC_TRIDENT must come before TOXIC_TRIDENT_BARRAGE as it is the default assumption when the animation is unknown.
     TOXIC_TRIDENT(
             new int[]{ItemID.TRIDENT_OF_THE_SWAMP, ItemID.TRIDENT_OF_THE_SWAMP_E},
@@ -254,6 +284,18 @@ public enum PlayerAttack {
             1979,
             5,
             io.blert.proto.PlayerAttack.VOLATILE_NM_BARRAGE
+    ),
+    VOLATILE_NM_BASH(
+            ItemID.VOLATILE_NIGHTMARE_STAFF,
+            4505,
+            5,
+            io.blert.proto.PlayerAttack.VOLATILE_NM_BASH
+    ),
+    VOLATILE_NM_SPEC(
+            ItemID.VOLATILE_NIGHTMARE_STAFF,
+            8532,
+            5,
+            io.blert.proto.PlayerAttack.VOLATILE_NM_SPEC
     ),
     // TODO(frolv): Seems that autos and specs share an animation so we'd have to look at the projectile.
     ZCB(ItemID.ZARYTE_CROSSBOW, 9168, 5, io.blert.proto.PlayerAttack.ZCB_SPEC),

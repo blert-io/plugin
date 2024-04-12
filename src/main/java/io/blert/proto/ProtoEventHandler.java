@@ -24,6 +24,7 @@
 package io.blert.proto;
 
 import io.blert.events.EventHandler;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -34,6 +35,7 @@ import java.util.*;
  * Events posted to `HandleEvent` are stored, without any output being produced. Users must call a flush method to
  * consume the events.
  */
+@Slf4j
 public class ProtoEventHandler implements EventHandler {
     private final Map<Integer, List<Event>> eventsByTick = new HashMap<>();
     private int earliestTickStored = 0;

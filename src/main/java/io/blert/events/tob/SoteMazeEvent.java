@@ -29,11 +29,19 @@ import io.blert.events.EventType;
 import lombok.Getter;
 
 @Getter
-public class SoteMazeProcEvent extends TobEvent {
+public class SoteMazeEvent extends TobEvent {
     private final Maze maze;
 
-    public SoteMazeProcEvent(int tick, Maze maze) {
-        super(EventType.SOTE_MAZE_PROC, Room.SOTETSEG, tick, null);
+    public static SoteMazeEvent mazeProc(int tick, Maze maze) {
+        return new SoteMazeEvent(EventType.SOTE_MAZE_PROC, tick, maze);
+    }
+
+    public static SoteMazeEvent mazeEnd(int tick, Maze maze) {
+        return new SoteMazeEvent(EventType.SOTE_MAZE_END, tick, maze);
+    }
+
+    private SoteMazeEvent(EventType type, int tick, Maze maze) {
+        super(type, Room.SOTETSEG, tick, null);
         this.maze = maze;
     }
 

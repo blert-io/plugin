@@ -38,6 +38,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 
@@ -150,9 +151,9 @@ public class WebsocketEventHandler implements EventHandler {
                 } else {
                     log.warn("Received invalid connection response from server");
                     try {
-                        webSocketClient.close();
-                    } catch (Exception e) {
-                        // Ignore.
+                        webSocketClient.close().get();
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
                     }
                     sidePanel.updateUser(null);
                 }

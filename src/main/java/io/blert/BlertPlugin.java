@@ -153,7 +153,7 @@ public class BlertPlugin extends Plugin {
         if (wsClient != null && wsClient.isOpen()) {
             sidePanel.updateUser(null);
             try {
-                wsClient.close();
+                wsClient.close().get();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

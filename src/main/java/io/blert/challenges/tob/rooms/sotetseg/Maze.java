@@ -23,7 +23,14 @@
 
 package io.blert.challenges.tob.rooms.sotetseg;
 
+import net.runelite.api.coords.WorldPoint;
+
 public enum Maze {
     MAZE_66,
-    MAZE_33,
+    MAZE_33;
+
+    public static final WorldPoint OVERWORLD_MAZE_START = new WorldPoint(3273, 4310, 0);
+    public static final WorldPoint UNDERWORLD_MAZE_START = new WorldPoint(3354, 4311, 3);
+    public static final int WIDTH = 14;
+    public static final int HEIGHT = 15;
 }

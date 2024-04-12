@@ -23,6 +23,7 @@
 
 package io.blert.challenges.tob.rooms.sotetseg;
 
+import io.blert.challenges.tob.Location;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
@@ -32,16 +33,18 @@ import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
 import io.blert.events.NpcAttackEvent;
-import io.blert.events.tob.SoteMazeProcEvent;
+import io.blert.events.tob.SoteMazeEvent;
+import io.blert.events.tob.SoteMazePathEvent;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Actor;
-import net.runelite.api.Client;
-import net.runelite.api.NPC;
-import net.runelite.api.Player;
+import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class SotetsegDataTracker extends RoomDataTracker {
@@ -49,6 +52,10 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private static final int SOTE_MELEE_ANIMATION = 8138;
     private static final int SOTE_BALL_ANIMATION = 8139;
     private static final int SOTE_DEATH_BALL_PROJECTILE = 1604;
+    private static final int MAZE_DISABLED_TILE_GROUND_OBJECT = 33033;
+    private static final int MAZE_INACTIVE_TILE_GROUND_OBJECT = 33034;
+    private static final int MAZE_ACTIVE_TILE_GROUND_OBJECT = 33035;
+    private static final int MAZE_RAG_GRAPHICS_OBJECT = 505;
     private static final int SOTE_ATTACK_SPEED = 5;
 
     private final int[] mazeTicks = new int[]{-1, -1};
@@ -57,6 +64,9 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private int lastAttackTick = -1;
     private int deathBallSpawnTick = -1;
     private @Nullable BasicTrackedNpc sotetseg = null;
+    private final MazeTracker mazeTracker = new MazeTracker();
+    boolean inMaze = false;
+    private final Set<GroundObject> activeMazeTiles = new HashSet<>();
 
     public SotetsegDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.SOTETSEG);
@@ -64,17 +74,13 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     @Override
     protected void onRoomStart() {
+        inMaze = false;
     }
 
     @Override
     protected void onTick() {
         super.onTick();
         final int tick = getTick();
-
-        if (mazeTicks[maze.ordinal()] == tick) {
-            // Advance to the next maze after all the teleport animation handlers have run.
-            maze = Maze.MAZE_33;
-        }
 
         if (deathBallSpawnTick != -1 && tick == deathBallSpawnTick + 20) {
             // The ball takes 15 ticks to land, but add in a safety buffer.
@@ -90,6 +96,16 @@ public class SotetsegDataTracker extends RoomDataTracker {
             lastAttackTick = tick;
             dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(sotetseg), attackThisTick, sotetseg));
             attackThisTick = null;
+        }
+
+        if (inMaze) {
+            Location playerLocation = Location.fromWorldPoint(getWorldLocation(client.getLocalPlayer()));
+            if (playerLocation.inSotetsegOverworld() && !activeMazeTiles.isEmpty()) {
+                var activeTilePoints = activeMazeTiles.stream()
+                        .map(this::getWorldLocation)
+                        .collect(Collectors.toList());
+                dispatchEvent(SoteMazePathEvent.overworldTiles(tick, maze, activeTilePoints));
+            }
         }
     }
 
@@ -114,7 +130,11 @@ public class SotetsegDataTracker extends RoomDataTracker {
     @Override
     protected void onNpcChange(NpcChanged changed) {
         if (TobNpc.isSotetsegIdle(changed.getOld().getId()) && TobNpc.isSotetseg(changed.getNpc().getId())) {
-            startRoom();
+            if (getState() == State.NOT_STARTED) {
+                startRoom();
+            } else {
+                finishMaze(getTick());
+            }
         }
     }
 
@@ -147,8 +167,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
         if (mazeTicks[maze.ordinal()] == -1) {
             mazeTicks[maze.ordinal()] = tick;
-            dispatchEvent(new SoteMazeProcEvent(tick, maze));
-            log.debug("Sotetseg {} procced on tick {} {}", maze, tick, formattedRoomTime());
+            startMaze(tick);
         }
     }
 
@@ -158,5 +177,65 @@ public class SotetsegDataTracker extends RoomDataTracker {
             deathBallSpawnTick = getTick();
             attackThisTick = NpcAttack.TOB_SOTE_DEATH_BALL;
         }
+    }
+
+    @Override
+    protected void onGroundObjectSpawn(GroundObjectSpawned event) {
+        GroundObject groundObject = event.getGroundObject();
+        if (groundObject.getId() == MAZE_ACTIVE_TILE_GROUND_OBJECT) {
+            Location playerLocation = Location.fromWorldPoint(getWorldLocation(client.getLocalPlayer()));
+            if (playerLocation.inSotetsegUnderworld()) {
+                mazeTracker.addUnderworldPoint(getWorldLocation(groundObject));
+            } else {
+                mazeTracker.addPotentialOverworldPoint(getWorldLocation(groundObject));
+                activeMazeTiles.add(groundObject);
+            }
+        }
+    }
+
+    @Override
+    protected void onGroundObjectDespawn(GroundObjectDespawned event) {
+        GroundObject groundObject = event.getGroundObject();
+        if (groundObject.getId() == MAZE_ACTIVE_TILE_GROUND_OBJECT) {
+            activeMazeTiles.remove(groundObject);
+        }
+    }
+
+    @Override
+    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
+        GraphicsObject graphicsObject = event.getGraphicsObject();
+        if (graphicsObject.getId() == MAZE_RAG_GRAPHICS_OBJECT) {
+            WorldPoint point = WorldPoint.fromLocalInstance(client, graphicsObject.getLocation());
+            mazeTracker.removeOverworldPoint(point);
+        }
+    }
+
+    private void startMaze(int tick) {
+        log.debug("Sotetseg {} started on tick {} {}", maze, tick, formattedRoomTime());
+        mazeTracker.reset();
+        activeMazeTiles.clear();
+        inMaze = true;
+
+        dispatchEvent(SoteMazeEvent.mazeProc(tick, maze));
+    }
+
+    private void finishMaze(int tick) {
+        inMaze = false;
+        mazeTracker.finishMaze();
+        log.debug("Maze {} finished; pivots: {}", maze, mazeTracker.getPivots());
+
+        if (mazeTracker.hasUnderworldPivots()) {
+            dispatchEvent(SoteMazePathEvent.underworldPivots(getTick(), maze, mazeTracker.getUnderworldPivots()));
+        }
+
+        if (mazeTracker.hasOverworldPivots()) {
+            dispatchEvent(SoteMazePathEvent.overworldPivots(getTick(), maze, mazeTracker.getOverworldPivots()));
+        }
+
+        dispatchEvent(SoteMazeEvent.mazeEnd(tick, maze));
+
+        // Advance to the next maze.
+        maze = Maze.MAZE_33;
+        mazeTracker.reset();
     }
 }

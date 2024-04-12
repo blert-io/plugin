@@ -183,6 +183,24 @@ public abstract class DataTracker {
     protected void onHitsplat(HitsplatApplied hitsplatApplied) {
     }
 
+    /**
+     * Implementation-specific equivalent of the {@code onGroundObjectSpawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGroundObjectSpawn(GroundObjectSpawned event) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onGroundObjectDespawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGroundObjectDespawn(GroundObjectDespawned event) {
+    }
+
     protected WorldPoint getWorldLocation(@NotNull Actor actor) {
         return Location.getWorldLocation(client, actor.getWorldLocation());
     }
@@ -192,6 +210,10 @@ public abstract class DataTracker {
     }
 
     protected WorldPoint getWorldLocation(@NotNull GameObject object) {
+        return Location.getWorldLocation(client, object.getWorldLocation());
+    }
+
+    protected WorldPoint getWorldLocation(@NotNull GroundObject object) {
         return Location.getWorldLocation(client, object.getWorldLocation());
     }
 
@@ -415,7 +437,7 @@ public abstract class DataTracker {
     }
 
     @Subscribe(priority = 10)
-    private void onChatMessage(ChatMessage event) {
+    protected final void onChatMessage(ChatMessage event) {
         if (state == State.IN_PROGRESS || event.getType() == ChatMessageType.GAMEMESSAGE) {
             onMessage(event);
         }
@@ -444,6 +466,20 @@ public abstract class DataTracker {
         }
 
         onHitsplat(hitsplatApplied);
+    }
+
+    @Subscribe
+    protected final void onGroundObjectSpawned(GroundObjectSpawned event) {
+        if (!terminating()) {
+            onGroundObjectSpawn(event);
+        }
+    }
+
+    @Subscribe
+    protected final void onGroundObjectDespawned(GroundObjectDespawned event) {
+        if (!terminating()) {
+            onGroundObjectDespawn(event);
+        }
     }
 
     @Subscribe

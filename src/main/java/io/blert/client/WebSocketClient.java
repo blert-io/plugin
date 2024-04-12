@@ -31,17 +31,23 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 @Slf4j
 
-public class WebSocketClient extends WebSocketListener implements AutoCloseable {
+public class WebSocketClient extends WebSocketListener {
     @NotNull
     private final String hostname;
     private final byte[] apiKey;
     private final OkHttpClient client;
     private WebSocket socket;
+
+    private final List<CompletableFuture<Void>> closeFutures = new ArrayList<>();
 
     @Setter
     private @Nullable Consumer<byte[]> binaryMessageCallback = null;
@@ -125,6 +131,8 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
     public void onClosed(WebSocket webSocket, int status, String reason) {
         log.info("Blert websocket {} closed: {} ({})", webSocket, status, reason);
         socket = null;
+        closeFutures.forEach(future -> future.complete(null));
+        closeFutures.clear();
         onDisconnect();
     }
 
@@ -135,12 +143,15 @@ public class WebSocketClient extends WebSocketListener implements AutoCloseable 
         onDisconnect();
     }
 
-    @Override
-    public void close() throws Exception {
+    public Future<Void> close() {
         if (socket != null) {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            closeFutures.add(future);
             socket.close(1000, null);
-            onDisconnect();
+            return future;
         }
+
+        return CompletableFuture.completedFuture(null);
     }
 
     private void onDisconnect() {

@@ -40,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 
 import javax.annotation.Nullable;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class EventTranslator {
@@ -195,14 +196,40 @@ public class EventTranslator {
                 break;
             }
 
-            case SOTE_MAZE_PROC: {
-                SoteMazeProcEvent mazeProcEvent = (SoteMazeProcEvent) event;
-                var maze = mazeProcEvent.getMaze() == Maze.MAZE_66
+            case SOTE_MAZE_PROC:
+            case SOTE_MAZE_END: {
+                SoteMazeEvent mazeEvent = (SoteMazeEvent) event;
+                var maze = mazeEvent.getMaze() == Maze.MAZE_66
                         ? Event.SoteMaze.Maze.MAZE_66
                         : Event.SoteMaze.Maze.MAZE_33;
                 eventBuilder.setSoteMaze(Event.SoteMaze.newBuilder().setMaze(maze));
                 break;
             }
+
+            case SOTE_MAZE_PATH: {
+                SoteMazePathEvent mazePathEvent = (SoteMazePathEvent) event;
+                var maze = mazePathEvent.getMaze() == Maze.MAZE_66
+                        ? Event.SoteMaze.Maze.MAZE_66
+                        : Event.SoteMaze.Maze.MAZE_33;
+                var coords = mazePathEvent.mazeRelativePoints()
+                        .map(pt -> Coords.newBuilder().setX(pt.getX()).setY(pt.getY()).build())
+                        .collect(Collectors.toList());
+                Event.SoteMaze.Builder builder = Event.SoteMaze.newBuilder().setMaze(maze);
+                switch (mazePathEvent.getTileType()) {
+                    case OVERWORLD_TILES:
+                        builder.addAllOverworldTiles(coords);
+                        break;
+                    case UNDERWORLD_PIVOTS:
+                        builder.addAllUnderworldPivots(coords);
+                        break;
+                    case OVERWORLD_PIVOTS:
+                        builder.addAllOverworldPivots(coords);
+                        break;
+                }
+                eventBuilder.setSoteMaze(builder);
+                break;
+            }
+
 
             case XARPUS_PHASE: {
                 XarpusPhaseEvent xarpusPhaseEvent = (XarpusPhaseEvent) event;

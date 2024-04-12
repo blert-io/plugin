@@ -175,6 +175,14 @@ public enum Location {
         return this == SOTETSEG_ROOM || this == SOTETSEG_MAZE;
     }
 
+    public boolean inSotetsegOverworld() {
+        return this == SOTETSEG_INSTANCE || this == SOTETSEG_ROOM;
+    }
+
+    public boolean inSotetsegUnderworld() {
+        return this == SOTETSEG_MAZE;
+    }
+
     public boolean inXarpusInstance() {
         return this == XARPUS_INSTANCE || inXarpus();
     }
