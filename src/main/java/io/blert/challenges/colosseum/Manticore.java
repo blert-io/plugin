@@ -25,27 +25,30 @@ package io.blert.challenges.colosseum;
 
 import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
+import io.blert.core.NpcAttack;
 import lombok.Getter;
-import lombok.Setter;
 import net.runelite.api.NPC;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-@Setter
-@Getter
 public class Manticore extends BasicTrackedNpc {
     public final static int LOADING_ANIMATION = 10868;
     public final static int ATTACK_ANIMATION = 10869;
 
     private final static int MAGE_PROJECTILE = 2681;
     private final static int RANGE_PROJECTILE = 2683;
+    private final static int MELEE_PROJECTILE = 2685;
 
     enum Style {
         MAGE,
         RANGE,
+        MELEE,
     }
 
+    @Getter
     private @Nullable Style style = null;
+
+    private int attacksRemaining = 0;
 
     public Manticore(@NotNull NPC npc, long roomId, Hitpoints hitpoints) {
         super(npc, roomId, hitpoints);
@@ -55,12 +58,55 @@ public class Manticore extends BasicTrackedNpc {
         if (style != null) {
             return;
         }
-        if (getNpc().getAnimation() == LOADING_ANIMATION) {
-            if (getNpc().hasSpotAnim(MAGE_PROJECTILE)) {
-                style = Style.MAGE;
-            } else if (getNpc().hasSpotAnim(RANGE_PROJECTILE)) {
-                style = Style.RANGE;
+
+        NPC npc = getNpc();
+        if (npc.getAnimation() == LOADING_ANIMATION || npc.getAnimation() == ATTACK_ANIMATION) {
+            // Manticores can have multiple style graphics; the first one is its next attack.
+            for (var spotAnim : npc.getSpotAnims()) {
+                if (spotAnim.getId() == MAGE_PROJECTILE) {
+                    style = Style.MAGE;
+                    break;
+                }
+                if (spotAnim.getId() == RANGE_PROJECTILE) {
+                    style = Style.RANGE;
+                    break;
+                }
+                if (spotAnim.getId() == MELEE_PROJECTILE) {
+                    style = Style.MELEE;
+                    break;
+                }
             }
+        } else {
+            style = null;
+        }
+    }
+
+    public void startAttack() {
+        attacksRemaining = 3;
+    }
+
+    public @Nullable NpcAttack continueAttack() {
+        if (attacksRemaining == 0 || getNpc().isDead()) {
+            return null;
+        }
+
+        attacksRemaining--;
+        NpcAttack attack = attackForStyle();
+        style = null;
+        return attack;
+    }
+
+    private @Nullable NpcAttack attackForStyle() {
+        if (style == null) {
+            return null;
+        }
+        switch (style) {
+            case MAGE:
+                return NpcAttack.COLOSSEUM_MANTICORE_MAGE;
+            case RANGE:
+                return NpcAttack.COLOSSEUM_MANTICORE_RANGE;
+            default:
+                return NpcAttack.COLOSSEUM_MANTICORE_MELEE;
         }
     }
 }

@@ -102,18 +102,7 @@ public class WaveDataTracker extends DataTracker {
         if (colosseumNpc.isManticore()) {
             Manticore manticore = (Manticore) trackedNpc;
             if (npc.getAnimation() == Manticore.ATTACK_ANIMATION) {
-                if (manticore.getStyle() == null) {
-                    log.warn("Manticore attack animation without style");
-                    return;
-                }
-
-                NpcAttack attack = manticore.getStyle() == Manticore.Style.MAGE
-                        ? NpcAttack.COLOSSEUM_MANTICORE_MAGE
-                        : NpcAttack.COLOSSEUM_MANTICORE_RANGE;
-
-                WorldPoint location = getWorldLocation(npc);
-                dispatchEvent(new NpcAttackEvent(getStage(), getTick(), location, attack, trackedNpc));
-                manticore.setStyle(null);
+                manticore.startAttack();
             }
             return;
         }
@@ -128,7 +117,16 @@ public class WaveDataTracker extends DataTracker {
     protected void onTick() {
         getTrackedNpcs().stream()
                 .filter(trackedNpc -> trackedNpc instanceof Manticore)
-                .forEach(trackedNpc -> ((Manticore) trackedNpc).updateStyle());
+                .forEach(trackedNpc -> {
+                    Manticore manticore = (Manticore) trackedNpc;
+                    // Check for an attack using the previous tick's style before updating.
+                    NpcAttack attack = manticore.continueAttack();
+                    if (attack != null) {
+                        WorldPoint location = getWorldLocation(manticore.getNpc());
+                        dispatchEvent(new NpcAttackEvent(getStage(), getTick(), location, attack, manticore));
+                    }
+                    manticore.updateStyle();
+                });
     }
 
     @Override

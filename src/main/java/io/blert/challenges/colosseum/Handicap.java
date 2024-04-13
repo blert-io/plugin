@@ -27,7 +27,7 @@ import lombok.Getter;
 
 @Getter
 public enum Handicap {
-    DOOM_SCORPION(0),
+    MANTIMAYHEM(0),
     REENTRY(1),
     BEES(2),
     VOLATILITY(3),
