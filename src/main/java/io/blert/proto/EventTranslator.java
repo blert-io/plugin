@@ -29,10 +29,8 @@ import io.blert.challenges.tob.rooms.maiden.MaidenCrab;
 import io.blert.challenges.tob.rooms.nylocas.Nylo;
 import io.blert.challenges.tob.rooms.sotetseg.Maze;
 import io.blert.challenges.tob.rooms.verzik.VerzikCrab;
-import io.blert.core.EquipmentSlot;
-import io.blert.core.Item;
 import io.blert.core.Stage;
-import io.blert.core.TrackedNpc;
+import io.blert.core.*;
 import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
 import io.blert.events.tob.*;
@@ -110,8 +108,9 @@ public class EventTranslator {
 
                 playerUpdateEvent.getActivePrayers().ifPresent(prayers -> builder.setActivePrayers(prayers.getValue()));
 
-                playerUpdateEvent.getEquipment().forEach(
-                        (slot, item) -> builder.addEquipment(translateEquippedItem(slot, item)));
+                playerUpdateEvent.getEquipmentChangesThisTick().stream()
+                        .map(ItemDelta::getValue)
+                        .forEach(builder::addEquipmentDeltas);
 
                 eventBuilder.setPlayer(builder);
                 break;
@@ -229,7 +228,6 @@ public class EventTranslator {
                 eventBuilder.setSoteMaze(builder);
                 break;
             }
-
 
             case XARPUS_PHASE: {
                 XarpusPhaseEvent xarpusPhaseEvent = (XarpusPhaseEvent) event;

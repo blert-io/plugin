@@ -29,8 +29,7 @@ import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 
 @Getter
@@ -67,7 +66,7 @@ public class PlayerUpdateEvent extends Event {
     private @Nullable PrayerSet activePrayers = null;
 
     @Getter
-    private final Map<EquipmentSlot, Item> equipment = new HashMap<>();
+    private List<ItemDelta> equipmentChangesThisTick;
     @Getter
     private int offCooldownTick = 0;
 
@@ -84,7 +83,7 @@ public class PlayerUpdateEvent extends Event {
         Source source = raider.isLocalPlayer() ? Source.PRIMARY : Source.SECONDARY;
 
         PlayerUpdateEvent evt = new PlayerUpdateEvent(stage, tick, point, source, raider.getUsername());
-        evt.equipment.putAll(raider.getEquipment());
+        evt.equipmentChangesThisTick = raider.getEquipmentChangesThisTick();
         evt.offCooldownTick = raider.getOffCooldownTick();
 
         if (raider.isLocalPlayer()) {

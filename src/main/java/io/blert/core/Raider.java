@@ -50,29 +50,30 @@ public class Raider {
     @Setter
     private @Nullable Player player;
     @Getter
-    boolean localPlayer;
+    private final boolean localPlayer;
 
     @Setter
-    boolean active;
+    private boolean active;
 
     @Getter
     @Setter
-    boolean dead;
+    private boolean dead;
 
-    BlowpipeState blowpiping;
+    private BlowpipeState blowpiping;
+
+    private Item[] equipment = new Item[EquipmentSlot.values().length];
+    @Getter
+    private final List<ItemDelta> equipmentChangesThisTick = new ArrayList<>();
 
     @Getter
-    Map<EquipmentSlot, io.blert.core.Item> equipment = new HashMap<>();
-
+    private int animationId;
     @Getter
-    int animationId;
-    @Getter
-    int animationTick;
+    private int animationTick;
 
     @Getter
     private @Nullable PlayerAttack lastAttack;
     @Getter
-    int offCooldownTick;
+    private int offCooldownTick;
 
     @Getter
     private @Nullable Prayer overheadPrayer;
@@ -103,7 +104,8 @@ public class Raider {
     public void resetForNewRoom() {
         dead = false;
         blowpiping = BlowpipeState.NOT_PIPING;
-        equipment.clear();
+        equipment = new Item[EquipmentSlot.values().length];
+        equipmentChangesThisTick.clear();
         animationId = -1;
         animationTick = 0;
         lastAttack = null;
@@ -126,7 +128,7 @@ public class Raider {
     }
 
     public Optional<io.blert.core.Item> getEquippedItem(EquipmentSlot slot) {
-        return Optional.ofNullable(equipment.get(slot));
+        return Optional.ofNullable(equipment[slot.ordinal()]);
     }
 
     /**
@@ -153,7 +155,7 @@ public class Raider {
 
         updateOverheadPrayer();
 
-        equipment.clear();
+        equipmentChangesThisTick.clear();
 
         if (localPlayer) {
             updateEquipmentFromLocalPlayer(client);
@@ -161,7 +163,7 @@ public class Raider {
             updateEquipmentFromVisibleItems(client);
         }
 
-        io.blert.core.Item newWeapon = equipment.get(EquipmentSlot.WEAPON);
+        Item newWeapon = equipment[EquipmentSlot.WEAPON.ordinal()];
 
         if (isBlowpiping() && isOffCooldownOn(tick)) {
             // The blowpipe animation is continuous, so it can't be relied on to determine when a player stops
@@ -201,24 +203,48 @@ public class Raider {
 
     private void updateEquipmentFromLocalPlayer(Client client) {
         var equippedItems = client.getItemContainer(InventoryID.EQUIPMENT);
-        if (equippedItems != null) {
-            for (EquipmentSlot slot : EquipmentSlot.values()) {
-                var item = equippedItems.getItem(slot.getInventorySlotIndex());
-                if (item != null) {
-                    equipment.put(slot, new io.blert.core.Item(item.getId(), item.getQuantity()));
-                }
-            }
-        } else {
+        if (equippedItems == null) {
             updateEquipmentFromVisibleItems(client);
+            return;
+        }
+
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            var item = equippedItems.getItem(slot.getInventorySlotIndex());
+            Item previous = this.equipment[slot.ordinal()];
+
+            if (item != null) {
+                if (previous == null || previous.getId() != item.getId()) {
+                    equipmentChangesThisTick.add(new ItemDelta(item.getId(), item.getQuantity(), slot.ordinal(), true));
+                } else {
+                    int delta = item.getQuantity() - previous.getQuantity();
+                    if (delta != 0) {
+                        equipmentChangesThisTick.add(
+                                new ItemDelta(item.getId(), Math.abs(delta), slot.ordinal(), delta > 0));
+                    }
+                }
+                equipment[slot.ordinal()] = new Item(item.getId(), item.getQuantity());
+            } else if (previous != null) {
+                equipmentChangesThisTick.add(new ItemDelta(previous.getId(), previous.getQuantity(), slot.ordinal(), false));
+                equipment[slot.ordinal()] = null;
+            }
         }
     }
 
     private void updateEquipmentFromVisibleItems(Client client) {
         Arrays.stream(EquipmentSlot.values()).filter(slot -> slot.getKitType() != null).forEach(slot -> {
+            Item previous = equipment[slot.ordinal()];
+
             int id = Objects.requireNonNull(player).getPlayerComposition().getEquipmentId(slot.getKitType());
             if (id != -1) {
                 var comp = client.getItemDefinition(id);
-                equipment.put(slot, new Item(comp.getId(), 1));
+
+                if (previous == null || previous.getId() != comp.getId()) {
+                    equipmentChangesThisTick.add(new ItemDelta(comp.getId(), 1, slot.ordinal(), true));
+                    equipment[slot.ordinal()] = new Item(comp.getId(), 1);
+                }
+            } else if (previous != null) {
+                equipmentChangesThisTick.add(new ItemDelta(previous.getId(), previous.getQuantity(), slot.ordinal(), false));
+                equipment[slot.ordinal()] = null;
             }
         });
     }
