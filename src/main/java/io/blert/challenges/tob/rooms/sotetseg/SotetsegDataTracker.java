@@ -222,14 +222,14 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private void finishMaze(int tick) {
         inMaze = false;
         mazeTracker.finishMaze();
-        log.debug("Maze {} finished; pivots: {}", maze, mazeTracker.getPivots());
+        log.debug("{} finished; pivots: {}", maze, mazeTracker.getPivots());
 
         if (mazeTracker.hasUnderworldPivots()) {
             dispatchEvent(SoteMazePathEvent.underworldPivots(getTick(), maze, mazeTracker.getUnderworldPivots()));
         }
 
         if (mazeTracker.hasOverworldPivots()) {
-            dispatchEvent(SoteMazePathEvent.overworldPivots(getTick(), maze, mazeTracker.getOverworldPivots()));
+            dispatchEvent(SoteMazePathEvent.overworldPivots(getTick(), maze, mazeTracker.getOverworldPoints()));
         }
 
         dispatchEvent(SoteMazeEvent.mazeEnd(tick, maze));
