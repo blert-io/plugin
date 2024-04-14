@@ -39,6 +39,10 @@ import org.jetbrains.annotations.NotNull;
 public abstract class TrackedNpc {
     /**
      * Properties are an immutable copy of NPC-specific data fields for a {@link TrackedNpc}.
+     * <p>
+     * Properties are assumed to be immutable by default. If a {@link TrackedNpc}'s state can change over time,
+     * the implementation should call {@link TrackedNpc#setUpdatedProperties(boolean)} to indicate when the properties
+     * have been changed.
      */
     public abstract static class Properties {
     }
@@ -61,12 +65,16 @@ public abstract class TrackedNpc {
     @Setter
     private int spawnTick;
 
+    @Setter
+    private boolean updatedProperties;
+
     protected TrackedNpc(@NotNull NPC npc, long roomId, Hitpoints hitpoints) {
         this.npc = npc;
         this.mode = ChallengeMode.NO_MODE;
         this.roomId = roomId;
         this.hitpoints = hitpoints;
         this.spawnTick = -1;
+        this.updatedProperties = true;
     }
 
     protected TrackedNpc(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
@@ -75,6 +83,11 @@ public abstract class TrackedNpc {
         this.roomId = roomId;
         this.hitpoints = hitpoints;
         this.spawnTick = -1;
+        this.updatedProperties = true;
+    }
+
+    public boolean hasUpdatedProperties() {
+        return updatedProperties;
     }
 
     /**

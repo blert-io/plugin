@@ -29,12 +29,16 @@ import io.blert.core.TrackedNpc;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
-@Getter
 public class NpcEvent extends Event {
+    @Getter
     private final long roomId;
+    @Getter
     private final int npcId;
+    @Getter
     private final Hitpoints hitpoints;
+    @Getter
     private final TrackedNpc.Properties properties;
+    private final boolean propertiesChanged;
 
     public static NpcEvent spawn(Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
         return new NpcEvent(EventType.NPC_SPAWN, stage, tick, point, trackedNpc);
@@ -54,6 +58,11 @@ public class NpcEvent extends Event {
         this.npcId = trackedNpc.getNpcId();
         this.hitpoints = trackedNpc.getHitpoints();
         this.properties = trackedNpc.getProperties();
+        this.propertiesChanged = trackedNpc.hasUpdatedProperties();
+    }
+
+    public boolean propertiesChanged() {
+        return propertiesChanged;
     }
 
     @Override

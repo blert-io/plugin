@@ -361,6 +361,8 @@ public abstract class DataTracker {
         } else {
             dispatchEvent(NpcEvent.update(getStage(), tick, point, trackedNpc));
         }
+
+        trackedNpc.setUpdatedProperties(false);
     }
 
     protected void despawnTrackedNpc(TrackedNpc trackedNpc) {

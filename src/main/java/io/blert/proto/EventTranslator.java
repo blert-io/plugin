@@ -150,7 +150,9 @@ public class EventTranslator {
                         .setId(npcEvent.getNpcId())
                         .setRoomId(npcEvent.getRoomId())
                         .setHitpoints(npcEvent.getHitpoints().getValue());
-                addTranslatedNpcProperties(builder, npcEvent);
+                if (npcEvent.propertiesChanged()) {
+                    addTranslatedNpcProperties(builder, npcEvent);
+                }
 
                 eventBuilder.setNpc(builder);
                 break;

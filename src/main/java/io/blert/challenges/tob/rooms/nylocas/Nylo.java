@@ -76,7 +76,6 @@ public class Nylo extends TrackedNpc {
     @Getter
     private final int spawnTick;
     @Getter
-    @Setter
     private Style style;
     @Getter
     private final int wave;
@@ -104,6 +103,11 @@ public class Nylo extends TrackedNpc {
     public @NotNull TrackedNpc.Properties getProperties() {
         long parentRoomId = parent != null ? parent.getRoomId() : 0;
         return new Properties(getRoomId(), parentRoomId, wave, big, spawnType, style);
+    }
+
+    public void setStyle(Style style) {
+        setUpdatedProperties(true);
+        this.style = style;
     }
 
     public boolean isSplit() {
