@@ -39,14 +39,22 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 @Slf4j
-
 public class WebSocketClient extends WebSocketListener {
+    enum SocketState {
+        CLOSED,
+        OPEN,
+        OPENING,
+        CLOSING,
+    }
+
     @NotNull
     private final String hostname;
     private final byte[] apiKey;
     private final OkHttpClient client;
     private WebSocket socket;
+    private SocketState state = SocketState.CLOSED;
 
+    private final List<CompletableFuture<Boolean>> openFutures = new ArrayList<>();
     private final List<CompletableFuture<Void>> closeFutures = new ArrayList<>();
 
     @Setter
@@ -69,16 +77,30 @@ public class WebSocketClient extends WebSocketListener {
      *
      * @return True if the websocket is connected and messages can be sent or received.
      */
-    public boolean isOpen() {
-        return socket != null;
+    public synchronized boolean isOpen() {
+        return state == SocketState.OPEN;
     }
 
-    public void open() {
+    /**
+     * Opens the websocket connection to the configured server.
+     *
+     * @return A future that resolves to true if the connection was successful, or false if not.
+     */
+    public Future<Boolean> open() {
         Request request = new Request.Builder()
                 .url(hostname)
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(apiKey))
                 .build();
-        socket = client.newWebSocket(request, this);
+
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+
+        synchronized (this) {
+            openFutures.add(future);
+            socket = client.newWebSocket(request, this);
+            state = SocketState.OPENING;
+        }
+
+        return future;
     }
 
     /**
@@ -105,8 +127,11 @@ public class WebSocketClient extends WebSocketListener {
 
     @Override
     @EverythingIsNonNull
-    public void onOpen(WebSocket webSocket, Response response) {
+    public synchronized void onOpen(WebSocket webSocket, Response response) {
         log.info("Blert websocket {} opened", webSocket);
+        state = SocketState.OPEN;
+        openFutures.forEach(future -> future.complete(true));
+        openFutures.clear();
     }
 
     @Override
@@ -128,8 +153,9 @@ public class WebSocketClient extends WebSocketListener {
 
     @Override
     @EverythingIsNonNull
-    public void onClosed(WebSocket webSocket, int status, String reason) {
+    public synchronized void onClosed(WebSocket webSocket, int status, String reason) {
         log.info("Blert websocket {} closed: {} ({})", webSocket, status, reason);
+        state = SocketState.CLOSED;
         socket = null;
         closeFutures.forEach(future -> future.complete(null));
         closeFutures.clear();
@@ -137,10 +163,19 @@ public class WebSocketClient extends WebSocketListener {
     }
 
     @Override
-    public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, Response response) {
+    public synchronized void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, Response response) {
+        if (state == SocketState.OPENING) {
+            openFutures.forEach(future -> future.complete(false));
+            openFutures.clear();
+        }
+
+        if (isOpen()) {
+            onDisconnect();
+        }
+
         log.warn("Blert websocket {} failed: {}", webSocket, response, t);
+        state = SocketState.CLOSED;
         socket = null;
-        onDisconnect();
     }
 
     public Future<Void> close() {
@@ -148,6 +183,7 @@ public class WebSocketClient extends WebSocketListener {
             CompletableFuture<Void> future = new CompletableFuture<>();
             closeFutures.add(future);
             socket.close(1000, null);
+            state = SocketState.CLOSING;
             return future;
         }
 

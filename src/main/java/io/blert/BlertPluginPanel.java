@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.LinkBrowser;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,6 +43,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,11 +58,42 @@ public class BlertPluginPanel extends PluginPanel {
     private JPanel recentRecordingsPanel;
     private JPanel recentRecordingsContainer;
 
+    private final JLabel activeChallengeLabel = new JLabel();
+    private final JLabel severStatusLabel = new JLabel();
+    private final JLabel connectionStatusLabel = new JLabel();
+    private Timer shutdownLabelTimer;
+
     private final List<ServerMessage.PastChallenge> recentRecordings = new ArrayList<>();
+
+    private WebsocketEventHandler.Status challengeStatus = WebsocketEventHandler.Status.IDLE;
+    private Instant shutdownTime = null;
 
     public BlertPluginPanel(BlertPlugin plugin, BlertConfig config) {
         this.plugin = plugin;
         this.config = config;
+
+        shutdownLabelTimer = new Timer(1000, e -> {
+            if (shutdownTime == null) {
+                severStatusLabel.setForeground(Color.GREEN);
+                severStatusLabel.setText("Blert server is online.");
+                return;
+            }
+
+            Duration timeUntilShutdown = Duration.between(Instant.now(), shutdownTime);
+            if (timeUntilShutdown.isNegative()) {
+                severStatusLabel.setText("Server shutting down...");
+                severStatusLabel.setForeground(Color.RED);
+            } else {
+                String time = DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss");
+                severStatusLabel.setForeground(Color.YELLOW);
+                severStatusLabel.setText("Server shutting down in " + time + ".");
+            }
+        });
+
+        activeChallengeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        severStatusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        severStatusLabel.setBorder(new EmptyBorder(0, 0, 5, 0));
+        connectionStatusLabel.setHorizontalAlignment(SwingConstants.CENTER);
     }
 
     public void startPanel() {
@@ -69,18 +103,25 @@ public class BlertPluginPanel extends PluginPanel {
         setFocusable(false);
 
         createUserPanel(null);
-        createChallengeStatusPanel(this, WebsocketEventHandler.Status.IDLE, Challenge.UNKNOWN_CHALLENGE, null);
+        createChallengeStatusPanel(this, Challenge.UNKNOWN_CHALLENGE, null);
         createRecentRecordingsPanel(this);
         populateRecentRecordingsPanel();
+
+        shutdownLabelTimer.start();
     }
 
-    public void updateUser(@Nullable String username) {
+    public void stopPanel() {
+        shutdownLabelTimer.stop();
+    }
+
+    public synchronized void updateUser(@Nullable String username) {
         createUserPanel(username);
     }
 
-    public void updateChallengeStatus(
+    public synchronized void updateChallengeStatus(
             WebsocketEventHandler.Status status, Challenge challenge, @Nullable String challengeId) {
-        createChallengeStatusPanel(this, status, challenge, challengeId);
+        this.challengeStatus = status;
+        createChallengeStatusPanel(this, challenge, challengeId);
     }
 
     public void setRecentRecordings(@Nullable List<ServerMessage.PastChallenge> recentRecordings) {
@@ -91,6 +132,13 @@ public class BlertPluginPanel extends PluginPanel {
         populateRecentRecordingsPanel();
     }
 
+    public synchronized void setShutdownTime(@Nullable Instant shutdownTime) {
+        this.shutdownTime = shutdownTime;
+        if (challengeStatus == WebsocketEventHandler.Status.IDLE) {
+            setIdleActiveChallengeLabelText();
+        }
+    }
+
     private void createUserPanel(@Nullable String username) {
         if (userPanel != null) {
             remove(userPanel);
@@ -98,22 +146,19 @@ public class BlertPluginPanel extends PluginPanel {
 
         userPanel = new JPanel();
         userPanel.setLayout(new BorderLayout());
-        userPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        userPanel.setBorder(new EmptyBorder(0, 10, 10, 10));
 
         userPanel.add(createHeading("Server Status"), BorderLayout.NORTH);
 
-        JLabel connectionLabel = new JLabel();
-        connectionLabel.setForeground(Color.WHITE);
-        connectionLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
         if (username != null) {
-            connectionLabel.setText(wrapHtml("Connected as: <b style=\"color: white\">" + username + "</b>"));
-            connectionLabel.setForeground(Color.GREEN);
-            userPanel.add(connectionLabel, BorderLayout.SOUTH);
+            connectionStatusLabel.setText(wrapHtml("Connected as: <b style=\"color: white\">" + username + "</b>"));
+            connectionStatusLabel.setForeground(Color.GREEN);
+            userPanel.add(severStatusLabel, BorderLayout.CENTER);
+            userPanel.add(connectionStatusLabel, BorderLayout.SOUTH);
         } else {
-            connectionLabel.setText("Not connected.");
-            connectionLabel.setForeground(Color.RED);
-            userPanel.add(connectionLabel, BorderLayout.CENTER);
+            connectionStatusLabel.setText("Not connected.");
+            connectionStatusLabel.setForeground(Color.RED);
+            userPanel.add(connectionStatusLabel, BorderLayout.CENTER);
 
             if (Strings.isNullOrEmpty(config.apiKey())) {
                 JLabel apiKeyLabel = new JLabel(wrapHtml(
@@ -127,12 +172,7 @@ public class BlertPluginPanel extends PluginPanel {
                 dontConnectLabel.setHorizontalAlignment(SwingConstants.CENTER);
                 userPanel.add(dontConnectLabel, BorderLayout.SOUTH);
             } else {
-                JPanel connectButtonPanel = new JPanel();
-                connectButtonPanel.setLayout(new BorderLayout());
-                connectButtonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-                JButton connectButton = new JButton("Connect");
-                connectButton.addActionListener(e -> plugin.initializeWebSocketClient());
-                connectButtonPanel.add(connectButton, BorderLayout.CENTER);
+                JPanel connectButtonPanel = createConnectButtonPanel();
                 userPanel.add(connectButtonPanel, BorderLayout.SOUTH);
             }
         }
@@ -140,8 +180,45 @@ public class BlertPluginPanel extends PluginPanel {
         add(userPanel, BorderLayout.NORTH);
     }
 
-    private void createChallengeStatusPanel(
-            JPanel parent, WebsocketEventHandler.Status status, Challenge challenge, @Nullable String challengeId) {
+    private @NotNull JPanel createConnectButtonPanel() {
+        JPanel connectButtonPanel = new JPanel();
+        connectButtonPanel.setLayout(new BorderLayout());
+        connectButtonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JButton connectButton = new JButton("Connect");
+        connectButton.addActionListener(e -> {
+            connectButton.setEnabled(false);
+            connectButton.setText("Connecting...");
+
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                private boolean success = false;
+
+                @Override
+                protected Void doInBackground() {
+                    try {
+                        success = plugin.getWsClient().open().get();
+                    } catch (Exception e) {
+                        log.error("Error connecting to Blert server", e);
+                    }
+                    return null;
+                }
+
+                @Override
+                protected void done() {
+                    super.done();
+                    connectButton.setEnabled(true);
+                    connectButton.setText("Connect");
+                    if (!success) {
+                        connectionStatusLabel.setText("Failed to connect to server.");
+                    }
+                }
+            };
+            worker.execute();
+        });
+        connectButtonPanel.add(connectButton, BorderLayout.CENTER);
+        return connectButtonPanel;
+    }
+
+    private void createChallengeStatusPanel(JPanel parent, Challenge challenge, @Nullable String challengeId) {
         if (challengeStatusPanel != null) {
             parent.remove(challengeStatusPanel);
         }
@@ -150,9 +227,9 @@ public class BlertPluginPanel extends PluginPanel {
         challengeStatusPanel.setLayout(new BorderLayout());
         challengeStatusPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        JPanel currentStatePanel = createCurrentChallengeStatePanel(status);
+        JPanel currentStatePanel = createCurrentChallengeStatePanel();
 
-        if (status == WebsocketEventHandler.Status.CHALLENGE_ACTIVE) {
+        if (challengeStatus == WebsocketEventHandler.Status.CHALLENGE_ACTIVE) {
             JPanel actionsPanel = createChallengeActionsPanel(challenge, challengeId);
             challengeStatusPanel.add(actionsPanel, BorderLayout.SOUTH);
         }
@@ -219,30 +296,27 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     @NotNull
-    private static JPanel createCurrentChallengeStatePanel(WebsocketEventHandler.Status status) {
+    private JPanel createCurrentChallengeStatePanel() {
         JPanel currentStatePanel = new JPanel();
         currentStatePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         currentStatePanel.setLayout(new BorderLayout());
 
-        JLabel challengeStatusText = new JLabel();
-        challengeStatusText.setHorizontalAlignment(SwingConstants.CENTER);
-
-        switch (status) {
+        switch (challengeStatus) {
             case IDLE:
-                challengeStatusText.setText("Not in a PvM challenge.");
+                setIdleActiveChallengeLabelText();
                 break;
             case CHALLENGE_STARTING:
-                challengeStatusText.setText("Starting...");
-                challengeStatusText.setForeground(Color.YELLOW);
+                activeChallengeLabel.setText("Starting...");
+                activeChallengeLabel.setForeground(Color.YELLOW);
                 break;
             case CHALLENGE_ACTIVE:
-                challengeStatusText.setText("Streaming challenge data!");
-                challengeStatusText.setForeground(Color.GREEN);
+                activeChallengeLabel.setText("Streaming challenge data!");
+                activeChallengeLabel.setForeground(Color.GREEN);
                 break;
         }
 
         currentStatePanel.add(createHeading("Current Challenge"), BorderLayout.NORTH);
-        currentStatePanel.add(challengeStatusText, BorderLayout.CENTER);
+        currentStatePanel.add(activeChallengeLabel, BorderLayout.CENTER);
         return currentStatePanel;
     }
 
@@ -425,6 +499,17 @@ public class BlertPluginPanel extends PluginPanel {
         challengePanel.add(createChallengeActionsPanel(challenge.getChallenge(), challenge.getId()), BorderLayout.SOUTH);
 
         return challengePanel;
+    }
+
+    void setIdleActiveChallengeLabelText() {
+        if (this.shutdownTime != null) {
+            activeChallengeLabel.setForeground(Color.RED);
+            activeChallengeLabel.setText(
+                    wrapHtml("<p style=\"text-align:center\">New challenges cannot be started at this time.</p>"));
+        } else {
+            activeChallengeLabel.setForeground(Color.LIGHT_GRAY);
+            activeChallengeLabel.setText("Not in a PvM challenge.");
+        }
     }
 
     private String challengeUrl(Challenge challenge, String challengeId) {

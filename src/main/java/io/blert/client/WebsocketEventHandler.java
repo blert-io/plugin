@@ -34,14 +34,20 @@ import io.blert.proto.EventTranslator;
 import io.blert.proto.ProtoEventHandler;
 import io.blert.proto.ServerMessage;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
+import net.runelite.api.Client;
+import net.runelite.api.GameState;
+import net.runelite.client.callback.ClientThread;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @Slf4j
-
 public class WebsocketEventHandler implements EventHandler {
     public enum Status {
         IDLE,
@@ -52,10 +58,13 @@ public class WebsocketEventHandler implements EventHandler {
     private final WebSocketClient webSocketClient;
     private final ProtoEventHandler protoEventHandler;
     private final BlertPluginPanel sidePanel;
+    private final Client runeliteClient;
+    private final ClientThread runeliteThread;
 
     private Status status = Status.IDLE;
     private Challenge currentChallenge = null;
     private @Nullable String challengeId = null;
+    private Instant serverShutdownTime = null;
 
     private int currentTick = 0;
 
@@ -64,12 +73,15 @@ public class WebsocketEventHandler implements EventHandler {
      *
      * @param webSocketClient Websocket client connected and authenticated to the blert server.
      */
-    public WebsocketEventHandler(WebSocketClient webSocketClient, BlertPluginPanel sidePanel) {
+    public WebsocketEventHandler(WebSocketClient webSocketClient, BlertPluginPanel sidePanel,
+                                 Client client, ClientThread runeliteThread) {
         this.webSocketClient = webSocketClient;
         this.webSocketClient.setBinaryMessageCallback(this::handleProtoMessage);
-        this.webSocketClient.setDisconnectCallback(this::handleDisconnect);
+        this.webSocketClient.setDisconnectCallback(this::reset);
         this.protoEventHandler = new ProtoEventHandler();
         this.sidePanel = sidePanel;
+        this.runeliteClient = client;
+        this.runeliteThread = runeliteThread;
     }
 
     @Override
@@ -78,6 +90,13 @@ public class WebsocketEventHandler implements EventHandler {
             case CHALLENGE_START: {
                 // Starting a new raid. Discard any buffered events.
                 protoEventHandler.flushEventsUpTo(clientTick);
+
+                if (pendingServerShutdown()) {
+                    sendGameMessage(
+                            "<col=ef1020>This challenge will not be recorded due to scheduled Blert maintenance.</col>"
+                    );
+                    break;
+                }
 
                 if (webSocketClient.isOpen()) {
                     sendEvents(EventTranslator.toProto(event, null));
@@ -145,6 +164,9 @@ public class WebsocketEventHandler implements EventHandler {
                 break;
 
             case CONNECTION_RESPONSE:
+                serverShutdownTime = null;
+                sidePanel.setShutdownTime(null);
+
                 if (serverMessage.hasUser()) {
                     sidePanel.updateUser(serverMessage.getUser().getName());
                     sendRaidHistoryRequest();
@@ -188,6 +210,56 @@ public class WebsocketEventHandler implements EventHandler {
                 }
                 break;
 
+            case SERVER_STATUS: {
+                var serverStatus = serverMessage.getServerStatus();
+                switch (serverStatus.getStatus()) {
+                    case SHUTDOWN_PENDING: {
+                        var shutdownTime = serverStatus.getShutdownTime();
+                        serverShutdownTime = Instant.ofEpochSecond(shutdownTime.getSeconds(), shutdownTime.getNanos());
+                        Duration timeUntilShutdown = Duration.between(Instant.now(), serverShutdownTime);
+                        sidePanel.setShutdownTime(serverShutdownTime);
+
+                        String shutdownMessage = String.format(
+                                "Blert's servers will go offline for maintenance in %s.<br>Visit Blert's Discord server for status updates.",
+                                DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss")
+                        );
+
+                        sendGameMessage(ChatMessageType.BROADCAST, shutdownMessage);
+                        break;
+                    }
+
+                    case SHUTDOWN_IMMINENT: {
+                        reset();
+                        protoEventHandler.flushEventsUpTo(currentTick);
+                        try {
+                            webSocketClient.close().get();
+                        } catch (Exception e) {
+                            log.error("Failed to close websocket client", e);
+                        }
+                        sidePanel.setShutdownTime(null);
+                        break;
+                    }
+
+                    case SHUTDOWN_CANCELED: {
+                        serverShutdownTime = null;
+                        sidePanel.setShutdownTime(null);
+                        sendGameMessage(
+                                ChatMessageType.BROADCAST,
+                                "The scheduled Blert maintenance has been canceled. You may continue to record PvM challenges!"
+                        );
+                        break;
+                    }
+
+                    case UNRECOGNIZED:
+                        log.error("Received unrecognized server status from server: {}", serverStatus.getStatus());
+                        break;
+
+                    default:
+                        break;
+                }
+                break;
+            }
+
             case PONG:
             case HISTORY_REQUEST:
             case EVENT_STREAM:
@@ -226,7 +298,7 @@ public class WebsocketEventHandler implements EventHandler {
         }
     }
 
-    private void handleDisconnect() {
+    private void reset() {
         currentChallenge = null;
         challengeId = null;
         protoEventHandler.setChallengeId(null);
@@ -241,5 +313,21 @@ public class WebsocketEventHandler implements EventHandler {
                 ? currentChallenge.toProto()
                 : io.blert.proto.Challenge.UNKNOWN_CHALLENGE;
         sidePanel.updateChallengeStatus(status, challenge, challengeId);
+    }
+
+    private boolean pendingServerShutdown() {
+        return serverShutdownTime != null;
+    }
+
+    private void sendGameMessage(String message) {
+        sendGameMessage(ChatMessageType.GAMEMESSAGE, message);
+    }
+
+    private void sendGameMessage(ChatMessageType type, String message) {
+        runeliteThread.invoke(() -> {
+            if (runeliteClient.getGameState() == GameState.LOGGED_IN) {
+                runeliteClient.addChatMessage(type, "", message, null);
+            }
+        });
     }
 }

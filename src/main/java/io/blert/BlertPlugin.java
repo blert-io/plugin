@@ -31,6 +31,8 @@ import io.blert.client.WebsocketEventHandler;
 import io.blert.core.RecordableChallenge;
 import io.blert.util.Location;
 import joptsimple.internal.Strings;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -85,6 +87,7 @@ public class BlertPlugin extends Plugin {
 
     private WebsocketEventHandler handler;
 
+    @Getter(AccessLevel.MODULE)
     private WebSocketClient wsClient;
 
     @Override
@@ -97,6 +100,7 @@ public class BlertPlugin extends Plugin {
 
         if (config.apiKey() != null) {
             initializeWebSocketClient();
+            wsClient.open();
         }
 
         challenges.add(new TheatreChallenge(client, eventBus, clientThread));
@@ -106,6 +110,7 @@ public class BlertPlugin extends Plugin {
     @Override
     protected void shutDown() throws Exception {
         clientToolbar.removeNavigation(sidePanelButton);
+        sidePanel.stopPanel();
         sidePanel = null;
 
         if (activeChallenge != null) {
@@ -149,7 +154,7 @@ public class BlertPlugin extends Plugin {
         }
     }
 
-    public void initializeWebSocketClient() {
+    private void initializeWebSocketClient() {
         if (wsClient != null && wsClient.isOpen()) {
             sidePanel.updateUser(null);
             try {
@@ -173,13 +178,11 @@ public class BlertPlugin extends Plugin {
         }
 
         wsClient = new WebSocketClient(hostname, config.apiKey());
-        handler = new WebsocketEventHandler(wsClient, sidePanel);
+        handler = new WebsocketEventHandler(wsClient, sidePanel, client, clientThread);
 
         if (activeChallenge != null) {
             activeChallenge.setEventHandler(handler);
         }
-
-        wsClient.open();
     }
 
     @Provides
