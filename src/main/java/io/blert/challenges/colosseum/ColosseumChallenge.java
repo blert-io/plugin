@@ -30,6 +30,7 @@ import io.blert.util.DeferredTask;
 import io.blert.util.Location;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.NpcDespawned;
@@ -48,6 +49,7 @@ import java.util.stream.Collectors;
 public final class ColosseumChallenge extends RecordableChallenge {
     private static final int COLOSSEUM_REGION_ID = 7216;
     private static final int COLOSSEUM_LOBBY_REGION_ID = 7316;
+    private static final WorldArea COLOSSEUM_AREA = new WorldArea(1806, 3088, 38, 38, 0);
 
     private static final int MINIMUS_NPC_ID = 12808;
     private static final int REWARD_CHEST_OBJECT_ID = 50741;
@@ -167,7 +169,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
         }
 
         if (getState().isInactive()) {
-            if (playerLocation.getRegionID() == COLOSSEUM_REGION_ID) {
+            if (COLOSSEUM_AREA.contains(playerLocation)) {
                 startColosseum();
             }
         } else if (playerLocation.getRegionID() != COLOSSEUM_REGION_ID) {
