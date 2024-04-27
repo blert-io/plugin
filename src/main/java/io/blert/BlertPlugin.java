@@ -29,6 +29,7 @@ import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.client.WebSocketClient;
 import io.blert.client.WebsocketEventHandler;
 import io.blert.core.RecordableChallenge;
+import io.blert.util.DeferredTask;
 import io.blert.util.Location;
 import joptsimple.internal.Strings;
 import lombok.AccessLevel;
@@ -55,6 +56,7 @@ import javax.inject.Inject;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @PluginDescriptor(
@@ -87,6 +89,11 @@ public class BlertPlugin extends Plugin {
 
     private WebsocketEventHandler handler;
 
+    private GameState previousGameState = null;
+    private boolean isLoggedIn = false;
+
+    private DeferredTask deferredTask;
+
     @Getter(AccessLevel.MODULE)
     private WebSocketClient wsClient;
 
@@ -105,6 +112,9 @@ public class BlertPlugin extends Plugin {
 
         challenges.add(new TheatreChallenge(client, eventBus, clientThread));
         challenges.add(new ColosseumChallenge(client, eventBus, clientThread));
+
+        previousGameState = client.getGameState();
+        isLoggedIn = previousGameState == GameState.LOGGED_IN;
     }
 
     @Override
@@ -126,6 +136,7 @@ public class BlertPlugin extends Plugin {
 
     @Subscribe(priority = 10)
     public void onGameTick(GameTick gameTick) {
+        deferredTask.tick();
         updateActiveChallenge();
 
         if (activeChallenge != null) {
@@ -135,15 +146,35 @@ public class BlertPlugin extends Plugin {
 
     @Subscribe
     private void onGameStateChanged(GameStateChanged gameStateChanged) {
-        if (wsClient == null || config.dontConnect()) {
+        GameState gameState = gameStateChanged.getGameState();
+        if (gameState == previousGameState) {
             return;
         }
 
-        if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
-            if (config.apiKey() != null && !wsClient.isOpen()) {
-                wsClient.open();
+        if (gameState == GameState.LOGGED_IN) {
+            if (!config.dontConnect() && config.apiKey() != null && !wsClient.isOpen()) {
+                try {
+                    wsClient.open().get();
+                } catch (InterruptedException | ExecutionException e) {
+                    isLoggedIn = true;
+                }
             }
+
+            // If the player was not already logged in, notify the server that they have.
+            if (!isLoggedIn) {
+                deferredTask = new DeferredTask(() -> handler.updateGameState(GameState.LOGGED_IN), 3);
+            }
+
+            isLoggedIn = true;
+        } else if (gameState == GameState.LOGIN_SCREEN) {
+            if (isLoggedIn) {
+                handler.updateGameState(GameState.LOGIN_SCREEN);
+            }
+
+            isLoggedIn = false;
         }
+
+        previousGameState = gameState;
     }
 
     @Subscribe

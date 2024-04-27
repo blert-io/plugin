@@ -45,7 +45,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @Slf4j
 public class WebsocketEventHandler implements EventHandler {
@@ -65,6 +64,7 @@ public class WebsocketEventHandler implements EventHandler {
     private Challenge currentChallenge = null;
     private @Nullable String challengeId = null;
     private Instant serverShutdownTime = null;
+    private boolean apiKeyUsernameMismatch = false;
 
     private int currentTick = 0;
 
@@ -94,6 +94,14 @@ public class WebsocketEventHandler implements EventHandler {
                 if (pendingServerShutdown()) {
                     sendGameMessage(
                             "<col=ef1020>This challenge will not be recorded due to scheduled Blert maintenance.</col>"
+                    );
+                    break;
+                }
+
+                if (apiKeyUsernameMismatch) {
+                    sendGameMessage(
+                            "<col=ef1020>This challenge will not be recorded as this API key is linked to a different OSRS account. " +
+                                    "If you changed your display name, please update it on the Blert website.</col>"
                     );
                     break;
                 }
@@ -144,6 +152,34 @@ public class WebsocketEventHandler implements EventHandler {
         currentTick = clientTick;
     }
 
+    public void updateGameState(GameState gameState) {
+        ServerMessage.GameState.State state;
+        if (gameState == GameState.LOGGED_IN) {
+            state = ServerMessage.GameState.State.LOGGED_IN;
+        } else if (gameState == GameState.LOGIN_SCREEN) {
+            state = ServerMessage.GameState.State.LOGGED_OUT;
+        } else {
+            return;
+        }
+
+        ServerMessage.GameState.Builder gameStateBuilder = ServerMessage.GameState.newBuilder().setState(state);
+
+        if (gameState == GameState.LOGGED_IN) {
+            ServerMessage.GameState.PlayerInfo.Builder playerInfoBuilder = ServerMessage.GameState.PlayerInfo.newBuilder()
+                    .setUsername(runeliteClient.getLocalPlayer().getName())
+                    .setOverallExperience(runeliteClient.getOverallExperience());
+            gameStateBuilder.setPlayerInfo(playerInfoBuilder);
+        }
+
+        ServerMessage message = ServerMessage.newBuilder()
+                .setType(ServerMessage.Type.GAME_STATE)
+                .setGameState(gameStateBuilder)
+                .build();
+        webSocketClient.sendMessage(message.toByteArray());
+
+        apiKeyUsernameMismatch = false;
+    }
+
     private void handleProtoMessage(byte[] message) {
         ServerMessage serverMessage;
         try {
@@ -160,7 +196,7 @@ public class WebsocketEventHandler implements EventHandler {
                 break;
 
             case ERROR:
-                // Currently unused.
+                handleServerError(serverMessage.getError());
                 break;
 
             case CONNECTION_RESPONSE:
@@ -169,15 +205,13 @@ public class WebsocketEventHandler implements EventHandler {
 
                 if (serverMessage.hasUser()) {
                     sidePanel.updateUser(serverMessage.getUser().getName());
+                    if (runeliteClient.getGameState() == GameState.LOGGED_IN) {
+                        updateGameState(GameState.LOGGED_IN);
+                    }
                     sendRaidHistoryRequest();
                 } else {
                     log.warn("Received invalid connection response from server");
-                    try {
-                        webSocketClient.close().get();
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                    sidePanel.updateUser(null);
+                    closeWebsocketClient();
                 }
                 break;
 
@@ -231,12 +265,7 @@ public class WebsocketEventHandler implements EventHandler {
                     case SHUTDOWN_IMMINENT: {
                         reset();
                         protoEventHandler.flushEventsUpTo(currentTick);
-                        try {
-                            webSocketClient.close().get();
-                        } catch (Exception e) {
-                            log.error("Failed to close websocket client", e);
-                        }
-                        sidePanel.setShutdownTime(null);
+                        closeWebsocketClient();
                         break;
                     }
 
@@ -268,6 +297,36 @@ public class WebsocketEventHandler implements EventHandler {
 
             case UNRECOGNIZED:
                 log.warn("Received unrecognized protobuf message from server");
+                break;
+        }
+    }
+
+    private void handleServerError(ServerMessage.Error error) {
+        switch (error.getType()) {
+            case BAD_REQUEST:
+                // TODO(frolv): Implement.
+                break;
+
+            case UNIMPLEMENTED:
+                // TODO(frolv): Implement.
+                break;
+
+            case USERNAME_MISMATCH:
+                sendGameMessage(
+                        ChatMessageType.GAMEMESSAGE,
+                        "<col=ef1020>This Blert API key is linked to the account " + error.getUsername() +
+                                ". If you changed your display name, please go update it on the Blert website.</col>");
+                apiKeyUsernameMismatch = true;
+                break;
+
+            case UNAUTHENTICATED:
+                log.info("Disconnected from server due to authentication failure");
+                closeWebsocketClient();
+                break;
+
+            case UNKNOWN:
+            case UNRECOGNIZED:
+                log.error("Received unrecognized server errror {}", error.getTypeValue());
                 break;
         }
     }
@@ -329,5 +388,14 @@ public class WebsocketEventHandler implements EventHandler {
                 runeliteClient.addChatMessage(type, "", message, null);
             }
         });
+    }
+
+    private void closeWebsocketClient() {
+        try {
+            webSocketClient.close().get();
+        } catch (Exception e) {
+            log.error("Failed to close websocket client", e);
+        }
+        sidePanel.setShutdownTime(null);
     }
 }
