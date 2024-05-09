@@ -181,17 +181,20 @@ public class BlertPlugin extends Plugin {
     private void onConfigChanged(ConfigChanged changed) {
         String key = changed.getKey();
         if (key.equals("apiKey") || key.equals("serverUrl") || key.equals("dontConnect")) {
-            initializeWebSocketClient();
+            new Thread(this::initializeWebSocketClient).start();
         }
     }
 
     private void initializeWebSocketClient() {
-        if (wsClient != null && wsClient.isOpen()) {
+        if (wsClient != null) {
             sidePanel.updateUser(null);
-            try {
-                wsClient.close().get();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+
+            if (wsClient.isOpen()) {
+                try {
+                    wsClient.close().get();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
