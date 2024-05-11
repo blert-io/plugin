@@ -108,6 +108,21 @@ public class TheatreChallenge extends RecordableChallenge {
             initializePartyFromLobby();
         }
 
+        if (deferredTask != null) {
+            deferredTask.tick();
+        }
+
+        if (getState() == ChallengeState.STARTING && location.inRaid()) {
+            setState(ChallengeState.ACTIVE);
+        } else if (getState().hasStarted() && !location.inRaid()) {
+            if (getState() == ChallengeState.COMPLETE) {
+                setState(ChallengeState.INACTIVE);
+            } else if (getState() != ChallengeState.ENDING) {
+                queueRaidEnd(ChallengeState.INACTIVE);
+            }
+            return;
+        }
+
         if (!inChallenge()) {
             return;
         }
@@ -119,7 +134,7 @@ public class TheatreChallenge extends RecordableChallenge {
 
             if (roomDataTracker.notStarted() && roomState.isActive() && roomDataTracker.playersAreInRoom()) {
                 // The room may already be active when entered (e.g. as a spectator); start its tracker.
-                if (getState() == ChallengeState.STARTING) {
+                if (getState() == ChallengeState.PREPARING) {
                     startRaid();
                 }
 
@@ -128,10 +143,6 @@ public class TheatreChallenge extends RecordableChallenge {
             }
 
             roomDataTracker.tick();
-        }
-
-        if (deferredTask != null) {
-            deferredTask.tick();
         }
     }
 
@@ -155,7 +166,7 @@ public class TheatreChallenge extends RecordableChallenge {
     private void queueRaidStart(ChallengeMode mode, boolean reinitializeParty) {
         log.info("Starting new raid");
         updateMode(mode);
-        setState(ChallengeState.STARTING);
+        setState(ChallengeState.PREPARING);
 
         if (reinitializeParty) {
             // When players join the raid, the orb list does not immediately update, nor does it update all at once.
@@ -172,7 +183,11 @@ public class TheatreChallenge extends RecordableChallenge {
     }
 
     private void startRaid() {
-        setState(ChallengeState.ACTIVE);
+        deferredTask = null;
+
+        updateLocation();
+        setState(location.inRaid() ? ChallengeState.ACTIVE : ChallengeState.STARTING);
+
         boolean spectator = !playerIsInChallenge(client.getLocalPlayer().getName());
 
         List<String> names = getParty().stream().map(Raider::getUsername).collect(Collectors.toList());
@@ -193,7 +208,8 @@ public class TheatreChallenge extends RecordableChallenge {
     }
 
     private void queueRaidEnd(ChallengeState state, int overallTime) {
-        deferredTask = new DeferredTask(() -> endRaid(state, overallTime), 5);
+        setState(ChallengeState.ENDING);
+        deferredTask = new DeferredTask(() -> endRaid(state, overallTime), 3);
     }
 
     private void endRaid(ChallengeState state, int overallTime) {
@@ -252,12 +268,9 @@ public class TheatreChallenge extends RecordableChallenge {
                 // spectating. Party and mode information is not immediately available.
                 log.debug("Raid started via varbit change");
                 queueRaidStart(ChallengeMode.NO_MODE, true);
-            } else if (getState().isActive() && varbit.getValue() < 2) {
+            } else if (getState().inChallenge() && varbit.getValue() < 2) {
                 if (getState() == ChallengeState.COMPLETE) {
                     setState(ChallengeState.INACTIVE);
-                } else {
-                    // The raid has finished; clean up.
-                    queueRaidEnd(ChallengeState.INACTIVE);
                 }
             }
         }

@@ -165,11 +165,11 @@ public abstract class RecordableChallenge {
     }
 
     public boolean inChallenge() {
-        return state.isActive();
+        return state.inChallenge();
     }
 
     public void dispatchEvent(Event event) {
-        if (state == ChallengeState.INACTIVE || state == ChallengeState.STARTING) {
+        if (state == ChallengeState.INACTIVE || state == ChallengeState.PREPARING) {
             if (event.getType() != EventType.CHALLENGE_START && event.getType() != EventType.CHALLENGE_END) {
                 pendingEvents.add(event);
                 return;

@@ -93,7 +93,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
             checkColosseumState();
         }
 
-        if (getState().isActive()) {
+        if (getState().inChallenge()) {
             if (waveDataTracker != null) {
                 waveDataTracker.tick();
             }
