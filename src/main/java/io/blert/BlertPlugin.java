@@ -50,6 +50,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
+import okhttp3.OkHttpClient;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -81,10 +82,14 @@ public class BlertPlugin extends Plugin {
     @Inject
     private BlertConfig config;
 
+    @Inject
+    OkHttpClient httpClient;
+
     private BlertPluginPanel sidePanel;
     private NavigationButton sidePanelButton;
 
     private final List<RecordableChallenge> challenges = new ArrayList<>();
+    @Getter
     private @Nullable RecordableChallenge activeChallenge = null;
 
     private WebsocketEventHandler handler;
@@ -211,8 +216,8 @@ public class BlertPlugin extends Plugin {
             hostname = "wss://" + hostname;
         }
 
-        wsClient = new WebSocketClient(hostname, config.apiKey());
-        handler = new WebsocketEventHandler(wsClient, sidePanel, client, clientThread);
+        wsClient = new WebSocketClient(hostname, config.apiKey(), httpClient);
+        handler = new WebsocketEventHandler(this, wsClient, sidePanel, client, clientThread);
 
         if (activeChallenge != null) {
             activeChallenge.setEventHandler(handler);

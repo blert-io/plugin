@@ -66,10 +66,10 @@ public class WebSocketClient extends WebSocketListener {
     @Setter
     private @Nullable Runnable disconnectCallback = null;
 
-    public WebSocketClient(@NotNull String hostname, @NotNull String apiKey) {
+    public WebSocketClient(@NotNull String hostname, @NotNull String apiKey, OkHttpClient client) {
         this.apiKey = apiKey.getBytes(StandardCharsets.UTF_8);
         this.hostname = hostname;
-        this.client = new OkHttpClient.Builder().build();
+        this.client = client;
     }
 
     /**

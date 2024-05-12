@@ -104,6 +104,12 @@ public final class ColosseumChallenge extends RecordableChallenge {
         }
     }
 
+    @Nullable
+    @Override
+    protected Stage getStage() {
+        return waveDataTracker != null ? waveDataTracker.getStage() : null;
+    }
+
     @Subscribe
     private void onNpcSpawned(NpcSpawned event) {
         if (!stateChangeCooldown && event.getNpc().getId() == MINIMUS_NPC_ID) {

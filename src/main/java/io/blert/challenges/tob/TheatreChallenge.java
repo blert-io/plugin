@@ -146,6 +146,12 @@ public class TheatreChallenge extends RecordableChallenge {
         }
     }
 
+    @Nullable
+    @Override
+    protected Stage getStage() {
+        return roomDataTracker != null ? roomDataTracker.getStage() : null;
+    }
+
     /**
      * Invokes a callback for each username displayed in the ToB orb list.
      *
