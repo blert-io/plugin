@@ -183,7 +183,7 @@ public class Raider {
         lastAttack = attack;
         offCooldownTick = tick + attack.getCooldown();
 
-        if (attack == PlayerAttack.BLOWPIPE) {
+        if (attack == PlayerAttack.BLOWPIPE || attack == PlayerAttack.BLOWPIPE_SPEC) {
             blowpiping = BlowpipeState.PIPING;
         } else {
             blowpiping = BlowpipeState.NOT_PIPING;

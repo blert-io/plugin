@@ -110,7 +110,7 @@ public class BlertPlugin extends Plugin {
         clientToolbar.addNavigation(sidePanelButton);
         sidePanel.startPanel();
 
-        if (config.apiKey() != null) {
+        if (config.apiKey() != null && !config.dontConnect()) {
             initializeWebSocketClient();
             wsClient.open();
         }
@@ -141,7 +141,10 @@ public class BlertPlugin extends Plugin {
 
     @Subscribe(priority = 10)
     public void onGameTick(GameTick gameTick) {
-        deferredTask.tick();
+        if (deferredTask != null) {
+            deferredTask.tick();
+        }
+
         updateActiveChallenge();
 
         if (activeChallenge != null) {
@@ -166,13 +169,13 @@ public class BlertPlugin extends Plugin {
             }
 
             // If the player was not already logged in, notify the server that they have.
-            if (!isLoggedIn) {
+            if (!isLoggedIn && handler != null) {
                 deferredTask = new DeferredTask(() -> handler.updateGameState(GameState.LOGGED_IN), 3);
             }
 
             isLoggedIn = true;
         } else if (gameState == GameState.LOGIN_SCREEN) {
-            if (isLoggedIn) {
+            if (isLoggedIn && handler != null) {
                 handler.updateGameState(GameState.LOGIN_SCREEN);
             }
 

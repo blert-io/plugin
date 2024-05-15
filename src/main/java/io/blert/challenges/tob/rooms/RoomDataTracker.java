@@ -36,7 +36,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
 import net.runelite.api.Varbits;
-import net.runelite.api.events.*;
+import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.GameObjectDespawned;
+import net.runelite.api.events.GameObjectSpawned;
+import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
@@ -174,15 +177,6 @@ public abstract class RoomDataTracker extends DataTracker {
     protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
     }
 
-    /**
-     * Implementation-specific equivalent of the {@code onProjectileMoved} Runelite event handler.
-     * Should be overriden by implementations which require special handling.
-     *
-     * @param event The event.
-     */
-    protected void onProjectile(ProjectileMoved event) {
-    }
-
     @Subscribe
     protected final void onGameObjectSpawned(GameObjectSpawned event) {
         if (!terminating()) {
@@ -201,13 +195,6 @@ public abstract class RoomDataTracker extends DataTracker {
     private void onGraphicsObjectCreated(GraphicsObjectCreated event) {
         if (!terminating()) {
             onGraphicsObjectCreation(event);
-        }
-    }
-
-    @Subscribe
-    protected final void onProjectileMoved(ProjectileMoved event) {
-        if (!terminating()) {
-            onProjectile(event);
         }
     }
 

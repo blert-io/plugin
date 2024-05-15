@@ -25,18 +25,22 @@ package io.blert.core;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import net.runelite.api.ItemID;
 
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public enum PlayerAttack {
-    BGS_SMACK(
-            new int[]{ItemID.BANDOS_GODSWORD, ItemID.BANDOS_GODSWORD_OR},
-            7045,
+    ABYSSAL_BLUDGEON(ItemID.ABYSSAL_BLUDGEON, 3298, 4, io.blert.proto.PlayerAttack.ABYSSAL_BLUDGEON),
+    AGS_SPEC(
+            new int[]{ItemID.ARMADYL_GODSWORD, ItemID.ARMADYL_GODSWORD_OR},
+            new int[]{7644, 7645},
             6,
-            io.blert.proto.PlayerAttack.BGS_SMACK
+            io.blert.proto.PlayerAttack.AGS_SPEC
     ),
+    ATLATL_AUTO(ItemID.ECLIPSE_ATLATL, 11057, 3, io.blert.proto.PlayerAttack.ATLATL_AUTO),
+    ATLATL_SPEC(ItemID.ECLIPSE_ATLATL, 11060, 3, io.blert.proto.PlayerAttack.ATLATL_SPEC),
     BGS_SPEC(
             new int[]{ItemID.BANDOS_GODSWORD, ItemID.BANDOS_GODSWORD_OR},
             new int[]{7642, 7643},
@@ -48,6 +52,12 @@ public enum PlayerAttack {
             new int[]{5061, 10656},
             2,
             io.blert.proto.PlayerAttack.BLOWPIPE
+    ),
+    BLOWPIPE_SPEC(
+            new int[]{ItemID.TOXIC_BLOWPIPE, ItemID.BLAZING_BLOWPIPE},
+            new int[]{},  // This is handled specially instead of being assigned automatically.
+            2,
+            io.blert.proto.PlayerAttack.BLOWPIPE_SPEC
     ),
     BOWFA(new int[]{ItemID.BOW_OF_FAERDHINEN, ItemID.BOW_OF_FAERDHINEN_C, 25884, 25886, 25888, 25890, 25892, 25894, 25896},
             426,
@@ -77,18 +87,65 @@ public enum PlayerAttack {
             4,
             io.blert.proto.PlayerAttack.CLAW_SPEC
     ),
-    DAWN_SPEC(ItemID.DAWNBRINGER, 1167, 4, io.blert.proto.PlayerAttack.DAWN_SPEC),
+    DAWN_SPEC(ItemID.DAWNBRINGER, 1167, 4, new Projectile(1547, 51), io.blert.proto.PlayerAttack.DAWN_SPEC),
+    DAWN_AUTO(ItemID.DAWNBRINGER, 1167, 4, new Projectile(1544, 51), io.blert.proto.PlayerAttack.DAWN_AUTO),
+    DART(
+            new int[]{
+                    ItemID.RUNE_DART, ItemID.RUNE_DARTP, 5634, 5641,
+                    ItemID.AMETHYST_DART, ItemID.AMETHYST_DARTP, 25855, 25857,
+                    ItemID.DRAGON_DART, ItemID.DRAGON_DARTP, 11233, 11234,
+            },
+            7554,
+            2,
+            io.blert.proto.PlayerAttack.DART
+    ),
+    DDS_POKE(
+            new int[]{ItemID.DRAGON_DAGGER, ItemID.DRAGON_DAGGERP, ItemID.DRAGON_DAGGERP_5680, ItemID.DRAGON_DAGGERP_5698},
+            new int[]{376, 377},
+            4,
+            io.blert.proto.PlayerAttack.DDS_POKE
+    ),
+    DDS_SPEC(
+            new int[]{ItemID.DRAGON_DAGGER, ItemID.DRAGON_DAGGERP, ItemID.DRAGON_DAGGERP_5680, ItemID.DRAGON_DAGGERP_5698},
+            1062,
+            4,
+            io.blert.proto.PlayerAttack.DDS_SPEC
+    ),
     DINHS_SPEC(
             new int[]{ItemID.DINHS_BULWARK, ItemID.DINHS_BLAZING_BULWARK},
             7511,
             5,
             io.blert.proto.PlayerAttack.DINHS_SPEC
     ),
+    DUAL_MACUAHUITL(ItemID.DUAL_MACUAHUITL, 10989, 4, io.blert.proto.PlayerAttack.DUAL_MACUAHUITL),
+    ELDER_MAUL(
+            new int[]{ItemID.ELDER_MAUL, ItemID.ELDER_MAUL_OR},
+            7516,
+            6,
+            io.blert.proto.PlayerAttack.ELDER_MAUL
+    ),
     FANG(
             new int[]{ItemID.OSMUMTENS_FANG, ItemID.OSMUMTENS_FANG_OR},
             9471,
             5,
             io.blert.proto.PlayerAttack.FANG_STAB
+    ),
+    GODSWORD_SMACK(
+            new int[]{
+                    ItemID.ANCIENT_GODSWORD,
+                    ItemID.ANCIENT_GODSWORD_27184,
+                    ItemID.ARMADYL_GODSWORD,
+                    ItemID.ARMADYL_GODSWORD_OR,
+                    ItemID.BANDOS_GODSWORD,
+                    ItemID.BANDOS_GODSWORD_OR,
+                    ItemID.SARADOMIN_GODSWORD,
+                    ItemID.SARADOMIN_GODSWORD_OR,
+                    ItemID.ZAMORAK_GODSWORD,
+                    ItemID.ZAMORAK_GODSWORD_OR,
+            },
+            new int[]{7044, 7045, 7054, 7055},
+            6,
+            io.blert.proto.PlayerAttack.GODSWORD_SMACK
     ),
     HAMMER_BOP(
             new int[]{ItemID.DRAGON_WARHAMMER, ItemID.DRAGON_WARHAMMER_CR},
@@ -103,6 +160,7 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.HAMMER_SPEC
     ),
     HAM_JOINT(ItemID.HAM_JOINT, 401, 3, io.blert.proto.PlayerAttack.HAM_JOINT),
+    INQUISITORS_MACE(ItemID.INQUISITORS_MACE, new int[]{400, 4503}, 4, io.blert.proto.PlayerAttack.INQUISITORS_MACE),
     KICK(-1, 423, 4, io.blert.proto.PlayerAttack.KICK),
     KODAI_BARRAGE(ItemID.KODAI_WAND, 1979, 5, io.blert.proto.PlayerAttack.KODAI_BARRAGE),
     KODAI_BASH(ItemID.KODAI_WAND, 393, 5, io.blert.proto.PlayerAttack.KODAI_BASH),
@@ -164,15 +222,9 @@ public enum PlayerAttack {
             5,
             io.blert.proto.PlayerAttack.SCYTHE_UNCHARGED
     ),
-    SGS_SMACK(
-            new int[]{ItemID.SARADOMIN_GODSWORD, ItemID.SARADOMIN_GODSWORD_OR},
-            7045,
-            6,
-            io.blert.proto.PlayerAttack.SGS_SMACK
-    ),
     SGS_SPEC(
             new int[]{ItemID.SARADOMIN_GODSWORD, ItemID.SARADOMIN_GODSWORD_OR},
-            7640,
+            new int[]{7640, 7641},
             6,
             io.blert.proto.PlayerAttack.SGS_SPEC
     ),
@@ -208,7 +260,7 @@ public enum PlayerAttack {
     ),
     STAFF_OF_LIGHT_SWIPE(
             ItemID.STAFF_OF_LIGHT,
-            440,
+            new int[]{419, 428, 440},
             4,
             io.blert.proto.PlayerAttack.STAFF_OF_LIGHT_SWIPE
     ),
@@ -265,7 +317,7 @@ public enum PlayerAttack {
     ),
     TOXIC_STAFF_SWIPE(
             new int[]{ItemID.TOXIC_STAFF_OF_THE_DEAD, ItemID.TOXIC_STAFF_UNCHARGED},
-            440,
+            new int[]{428, 440},
             4,
             io.blert.proto.PlayerAttack.TOXIC_STAFF_SWIPE
     ),
@@ -284,6 +336,8 @@ public enum PlayerAttack {
     ),
     TWISTED_BOW(ItemID.TWISTED_BOW, 426, 5, io.blert.proto.PlayerAttack.TWISTED_BOW),
     VENATOR_BOW(ItemID.VENATOR_BOW, 9858, 4, io.blert.proto.PlayerAttack.VENATOR_BOW),
+    VOIDWAKER_AUTO(ItemID.VOIDWAKER, new int[]{386, 390}, 4, io.blert.proto.PlayerAttack.VOIDWAKER_AUTO),
+    VOIDWAKER_SPEC(ItemID.VOIDWAKER, 1378, 4, io.blert.proto.PlayerAttack.VOIDWAKER_SPEC),
     VOLATILE_NM_BARRAGE(
             ItemID.VOLATILE_NIGHTMARE_STAFF,
             1979,
@@ -302,8 +356,23 @@ public enum PlayerAttack {
             5,
             io.blert.proto.PlayerAttack.VOLATILE_NM_SPEC
     ),
-    // TODO(frolv): Seems that autos and specs share an animation so we'd have to look at the projectile.
-    ZCB(ItemID.ZARYTE_CROSSBOW, 9168, 5, io.blert.proto.PlayerAttack.ZCB_SPEC),
+    WEBWEAVER_AUTO(ItemID.WEBWEAVER_BOW, 426, 3, io.blert.proto.PlayerAttack.WEBWEAVER_AUTO),
+    WEBWEAVER_SPEC(ItemID.WEBWEAVER_BOW, 9964, 3, io.blert.proto.PlayerAttack.WEBWEAVER_SPEC),
+    XGS_SPEC(
+            new int[]{ItemID.ANCIENT_GODSWORD, ItemID.ANCIENT_GODSWORD_27184},
+            9171,
+            6,
+            io.blert.proto.PlayerAttack.XGS_SPEC
+    ),
+    ZCB_AUTO(ItemID.ZARYTE_CROSSBOW, 9168, 5, new Projectile(1468, 41), io.blert.proto.PlayerAttack.ZCB_AUTO),
+    ZCB_SPEC(ItemID.ZARYTE_CROSSBOW, 9168, 5, new Projectile(1995, 41), io.blert.proto.PlayerAttack.ZCB_SPEC),
+    ZGS_SPEC(
+            new int[]{ItemID.ZAMORAK_GODSWORD, ItemID.ZAMORAK_GODSWORD_OR},
+            new int[]{7638, 7639},
+            6,
+            io.blert.proto.PlayerAttack.ZGS_SPEC
+    ),
+    ZOMBIE_AXE(ItemID.ZOMBIE_AXE, new int[]{3852, 7004}, 5, io.blert.proto.PlayerAttack.ZOMBIE_AXE),
 
     // Attacks where the animation matches a known style of attack, but the weapon does not.
     UNKNOWN_BOW(426, io.blert.proto.PlayerAttack.UNKNOWN_BOW),
@@ -323,27 +392,51 @@ public enum PlayerAttack {
     @Getter
     private final int cooldown;
     @Getter
+    private final Projectile projectile;
+    @Getter
     private final boolean unknown;
     private final io.blert.proto.PlayerAttack protoValue;
 
     private static final ImmutableSet<Integer> VALID_ANIMATION_IDS;
 
+    private static final Map<Integer, Set<Projectile>> ANIMATION_PROJECTILES;
+
+    @RequiredArgsConstructor
+    @Getter
+    public static class Projectile {
+        private final int id;
+        private final int startCycleOffset;
+
+        private PlayerAttack attack = null;
+
+        public static Projectile BLOWPIPE_SPEC = new Projectile(1043, 32);
+        public static Projectile BLAZING_BLOWPIPE_SPEC = new Projectile(2599, 32);
+    }
+
     static {
-        var builder = new ImmutableSet.Builder<Integer>();
+        var animationBuilder = new ImmutableSet.Builder<Integer>();
+        ANIMATION_PROJECTILES = new HashMap<>();
 
         Arrays.stream(PlayerAttack.values())
                 .filter(attack -> !attack.isUnknown())
                 .forEach(attack -> {
                     for (int id : attack.animationIds) {
-                        builder.add(id);
+                        animationBuilder.add(id);
+                    }
+                    if (attack.hasProjectile()) {
+                        for (int id : attack.animationIds) {
+                            ANIMATION_PROJECTILES.compute(id, (k, v) -> {
+                                if (v == null) {
+                                    return ImmutableSet.of(attack.projectile);
+                                }
+                                return ImmutableSet.<Projectile>builder().addAll(v).add(attack.projectile).build();
+                            });
+                        }
+                        attack.projectile.attack = attack;
                     }
                 });
 
-        // Fill in some additional generic attack animations to try and catch unknown weapons.
-        // TODO(frolv): Replace with real animation IDs.
-        builder.add(-200);
-
-        VALID_ANIMATION_IDS = builder.build();
+        VALID_ANIMATION_IDS = animationBuilder.build();
     }
 
     /**
@@ -393,6 +486,10 @@ public enum PlayerAttack {
         return weaponIds[0];
     }
 
+    public boolean hasProjectile() {
+        return projectile != null;
+    }
+
     public boolean matches(int weaponId, int animationId) {
         return !isUnknown() && hasWeapon(weaponId) && hasAnimation(animationId);
     }
@@ -419,12 +516,26 @@ public enum PlayerAttack {
         return protoValue;
     }
 
-    PlayerAttack(int[] weaponIds, int[] animationIds, int cooldown, io.blert.proto.PlayerAttack protoValue) {
+    public List<Projectile> projectilesForAnimation() {
+        return Arrays.stream(animationIds)
+                .mapToObj(ANIMATION_PROJECTILES::get)
+                .filter(Objects::nonNull)
+                .flatMap(Set::stream)
+                .collect(Collectors.toList());
+    }
+
+    PlayerAttack(int[] weaponIds, int[] animationIds, int cooldown,
+                 Projectile projectile, io.blert.proto.PlayerAttack protoValue) {
         this.weaponIds = weaponIds;
         this.animationIds = animationIds;
         this.cooldown = cooldown;
+        this.projectile = projectile;
         this.unknown = false;
         this.protoValue = protoValue;
+    }
+
+    PlayerAttack(int[] weaponIds, int[] animationIds, int cooldown, io.blert.proto.PlayerAttack protoValue) {
+        this(weaponIds, animationIds, cooldown, null, protoValue);
     }
 
     PlayerAttack(int[] weaponIds, int animationId, int cooldown, io.blert.proto.PlayerAttack protoValue) {
@@ -439,10 +550,16 @@ public enum PlayerAttack {
         this(new int[]{weaponId}, new int[]{animationId}, cooldown, protoValue);
     }
 
+    PlayerAttack(int weaponId, int animationId, int cooldown,
+                 Projectile projectile, io.blert.proto.PlayerAttack protoValue) {
+        this(new int[]{weaponId}, new int[]{animationId}, cooldown, projectile, protoValue);
+    }
+
     PlayerAttack(int animationId, int cooldown, io.blert.proto.PlayerAttack protoValue) {
         this.weaponIds = new int[]{-1};
         this.animationIds = new int[]{animationId};
         this.cooldown = cooldown;
+        this.projectile = null;
         this.unknown = true;
         this.protoValue = protoValue;
     }
@@ -451,6 +568,7 @@ public enum PlayerAttack {
         this.weaponIds = new int[]{-1};
         this.animationIds = new int[]{animationId};
         this.cooldown = 0;
+        this.projectile = null;
         this.unknown = true;
         this.protoValue = protoValue;
     }

@@ -31,6 +31,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
@@ -38,6 +39,7 @@ import net.runelite.client.eventbus.Subscribe;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -163,6 +165,15 @@ public abstract class DataTracker {
      * @param event The animation event.
      */
     protected void onAnimation(AnimationChanged event) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onProjectileMoved} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onProjectile(ProjectileMoved event) {
     }
 
     /**
@@ -340,6 +351,14 @@ public abstract class DataTracker {
         }
 
         maybeAttack.ifPresent(attack -> {
+            if (attack == PlayerAttack.BLOWPIPE) {
+                if (checkForBlowpipeSpecial(raider)) {
+                    attack = PlayerAttack.BLOWPIPE_SPEC;
+                }
+            } else if (attack.hasProjectile()) {
+                attack = adjustForProjectile(attack, raider);
+            }
+
             raider.recordAttack(tick, attack);
 
             TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
@@ -347,6 +366,59 @@ public abstract class DataTracker {
             dispatchEvent(new PlayerAttackEvent(getStage(), tick, point, attack, weapon.orElse(null),
                     raider, roomTarget, distanceToNpc));
         });
+    }
+
+    private PlayerAttack adjustForProjectile(PlayerAttack attack, Raider raider) {
+        List<PlayerAttack.Projectile> possibleProjectiles = attack.projectilesForAnimation();
+
+        for (Projectile p : client.getProjectiles()) {
+            for (PlayerAttack.Projectile projectile : possibleProjectiles) {
+                if (projectileMatches(p, projectile, raider.getPlayer())) {
+                    return projectile.getAttack();
+                }
+            }
+        }
+
+        return attack;
+    }
+
+    private boolean checkForBlowpipeSpecial(Raider raider) {
+        var weapon = raider.getEquippedItem(EquipmentSlot.WEAPON).orElse(null);
+        if (weapon == null) {
+            return false;
+        }
+
+        PlayerAttack.Projectile specProjectile;
+        switch (weapon.getId()) {
+            case ItemID.TOXIC_BLOWPIPE:
+                specProjectile = PlayerAttack.Projectile.BLOWPIPE_SPEC;
+                break;
+            case ItemID.BLAZING_BLOWPIPE:
+                specProjectile = PlayerAttack.Projectile.BLAZING_BLOWPIPE_SPEC;
+                break;
+            default:
+                return false;
+        }
+
+        for (Projectile projectile : client.getProjectiles()) {
+            if (projectileMatches(projectile, specProjectile, raider.getPlayer())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean projectileMatches(Projectile p, PlayerAttack.Projectile projectile, Player player) {
+        if (p.getId() != projectile.getId()) {
+            return false;
+        }
+
+        WorldPoint origin = WorldPoint.fromLocalInstance(client, new LocalPoint(p.getX1(), p.getY1()));
+        boolean originatesFromPlayer = origin.distanceTo2D(getWorldLocation(player)) == 0;
+        boolean startCycleMatches = p.getStartCycle() - client.getGameCycle() == projectile.getStartCycleOffset();
+
+        return originatesFromPlayer && startCycleMatches;
     }
 
     /**
@@ -436,6 +508,13 @@ public abstract class DataTracker {
         }
 
         onAnimation(event);
+    }
+
+    @Subscribe
+    protected final void onProjectileMoved(ProjectileMoved event) {
+        if (!terminating()) {
+            onProjectile(event);
+        }
     }
 
     @Subscribe(priority = 10)
