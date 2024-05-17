@@ -39,14 +39,6 @@ public interface BlertConfig extends Config {
     )
     String GENERAL_SECTION = "general";
 
-    @ConfigSection(
-            name = "Developer Tools",
-            description = "Settings applicable to Blert developers",
-            position = 2,
-            closedByDefault = true
-    )
-    String DEVELOPER_SECTION = "developer";
-
 
     @ConfigItem(
             keyName = "apiKey",
@@ -57,38 +49,5 @@ public interface BlertConfig extends Config {
     )
     default @Nullable String apiKey() {
         return null;
-    }
-
-    @ConfigItem(
-            keyName = "serverUrl",
-            name = "Custom server URL",
-            description = "Overrides the default server hostname (wave32.blert.io)",
-            position = 1,
-            section = DEVELOPER_SECTION
-    )
-    default @Nullable String serverUrl() {
-        return null;
-    }
-
-    @ConfigItem(
-            keyName = "webUrl",
-            name = "Custom Blert website URL",
-            description = "Overrides the default website URL (blert.io)",
-            position = 2,
-            section = DEVELOPER_SECTION
-    )
-    default @Nullable String webUrl() {
-        return null;
-    }
-
-    @ConfigItem(
-            keyName = "dontConnect",
-            name = "Don't connect to a Blert server",
-            description = "If set, will not attempt to open a socket or stream events",
-            position = 3,
-            section = DEVELOPER_SECTION
-    )
-    default boolean dontConnect() {
-        return false;
     }
 }

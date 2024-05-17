@@ -25,7 +25,6 @@ package io.blert.client;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.blert.BlertPlugin;
-import io.blert.BlertPluginPanel;
 import io.blert.core.Challenge;
 import io.blert.core.RecordableChallenge;
 import io.blert.events.ChallengeStartEvent;
@@ -64,7 +63,6 @@ public class WebsocketEventHandler implements EventHandler {
     private final BlertPlugin plugin;
     private final WebSocketClient webSocketClient;
     private final ProtoEventHandler protoEventHandler;
-    private final BlertPluginPanel sidePanel;
     private final Client runeliteClient;
     private final ClientThread runeliteThread;
 
@@ -81,14 +79,13 @@ public class WebsocketEventHandler implements EventHandler {
      *
      * @param webSocketClient Websocket client connected and authenticated to the blert server.
      */
-    public WebsocketEventHandler(BlertPlugin plugin, WebSocketClient webSocketClient, BlertPluginPanel sidePanel,
+    public WebsocketEventHandler(BlertPlugin plugin, WebSocketClient webSocketClient,
                                  Client client, ClientThread runeliteThread) {
         this.plugin = plugin;
         this.webSocketClient = webSocketClient;
         this.webSocketClient.setBinaryMessageCallback(this::handleProtoMessage);
-        this.webSocketClient.setDisconnectCallback(this::reset);
+        this.webSocketClient.setDisconnectCallback(this::handleDisconnect);
         this.protoEventHandler = new ProtoEventHandler();
-        this.sidePanel = sidePanel;
         this.runeliteClient = client;
         this.runeliteThread = runeliteThread;
     }
@@ -210,10 +207,10 @@ public class WebsocketEventHandler implements EventHandler {
 
             case CONNECTION_RESPONSE:
                 serverShutdownTime = null;
-                sidePanel.setShutdownTime(null);
+                plugin.getSidePanel().setShutdownTime(null);
 
                 if (serverMessage.hasUser()) {
-                    sidePanel.updateUser(serverMessage.getUser().getName());
+                    plugin.getSidePanel().updateUser(serverMessage.getUser().getName());
                     if (runeliteClient.getGameState() == GameState.LOGGED_IN) {
                         updateGameState(GameState.LOGGED_IN);
                     }
@@ -225,7 +222,7 @@ public class WebsocketEventHandler implements EventHandler {
                 break;
 
             case HISTORY_RESPONSE:
-                sidePanel.setRecentRecordings(serverMessage.getRecentRecordingsList());
+                plugin.getSidePanel().setRecentRecordings(serverMessage.getRecentRecordingsList());
                 break;
 
             case ACTIVE_CHALLENGE_INFO:
@@ -260,7 +257,7 @@ public class WebsocketEventHandler implements EventHandler {
                         var shutdownTime = serverStatus.getShutdownTime();
                         serverShutdownTime = Instant.ofEpochSecond(shutdownTime.getSeconds(), shutdownTime.getNanos());
                         Duration timeUntilShutdown = Duration.between(Instant.now(), serverShutdownTime);
-                        sidePanel.setShutdownTime(serverShutdownTime);
+                        plugin.getSidePanel().setShutdownTime(serverShutdownTime);
 
                         String shutdownMessage = String.format(
                                 "Blert's servers will go offline for maintenance in %s.<br>Visit Blert's Discord server for status updates.",
@@ -280,7 +277,7 @@ public class WebsocketEventHandler implements EventHandler {
 
                     case SHUTDOWN_CANCELED: {
                         serverShutdownTime = null;
-                        sidePanel.setShutdownTime(null);
+                        plugin.getSidePanel().setShutdownTime(null);
                         sendGameMessage(
                                 ChatMessageType.BROADCAST,
                                 "The scheduled Blert maintenance has been canceled. You may continue to record PvM challenges!"
@@ -348,6 +345,13 @@ public class WebsocketEventHandler implements EventHandler {
         }
     }
 
+    private void handleDisconnect(WebSocketClient.DisconnectReason reason) {
+        if (reason == WebSocketClient.DisconnectReason.UNSUPPORTED_VERSION) {
+            plugin.getSidePanel().setUnsupportedVersion(true);
+        }
+        reset();
+    }
+
     private void sendEvents(io.blert.proto.Event event) {
         sendEvents(Collections.singletonList(event));
     }
@@ -379,8 +383,8 @@ public class WebsocketEventHandler implements EventHandler {
         challengeId = null;
         protoEventHandler.setChallengeId(null);
         setStatus(Status.IDLE);
-        sidePanel.updateUser(null);
-        sidePanel.setRecentRecordings(null);
+        plugin.getSidePanel().updateUser(null);
+        plugin.getSidePanel().setRecentRecordings(null);
     }
 
     private void setStatus(Status status) {
@@ -388,7 +392,7 @@ public class WebsocketEventHandler implements EventHandler {
         var challenge = currentChallenge != null
                 ? currentChallenge.toProto()
                 : io.blert.proto.Challenge.UNKNOWN_CHALLENGE;
-        sidePanel.updateChallengeStatus(status, challenge, challengeId);
+        plugin.getSidePanel().updateChallengeStatus(status, challenge, challengeId);
     }
 
     private boolean pendingServerShutdown() {
@@ -413,7 +417,7 @@ public class WebsocketEventHandler implements EventHandler {
         } catch (Exception e) {
             log.error("Failed to close websocket client", e);
         }
-        sidePanel.setShutdownTime(null);
+        plugin.getSidePanel().setShutdownTime(null);
     }
 
     private void handleChallengeStateConfirmation(ServerMessage message) {

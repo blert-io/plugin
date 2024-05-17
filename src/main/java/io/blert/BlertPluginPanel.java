@@ -24,6 +24,7 @@
 package io.blert;
 
 import io.blert.client.WebsocketEventHandler;
+import io.blert.client.WebsocketManager;
 import io.blert.proto.Challenge;
 import io.blert.proto.ChallengeMode;
 import io.blert.proto.ServerMessage;
@@ -50,8 +51,8 @@ import java.util.List;
 
 @Slf4j
 public class BlertPluginPanel extends PluginPanel {
-    private final BlertPlugin plugin;
     private final BlertConfig config;
+    private final WebsocketManager websocketManager;
 
     private JPanel userPanel;
     private JPanel challengeStatusPanel;
@@ -66,11 +67,12 @@ public class BlertPluginPanel extends PluginPanel {
     private final List<ServerMessage.PastChallenge> recentRecordings = new ArrayList<>();
 
     private WebsocketEventHandler.Status challengeStatus = WebsocketEventHandler.Status.IDLE;
+    private boolean unsupportedVersion = false;
     private Instant shutdownTime = null;
 
-    public BlertPluginPanel(BlertPlugin plugin, BlertConfig config) {
-        this.plugin = plugin;
+    public BlertPluginPanel(BlertConfig config, WebsocketManager websocketManager) {
         this.config = config;
+        this.websocketManager = websocketManager;
 
         shutdownLabelTimer = new Timer(1000, e -> {
             if (shutdownTime == null) {
@@ -139,6 +141,11 @@ public class BlertPluginPanel extends PluginPanel {
         }
     }
 
+    public synchronized void setUnsupportedVersion(boolean unsupportedVersion) {
+        this.unsupportedVersion = unsupportedVersion;
+        createUserPanel(null);
+    }
+
     private void createUserPanel(@Nullable String username) {
         if (userPanel != null) {
             remove(userPanel);
@@ -166,11 +173,10 @@ public class BlertPluginPanel extends PluginPanel {
                 apiKeyLabel.setForeground(Color.WHITE);
                 apiKeyLabel.setHorizontalAlignment(SwingConstants.CENTER);
                 userPanel.add(apiKeyLabel, BorderLayout.SOUTH);
-            } else if (config.dontConnect()) {
-                JLabel dontConnectLabel = new JLabel("Blert is disabled in settings.");
-                dontConnectLabel.setForeground(Color.WHITE);
-                dontConnectLabel.setHorizontalAlignment(SwingConstants.CENTER);
-                userPanel.add(dontConnectLabel, BorderLayout.SOUTH);
+            } else if (unsupportedVersion) {
+                connectionStatusLabel.setText(wrapHtml(
+                        "<p style=\"text-align: center\">You are running an outdated version of Blert. " +
+                                "Please restart Runelite to update your plugin.</p>"));
             } else {
                 JPanel connectButtonPanel = createConnectButtonPanel();
                 userPanel.add(connectButtonPanel, BorderLayout.SOUTH);
@@ -195,7 +201,7 @@ public class BlertPluginPanel extends PluginPanel {
                 @Override
                 protected Void doInBackground() {
                     try {
-                        success = plugin.getWsClient().open().get();
+                        success = websocketManager.open().get();
                     } catch (Exception e) {
                         log.error("Error connecting to Blert server", e);
                     }
@@ -513,12 +519,7 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     private String challengeUrl(Challenge challenge, String challengeId) {
-        String hostname = !Strings.isNullOrEmpty(config.webUrl())
-                ? config.webUrl()
-                : BlertPlugin.DEFAULT_BLERT_HOSTNAME;
-        if (!hostname.startsWith("http://") && !hostname.startsWith("https://")) {
-            hostname = "https://" + hostname;
-        }
+        String hostname = WebsocketManager.DEFAULT_BLERT_HOST;
 
         switch (challenge) {
             case TOB:

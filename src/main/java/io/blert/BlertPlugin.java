@@ -26,13 +26,10 @@ package io.blert;
 import com.google.inject.Provides;
 import io.blert.challenges.colosseum.ColosseumChallenge;
 import io.blert.challenges.tob.TheatreChallenge;
-import io.blert.client.WebSocketClient;
-import io.blert.client.WebsocketEventHandler;
+import io.blert.client.WebsocketManager;
 import io.blert.core.RecordableChallenge;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
-import joptsimple.internal.Strings;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -44,13 +41,11 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
-import okhttp3.OkHttpClient;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -64,9 +59,6 @@ import java.util.concurrent.ExecutionException;
         name = "Blert"
 )
 public class BlertPlugin extends Plugin {
-    static final String DEFAULT_BLERT_HOSTNAME = "blert.io";
-    static final String DEFAULT_SERVER_HOSTNAME = "wave32.blert.io";
-
     @Inject
     private Client client;
 
@@ -83,8 +75,9 @@ public class BlertPlugin extends Plugin {
     private BlertConfig config;
 
     @Inject
-    OkHttpClient httpClient;
+    private WebsocketManager websocketManager;
 
+    @Getter
     private BlertPluginPanel sidePanel;
     private NavigationButton sidePanelButton;
 
@@ -92,28 +85,21 @@ public class BlertPlugin extends Plugin {
     @Getter
     private @Nullable RecordableChallenge activeChallenge = null;
 
-    private WebsocketEventHandler handler;
-
     private GameState previousGameState = null;
     private boolean isLoggedIn = false;
 
     private DeferredTask deferredTask;
 
-    @Getter(AccessLevel.MODULE)
-    private WebSocketClient wsClient;
-
     @Override
     protected void startUp() throws Exception {
-        sidePanel = new BlertPluginPanel(this, config);
+        eventBus.register(websocketManager);
+        websocketManager.open();
+
+        sidePanel = new BlertPluginPanel(config, websocketManager);
         final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/blert.png");
         sidePanelButton = NavigationButton.builder().tooltip("Blert").priority(6).icon(icon).panel(sidePanel).build();
         clientToolbar.addNavigation(sidePanelButton);
         sidePanel.startPanel();
-
-        if (config.apiKey() != null && !config.dontConnect()) {
-            initializeWebSocketClient();
-            wsClient.open();
-        }
 
         challenges.add(new TheatreChallenge(client, eventBus, clientThread));
         challenges.add(new ColosseumChallenge(client, eventBus, clientThread));
@@ -134,9 +120,8 @@ public class BlertPlugin extends Plugin {
 
         challenges.clear();
 
-        if (wsClient != null && wsClient.isOpen()) {
-            wsClient.close();
-        }
+        websocketManager.close();
+        eventBus.unregister(websocketManager);
     }
 
     @Subscribe(priority = 10)
@@ -160,71 +145,33 @@ public class BlertPlugin extends Plugin {
         }
 
         if (gameState == GameState.LOGGED_IN) {
-            if (!config.dontConnect() && config.apiKey() != null && !wsClient.isOpen()) {
+            if (config.apiKey() != null && !websocketManager.isOpen()) {
                 try {
-                    wsClient.open().get();
+                    websocketManager.open().get();
                 } catch (InterruptedException | ExecutionException e) {
                     isLoggedIn = true;
                 }
             }
 
             // If the player was not already logged in, notify the server that they have.
-            if (!isLoggedIn && handler != null) {
-                deferredTask = new DeferredTask(() -> handler.updateGameState(GameState.LOGGED_IN), 3);
+            if (!isLoggedIn) {
+                deferredTask = new DeferredTask(() -> {
+                    if (websocketManager.getEventHandler() != null) {
+                        websocketManager.getEventHandler().updateGameState(GameState.LOGGED_IN);
+                    }
+                }, 3);
             }
 
             isLoggedIn = true;
         } else if (gameState == GameState.LOGIN_SCREEN) {
-            if (isLoggedIn && handler != null) {
-                handler.updateGameState(GameState.LOGIN_SCREEN);
+            if (isLoggedIn && websocketManager.getEventHandler() != null) {
+                websocketManager.getEventHandler().updateGameState(GameState.LOGIN_SCREEN);
             }
 
             isLoggedIn = false;
         }
 
         previousGameState = gameState;
-    }
-
-    @Subscribe
-    private void onConfigChanged(ConfigChanged changed) {
-        String key = changed.getKey();
-        if (key.equals("apiKey") || key.equals("serverUrl") || key.equals("dontConnect")) {
-            new Thread(this::initializeWebSocketClient).start();
-        }
-    }
-
-    private void initializeWebSocketClient() {
-        if (wsClient != null) {
-            sidePanel.updateUser(null);
-
-            if (wsClient.isOpen()) {
-                try {
-                    wsClient.close().get();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        if (config.dontConnect() || config.apiKey() == null) {
-            return;
-        }
-
-        String hostname = config.serverUrl();
-        if (Strings.isNullOrEmpty(hostname)) {
-            hostname = DEFAULT_SERVER_HOSTNAME;
-        }
-
-        if (!hostname.startsWith("ws://") && !hostname.startsWith("wss://")) {
-            hostname = "wss://" + hostname;
-        }
-
-        wsClient = new WebSocketClient(hostname, config.apiKey(), httpClient);
-        handler = new WebsocketEventHandler(this, wsClient, sidePanel, client, clientThread);
-
-        if (activeChallenge != null) {
-            activeChallenge.setEventHandler(handler);
-        }
     }
 
     @Provides
@@ -250,7 +197,7 @@ public class BlertPlugin extends Plugin {
             }
 
             activeChallenge = challenge;
-            activeChallenge.initialize(handler);
+            activeChallenge.initialize(websocketManager.getEventHandler());
 
             log.info("Entered challenge \"{}\"", activeChallenge.getName());
         } else if (activeChallenge != null) {

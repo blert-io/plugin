@@ -46,7 +46,61 @@ protobuf {
 }
 
 group = 'io.blert'
-version = '1.0-SNAPSHOT'
+version = '0.1.0'
+
+def getGitHash = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-parse', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+tasks.register('checkAgainstOrigin', Exec) {
+    commandLine 'git', 'diff', 'origin/main', '--exit-code'
+    standardOutput = new ByteArrayOutputStream()
+    ignoreExitValue = true
+
+    doLast {
+        ext.exitCode = execResult.exitValue
+    }
+}
+
+tasks.register('checkForLocalChanges', Exec) {
+    commandLine 'git', 'status', '--porcelain'
+    standardOutput = new ByteArrayOutputStream()
+    ignoreExitValue = true
+
+    doLast {
+        ext.isClean = standardOutput.toString().trim().isEmpty()
+    }
+}
+
+tasks.register('generateBuildProperties') {
+    dependsOn checkAgainstOrigin
+    dependsOn checkForLocalChanges
+    ext.outputDir = "$buildDir/generated/java"
+    inputs.property('version', version)
+    outputs.dir outputDir
+
+    doLast {
+        def customHeaders =
+                System.getenv('BLERT_CUSTOM_HEADERS')?.split(';')?.collect { "\"${it.trim()}\"" }?.join(', ') ?: ""
+
+        def rev2 = checkAgainstOrigin.exitCode == 0 && checkForLocalChanges.isClean ? 0 : 1
+        mkdir "$outputDir/io/blert"
+        file("$outputDir/io/blert/BuildProperties.java").text =
+                """|package io.blert;
+               |public class BuildProperties {
+               |    public static final String VERSION = "${version}";
+               |    public static final String REVISION = "${getGitHash()}:${rev2}";
+               |    public static final String[] CUSTOM_HEADERS = new String[]{${customHeaders}};
+               |}""".stripMargin()
+    }
+}
+compileJava.dependsOn generateBuildProperties
+sourceSets.main.java.srcDir generateBuildProperties.outputDir
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'

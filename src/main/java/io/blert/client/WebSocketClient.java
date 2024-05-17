@@ -23,6 +23,7 @@
 
 package io.blert.client;
 
+import io.blert.BuildProperties;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -47,9 +48,16 @@ public class WebSocketClient extends WebSocketListener {
         CLOSING,
     }
 
+    public enum DisconnectReason {
+        CLOSED_SUCCESSFULLY,
+        UNSUPPORTED_VERSION,
+        ERROR,
+    }
+
     @NotNull
     private final String hostname;
     private final byte[] apiKey;
+    private final String runeliteVersion;
     private final OkHttpClient client;
     private WebSocket socket;
     private SocketState state = SocketState.CLOSED;
@@ -64,11 +72,13 @@ public class WebSocketClient extends WebSocketListener {
     private @Nullable Consumer<String> textMessageCallback = null;
 
     @Setter
-    private @Nullable Runnable disconnectCallback = null;
+    private @Nullable Consumer<DisconnectReason> disconnectCallback = null;
 
-    public WebSocketClient(@NotNull String hostname, @NotNull String apiKey, OkHttpClient client) {
+    public WebSocketClient(@NotNull String hostname, @NotNull String apiKey,
+                           @NotNull String runeliteVersion, OkHttpClient client) {
         this.apiKey = apiKey.getBytes(StandardCharsets.UTF_8);
         this.hostname = hostname;
+        this.runeliteVersion = runeliteVersion;
         this.client = client;
     }
 
@@ -87,16 +97,25 @@ public class WebSocketClient extends WebSocketListener {
      * @return A future that resolves to true if the connection was successful, or false if not.
      */
     public Future<Boolean> open() {
-        Request request = new Request.Builder()
+        Request.Builder request = new Request.Builder()
                 .url(hostname)
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(apiKey))
-                .build();
+                .header("Blert-Revision", BuildProperties.REVISION)
+                .header("Blert-Version", BuildProperties.VERSION)
+                .header("Blert-Runelite-Version", runeliteVersion);
+
+        for (String header : BuildProperties.CUSTOM_HEADERS) {
+            String[] parts = header.split("=", 2);
+            if (parts.length == 2) {
+                request.header(parts[0], parts[1]);
+            }
+        }
 
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         synchronized (this) {
             openFutures.add(future);
-            socket = client.newWebSocket(request, this);
+            socket = client.newWebSocket(request.build(), this);
             state = SocketState.OPENING;
         }
 
@@ -159,7 +178,7 @@ public class WebSocketClient extends WebSocketListener {
         socket = null;
         closeFutures.forEach(future -> future.complete(null));
         closeFutures.clear();
-        onDisconnect();
+        onDisconnect(DisconnectReason.CLOSED_SUCCESSFULLY);
     }
 
     @Override
@@ -169,11 +188,14 @@ public class WebSocketClient extends WebSocketListener {
             openFutures.clear();
         }
 
-        if (isOpen()) {
-            onDisconnect();
+        if (response.code() == 403) {
+            onDisconnect(DisconnectReason.UNSUPPORTED_VERSION);
+        } else {
+            log.warn("Blert websocket {} failed: {}", webSocket, response, t);
+            if (isOpen()) {
+                onDisconnect(DisconnectReason.ERROR);
+            }
         }
-
-        log.warn("Blert websocket {} failed: {}", webSocket, response, t);
         state = SocketState.CLOSED;
         socket = null;
     }
@@ -190,9 +212,9 @@ public class WebSocketClient extends WebSocketListener {
         return CompletableFuture.completedFuture(null);
     }
 
-    private void onDisconnect() {
+    private void onDisconnect(DisconnectReason reason) {
         if (this.disconnectCallback != null) {
-            this.disconnectCallback.run();
+            this.disconnectCallback.accept(reason);
         }
     }
 }
