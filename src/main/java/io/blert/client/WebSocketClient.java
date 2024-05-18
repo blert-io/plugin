@@ -188,7 +188,7 @@ public class WebSocketClient extends WebSocketListener {
             openFutures.clear();
         }
 
-        if (response.code() == 403) {
+        if (response != null && response.code() == 403) {
             onDisconnect(DisconnectReason.UNSUPPORTED_VERSION);
         } else {
             log.warn("Blert websocket {} failed: {}", webSocket, response, t);
