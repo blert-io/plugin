@@ -26,6 +26,7 @@ package io.blert.client;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.blert.BlertPlugin;
 import io.blert.core.Challenge;
+import io.blert.core.ChallengeMode;
 import io.blert.core.RecordableChallenge;
 import io.blert.events.ChallengeStartEvent;
 import io.blert.events.Event;
@@ -112,10 +113,16 @@ public class WebsocketEventHandler implements EventHandler {
                     break;
                 }
 
+                ChallengeStartEvent challengeStartEvent = (ChallengeStartEvent) event;
+                if (challengeStartEvent.getMode() == ChallengeMode.TOB_ENTRY) {
+                    log.warn("Recording of Theatre of Blood entry raids is disabled");
+                    break;
+                }
+
                 if (webSocketClient.isOpen()) {
                     sendEvents(EventTranslator.toProto(event, null));
                     setStatus(Status.CHALLENGE_STARTING);
-                    this.currentChallenge = ((ChallengeStartEvent) event).getChallenge();
+                    this.currentChallenge = challengeStartEvent.getChallenge();
                 }
                 break;
             }
@@ -127,12 +134,7 @@ public class WebsocketEventHandler implements EventHandler {
                 }
 
                 sendEvents(EventTranslator.toProto(event, challengeId));
-
-                protoEventHandler.setChallengeId(null);
-                challengeId = null;
-                currentChallenge = null;
-                setStatus(Status.IDLE);
-
+                resetChallenge();
                 sendRaidHistoryRequest();
                 break;
             }
@@ -338,9 +340,16 @@ public class WebsocketEventHandler implements EventHandler {
                 closeWebsocketClient();
                 break;
 
+            case CHALLENGE_RECORDING_ENDED:
+                if (status == Status.CHALLENGE_STARTING || status == Status.CHALLENGE_ACTIVE) {
+                    log.error("Server ended recording for challenge {}", challengeId);
+                    resetChallenge();
+                }
+                break;
+
             case UNKNOWN:
             case UNRECOGNIZED:
-                log.error("Received unrecognized server errror {}", error.getTypeValue());
+                log.error("Received unrecognized server error {}", error.getTypeValue());
                 break;
         }
     }
@@ -378,11 +387,15 @@ public class WebsocketEventHandler implements EventHandler {
         }
     }
 
-    private void reset() {
+    private void resetChallenge() {
         currentChallenge = null;
         challengeId = null;
         protoEventHandler.setChallengeId(null);
         setStatus(Status.IDLE);
+    }
+
+    private void reset() {
+        resetChallenge();
         plugin.getSidePanel().updateUser(null);
         plugin.getSidePanel().setRecentRecordings(null);
     }
