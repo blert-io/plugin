@@ -94,7 +94,13 @@ public class EventTranslator {
 
             case PLAYER_UPDATE: {
                 PlayerUpdateEvent playerUpdateEvent = (PlayerUpdateEvent) event;
+
+                Event.Player.DataSource dataSource = playerUpdateEvent.getSource() == PlayerUpdateEvent.Source.PRIMARY
+                        ? Event.Player.DataSource.PRIMARY
+                        : Event.Player.DataSource.SECONDARY;
+
                 Event.Player.Builder builder = Event.Player.newBuilder()
+                        .setDataSource(dataSource)
                         .setName(playerUpdateEvent.getUsername())
                         .setOffCooldownTick(playerUpdateEvent.getOffCooldownTick());
 

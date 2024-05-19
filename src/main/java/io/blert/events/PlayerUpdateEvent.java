@@ -50,6 +50,7 @@ public class PlayerUpdateEvent extends Event {
         SECONDARY,
     }
 
+    @Getter
     private final Source source;
 
     @Getter
