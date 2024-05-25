@@ -76,6 +76,15 @@ public class BloatDataTracker extends RoomDataTracker {
 
     @Override
     protected void onRoomStart() {
+        if (bloat == null) {
+            client.getNpcs().stream().filter(npc -> TobNpc.isBloat(npc.getId())).findFirst().ifPresent(npc -> {
+                TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+                bloat = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                        new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                addTrackedNpc(bloat);
+            });
+        }
+
         if (bloat != null && bloat.getNpc().getAnimation() == BLOAT_DOWN_ANIMATION) {
             state = State.DOWN;
         } else {
@@ -109,8 +118,10 @@ public class BloatDataTracker extends RoomDataTracker {
         return TobNpc.withId(npc.getId())
                 .filter(tobNpc -> TobNpc.isBloat(tobNpc.getId()))
                 .map(tobNpc -> {
-                    bloat = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                            new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                    if (bloat == null) {
+                        bloat = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                                new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                    }
                     return bloat;
                 });
     }

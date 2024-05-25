@@ -58,6 +58,15 @@ public class XarpusDataTracker extends RoomDataTracker {
 
     @Override
     protected void onRoomStart() {
+        if (xarpus == null) {
+            client.getNpcs().stream().filter(npc -> TobNpc.isAnyXarpus(npc.getId())).findFirst().ifPresent(npc -> {
+                TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+                xarpus = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                        new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                addTrackedNpc(xarpus);
+            });
+        }
+
         phase = XarpusPhase.P1;
     }
 
@@ -93,8 +102,10 @@ public class XarpusDataTracker extends RoomDataTracker {
 
         Optional<TobNpc> maybeXarpus = TobNpc.withId(npc.getId()).filter(TobNpc::isAnyXarpus);
         if (maybeXarpus.isPresent()) {
-            xarpus = new BasicTrackedNpc(npc, maybeXarpus.get(), generateRoomId(npc),
-                    new Hitpoints(maybeXarpus.get(), theatreChallenge.getScale()));
+            if (xarpus == null) {
+                xarpus = new BasicTrackedNpc(npc, maybeXarpus.get(), generateRoomId(npc),
+                        new Hitpoints(maybeXarpus.get(), theatreChallenge.getScale()));
+            }
             return Optional.of(xarpus);
         }
 

@@ -103,19 +103,23 @@ public class VerzikDataTracker extends RoomDataTracker {
 
     @Override
     protected void onRoomStart() {
-        client.getNpcs().stream()
-                .filter(npc -> TobNpc.isAnyVerzik(npc.getId()))
-                .findFirst()
-                .flatMap(npc -> TobNpc.withId(npc.getId()))
-                .ifPresent(tobNpc -> {
-                    if (tobNpc.isVerzikP1()) {
-                        startVerzikPhase(VerzikPhase.P1, getTick(), true);
-                    } else if (tobNpc.isVerzikP2()) {
-                        startVerzikPhase(VerzikPhase.P2, getTick(), true);
-                    } else if (tobNpc.isVerzikP3()) {
-                        startVerzikPhase(VerzikPhase.P3, getTick(), true);
-                    }
-                });
+        client.getNpcs().stream().filter(npc -> TobNpc.isAnyVerzik(npc.getId())).findFirst().ifPresent(npc -> {
+            TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+
+            if (verzik == null) {
+                verzik = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                        new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                addTrackedNpc(verzik);
+            }
+
+            if (tobNpc.isVerzikP1()) {
+                startVerzikPhase(VerzikPhase.P1, getTick(), true);
+            } else if (tobNpc.isVerzikP2()) {
+                startVerzikPhase(VerzikPhase.P2, getTick(), true);
+            } else if (tobNpc.isVerzikP3()) {
+                startVerzikPhase(VerzikPhase.P3, getTick(), true);
+            }
+        });
     }
 
     @Override

@@ -74,6 +74,15 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     @Override
     protected void onRoomStart() {
+        if (sotetseg == null) {
+            client.getNpcs().stream().filter(npc -> TobNpc.isSotetseg(npc.getId())).findFirst().ifPresent(npc -> {
+                TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+                sotetseg = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                        new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                addTrackedNpc(sotetseg);
+            });
+        }
+
         inMaze = false;
     }
 
@@ -116,8 +125,10 @@ public class SotetsegDataTracker extends RoomDataTracker {
         return TobNpc.withId(npc.getId())
                 .filter(tobNpc -> TobNpc.isSotetsegIdle(tobNpc.getId()))
                 .map(tobNpc -> {
-                    sotetseg = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                            new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                    if (sotetseg == null) {
+                        sotetseg = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                                new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                    }
                     return sotetseg;
                 });
     }

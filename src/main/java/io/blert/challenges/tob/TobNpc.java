@@ -345,6 +345,10 @@ public enum TobNpc {
         return isXarpus(this.id);
     }
 
+    public static boolean isAnyXarpus(int id) {
+        return isXarpusIdle(id) || isXarpusP1(id) || isXarpus(id);
+    }
+
     public boolean isAnyXarpus() {
         return isXarpusIdle() || isXarpusP1() || isXarpus();
     }

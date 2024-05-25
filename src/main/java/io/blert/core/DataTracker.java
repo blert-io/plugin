@@ -120,6 +120,9 @@ public abstract class DataTracker {
      * @return The current tick.
      */
     public int getTick() {
+        if (notStarted()) {
+            return 0;
+        }
         return client.getTickCount() - this.startClientTick;
     }
 
@@ -277,15 +280,19 @@ public abstract class DataTracker {
         int lastRecordedRoomTick = getTick();
         boolean accurate;
 
-        if (inGameStageTicks != -1 && inGameStageTicks != lastRecordedRoomTick) {
-            log.warn("Stage {} completion time mismatch: in-game room ticks = {}, recorded ticks = {}",
-                    stage, inGameStageTicks, lastRecordedRoomTick);
-            accurate = false;
-            lastRecordedRoomTick = inGameStageTicks;
+        if (inGameStageTicks != -1) {
+            if (inGameStageTicks != lastRecordedRoomTick) {
+                log.warn("Stage {} completion time mismatch: in-game room ticks = {}, recorded ticks = {}",
+                        stage, inGameStageTicks, lastRecordedRoomTick);
+                accurate = false;
+                lastRecordedRoomTick = inGameStageTicks;
+            } else {
+                accurate = true;
+            }
         } else {
-            log.debug("Stage {} finished in {} ticks ({})",
+            log.debug("Stage {} finished in {} unconfirmed ticks ({})",
                     stage, lastRecordedRoomTick, Tick.asTimeString(lastRecordedRoomTick));
-            accurate = true;
+            accurate = false;
         }
 
         var roomStatus = completion ? StageUpdateEvent.Status.COMPLETED : StageUpdateEvent.Status.WIPED;
@@ -437,6 +444,22 @@ public abstract class DataTracker {
         trackedNpc.setUpdatedProperties(false);
     }
 
+    protected void addTrackedNpc(TrackedNpc trackedNpc) {
+        boolean existing = trackedNpcs.remove(trackedNpc);
+        if (!existing) {
+            trackedNpc.setSpawnTick(getTick());
+        }
+        trackedNpcs.add(trackedNpc);
+
+        if (notStarted()) {
+            // NPCs which spawn before the room begins must be reported immediately as the `onTick` handler
+            // is not yet active.
+            dispatchEvent(NpcEvent.spawn(getStage(), 0, getWorldLocation(trackedNpc), trackedNpc));
+        }
+
+        challenge.updateMode(trackedNpc.getMode());
+    }
+
     protected void despawnTrackedNpc(TrackedNpc trackedNpc) {
         dispatchEvent(NpcEvent.death(getStage(), getTick(), getWorldLocation(trackedNpc), trackedNpc));
         trackedNpcs.remove(trackedNpc);
@@ -448,7 +471,7 @@ public abstract class DataTracker {
 
     private void onSpecialAttack(SpecialAttackTracker.SpecialAttack spec) {
         var weapon = client.getItemDefinition(spec.getWeapon().getId());
-        log.debug("Hit a " + spec.getDamage() + " with " + weapon.getName() + " on " + spec.getTarget().getName());
+        log.debug("Hit a {} with {} on {}", spec.getDamage(), weapon.getName(), spec.getTarget().getName());
     }
 
     @Subscribe
@@ -457,21 +480,7 @@ public abstract class DataTracker {
             return;
         }
 
-        onNpcSpawn(event).ifPresent(trackedNpc -> {
-            boolean existing = trackedNpcs.remove(trackedNpc);
-            if (!existing) {
-                trackedNpc.setSpawnTick(getTick());
-            }
-            trackedNpcs.add(trackedNpc);
-
-            if (notStarted()) {
-                // NPCs which spawn before the room begins must be reported immediately as the `onTick` handler
-                // is not yet active.
-                dispatchEvent(NpcEvent.spawn(getStage(), 0, getWorldLocation(trackedNpc), trackedNpc));
-            }
-
-            challenge.updateMode(trackedNpc.getMode());
-        });
+        onNpcSpawn(event).ifPresent(this::addTrackedNpc);
     }
 
     @Subscribe
