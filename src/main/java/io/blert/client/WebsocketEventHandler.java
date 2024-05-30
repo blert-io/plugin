@@ -36,10 +36,7 @@ import io.blert.proto.EventTranslator;
 import io.blert.proto.ProtoEventHandler;
 import io.blert.proto.ServerMessage;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.Player;
+import net.runelite.api.*;
 import net.runelite.client.callback.ClientThread;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 
@@ -175,7 +172,14 @@ public class WebsocketEventHandler implements EventHandler {
         if (gameState == GameState.LOGGED_IN) {
             ServerMessage.GameState.PlayerInfo.Builder playerInfoBuilder = ServerMessage.GameState.PlayerInfo.newBuilder()
                     .setUsername(runeliteClient.getLocalPlayer().getName())
-                    .setOverallExperience(runeliteClient.getOverallExperience());
+                    .setOverallExperience(runeliteClient.getOverallExperience())
+                    .setAttackExperience(runeliteClient.getSkillExperience(Skill.ATTACK))
+                    .setDefenceExperience(runeliteClient.getSkillExperience(Skill.DEFENCE))
+                    .setStrengthExperience(runeliteClient.getSkillExperience(Skill.STRENGTH))
+                    .setHitpointsExperience(runeliteClient.getSkillExperience(Skill.HITPOINTS))
+                    .setRangedExperience(runeliteClient.getSkillExperience(Skill.RANGED))
+                    .setPrayerExperience(runeliteClient.getSkillExperience(Skill.PRAYER))
+                    .setMagicExperience(runeliteClient.getSkillExperience(Skill.MAGIC));
             gameStateBuilder.setPlayerInfo(playerInfoBuilder);
         }
 

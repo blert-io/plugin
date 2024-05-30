@@ -35,7 +35,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
-import net.runelite.api.Varbits;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectDespawned;
 import net.runelite.api.events.GameObjectSpawned;
@@ -221,19 +220,15 @@ public abstract class RoomDataTracker extends DataTracker {
                 return;
             }
 
-            // ToB orb health. 0 = hide, 1-27 = health percentage (0-100%), 30 = dead.
-            int orbHealth = client.getVarbitValue(Varbits.THEATRE_OF_BLOOD_ORB1 + orb);
-            if (orbHealth == 1) {
-                if (raider.isDead()) {
-                    // Player was already dead.
-                    return;
-                }
+            if (raider.isDead()) {
+                // Player was already dead.
+                return;
+            }
 
+            if (raider.getPlayer() != null && raider.getPlayer().isDead()) {
                 raider.setDead(true);
-                if (raider.getPlayer() != null) {
-                    dispatchEvent(new PlayerDeathEvent(
-                            getStage(), getTick(), getWorldLocation(raider.getPlayer()), raider.getUsername()));
-                }
+                dispatchEvent(new PlayerDeathEvent(
+                        getStage(), getTick(), getWorldLocation(raider.getPlayer()), raider.getUsername()));
             }
         });
     }

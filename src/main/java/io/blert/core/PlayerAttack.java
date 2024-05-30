@@ -124,6 +124,12 @@ public enum PlayerAttack {
             6,
             io.blert.proto.PlayerAttack.ELDER_MAUL
     ),
+    ELDER_MAUL_SPEC(
+            new int[]{ItemID.ELDER_MAUL, ItemID.ELDER_MAUL_OR},
+            11124,
+            6,
+            io.blert.proto.PlayerAttack.ELDER_MAUL_SPEC
+    ),
     FANG(
             new int[]{ItemID.OSMUMTENS_FANG, ItemID.OSMUMTENS_FANG_OR},
             9471,

@@ -64,6 +64,7 @@ public class BloatDataTracker extends RoomDataTracker {
     private int currentDownTick;
     private int lastDownTick;
     private int lastUpTick;
+    private int nextUpTick;
 
     public BloatDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.BLOAT, true);
@@ -71,6 +72,7 @@ public class BloatDataTracker extends RoomDataTracker {
         currentDown = 0;
         lastDownTick = -1;
         lastUpTick = -1;
+        nextUpTick = -1;
         bloat = null;
     }
 
@@ -104,7 +106,9 @@ public class BloatDataTracker extends RoomDataTracker {
                 currentDownTick--;
             }
 
-            if (currentDownTick == BLOAT_STOMP_TICK && bloat != null) {
+            if (tick == nextUpTick) {
+                handleBloatUp(bloat.getNpc(), tick);
+            } else if (currentDownTick == BLOAT_STOMP_TICK && bloat != null) {
                 WorldPoint point = getWorldLocation(bloat);
                 dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_BLOAT_STOMP, bloat));
             }
@@ -146,7 +150,7 @@ public class BloatDataTracker extends RoomDataTracker {
         final int tick = getTick();
         if (npc.getAnimation() == BLOAT_DOWN_ANIMATION) {
             handleBloatDown(npc, tick);
-        } else if (npc.getAnimation() == -1) {
+        } else if (state == State.DOWN && npc.getAnimation() == -1) {
             handleBloatUp(npc, tick);
         }
     }
@@ -155,6 +159,7 @@ public class BloatDataTracker extends RoomDataTracker {
         currentDown++;
         state = State.DOWN;
         lastDownTick = tick;
+        nextUpTick = tick + BLOAT_DOWN_CYCLE_TICKS + 1;
         log.debug("Bloat down {} tick {}", currentDown, lastDownTick);
 
         dispatchEvent(new BloatDownEvent(tick, getWorldLocation(bloat), currentDown, tick - lastUpTick));
@@ -162,6 +167,7 @@ public class BloatDataTracker extends RoomDataTracker {
 
     private void handleBloatUp(NPC bloat, int tick) {
         lastUpTick = tick;
+        nextUpTick = -1;
         state = State.WALKING;
         log.debug("Bloat up {} tick {}", currentDown, lastUpTick);
 
