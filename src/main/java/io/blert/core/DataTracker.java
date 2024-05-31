@@ -51,6 +51,7 @@ public abstract class DataTracker {
         TERMINATING,
     }
 
+    @Getter(AccessLevel.PROTECTED)
     private final RecordableChallenge challenge;
 
     protected final Client client;
