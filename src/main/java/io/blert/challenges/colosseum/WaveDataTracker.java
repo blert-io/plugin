@@ -25,14 +25,12 @@ package io.blert.challenges.colosseum;
 
 import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
-import io.blert.events.PlayerDeathEvent;
 import io.blert.events.colosseum.HandicapChoiceEvent;
 import io.blert.util.Tick;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.NPC;
-import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
@@ -133,19 +131,6 @@ public class WaveDataTracker extends DataTracker {
                     }
                     manticore.updateStyle();
                 });
-
-        getChallenge().getParty().forEach(raider -> {
-            Player player = raider.getPlayer();
-            if (raider.isDead() || player == null) {
-                return;
-            }
-
-            if (player.isDead()) {
-                raider.setDead(true);
-                dispatchEvent(new PlayerDeathEvent(
-                        getStage(), getTick(), getWorldLocation(player), raider.getUsername()));
-            }
-        });
     }
 
     @Override

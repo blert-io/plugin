@@ -28,7 +28,10 @@ import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
-import io.blert.core.*;
+import io.blert.core.BasicTrackedNpc;
+import io.blert.core.Hitpoints;
+import io.blert.core.NpcAttack;
+import io.blert.core.TrackedNpc;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.tob.MaidenBloodSplatsEvent;
 import io.blert.events.tob.MaidenCrabLeakEvent;
@@ -141,9 +144,7 @@ public class MaidenDataTracker extends RoomDataTracker {
             if (TobNpc.isMaiden(tobNpc.getId())) {
                 startRoom();
 
-                // Due to the loading line at Maiden (thanks Jagex), use a static location for her ID.
-                long roomId = TrackedNpcCollection.npcRoomId(getTick(), npc.getId(), MAIDEN_WORLD_LOCATION);
-                maiden = new BasicTrackedNpc(npc, tobNpc, roomId,
+                maiden = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getScale())));
                 return Optional.of(maiden);
             }

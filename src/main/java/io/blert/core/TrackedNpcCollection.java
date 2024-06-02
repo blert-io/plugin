@@ -23,10 +23,7 @@
 
 package io.blert.core;
 
-import io.blert.core.TrackedNpc;
 import net.runelite.api.NPC;
-import net.runelite.api.coords.WorldPoint;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -136,24 +133,5 @@ public class TrackedNpcCollection implements Collection<TrackedNpc> {
     public void clear() {
         byRoomId.clear();
         byNpc.clear();
-    }
-
-    /**
-     * Creates a deterministic unique identifier for each NPC spawned in a room.
-     *
-     * @param spawnTick     Tick on which the NPC spawned.
-     * @param npcId         ID of the spawned NPC.
-     * @param spawnLocation Location at which the NPC spawned.
-     * @return A unique ID for the NPC within the room.
-     */
-    @Contract(pure = true)
-    public static long npcRoomId(int spawnTick, int npcId, WorldPoint spawnLocation) {
-        // This ID should be limited to at most 53 bits to ensure that its integer value falls within the representable
-        // range of an IEEE 754 64-bit double, as this is what Javascript uses as integers.
-        long x = spawnLocation.getRegionX() & 0x3ff;           // 10 bits
-        long y = ((long) spawnLocation.getRegionY() & 0x3ff);  // 10 bits
-        long tick = ((long) spawnTick & 0x7ff);                // 11 bits
-        long id = ((long) npcId & 0x1fffff);                   // 21 bits
-        return x | (y << 10) | (tick << 20) | (id << 31);
     }
 }

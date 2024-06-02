@@ -216,6 +216,15 @@ public abstract class DataTracker {
     protected void onGroundObjectDespawn(GroundObjectDespawned event) {
     }
 
+    /**
+     * Implementation-specific equivalent of the {@code onActorDeath} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onDeath(ActorDeath event) {
+    }
+
     protected WorldPoint getWorldLocation(@NotNull Actor actor) {
         return Location.getWorldLocation(client, actor.getWorldLocation());
     }
@@ -246,8 +255,8 @@ public abstract class DataTracker {
         client.getPlayers().forEach(player -> {
             Raider raider = challenge.getRaider(player.getName());
             if (raider != null) {
-                raider.resetForNewRoom();
                 raider.setPlayer(player);
+                raider.resetForNewRoom();
             }
         });
 
@@ -467,7 +476,7 @@ public abstract class DataTracker {
     }
 
     protected long generateRoomId(@NotNull NPC npc) {
-        return TrackedNpcCollection.npcRoomId(getTick(), npc.getId(), getWorldLocation(npc));
+        return npc.getIndex();
     }
 
     private void onSpecialAttack(SpecialAttackTracker.SpecialAttack spec) {
@@ -571,6 +580,25 @@ public abstract class DataTracker {
         if (!terminating()) {
             onGroundObjectDespawn(event);
         }
+    }
+
+    @Subscribe
+    protected final void onActorDeath(ActorDeath event) {
+        if (terminating()) {
+            return;
+        }
+
+        if (event.getActor() instanceof Player) {
+            Raider raider = challenge.getRaider(event.getActor().getName());
+            if (raider != null) {
+                log.info("{} Player {} died", getTick(), raider.getUsername());
+                raider.setDead(true);
+                dispatchEvent(new PlayerDeathEvent(
+                        getStage(), getTick(), getWorldLocation(event.getActor()), raider.getUsername()));
+            }
+        }
+
+        onDeath(event);
     }
 
     @Subscribe

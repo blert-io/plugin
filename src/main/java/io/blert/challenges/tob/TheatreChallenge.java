@@ -246,7 +246,7 @@ public class TheatreChallenge extends RecordableChallenge {
             return false;
         }
 
-        log.debug("Location changed to " + loc);
+        log.debug("Location changed to {}", loc);
         location = loc;
 
         if (roomDataTracker == null || !location.inRoomInstance(roomDataTracker.getRoom())) {
@@ -395,6 +395,7 @@ public class TheatreChallenge extends RecordableChallenge {
             log.info("Initialized room data tracker for {} from {}", roomDataTracker.getRoom(), location);
             getEventBus().register(roomDataTracker);
             dispatchEvent(new StageUpdateEvent(roomDataTracker.getStage(), 0, StageUpdateEvent.Status.ENTERED));
+            getParty().forEach(Raider::resetForNewRoom);
         }
     }
 }

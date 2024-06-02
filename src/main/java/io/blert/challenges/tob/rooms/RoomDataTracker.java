@@ -28,8 +28,6 @@ import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.core.DataTracker;
 import io.blert.core.Hitpoints;
-import io.blert.core.Raider;
-import io.blert.events.PlayerDeathEvent;
 import io.blert.util.Tick;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -110,7 +108,6 @@ public abstract class RoomDataTracker extends DataTracker {
 
     @Override
     protected void onTick() {
-        updatePartyStatus();
     }
 
     /**
@@ -210,27 +207,6 @@ public abstract class RoomDataTracker extends DataTracker {
                 finish(true);
             }
         }
-    }
-
-    private void updatePartyStatus() {
-        theatreChallenge.forEachOrb((orb, username) -> {
-            Raider raider = theatreChallenge.getRaider(Text.standardize(username));
-            if (raider == null) {
-                log.warn("Player {} is in orb list but not in party", username);
-                return;
-            }
-
-            if (raider.isDead()) {
-                // Player was already dead.
-                return;
-            }
-
-            if (raider.getPlayer() != null && raider.getPlayer().isDead()) {
-                raider.setDead(true);
-                dispatchEvent(new PlayerDeathEvent(
-                        getStage(), getTick(), getWorldLocation(raider.getPlayer()), raider.getUsername()));
-            }
-        });
     }
 
     protected String formattedRoomTime() {
