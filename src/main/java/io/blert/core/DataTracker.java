@@ -28,6 +28,7 @@ import io.blert.util.Location;
 import io.blert.util.Tick;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -36,9 +37,8 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
@@ -225,19 +225,19 @@ public abstract class DataTracker {
     protected void onDeath(ActorDeath event) {
     }
 
-    protected WorldPoint getWorldLocation(@NotNull Actor actor) {
+    protected WorldPoint getWorldLocation(@NonNull Actor actor) {
         return Location.getWorldLocation(client, actor.getWorldLocation());
     }
 
-    protected WorldPoint getWorldLocation(@NotNull TrackedNpc trackedNpc) {
+    protected WorldPoint getWorldLocation(@NonNull TrackedNpc trackedNpc) {
         return getWorldLocation(trackedNpc.getNpc());
     }
 
-    protected WorldPoint getWorldLocation(@NotNull GameObject object) {
+    protected WorldPoint getWorldLocation(@NonNull GameObject object) {
         return Location.getWorldLocation(client, object.getWorldLocation());
     }
 
-    protected WorldPoint getWorldLocation(@NotNull GroundObject object) {
+    protected WorldPoint getWorldLocation(@NonNull GroundObject object) {
         return Location.getWorldLocation(client, object.getWorldLocation());
     }
 
@@ -329,7 +329,7 @@ public abstract class DataTracker {
         });
     }
 
-    private void checkForPlayerAttack(@NotNull Raider raider) {
+    private void checkForPlayerAttack(@NonNull Raider raider) {
         int animationId = raider.getAnimationId();
         if (animationId == -1) {
             return;
@@ -475,7 +475,7 @@ public abstract class DataTracker {
         trackedNpcs.remove(trackedNpc);
     }
 
-    protected long generateRoomId(@NotNull NPC npc) {
+    protected long generateRoomId(@NonNull NPC npc) {
         return npc.getIndex();
     }
 

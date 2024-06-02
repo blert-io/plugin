@@ -23,14 +23,14 @@
 
 package io.blert.challenges.tob.rooms.verzik;
 
-import io.blert.core.TrackedNpc;
-import io.blert.core.Hitpoints;
 import io.blert.challenges.tob.TobNpc;
+import io.blert.core.Hitpoints;
+import io.blert.core.TrackedNpc;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
-import org.jetbrains.annotations.NotNull;
 
 public class VerzikCrab extends TrackedNpc {
     public enum Spawn {
@@ -56,11 +56,11 @@ public class VerzikCrab extends TrackedNpc {
     private final Properties properties;
 
     @Override
-    public @NotNull TrackedNpc.Properties getProperties() {
+    public @NonNull TrackedNpc.Properties getProperties() {
         return properties;
     }
 
-    static VerzikCrab fromSpawnedNpc(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId,
+    static VerzikCrab fromSpawnedNpc(@NonNull NPC npc, @NonNull TobNpc tobNpc, long roomId,
                                      WorldPoint spawnPoint, int raidScale, VerzikPhase phase) {
         Spawn spawn;
 
@@ -87,7 +87,7 @@ public class VerzikCrab extends TrackedNpc {
         return new VerzikCrab(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidScale), phase, spawn);
     }
 
-    private VerzikCrab(@NotNull NPC npc, @NotNull TobNpc tobNpc,
+    private VerzikCrab(@NonNull NPC npc, @NonNull TobNpc tobNpc,
                        long roomId, Hitpoints hitpoints, VerzikPhase phase, Spawn spawn) {
         super(npc, tobNpc, roomId, hitpoints);
         this.properties = new Properties(phase, spawn);

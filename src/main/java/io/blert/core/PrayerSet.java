@@ -24,7 +24,7 @@
 package io.blert.core;
 
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
+import lombok.NonNull;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -66,15 +66,15 @@ public class PrayerSet implements Set<Prayer> {
         return false;
     }
 
-    @NotNull
+    @NonNull
     @Override
     public Iterator<Prayer> iterator() {
         return new PrayerIterator(value);
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public Prayer @NotNull [] toArray() {
+    public Prayer @NonNull [] toArray() {
         Prayer[] prayers = new Prayer[size()];
         int i = 0;
         for (Prayer prayer : this) {
@@ -83,9 +83,9 @@ public class PrayerSet implements Set<Prayer> {
         return prayers;
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public <T> T @NotNull [] toArray(@NotNull T @NotNull [] ts) {
+    public <T> T @NonNull [] toArray(@NonNull T @NonNull [] ts) {
         if (ts.length < size()) {
             throw new ArrayIndexOutOfBoundsException("Array is too small to store all prayers");
         }
@@ -118,12 +118,12 @@ public class PrayerSet implements Set<Prayer> {
     }
 
     @Override
-    public boolean containsAll(@NotNull Collection<?> collection) {
+    public boolean containsAll(@NonNull Collection<?> collection) {
         return collection.stream().anyMatch(this::contains);
     }
 
     @Override
-    public boolean addAll(@NotNull Collection<? extends Prayer> collection) {
+    public boolean addAll(@NonNull Collection<? extends Prayer> collection) {
         boolean changed = false;
         for (Prayer prayer : collection) {
             changed |= add(prayer);
@@ -132,12 +132,12 @@ public class PrayerSet implements Set<Prayer> {
     }
 
     @Override
-    public boolean retainAll(@NotNull Collection<?> collection) {
+    public boolean retainAll(@NonNull Collection<?> collection) {
         return false;
     }
 
     @Override
-    public boolean removeAll(@NotNull Collection<?> collection) {
+    public boolean removeAll(@NonNull Collection<?> collection) {
         return false;
     }
 

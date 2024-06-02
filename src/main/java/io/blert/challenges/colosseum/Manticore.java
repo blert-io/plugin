@@ -27,9 +27,10 @@ import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import lombok.Getter;
+import lombok.NonNull;
 import net.runelite.api.NPC;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+
+import javax.annotation.Nullable;
 
 public class Manticore extends BasicTrackedNpc {
     public final static int LOADING_ANIMATION = 10868;
@@ -50,7 +51,7 @@ public class Manticore extends BasicTrackedNpc {
 
     private int attacksRemaining = 0;
 
-    public Manticore(@NotNull NPC npc, long roomId, Hitpoints hitpoints) {
+    public Manticore(@NonNull NPC npc, long roomId, Hitpoints hitpoints) {
         super(npc, roomId, hitpoints);
     }
 

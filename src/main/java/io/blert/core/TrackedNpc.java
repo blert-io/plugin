@@ -26,9 +26,9 @@ package io.blert.core;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.events.NpcEvent;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import net.runelite.api.NPC;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@code TrackedNpc} is an NPC within a PVM challenge room whose data is trackable and reported via
@@ -52,10 +52,10 @@ public abstract class TrackedNpc {
 
     @Getter
     @Setter
-    private @NotNull NPC npc;
+    private @NonNull NPC npc;
 
     @Getter
-    private final @NotNull ChallengeMode mode;
+    private final @NonNull ChallengeMode mode;
 
     @Getter
     @Setter
@@ -68,7 +68,7 @@ public abstract class TrackedNpc {
     @Setter
     private boolean updatedProperties;
 
-    protected TrackedNpc(@NotNull NPC npc, long roomId, Hitpoints hitpoints) {
+    protected TrackedNpc(@NonNull NPC npc, long roomId, Hitpoints hitpoints) {
         this.npc = npc;
         this.mode = ChallengeMode.NO_MODE;
         this.roomId = roomId;
@@ -77,7 +77,7 @@ public abstract class TrackedNpc {
         this.updatedProperties = true;
     }
 
-    protected TrackedNpc(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
+    protected TrackedNpc(@NonNull NPC npc, @NonNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         this.npc = npc;
         this.mode = tobNpc.getMode();
         this.roomId = roomId;
@@ -95,7 +95,7 @@ public abstract class TrackedNpc {
      *
      * @return Copy of the current state of the NPC.
      */
-    public abstract @NotNull Properties getProperties();
+    public abstract @NonNull Properties getProperties();
 
     public int getNpcId() {
         return npc.getId();

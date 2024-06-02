@@ -30,13 +30,13 @@ import io.blert.proto.ChallengeMode;
 import io.blert.proto.ServerMessage;
 import io.blert.proto.Stage;
 import joptsimple.internal.Strings;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.LinkBrowser;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
@@ -186,7 +186,7 @@ public class BlertPluginPanel extends PluginPanel {
         add(userPanel, BorderLayout.NORTH);
     }
 
-    private @NotNull JPanel createConnectButtonPanel() {
+    private @NonNull JPanel createConnectButtonPanel() {
         JPanel connectButtonPanel = new JPanel();
         connectButtonPanel.setLayout(new BorderLayout());
         connectButtonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -301,7 +301,7 @@ public class BlertPluginPanel extends PluginPanel {
         }
     }
 
-    @NotNull
+    @NonNull
     private JPanel createCurrentChallengeStatePanel() {
         JPanel currentStatePanel = new JPanel();
         currentStatePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -326,7 +326,7 @@ public class BlertPluginPanel extends PluginPanel {
         return currentStatePanel;
     }
 
-    @NotNull
+    @NonNull
     private JPanel createChallengeActionsPanel(Challenge challenge, @Nullable String challengeId) {
         JPanel actionsPanel = new JPanel();
         actionsPanel.setLayout(new GridLayout(1, 0, 5, 0));

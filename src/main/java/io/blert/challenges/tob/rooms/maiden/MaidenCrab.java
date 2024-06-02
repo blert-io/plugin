@@ -24,13 +24,13 @@
 package io.blert.challenges.tob.rooms.maiden;
 
 import io.blert.challenges.tob.TobNpc;
-import io.blert.core.TrackedNpc;
 import io.blert.core.Hitpoints;
+import io.blert.core.TrackedNpc;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
@@ -138,14 +138,14 @@ public class MaidenCrab extends TrackedNpc {
                         scuffed, new Hitpoints(tobNpc.getBaseHitpoints(scale))));
     }
 
-    private MaidenCrab(@NotNull NPC npc, TobNpc tobNpc, long roomId, CrabSpawn spawn,
+    private MaidenCrab(@NonNull NPC npc, TobNpc tobNpc, long roomId, CrabSpawn spawn,
                        Position position, boolean scuffed, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
         this.properties = new Properties(spawn, position, scuffed);
     }
 
     @Override
-    public @NotNull TrackedNpc.Properties getProperties() {
+    public @NonNull TrackedNpc.Properties getProperties() {
         return properties;
     }
 

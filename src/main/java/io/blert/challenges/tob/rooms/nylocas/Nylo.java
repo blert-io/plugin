@@ -28,14 +28,14 @@ import io.blert.core.Hitpoints;
 import io.blert.core.TrackedNpc;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 
 @Slf4j
@@ -86,7 +86,7 @@ public class Nylo extends TrackedNpc {
     private WorldPoint deathPoint;
     private int deathTick;
 
-    public Nylo(@NotNull NPC npc, TobNpc tobNpc, long roomId, WorldPoint spawnPoint,
+    public Nylo(@NonNull NPC npc, TobNpc tobNpc, long roomId, WorldPoint spawnPoint,
                 int spawnTick, int wave, int baseHitpoints) {
         super(npc, tobNpc, roomId, new Hitpoints(baseHitpoints));
         this.parent = null;
@@ -100,7 +100,7 @@ public class Nylo extends TrackedNpc {
     }
 
     @Override
-    public @NotNull TrackedNpc.Properties getProperties() {
+    public @NonNull TrackedNpc.Properties getProperties() {
         long parentRoomId = parent != null ? parent.getRoomId() : 0;
         return new Properties(getRoomId(), parentRoomId, wave, big, spawnType, style);
     }

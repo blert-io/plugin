@@ -23,8 +23,8 @@
 
 package io.blert.core;
 
+import lombok.NonNull;
 import net.runelite.api.NPC;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -66,21 +66,21 @@ public class TrackedNpcCollection implements Collection<TrackedNpc> {
         return byRoomId.containsKey(trackedNpc.getRoomId());
     }
 
-    @NotNull
+    @NonNull
     @Override
     public Iterator<TrackedNpc> iterator() {
         return byRoomId.values().iterator();
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public TrackedNpc @NotNull [] toArray() {
+    public TrackedNpc @NonNull [] toArray() {
         return byRoomId.values().toArray(new TrackedNpc[0]);
     }
 
-    @NotNull
+    @NonNull
     @Override
-    public <T> T @NotNull [] toArray(@NotNull T @NotNull [] ts) {
+    public <T> T @NonNull [] toArray(@NonNull T @NonNull [] ts) {
         return byRoomId.values().toArray(ts);
     }
 
@@ -103,26 +103,26 @@ public class TrackedNpcCollection implements Collection<TrackedNpc> {
     }
 
     @Override
-    public boolean containsAll(@NotNull Collection<?> collection) {
+    public boolean containsAll(@NonNull Collection<?> collection) {
         return collection.stream().allMatch(this::contains);
     }
 
     @Override
-    public boolean addAll(@NotNull Collection<? extends TrackedNpc> collection) {
+    public boolean addAll(@NonNull Collection<? extends TrackedNpc> collection) {
         int sizeBefore = byRoomId.size();
         collection.forEach(this::add);
         return byRoomId.size() != sizeBefore;
     }
 
     @Override
-    public boolean removeAll(@NotNull Collection<?> collection) {
+    public boolean removeAll(@NonNull Collection<?> collection) {
         int sizeBefore = byRoomId.size();
         collection.forEach(this::remove);
         return byRoomId.size() != sizeBefore;
     }
 
     @Override
-    public boolean retainAll(@NotNull Collection<?> collection) {
+    public boolean retainAll(@NonNull Collection<?> collection) {
         int sizeBefore = byRoomId.size();
         byRoomId.values().retainAll(collection);
         byNpc.values().retainAll(collection);

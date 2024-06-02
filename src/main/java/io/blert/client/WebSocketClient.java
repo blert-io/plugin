@@ -24,13 +24,13 @@
 package io.blert.client;
 
 import io.blert.BuildProperties;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.internal.annotations.EverythingIsNonNull;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -54,7 +54,7 @@ public class WebSocketClient extends WebSocketListener {
         ERROR,
     }
 
-    @NotNull
+    @NonNull
     private final String hostname;
     private final byte[] apiKey;
     private final String runeliteVersion;
@@ -74,8 +74,8 @@ public class WebSocketClient extends WebSocketListener {
     @Setter
     private @Nullable Consumer<DisconnectReason> disconnectCallback = null;
 
-    public WebSocketClient(@NotNull String hostname, @NotNull String apiKey,
-                           @NotNull String runeliteVersion, OkHttpClient client) {
+    public WebSocketClient(@NonNull String hostname, @NonNull String apiKey,
+                           @NonNull String runeliteVersion, OkHttpClient client) {
         this.apiKey = apiKey.getBytes(StandardCharsets.UTF_8);
         this.hostname = hostname;
         this.runeliteVersion = runeliteVersion;
@@ -182,7 +182,7 @@ public class WebSocketClient extends WebSocketListener {
     }
 
     @Override
-    public synchronized void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, Response response) {
+    public synchronized void onFailure(@NonNull WebSocket webSocket, @NonNull Throwable t, Response response) {
         if (state == SocketState.OPENING) {
             openFutures.forEach(future -> future.complete(false));
             openFutures.clear();

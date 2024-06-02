@@ -27,17 +27,13 @@ import io.blert.events.ChallengeUpdateEvent;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.EventType;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.util.Text;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -49,7 +45,7 @@ public abstract class RecordableChallenge {
     @Getter
     private final Challenge challenge;
     @Getter
-    private @NotNull ChallengeMode challengeMode;
+    private @NonNull ChallengeMode challengeMode;
 
     protected final Client client;
 

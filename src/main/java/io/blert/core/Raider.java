@@ -24,10 +24,10 @@
 package io.blert.core;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -78,14 +78,14 @@ public class Raider {
     @Getter
     private @Nullable Prayer overheadPrayer;
 
-    public Raider(@NotNull String username, boolean localPlayer) {
+    public Raider(@NonNull String username, boolean localPlayer) {
         this.username = username;
         this.localPlayer = localPlayer;
         this.active = true;
         this.overheadPrayer = null;
     }
 
-    public Raider(@NotNull Player player, boolean localPlayer) {
+    public Raider(@NonNull Player player, boolean localPlayer) {
         this(Objects.requireNonNull(player.getName()), localPlayer);
         this.player = player;
     }
@@ -179,7 +179,7 @@ public class Raider {
         }
     }
 
-    public void recordAttack(int tick, @NotNull PlayerAttack attack) {
+    public void recordAttack(int tick, @NonNull PlayerAttack attack) {
         lastAttack = attack;
         offCooldownTick = tick + attack.getCooldown();
 

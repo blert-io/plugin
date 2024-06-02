@@ -24,11 +24,11 @@
 package io.blert.challenges.tob.rooms.nylocas;
 
 import io.blert.challenges.tob.TobNpc;
-import io.blert.core.TrackedNpc;
 import io.blert.core.Hitpoints;
+import io.blert.core.TrackedNpc;
 import lombok.Getter;
+import lombok.NonNull;
 import net.runelite.api.NPC;
-import org.jetbrains.annotations.NotNull;
 
 @Getter
 public class NyloBoss extends TrackedNpc {
@@ -37,13 +37,13 @@ public class NyloBoss extends TrackedNpc {
 
     private final boolean prince;
 
-    protected NyloBoss(@NotNull NPC npc, @NotNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
+    protected NyloBoss(@NonNull NPC npc, @NonNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
         this.prince = TobNpc.isNylocasPrinkipas(tobNpc.getId());
     }
 
     @Override
-    public @NotNull Properties getProperties() {
+    public @NonNull Properties getProperties() {
         return new NyloBossProperties();
     }
 }

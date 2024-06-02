@@ -23,7 +23,7 @@
 
 package io.blert.util;
 
-import org.jetbrains.annotations.NotNull;
+import lombok.NonNull;
 
 /**
  * Delays execution of a task by a specified number of ticks.
@@ -32,10 +32,10 @@ import org.jetbrains.annotations.NotNull;
  * typically from some {@code onTick} handler.
  */
 public class DeferredTask {
-    private final @NotNull Runnable task;
+    private final @NonNull Runnable task;
     private int ticks;
 
-    public DeferredTask(@NotNull Runnable task, int ticks) {
+    public DeferredTask(@NonNull Runnable task, int ticks) {
         this.task = task;
         this.ticks = ticks;
     }

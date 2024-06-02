@@ -24,8 +24,8 @@
 package io.blert.core;
 
 import io.blert.challenges.tob.TobNpc;
+import lombok.NonNull;
 import net.runelite.api.NPC;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A tracked NPC without any special properties, existing as a simple wrapper around a Runelite NPC.
@@ -34,16 +34,16 @@ public class BasicTrackedNpc extends TrackedNpc {
     public static class EmptyProperties extends TrackedNpc.Properties {
     }
 
-    public BasicTrackedNpc(@NotNull NPC npc, long roomId, Hitpoints hitpoints) {
+    public BasicTrackedNpc(@NonNull NPC npc, long roomId, Hitpoints hitpoints) {
         super(npc, roomId, hitpoints);
     }
 
-    public BasicTrackedNpc(@NotNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
+    public BasicTrackedNpc(@NonNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
     }
 
     @Override
-    public @NotNull Properties getProperties() {
+    public @NonNull Properties getProperties() {
         return new EmptyProperties();
     }
 }
