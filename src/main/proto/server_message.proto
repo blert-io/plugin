@@ -1,0 +1,169 @@
+/*
+ * Copyright (c) 2024 Alexei Frolov
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the “Software”), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "event.proto";
+
+package blert;
+
+option java_package = "io.blert.proto";
+option java_multiple_files = true;
+
+message ServerMessage {
+  enum Type {
+    PING = 0;
+    PONG = 1;
+    ERROR = 2;
+    CONNECTION_RESPONSE = 3;
+    HISTORY_REQUEST = 4;
+    HISTORY_RESPONSE = 5;
+    EVENT_STREAM = 6;
+    ACTIVE_CHALLENGE_INFO = 7;
+    SERVER_STATUS = 8;
+    GAME_STATE = 10;
+    PLAYER_STATE = 11;
+    CHALLENGE_STATE_CONFIRMATION = 12;
+  }
+
+  message Error {
+    enum Type {
+      UNKNOWN = 0;
+      UNIMPLEMENTED = 1;
+      BAD_REQUEST = 2;
+      UNAUTHENTICATED = 3;
+      USERNAME_MISMATCH = 4;
+      CHALLENGE_RECORDING_ENDED = 5;
+    }
+
+    Type type = 1;
+    string username = 2;
+  }
+
+  message User {
+    uint32 id = 1;
+    string name = 2;
+  }
+
+  message PastChallenge {
+    enum Status {
+      IN_PROGRESS = 0;
+      COMPLETED = 1;
+      RESET = 2;
+      WIPED = 3;
+    }
+
+    string id = 1;
+    Status status = 2;
+    Stage stage = 3;
+    ChallengeMode mode = 4;
+    repeated string party = 5;
+    Challenge challenge = 6;
+  }
+
+  message ServerStatus {
+    enum Status {
+      RUNNING = 0;
+      SHUTDOWN_PENDING = 1;
+      SHUTDOWN_CANCELED = 2;
+      SHUTDOWN_IMMINENT = 3;
+    }
+
+    Status status = 1;
+    google.protobuf.Timestamp shutdown_time = 2;
+  }
+
+  message GameState {
+    enum State {
+      LOGGED_OUT = 0;
+      LOGGED_IN = 1;
+    }
+
+    message PlayerInfo {
+      string username = 1;
+      uint64 overall_experience = 2;
+      uint32 attack_experience = 3;
+      uint32 strength_experience = 4;
+      uint32 defence_experience = 5;
+      uint32 hitpoints_experience = 6;
+      uint32 ranged_experience = 7;
+      uint32 prayer_experience = 8;
+      uint32 magic_experience = 9;
+    }
+
+    State state = 1;
+    PlayerInfo player_info = 2;
+  }
+
+  message PlayerState {
+    string username = 1;
+    string challenge_id = 2;
+    Challenge challenge = 3;
+    ChallengeMode mode = 4;
+  }
+
+  message ChallengeStateConfirmation {
+    // Set by the client in response to a CHALLENGE_STATE_CONFIRMATION message from the server, indicating if the
+    // challenge matches what the client is currently doing.
+    bool is_valid = 1;
+
+    // The player whose state to confirm.
+    string username = 2;
+
+    // The other challenge state fields are set by the server in CHALLENGE_STATE_CONFIRMATION messages to request
+    // confirmation from the client.
+    Challenge challenge = 3;
+    ChallengeMode mode = 4;
+    Stage stage = 5;
+    repeated string party = 6;
+  }
+
+  // Set on all messages. Indicates which fields are present.
+  Type type = 1;
+
+  optional User user = 2;
+
+  // In ERROR messages, the error that occurred.
+  optional Error error = 3;
+
+  optional string active_challenge_id = 4;
+
+  repeated PastChallenge recent_recordings = 5;
+
+  repeated Event challenge_events = 6;
+
+  // In SERVER_STATUS messages, the current status of the server.
+  optional ServerStatus server_status = 7;
+
+  // In GAME_STATE messages, the logged in/out state of the user.
+  optional GameState game_state = 8;
+
+  // List of OSRS usernames and their current challenge state.
+  // PLAYER_STATE messages contain at least one entry.
+  repeated PlayerState player_state = 9;
+
+  // In CHALLENGE_STATE_CONFIRMATION messages from the server, the last known state for the player.
+  // In CHALLENGE_STATE_CONFIRMATION messages from the client,
+  optional ChallengeStateConfirmation challenge_state_confirmation = 10;
+}
