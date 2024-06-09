@@ -400,6 +400,7 @@ message Event {
         WEST = 7;
         UNKNOWN = 8;
         SOUTH_FAR = 9;
+        CENTER = 10;
       }
 
       VerzikPhase phase = 1;

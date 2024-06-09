@@ -44,6 +44,7 @@ public class VerzikCrab extends TrackedNpc {
         WEST,
         UNKNOWN,
         SOUTH_FAR,
+        CENTER,  // If Verzik is dragged.
     }
 
     @AllArgsConstructor
@@ -82,6 +83,8 @@ public class VerzikCrab extends TrackedNpc {
             spawn = Spawn.SOUTHWEST;
         } else if (spawnPoint.equals(WEST_SPAWN)) {
             spawn = Spawn.WEST;
+        } else if (spawnPoint.equals(CENTER_SPAWN)) {
+            spawn = Spawn.CENTER;
         } else {
             spawn = Spawn.UNKNOWN;
         }
@@ -104,4 +107,5 @@ public class VerzikCrab extends TrackedNpc {
     private static final WorldPoint SOUTHEAST_SPAWN = new WorldPoint(3179, 4310, 0);
     private static final WorldPoint SOUTHWEST_SPAWN = new WorldPoint(3157, 4311, 0);
     private static final WorldPoint WEST_SPAWN = new WorldPoint(3157, 4315, 0);
+    private static final WorldPoint CENTER_SPAWN = new WorldPoint(3168, 4315, 0);
 }
