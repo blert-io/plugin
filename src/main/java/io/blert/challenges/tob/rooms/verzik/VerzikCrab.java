@@ -34,7 +34,6 @@ import net.runelite.api.coords.WorldPoint;
 
 public class VerzikCrab extends TrackedNpc {
     public enum Spawn {
-        // TODO(frolv): This is incomplete.
         NORTH,
         NORTHEAST,
         NORTHWEST,
@@ -44,6 +43,7 @@ public class VerzikCrab extends TrackedNpc {
         SOUTHWEST,
         WEST,
         UNKNOWN,
+        SOUTH_FAR,
     }
 
     @AllArgsConstructor
@@ -74,6 +74,8 @@ public class VerzikCrab extends TrackedNpc {
             spawn = Spawn.EAST;
         } else if (spawnPoint.equals(SOUTH_SPAWN)) {
             spawn = Spawn.SOUTH;
+        } else if (spawnPoint.equals(SOUTH_FAR_SPAWN)) {
+            spawn = Spawn.SOUTH_FAR;
         } else if (spawnPoint.equals(SOUTHEAST_SPAWN)) {
             spawn = Spawn.SOUTHEAST;
         } else if (spawnPoint.equals(SOUTHWEST_SPAWN)) {
@@ -98,6 +100,7 @@ public class VerzikCrab extends TrackedNpc {
     private static final WorldPoint NORTHWEST_SPAWN = new WorldPoint(3157, 4320, 0);
     private static final WorldPoint EAST_SPAWN = new WorldPoint(3176, 4315, 0);
     private static final WorldPoint SOUTH_SPAWN = new WorldPoint(3166, 4308, 0);
+    private static final WorldPoint SOUTH_FAR_SPAWN = new WorldPoint(3171, 4303, 0);
     private static final WorldPoint SOUTHEAST_SPAWN = new WorldPoint(3179, 4310, 0);
     private static final WorldPoint SOUTHWEST_SPAWN = new WorldPoint(3157, 4311, 0);
     private static final WorldPoint WEST_SPAWN = new WorldPoint(3157, 4315, 0);
