@@ -170,6 +170,18 @@ public enum PlayerAttack {
     KICK(-1, 423, 4, io.blert.proto.PlayerAttack.KICK),
     KODAI_BARRAGE(ItemID.KODAI_WAND, 1979, 5, io.blert.proto.PlayerAttack.KODAI_BARRAGE),
     KODAI_BASH(ItemID.KODAI_WAND, 393, 5, io.blert.proto.PlayerAttack.KODAI_BASH),
+    NM_STAFF_BARRAGE(
+            new int[]{ItemID.NIGHTMARE_STAFF, ItemID.VOLATILE_NIGHTMARE_STAFF, ItemID.HARMONISED_NIGHTMARE_STAFF, ItemID.ELDRITCH_NIGHTMARE_STAFF},
+            1979,
+            5,
+            io.blert.proto.PlayerAttack.NM_STAFF_BARRAGE
+    ),
+    NM_STAFF_BASH(
+            new int[]{ItemID.NIGHTMARE_STAFF, ItemID.VOLATILE_NIGHTMARE_STAFF, ItemID.HARMONISED_NIGHTMARE_STAFF, ItemID.ELDRITCH_NIGHTMARE_STAFF},
+            4505,
+            5,
+            io.blert.proto.PlayerAttack.NM_STAFF_BASH
+    ),
     PUNCH(-1, 422, 4, io.blert.proto.PlayerAttack.PUNCH),
     RAPIER(
             new int[]{ItemID.GHRAZI_RAPIER, ItemID.HOLY_GHRAZI_RAPIER},
@@ -344,18 +356,6 @@ public enum PlayerAttack {
     VENATOR_BOW(ItemID.VENATOR_BOW, 9858, 4, io.blert.proto.PlayerAttack.VENATOR_BOW),
     VOIDWAKER_AUTO(ItemID.VOIDWAKER, new int[]{386, 390}, 4, io.blert.proto.PlayerAttack.VOIDWAKER_AUTO),
     VOIDWAKER_SPEC(ItemID.VOIDWAKER, 1378, 4, io.blert.proto.PlayerAttack.VOIDWAKER_SPEC),
-    VOLATILE_NM_BARRAGE(
-            ItemID.VOLATILE_NIGHTMARE_STAFF,
-            1979,
-            5,
-            io.blert.proto.PlayerAttack.VOLATILE_NM_BARRAGE
-    ),
-    VOLATILE_NM_BASH(
-            ItemID.VOLATILE_NIGHTMARE_STAFF,
-            4505,
-            5,
-            io.blert.proto.PlayerAttack.VOLATILE_NM_BASH
-    ),
     VOLATILE_NM_SPEC(
             ItemID.VOLATILE_NIGHTMARE_STAFF,
             8532,
