@@ -191,6 +191,7 @@ enum PlayerAttack {
   ELDER_MAUL = 84;
   ELDER_MAUL_SPEC = 85;
   ZOMBIE_AXE = 86;
+  GOBLIN_PAINT_CANNON = 87;
 }
 
 enum NpcAttack {

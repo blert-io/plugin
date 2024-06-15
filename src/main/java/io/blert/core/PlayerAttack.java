@@ -136,6 +136,12 @@ public enum PlayerAttack {
             5,
             io.blert.proto.PlayerAttack.FANG_STAB
     ),
+    GOBLIN_PAINT_CANNON(
+            ItemID.GOBLIN_PAINT_CANNON,
+            2323,
+            3,
+            io.blert.proto.PlayerAttack.GOBLIN_PAINT_CANNON
+    ),
     GODSWORD_SMACK(
             new int[]{
                     ItemID.ANCIENT_GODSWORD,
