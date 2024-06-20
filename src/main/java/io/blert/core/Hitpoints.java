@@ -49,6 +49,10 @@ public class Hitpoints extends SkillLevel {
         this(tobNpc.getBaseHitpoints(scale));
     }
 
+    public Hitpoints update(int current) {
+        return new Hitpoints(current, base);
+    }
+
     public double percentage() {
         if (base == 0) {
             return Double.NaN;

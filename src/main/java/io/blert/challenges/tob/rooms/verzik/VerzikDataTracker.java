@@ -24,6 +24,7 @@
 package io.blert.challenges.tob.rooms.verzik;
 
 import com.google.common.collect.ImmutableSet;
+import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
@@ -69,9 +70,10 @@ public class VerzikDataTracker extends RoomDataTracker {
     private static final ImmutableSet<Integer> VERZIK_WEB_IDS = ImmutableSet.of(8376, 10837, 10854);
     private static final int VERZIK_YELLOW_OBJECT_ID = 1595;
 
-    private BasicTrackedNpc verzik;
+    private HpVarbitTrackedNpc verzik;
 
     private VerzikPhase phase;
+    int phaseStartTick;
 
     private int unidentifiedVerzikAttackTick;
     private int nextVerzikAttackTick;
@@ -107,7 +109,7 @@ public class VerzikDataTracker extends RoomDataTracker {
             TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
 
             if (verzik == null) {
-                verzik = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                verzik = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc, theatreChallenge.getScale()));
                 addTrackedNpc(verzik);
             }
@@ -120,6 +122,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                 startVerzikPhase(VerzikPhase.P3, getTick(), true);
             }
         });
+        phaseStartTick = 0;
     }
 
     @Override
@@ -154,6 +157,11 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             activeSpecial = null;
             yellowPools.clear();
+        }
+
+        if (tick > phaseStartTick + 5 && verzik != null) {
+            // After the phase has been active for several ticks, re-enable varbit updates.
+            verzik.setDisableVarbitUpdates(false);
         }
     }
 
@@ -193,7 +201,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
         if (tobNpc.isAnyVerzik()) {
             long roomId = verzik != null ? verzik.getRoomId() : generateRoomId(npc);
-            verzik = new BasicTrackedNpc(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getScale()));
+            verzik = new HpVarbitTrackedNpc(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getScale()));
             return Optional.of(verzik);
         }
 
@@ -481,6 +489,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
     private void startVerzikPhase(VerzikPhase phase, int tick, boolean dispatchPhaseEvent) {
         this.phase = phase;
+        phaseStartTick = tick;
         nextVerzikAttack = null;
         unidentifiedVerzikAttackTick = -1;
 
@@ -494,6 +503,12 @@ public class VerzikDataTracker extends RoomDataTracker {
             enraged = false;
         } else {
             nextVerzikAttackTick = -1;
+        }
+
+        if (verzik != null) {
+            // Temporarily disable varbit updates at the start of a phase as the varbit lags behind, so it may reset
+            // the HP to 0 from the previous phase.
+            verzik.setDisableVarbitUpdates(true);
         }
 
         if (dispatchPhaseEvent && phase != VerzikPhase.P1) {

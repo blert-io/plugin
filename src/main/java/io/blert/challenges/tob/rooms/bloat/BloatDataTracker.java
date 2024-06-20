@@ -23,11 +23,11 @@
 
 package io.blert.challenges.tob.rooms.bloat;
 
+import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
-import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
@@ -58,7 +58,7 @@ public class BloatDataTracker extends RoomDataTracker {
     }
 
     private State state;
-    private BasicTrackedNpc bloat;
+    private HpVarbitTrackedNpc bloat;
 
     private int currentDown;
     private int currentDownTick;
@@ -81,7 +81,7 @@ public class BloatDataTracker extends RoomDataTracker {
         if (bloat == null) {
             client.getNpcs().stream().filter(npc -> TobNpc.isBloat(npc.getId())).findFirst().ifPresent(npc -> {
                 TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
-                bloat = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                bloat = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc, theatreChallenge.getScale()));
                 addTrackedNpc(bloat);
             });
@@ -123,7 +123,7 @@ public class BloatDataTracker extends RoomDataTracker {
                 .filter(tobNpc -> TobNpc.isBloat(tobNpc.getId()))
                 .map(tobNpc -> {
                     if (bloat == null) {
-                        bloat = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                        bloat = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                                 new Hitpoints(tobNpc, theatreChallenge.getScale()));
                     }
                     return bloat;

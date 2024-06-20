@@ -23,12 +23,12 @@
 
 package io.blert.challenges.tob.rooms.sotetseg;
 
+import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.Location;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
-import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
@@ -63,7 +63,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private @Nullable NpcAttack attackThisTick = null;
     private int lastAttackTick = -1;
     private int deathBallSpawnTick = -1;
-    private @Nullable BasicTrackedNpc sotetseg = null;
+    private @Nullable HpVarbitTrackedNpc sotetseg = null;
     private final MazeTracker mazeTracker = new MazeTracker();
     boolean inMaze = false;
     private final Set<GroundObject> activeMazeTiles = new HashSet<>();
@@ -77,7 +77,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
         if (sotetseg == null) {
             client.getNpcs().stream().filter(npc -> TobNpc.isSotetseg(npc.getId())).findFirst().ifPresent(npc -> {
                 TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
-                sotetseg = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc, theatreChallenge.getScale()));
                 addTrackedNpc(sotetseg);
             });
@@ -126,7 +126,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
                 .filter(tobNpc -> TobNpc.isSotetsegIdle(tobNpc.getId()))
                 .map(tobNpc -> {
                     if (sotetseg == null) {
-                        sotetseg = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                        sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                                 new Hitpoints(tobNpc, theatreChallenge.getScale()));
                     }
                     return sotetseg;
@@ -228,6 +228,10 @@ public class SotetsegDataTracker extends RoomDataTracker {
         inMaze = true;
 
         dispatchEvent(SoteMazeEvent.mazeProc(tick, maze));
+
+        if (sotetseg != null) {
+            sotetseg.setDisableVarbitUpdates(true);
+        }
     }
 
     private void finishMaze(int tick) {
@@ -248,5 +252,9 @@ public class SotetsegDataTracker extends RoomDataTracker {
         // Advance to the next maze.
         maze = Maze.MAZE_33;
         mazeTracker.reset();
+
+        if (sotetseg != null) {
+            sotetseg.setDisableVarbitUpdates(false);
+        }
     }
 }

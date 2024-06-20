@@ -147,12 +147,19 @@ public class NylocasDataTracker extends RoomDataTracker {
         TobNpc tobNpc = maybeNpc.get();
 
         if (TobNpc.isNylocasPrinkipas(tobNpc.getId())) {
+            if (nyloBoss != null && nyloBoss.getNpc().isDead()) {
+                despawnTrackedNpc(nyloBoss);
+            }
             long roomId = generateRoomId(npc);
             nyloBoss = new NyloBoss(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getScale()));
             return Optional.of(nyloBoss);
         }
 
         if (TobNpc.isNylocasVasilias(tobNpc.getId())) {
+            if (nyloBoss != null && nyloBoss.isPrince() && nyloBoss.getNpc().isDead()) {
+                despawnTrackedNpc(nyloBoss);
+            }
+
             // Two spawn events are sent out for the Nylo king: one when it first drops down, and one when the fight
             // actually starts. Only generate a new room ID for the former.
             boolean bossAlreadySpawned = nyloBoss != null && !nyloBoss.isPrince();

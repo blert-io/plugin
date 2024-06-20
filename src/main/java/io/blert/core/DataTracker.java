@@ -225,6 +225,15 @@ public abstract class DataTracker {
     protected void onDeath(ActorDeath event) {
     }
 
+    /**
+     * Implementation-specific equivalent of the {@code onVarbitChanged} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onVarbit(VarbitChanged event) {
+    }
+
     protected WorldPoint getWorldLocation(@NonNull Actor actor) {
         return Location.getWorldLocation(client, actor.getWorldLocation());
     }
@@ -471,8 +480,9 @@ public abstract class DataTracker {
     }
 
     protected void despawnTrackedNpc(TrackedNpc trackedNpc) {
-        dispatchEvent(NpcEvent.death(getStage(), getTick(), getWorldLocation(trackedNpc), trackedNpc));
-        trackedNpcs.remove(trackedNpc);
+        if (trackedNpcs.remove(trackedNpc)) {
+            dispatchEvent(NpcEvent.death(getStage(), getTick(), getWorldLocation(trackedNpc), trackedNpc));
+        }
     }
 
     protected long generateRoomId(@NonNull NPC npc) {
@@ -591,7 +601,6 @@ public abstract class DataTracker {
         if (event.getActor() instanceof Player) {
             Raider raider = challenge.getRaider(event.getActor().getName());
             if (raider != null) {
-                log.info("{} Player {} died", getTick(), raider.getUsername());
                 raider.setDead(true);
                 dispatchEvent(new PlayerDeathEvent(
                         getStage(), getTick(), getWorldLocation(event.getActor()), raider.getUsername()));
@@ -607,31 +616,31 @@ public abstract class DataTracker {
             return;
         }
 
-        if (varbitChanged.getVarpId() != VarPlayer.SPECIAL_ATTACK_PERCENT) {
-            return;
-        }
-
-        int percent = varbitChanged.getValue();
-        int oldPercent = specialAttackTracker.updateSpecialPercent(percent);
-        if (oldPercent != -1 && percent >= oldPercent) {
-            // This is a special attack regen, not drain. Ignore it.
-            return;
-        }
-
-        int specTick = client.getTickCount();
-        clientThread.invokeLater(() -> {
-            Actor target = client.getLocalPlayer().getInteracting();
-            if (target instanceof NPC) {
-                var equipment = client.getItemContainer(InventoryID.EQUIPMENT);
-                if (equipment == null) {
-                    return;
-                }
-
-                net.runelite.api.Item weapon = equipment.getItem(EquipmentInventorySlot.WEAPON.getSlotIdx());
-                if (weapon != null) {
-                    specialAttackTracker.recordSpecialUsed((NPC) target, weapon, specTick);
-                }
+        if (varbitChanged.getVarpId() == VarPlayer.SPECIAL_ATTACK_PERCENT) {
+            int percent = varbitChanged.getValue();
+            int oldPercent = specialAttackTracker.updateSpecialPercent(percent);
+            if (oldPercent != -1 && percent >= oldPercent) {
+                // This is a special attack regen, not drain. Ignore it.
+                return;
             }
-        });
+
+            int specTick = client.getTickCount();
+            clientThread.invokeLater(() -> {
+                Actor target = client.getLocalPlayer().getInteracting();
+                if (target instanceof NPC) {
+                    var equipment = client.getItemContainer(InventoryID.EQUIPMENT);
+                    if (equipment == null) {
+                        return;
+                    }
+
+                    net.runelite.api.Item weapon = equipment.getItem(EquipmentInventorySlot.WEAPON.getSlotIdx());
+                    if (weapon != null) {
+                        specialAttackTracker.recordSpecialUsed((NPC) target, weapon, specTick);
+                    }
+                }
+            });
+        }
+
+        onVarbit(varbitChanged);
     }
 }

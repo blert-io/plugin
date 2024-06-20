@@ -23,11 +23,15 @@
 
 package io.blert.challenges.tob.rooms.xarpus;
 
+import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
-import io.blert.core.*;
+import io.blert.core.ChallengeMode;
+import io.blert.core.Hitpoints;
+import io.blert.core.NpcAttack;
+import io.blert.core.TrackedNpc;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.tob.XarpusPhaseEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +52,7 @@ public class XarpusDataTracker extends RoomDataTracker {
     private static final int TICKS_PER_TURN_P3 = 8;
 
     private XarpusPhase phase;
-    private @Nullable BasicTrackedNpc xarpus = null;
+    private @Nullable HpVarbitTrackedNpc xarpus = null;
 
     private int nextTurnTick = -1;
 
@@ -61,7 +65,7 @@ public class XarpusDataTracker extends RoomDataTracker {
         if (xarpus == null) {
             client.getNpcs().stream().filter(npc -> TobNpc.isAnyXarpus(npc.getId())).findFirst().ifPresent(npc -> {
                 TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
-                xarpus = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                xarpus = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc, theatreChallenge.getScale()));
                 addTrackedNpc(xarpus);
             });
@@ -103,7 +107,7 @@ public class XarpusDataTracker extends RoomDataTracker {
         Optional<TobNpc> maybeXarpus = TobNpc.withId(npc.getId()).filter(TobNpc::isAnyXarpus);
         if (maybeXarpus.isPresent()) {
             if (xarpus == null) {
-                xarpus = new BasicTrackedNpc(npc, maybeXarpus.get(), generateRoomId(npc),
+                xarpus = new HpVarbitTrackedNpc(npc, maybeXarpus.get(), generateRoomId(npc),
                         new Hitpoints(maybeXarpus.get(), theatreChallenge.getScale()));
             }
             return Optional.of(xarpus);

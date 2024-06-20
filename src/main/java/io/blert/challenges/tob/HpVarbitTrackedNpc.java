@@ -21,24 +21,44 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.tob.rooms.nylocas;
+package io.blert.challenges.tob;
 
-import io.blert.challenges.tob.HpVarbitTrackedNpc;
-import io.blert.challenges.tob.TobNpc;
+import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import net.runelite.api.NPC;
 
+/**
+ * A tracked NPC whose hitpoints are periodically updated from a varbit.
+ */
 @Getter
-public class NyloBoss extends HpVarbitTrackedNpc {
-    private final boolean prince;
+@Setter
+public class HpVarbitTrackedNpc extends BasicTrackedNpc {
+    boolean disableVarbitUpdates;
 
-    protected NyloBoss(@NonNull NPC npc, @NonNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
+    public HpVarbitTrackedNpc(@NonNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
-        this.prince = TobNpc.isNylocasPrinkipas(tobNpc.getId());
-        if (this.prince) {
-            setDisableVarbitUpdates(true);
+        this.disableVarbitUpdates = false;
+    }
+
+    public void updateHitpointsFromVarbit(int varbitValue) {
+        if (disableVarbitUpdates) {
+            return;
+        }
+
+        // The varbit stores a value from 0 to 1000, representing the percentage of hitpoints remaining
+        // to a tenth of a percent.
+        double ratio = varbitValue / 1000.0;
+        int updatedHitpoints = (int) (getHitpoints().getBase() * ratio);
+        int currentHitpoints = getHitpoints().getCurrent();
+
+        // As bosses can have several thousands of hitpoints, the calculated value is not entirely precise.
+        // If the current value is within a few hitpoints of the calculated value, assume that it is correct.
+        if (Math.abs(currentHitpoints - updatedHitpoints) > 5) {
+            Hitpoints newHitpoints = getHitpoints().update(updatedHitpoints);
+            setHitpoints(newHitpoints);
         }
     }
 }

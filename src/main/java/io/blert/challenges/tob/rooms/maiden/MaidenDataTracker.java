@@ -23,6 +23,7 @@
 
 package io.blert.challenges.tob.rooms.maiden;
 
+import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.Location;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
@@ -52,13 +53,11 @@ public class MaidenDataTracker extends RoomDataTracker {
     private final static int MAIDEN_BLOOD_THROW_ANIMATION = 8091;
     private final static int MAIDEN_AUTO_ANIMATION = 8092;
 
-    private final static WorldPoint MAIDEN_WORLD_LOCATION = new WorldPoint(3162, 4444, 0);
-
     private CrabSpawn currentSpawn = CrabSpawn.SEVENTIES;
     private final int[] spawnTicks = new int[3];
     private boolean crabsSpawnedThisTick = false;
 
-    private @Nullable BasicTrackedNpc maiden;
+    private @Nullable HpVarbitTrackedNpc maiden;
 
     private final Set<GameObject> bloodTrails = new HashSet<>();
     private final Map<Integer, MaidenCrab> crabs = new HashMap<>();
@@ -144,7 +143,7 @@ public class MaidenDataTracker extends RoomDataTracker {
             if (TobNpc.isMaiden(tobNpc.getId())) {
                 startRoom();
 
-                maiden = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                maiden = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getScale())));
                 return Optional.of(maiden);
             }

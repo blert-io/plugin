@@ -23,6 +23,7 @@
 
 package io.blert.challenges.tob.rooms;
 
+import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.Location;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
@@ -32,11 +33,9 @@ import io.blert.util.Tick;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.HitsplatID;
 import net.runelite.api.NPC;
-import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.GameObjectDespawned;
-import net.runelite.api.events.GameObjectSpawned;
-import net.runelite.api.events.GraphicsObjectCreated;
+import net.runelite.api.events.*;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
@@ -45,6 +44,8 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public abstract class RoomDataTracker extends DataTracker {
+    private static int TOB_HITPOINTS_VARBIT = 6448;
+
     protected final TheatreChallenge theatreChallenge;
 
     @Getter
@@ -53,6 +54,8 @@ public abstract class RoomDataTracker extends DataTracker {
 
     private final boolean startOnEntry;
     private boolean startingTickAccurate;
+    private boolean shouldUpdateHitpoints;
+    private int healTick = -1;
 
     protected RoomDataTracker(TheatreChallenge theatreChallenge, Client client, Room room, boolean startOnEntry) {
         super(theatreChallenge, client, room.toStage());
@@ -100,7 +103,7 @@ public abstract class RoomDataTracker extends DataTracker {
     public void checkEntry() {
         if (getState() == State.NOT_STARTED && this.startOnEntry) {
             if (playersAreInRoom()) {
-                log.debug("Room " + room + " started because player entered");
+                log.debug("Room {} started because player entered", room);
                 startRoom();
             }
         }
@@ -108,6 +111,17 @@ public abstract class RoomDataTracker extends DataTracker {
 
     @Override
     protected void onTick() {
+        int tick = getTick();
+
+        // The hitpoints varbit is delayed by up to 3 ticks, so don't update immediately following a heal as it may
+        // undo the hitpoints added by the heal.
+        if (shouldUpdateHitpoints && (healTick == -1 || tick - healTick > 3)) {
+            getTrackedNpcs().stream().filter(npc -> npc instanceof HpVarbitTrackedNpc)
+                    .map(npc -> (HpVarbitTrackedNpc) npc)
+                    .findFirst()
+                    .ifPresent(npc -> npc.updateHitpointsFromVarbit(client.getVarbitValue(TOB_HITPOINTS_VARBIT)));
+            shouldUpdateHitpoints = false;
+        }
     }
 
     /**
@@ -206,6 +220,24 @@ public abstract class RoomDataTracker extends DataTracker {
                 log.warn("Could not parse timestamp from wave end message: {}", stripped);
                 finish(true);
             }
+        }
+    }
+
+    @Override
+    protected void onHitsplat(HitsplatApplied event) {
+        if (event.getActor() instanceof NPC && event.getHitsplat().getHitsplatType() == HitsplatID.HEAL) {
+            getTrackedNpcs().getByNpc((NPC) event.getActor()).ifPresent(npc -> {
+                if (npc instanceof HpVarbitTrackedNpc) {
+                    healTick = getTick();
+                }
+            });
+        }
+    }
+
+    @Override
+    protected void onVarbit(VarbitChanged event) {
+        if (event.getVarbitId() == TOB_HITPOINTS_VARBIT) {
+            shouldUpdateHitpoints = true;
         }
     }
 
