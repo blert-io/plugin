@@ -80,10 +80,14 @@ public class WebsocketManager {
         return wsClient != null && wsClient.isOpen();
     }
 
-    public void close() {
+    public Future<Void> close() {
         if (wsClient != null && wsClient.isOpen()) {
-            wsClient.close();
+            var result = wsClient.close();
+            wsClient = null;
+            return result;
         }
+
+        return CompletableFuture.completedFuture(null);
     }
 
     private void initializeWebSocketClient() {
