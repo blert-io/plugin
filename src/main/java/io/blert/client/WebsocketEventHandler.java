@@ -208,7 +208,7 @@ public class WebsocketEventHandler implements EventHandler {
                 break;
 
             case ERROR:
-                handleServerError(serverMessage.getError());
+                handleServerError(serverMessage);
                 break;
 
             case CONNECTION_RESPONSE:
@@ -321,7 +321,9 @@ public class WebsocketEventHandler implements EventHandler {
         }
     }
 
-    private void handleServerError(ServerMessage.Error error) {
+    private synchronized void handleServerError(ServerMessage message) {
+        ServerMessage.Error error = message.getError();
+
         switch (error.getType()) {
             case BAD_REQUEST:
                 // TODO(frolv): Implement.
@@ -345,6 +347,10 @@ public class WebsocketEventHandler implements EventHandler {
                 break;
 
             case CHALLENGE_RECORDING_ENDED:
+                if (challengeId == null || !challengeId.equals(message.getActiveChallengeId())) {
+                    break;
+                }
+
                 if (status == Status.CHALLENGE_STARTING || status == Status.CHALLENGE_ACTIVE) {
                     log.error("Server ended recording for challenge {}", challengeId);
                     resetChallenge();
