@@ -59,6 +59,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
     private int currentWave;
     private WaveDataTracker waveDataTracker;
+    private int totalTicks;
 
     private final List<Handicap> waveHandicapOptions = new ArrayList<>(3);
 
@@ -78,6 +79,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
     protected void onInitialize() {
         addRaider(new Raider(client.getLocalPlayer(), true));
         currentWave = 0;
+        totalTicks = 0;
         stateChangeCooldown = false;
         waveHandicapOptions.clear();
     }
@@ -217,13 +219,14 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
         currentWave++;
         if (currentWave < 13) {
-            waveDataTracker = new WaveDataTracker(this, client, currentWave);
+            waveDataTracker = new WaveDataTracker(this, client, currentWave, totalTicks);
             getEventBus().register(waveDataTracker);
         }
     }
 
     private void clearWaveDataTracker() {
         if (waveDataTracker != null) {
+            totalTicks += waveDataTracker.getTotalTicks();
             waveDataTracker.terminate();
             getEventBus().unregister(waveDataTracker);
             waveDataTracker = null;
@@ -234,6 +237,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
         clearWaveDataTracker();
         waveHandicapOptions.clear();
         currentWave = 0;
+        totalTicks = 0;
         stateChangeCooldown = false;
     }
 }

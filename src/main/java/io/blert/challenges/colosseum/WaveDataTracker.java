@@ -51,6 +51,7 @@ public class WaveDataTracker extends DataTracker {
     private final String waveStartMessage;
     private final Pattern waveEndRegex;
 
+    private final int ticksOnEntry;
     @Setter
     private Handicap handicap;
     @Setter
@@ -60,11 +61,12 @@ public class WaveDataTracker extends DataTracker {
         return Stage.values()[Stage.COLOSSEUM_WAVE_1.ordinal() + wave - 1];
     }
 
-    public WaveDataTracker(RecordableChallenge challenge, Client client, int wave) {
+    public WaveDataTracker(RecordableChallenge challenge, Client client, int wave, int ticksOnEntry) {
         super(challenge, client, waveToStage(wave));
 
         this.waveStartMessage = "Wave: " + wave;
         this.waveEndRegex = Pattern.compile("Wave " + wave + " completed! Wave duration: ([0-9:.]+)");
+        this.ticksOnEntry = ticksOnEntry;
     }
 
     @Override
@@ -146,27 +148,29 @@ public class WaveDataTracker extends DataTracker {
             return;
         }
 
-        Matcher matcher = waveEndRegex.matcher(stripped);
-        if (matcher.find()) {
-            try {
-                String inGameTime = matcher.group(1);
-                finish(true, Tick.fromTimeString(inGameTime));
-            } catch (Exception e) {
-                log.warn("Could not parse timestamp from wave end message: {}", stripped);
-                finish(true);
+        if (getStage() == Stage.COLOSSEUM_WAVE_12) {
+            Matcher matcher = colosseumEndRegex.matcher(stripped);
+            if (matcher.find()) {
+                try {
+                    String inGameTime = matcher.group(1);
+                    int challengeTicks = Tick.fromTimeString(inGameTime);
+                    int bossTicks = challengeTicks - ticksOnEntry;
+                    finish(true, bossTicks);
+                } catch (Exception e) {
+                    log.warn("Could not parse timestamp from colosseum end message: {}", stripped);
+                    finish(true);
+                }
             }
-            return;
-        }
-
-        Matcher colosseumEndMatcher = colosseumEndRegex.matcher(stripped);
-        if (colosseumEndMatcher.find()) {
-            try {
-                // TODO(frolv): Compare time.
-                // String inGameTime = colosseumEndMatcher.group(1);
-                finish(true);
-            } catch (Exception e) {
-                log.warn("Could not parse timestamp from colosseum end message: {}", stripped);
-                finish(true);
+        } else {
+            Matcher matcher = waveEndRegex.matcher(stripped);
+            if (matcher.find()) {
+                try {
+                    String inGameTime = matcher.group(1);
+                    finish(true, Tick.fromTimeString(inGameTime));
+                } catch (Exception e) {
+                    log.warn("Could not parse timestamp from wave end message: {}", stripped);
+                    finish(true);
+                }
             }
         }
     }

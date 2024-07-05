@@ -67,6 +67,8 @@ public abstract class DataTracker {
     private final SpecialAttackTracker specialAttackTracker = new SpecialAttackTracker(this::onSpecialAttack);
 
     private int startClientTick;
+    @Getter
+    private int totalTicks;
 
     @Getter(AccessLevel.PROTECTED)
     private final TrackedNpcCollection trackedNpcs = new TrackedNpcCollection();
@@ -319,6 +321,7 @@ public abstract class DataTracker {
         // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
         // own events first.
         final int finalRoomTick = lastRecordedRoomTick;
+        totalTicks = finalRoomTick;
         clientThread.invokeLater(() ->
                 challenge.dispatchEvent(new StageUpdateEvent(getStage(), finalRoomTick, roomStatus, accurate)));
     }
