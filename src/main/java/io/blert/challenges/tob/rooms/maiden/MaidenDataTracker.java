@@ -58,6 +58,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     private boolean crabsSpawnedThisTick = false;
 
     private @Nullable HpVarbitTrackedNpc maiden;
+    private @Nullable NpcAttack attackThisTick = null;
 
     private final Set<GameObject> bloodTrails = new HashSet<>();
     private final Map<Integer, MaidenCrab> crabs = new HashMap<>();
@@ -110,7 +111,12 @@ public class MaidenDataTracker extends RoomDataTracker {
             }
         }
 
+        if (attackThisTick != null) {
+            dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(maiden.getNpc()), attackThisTick, maiden));
+        }
+
         crabsSpawnedThisTick = false;
+        attackThisTick = null;
     }
 
     @Override
@@ -175,21 +181,16 @@ public class MaidenDataTracker extends RoomDataTracker {
             return;
         }
 
-        final int tick = getTick();
-
-        NpcAttack attack;
         switch (actor.getAnimation()) {
             case MAIDEN_BLOOD_THROW_ANIMATION:
-                attack = NpcAttack.TOB_MAIDEN_BLOOD_THROW;
+                attackThisTick = NpcAttack.TOB_MAIDEN_BLOOD_THROW;
                 break;
             case MAIDEN_AUTO_ANIMATION:
-                attack = NpcAttack.TOB_MAIDEN_AUTO;
+                attackThisTick = NpcAttack.TOB_MAIDEN_AUTO;
                 break;
             default:
                 return;
         }
-
-        dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(actor), attack, maiden));
     }
 
     private Optional<TrackedNpc> handleMaidenBloodSpawnSpawn(NPC npc) {
