@@ -374,7 +374,7 @@ public abstract class DataTracker {
             if (!PlayerAttack.BLOWPIPE.hasAnimation(animationId) || target.isEmpty()) {
                 return;
             }
-            maybeAttack = PlayerAttack.findByWeaponOnly(weaponId);
+            maybeAttack = PlayerAttack.findBlowpipeSuppressedAttack(weaponId);
         } else {
             maybeAttack = PlayerAttack.find(weaponId, animationId);
         }

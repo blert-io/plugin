@@ -490,6 +490,21 @@ public enum PlayerAttack {
     }
 
     /**
+     * Certain player attack animations are hidden if used immediately after a blowpipe attack. This checks to see
+     * if a player is wielding any affected weapon, and returns that weapon's attack if so.
+     *
+     * @param weaponId ID of the weapon used.
+     * @return A player attack matching the weapon, or {@code Optional.empty()} if none exist.
+     */
+    public static Optional<PlayerAttack> findBlowpipeSuppressedAttack(int weaponId) {
+        // TODO(frolv): Barrages are also hidden after a blowpipe, but it requires checking for applied graphics.
+        PlayerAttack[] attacks = new PlayerAttack[]{CHIN_BLACK, CHIN_GREY, CHIN_RED};
+        return Arrays.stream(attacks)
+                .filter(attack -> attack.hasWeapon(weaponId))
+                .findFirst();
+    }
+
+    /**
      * The base ID of the weapon, ignoring cosmetics or other overrides.
      *
      * @return ID of the weapon used in the attack.
