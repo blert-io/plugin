@@ -52,6 +52,7 @@ public class Raider {
     @Getter
     private final boolean localPlayer;
 
+    @Getter
     @Setter
     private boolean active;
 

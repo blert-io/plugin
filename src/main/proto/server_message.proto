@@ -72,6 +72,7 @@ message ServerMessage {
       COMPLETED = 1;
       RESET = 2;
       WIPED = 3;
+      ABANDONED = 4;
     }
 
     string id = 1;

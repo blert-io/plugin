@@ -29,12 +29,14 @@ import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.core.DataTracker;
 import io.blert.core.Hitpoints;
+import io.blert.events.PlayerDeathEvent;
 import io.blert.util.Tick;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.HitsplatID;
 import net.runelite.api.NPC;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
@@ -112,6 +114,8 @@ public abstract class RoomDataTracker extends DataTracker {
     @Override
     protected void onTick() {
         int tick = getTick();
+
+        checkForLoggedOutPlayers();
 
         // The hitpoints varbit is delayed by up to 3 ticks, so don't update immediately following a heal as it may
         // undo the hitpoints added by the heal.
@@ -243,5 +247,16 @@ public abstract class RoomDataTracker extends DataTracker {
 
     protected String formattedRoomTime() {
         return Tick.asTimeString(getTick());
+    }
+
+    private void checkForLoggedOutPlayers() {
+        getChallenge().getParty().forEach(raider -> {
+            if (!raider.isActive() && raider.isAlive()) {
+                // Disconnecting during a ToB room is considered a death.
+                WorldPoint deathPoint = raider.getPlayer() != null ? getWorldLocation(raider.getPlayer()) : new WorldPoint(0, 0, 0);
+                dispatchEvent(new PlayerDeathEvent(getStage(), getTick(), deathPoint, raider.getUsername()));
+                raider.setDead(true);
+            }
+        });
     }
 }

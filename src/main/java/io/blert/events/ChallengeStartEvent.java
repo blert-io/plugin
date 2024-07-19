@@ -25,8 +25,10 @@ package io.blert.events;
 
 import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
+import io.blert.core.Stage;
 import lombok.Getter;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 @Getter
@@ -36,8 +38,9 @@ public class ChallengeStartEvent extends Event {
     private final List<String> party;
     private final boolean isSpectator;
 
-    public ChallengeStartEvent(Challenge challenge, ChallengeMode mode, List<String> party, boolean isSpectator) {
-        super(EventType.CHALLENGE_START);
+    public ChallengeStartEvent(Challenge challenge, ChallengeMode mode, @Nullable Stage stage,
+                               List<String> party, boolean isSpectator) {
+        super(EventType.CHALLENGE_START, stage, 0, null);
         this.challenge = challenge;
         this.mode = mode;
         this.party = party;

@@ -28,25 +28,28 @@ import io.blert.events.ChallengeEndEvent;
 import io.blert.events.ChallengeStartEvent;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
+import io.blert.util.Tick;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameObjectSpawned;
-import net.runelite.api.events.NpcDespawned;
-import net.runelite.api.events.NpcSpawned;
-import net.runelite.api.events.ScriptPreFired;
+import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
 public final class ColosseumChallenge extends RecordableChallenge {
+    final static Pattern COLOSSEUM_END_REGEX = Pattern.compile("Colosseum duration: ([0-9:.]+).*");
+
     private static final int COLOSSEUM_REGION_ID = 7216;
     private static final int COLOSSEUM_LOBBY_REGION_ID = 7316;
     private static final WorldArea COLOSSEUM_AREA = new WorldArea(1806, 3088, 38, 38, 0);
@@ -59,7 +62,8 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
     private int currentWave;
     private WaveDataTracker waveDataTracker;
-    private int totalTicks;
+    private int recordedChallengeTicks;
+    private int reportedChallengeTicks;
 
     private final List<Handicap> waveHandicapOptions = new ArrayList<>(3);
 
@@ -79,7 +83,8 @@ public final class ColosseumChallenge extends RecordableChallenge {
     protected void onInitialize() {
         addRaider(new Raider(client.getLocalPlayer(), true));
         currentWave = 0;
-        totalTicks = 0;
+        recordedChallengeTicks = 0;
+        reportedChallengeTicks = -1;
         stateChangeCooldown = false;
         waveHandicapOptions.clear();
     }
@@ -158,6 +163,23 @@ public final class ColosseumChallenge extends RecordableChallenge {
     }
 
     @Subscribe
+    private void onChatMessage(ChatMessage event) {
+        if (getState().isInactive()) {
+            return;
+        }
+
+        Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(Text.removeTags(event.getMessage()));
+        if (matcher.find()) {
+            try {
+                String time = matcher.group(1);
+                reportedChallengeTicks = Tick.fromTimeString(time);
+            } catch (Exception e) {
+                reportedChallengeTicks = -1;
+            }
+        }
+    }
+
+    @Subscribe
     private void onScriptPreFired(ScriptPreFired event) {
         if (getState().isInactive() || event.getScriptId() != HANDICAP_SELECTION_SCRIPT_ID) {
             return;
@@ -191,11 +213,14 @@ public final class ColosseumChallenge extends RecordableChallenge {
     }
 
     private void startColosseum() {
+        // TODO(frolv): Check for late starts (e.g. plugin being turned on mid-challenge).
         log.debug("Starting Colosseum challenge");
         setState(ChallengeState.STARTING);
+        reportedChallengeTicks = -1;
 
         List<String> usernames = getParty().stream().map(Raider::getUsername).collect(Collectors.toList());
-        dispatchEvent(new ChallengeStartEvent(getChallenge(), ChallengeMode.NO_MODE, usernames, false));
+        dispatchEvent(new ChallengeStartEvent(
+                getChallenge(), ChallengeMode.NO_MODE, Stage.COLOSSEUM_WAVE_1, usernames, false));
     }
 
     private void queueFinishColosseum(ChallengeState state) {
@@ -209,7 +234,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
         setState(state);
 
         cleanup();
-        dispatchEvent(new ChallengeEndEvent(0));
+        dispatchEvent(new ChallengeEndEvent(reportedChallengeTicks, -1));
     }
 
     private void prepareNextWave() {
@@ -219,14 +244,14 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
         currentWave++;
         if (currentWave < 13) {
-            waveDataTracker = new WaveDataTracker(this, client, currentWave, totalTicks);
+            waveDataTracker = new WaveDataTracker(this, client, currentWave, recordedChallengeTicks);
             getEventBus().register(waveDataTracker);
         }
     }
 
     private void clearWaveDataTracker() {
         if (waveDataTracker != null) {
-            totalTicks += waveDataTracker.getTotalTicks();
+            recordedChallengeTicks += waveDataTracker.getTotalTicks();
             waveDataTracker.terminate();
             getEventBus().unregister(waveDataTracker);
             waveDataTracker = null;
@@ -237,7 +262,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
         clearWaveDataTracker();
         waveHandicapOptions.clear();
         currentWave = 0;
-        totalTicks = 0;
+        recordedChallengeTicks = 0;
         stateChangeCooldown = false;
     }
 }

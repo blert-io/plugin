@@ -27,10 +27,12 @@ import lombok.Getter;
 
 @Getter
 public class ChallengeEndEvent extends Event {
+    private final int challengeTime;
     private final int overallTime;
 
-    public ChallengeEndEvent(int overallTime) {
+    public ChallengeEndEvent(int challengeTime, int overallTime) {
         super(EventType.CHALLENGE_END);
+        this.challengeTime = challengeTime;
         this.overallTime = overallTime;
     }
 

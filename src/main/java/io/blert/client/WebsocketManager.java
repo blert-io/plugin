@@ -53,7 +53,7 @@ public class WebsocketManager {
     private OkHttpClient httpClient;
 
     @Inject
-    private Client runeLiteClient;
+    private Client runeliteClient;
 
     @Inject
     private ClientThread runeLiteClientThread;
@@ -110,7 +110,7 @@ public class WebsocketManager {
         String runeliteVersion = String.format(
                 "runelite-%s%s", RuneLiteProperties.getVersion(), developerMode ? "-dev" : "");
         wsClient = new WebSocketClient(DEFAULT_SERVER_HOST, config.apiKey(), runeliteVersion, httpClient);
-        eventHandler = new WebsocketEventHandler(plugin, wsClient, runeLiteClient, runeLiteClientThread);
+        eventHandler = new WebsocketEventHandler(plugin, wsClient, runeliteClient, runeLiteClientThread);
 
         if (plugin.getActiveChallenge() != null) {
             plugin.getActiveChallenge().setEventHandler(eventHandler);

@@ -47,7 +47,6 @@ import java.util.regex.Pattern;
 @Slf4j
 public class WaveDataTracker extends DataTracker {
     private final static String bossStartMessage = "Sol Heredit jumps down from his seat...";
-    private final static Pattern colosseumEndRegex = Pattern.compile("Colosseum duration: ([0-9:.]+).*");
     private final String waveStartMessage;
     private final Pattern waveEndRegex;
 
@@ -149,7 +148,7 @@ public class WaveDataTracker extends DataTracker {
         }
 
         if (getStage() == Stage.COLOSSEUM_WAVE_12) {
-            Matcher matcher = colosseumEndRegex.matcher(stripped);
+            Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(stripped);
             if (matcher.find()) {
                 try {
                     String inGameTime = matcher.group(1);

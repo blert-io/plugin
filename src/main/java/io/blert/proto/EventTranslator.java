@@ -78,6 +78,7 @@ public class EventTranslator {
             case CHALLENGE_END: {
                 ChallengeEndEvent challengeEndEvent = (ChallengeEndEvent) event;
                 Event.CompletedChallenge.Builder builder = Event.CompletedChallenge.newBuilder()
+                        .setChallengeTimeTicks(challengeEndEvent.getChallengeTime())
                         .setOverallTimeTicks(challengeEndEvent.getOverallTime());
                 eventBuilder.setCompletedChallenge(builder);
                 break;

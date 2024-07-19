@@ -85,6 +85,14 @@ public abstract class DataTracker {
         return state == State.NOT_STARTED;
     }
 
+    public boolean inProgress() {
+        return state == State.IN_PROGRESS;
+    }
+
+    public boolean completed() {
+        return state == State.COMPLETED;
+    }
+
     public boolean terminating() {
         return state == State.TERMINATING;
     }
@@ -130,7 +138,8 @@ public abstract class DataTracker {
     }
 
     /**
-     * Gathers information about the stage and dispatches appropriate events. Invoked every tick.
+     * Gathers information about the stage and dispatches appropriate events. Invoked every tick while the challenge
+     * is in progress.
      */
     protected abstract void onTick();
 
@@ -316,14 +325,23 @@ public abstract class DataTracker {
             accurate = false;
         }
 
-        var roomStatus = completion ? StageUpdateEvent.Status.COMPLETED : StageUpdateEvent.Status.WIPED;
-
-        // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
-        // own events first.
         final int finalRoomTick = lastRecordedRoomTick;
         totalTicks = finalRoomTick;
-        clientThread.invokeLater(() ->
-                challenge.dispatchEvent(new StageUpdateEvent(getStage(), finalRoomTick, roomStatus, accurate)));
+
+        boolean spectator = !challenge.playerIsInChallenge(client.getLocalPlayer().getName());
+        boolean isWipe = challenge.getParty().stream().allMatch(Raider::isDead);
+
+        if (spectator && !completion && !isWipe) {
+            log.info("Spectator left challenge at stage {}", stage);
+        } else {
+            var status = completion ? StageUpdateEvent.Status.COMPLETED : StageUpdateEvent.Status.WIPED;
+            log.info("Stage {} finished, status: {}", stage, status);
+
+            // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
+            // own events first.
+            clientThread.invokeLater(() ->
+                    challenge.dispatchEvent(new StageUpdateEvent(getStage(), finalRoomTick, status, accurate)));
+        }
     }
 
     private void updatePlayers() {

@@ -364,6 +364,9 @@ public class BlertPluginPanel extends PluginPanel {
         if (status == ServerMessage.PastChallenge.Status.COMPLETED) {
             return Pair.of("Completed", Color.GREEN);
         }
+        if (status == ServerMessage.PastChallenge.Status.ABANDONED) {
+            return Pair.of("Abandoned", Color.GRAY);
+        }
 
         String boss = "Unknown";
         switch (stage) {

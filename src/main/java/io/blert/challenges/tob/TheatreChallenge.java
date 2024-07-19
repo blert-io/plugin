@@ -69,7 +69,9 @@ public class TheatreChallenge extends RecordableChallenge {
             Pattern.compile("You enter the Theatre of Blood \\((\\w+) Mode\\)\\.\\.\\.");
     private static final Pattern RAID_ENTRY_REGEX_3P =
             Pattern.compile("(.+) has entered the Theatre of Blood \\((\\w+) Mode\\). Step inside to join (her|him|them)\\.\\.\\.");
-    private static final Pattern RAID_COMPLETION_REGEX =
+    private static final Pattern RAID_COMPLETION_CHALLENGE_REGEX =
+            Pattern.compile("^.+Theatre of Blood completion time: ([0-9:.]+)$");
+    private static final Pattern RAID_COMPLETION_OVERALL_REGEX =
             Pattern.compile("Theatre of Blood total completion time: ([0-9:.]+).*");
 
     private Location location = Location.ELSEWHERE;
@@ -77,6 +79,8 @@ public class TheatreChallenge extends RecordableChallenge {
     private RoomState roomState = RoomState.INACTIVE;
     @Nullable
     RoomDataTracker roomDataTracker = null;
+
+    private int reportedChallengeTime = -1;
 
     private @Nullable DeferredTask deferredTask = null;
 
@@ -91,12 +95,14 @@ public class TheatreChallenge extends RecordableChallenge {
 
     @Override
     protected void onInitialize() {
+        reportedChallengeTime = -1;
     }
 
     @Override
     protected void onTerminate() {
         clearRoomDataTracker();
         resetParty();
+        reportedChallengeTime = -1;
     }
 
     @Override
@@ -173,6 +179,7 @@ public class TheatreChallenge extends RecordableChallenge {
         log.info("Starting new raid");
         updateMode(mode);
         setState(ChallengeState.PREPARING);
+        reportedChallengeTime = -1;
 
         if (reinitializeParty) {
             // When players join the raid, the orb list does not immediately update, nor does it update all at once.
@@ -197,13 +204,16 @@ public class TheatreChallenge extends RecordableChallenge {
         boolean spectator = !playerIsInChallenge(client.getLocalPlayer().getName());
 
         List<String> names = getParty().stream().map(Raider::getUsername).collect(Collectors.toList());
-        dispatchEvent(new ChallengeStartEvent(getChallenge(), getChallengeMode(), names, spectator));
+        Stage stage = null;
 
         if (this.roomDataTracker != null) {
             // Raid scale information is not immediately available when the raid starts, so if any NPCs have already
             // spawned, their hitpoints must be corrected after the scale is known.
             this.roomDataTracker.correctNpcHitpointsForScale(getScale());
+            stage = this.roomDataTracker.getStage();
         }
+
+        dispatchEvent(new ChallengeStartEvent(getChallenge(), getChallengeMode(), stage, names, spectator));
 
         // Dispatch any events that were queued before the raid started.
         dispatchPendingEvents();
@@ -219,14 +229,19 @@ public class TheatreChallenge extends RecordableChallenge {
     }
 
     private void endRaid(ChallengeState state, int overallTime) {
-        log.info("Raid completed; overall time {}", overallTime == -1 ? "unknown" : Tick.asTimeString(overallTime));
+        final int challengeTime = reportedChallengeTime;
+        log.info("Raid completed; challenge {}, overall {}",
+                challengeTime == -1 ? "unknown" : Tick.asTimeString(reportedChallengeTime),
+                overallTime == -1 ? "unknown" : Tick.asTimeString(overallTime));
 
         clearRoomDataTracker();
         setState(state);
         updateMode(ChallengeMode.NO_MODE);
         resetParty();
 
-        getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(overallTime)));
+        getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(challengeTime, overallTime)));
+
+        reportedChallengeTime = -1;
     }
 
     /**
@@ -325,7 +340,12 @@ public class TheatreChallenge extends RecordableChallenge {
             return;
         }
 
-        Matcher matcher = RAID_COMPLETION_REGEX.matcher(stripped);
+        Matcher matcher = RAID_COMPLETION_CHALLENGE_REGEX.matcher(stripped);
+        if (matcher.matches()) {
+            reportedChallengeTime = Tick.fromTimeString(matcher.group(1));
+        }
+
+        matcher = RAID_COMPLETION_OVERALL_REGEX.matcher(stripped);
         if (matcher.matches()) {
             int overallTime = Tick.fromTimeString(matcher.group(1));
             queueRaidEnd(ChallengeState.COMPLETE, overallTime);
