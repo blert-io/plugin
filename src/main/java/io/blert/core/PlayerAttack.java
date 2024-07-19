@@ -64,6 +64,13 @@ public enum PlayerAttack {
             4,
             io.blert.proto.PlayerAttack.BOWFA
     ),
+    BURNING_CLAW_SCRATCH(
+            ItemID.BONE_CLAWS,
+            new int[]{393, 1067},
+            4,
+            io.blert.proto.PlayerAttack.BURNING_CLAW_SCRATCH
+    ),
+    BURNING_CLAW_SPEC(ItemID.BONE_CLAWS, 11140, 4, io.blert.proto.PlayerAttack.BURNING_CLAW_SPEC),
     CHALLY_SWIPE(
             ItemID.CRYSTAL_HALBERD,
             440,
@@ -77,7 +84,7 @@ public enum PlayerAttack {
     // CLAW_SCRATCH must come before CLAW_SPEC as it is the default assumption when the animation is unknown.
     CLAW_SCRATCH(
             new int[]{ItemID.DRAGON_CLAWS, ItemID.DRAGON_CLAWS_CR},
-            393,
+            new int[]{393, 1067},
             4,
             io.blert.proto.PlayerAttack.CLAW_SCRATCH
     ),
