@@ -65,12 +65,12 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.BOWFA
     ),
     BURNING_CLAW_SCRATCH(
-            ItemID.BONE_CLAWS,
+            ItemID.BURNING_CLAWS,
             new int[]{393, 1067},
             4,
             io.blert.proto.PlayerAttack.BURNING_CLAW_SCRATCH
     ),
-    BURNING_CLAW_SPEC(ItemID.BONE_CLAWS, 11140, 4, io.blert.proto.PlayerAttack.BURNING_CLAW_SPEC),
+    BURNING_CLAW_SPEC(ItemID.BURNING_CLAWS, 11140, 4, io.blert.proto.PlayerAttack.BURNING_CLAW_SPEC),
     CHALLY_SWIPE(
             ItemID.CRYSTAL_HALBERD,
             440,
