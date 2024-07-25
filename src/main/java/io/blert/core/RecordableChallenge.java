@@ -177,13 +177,10 @@ public abstract class RecordableChallenge {
 
     public void initialize(EventHandler handler) {
         onInitialize();
-
         this.eventHandler = handler;
-        eventBus.register(this);
     }
 
     public void terminate() {
-        eventBus.unregister(this);
         this.eventHandler = null;
         state = ChallengeState.INACTIVE;
         party.clear();
@@ -228,6 +225,10 @@ public abstract class RecordableChallenge {
 
     protected void dispatchPendingEvents() {
         pendingEvents.forEach(this::dispatchEvent);
+        pendingEvents.clear();
+    }
+
+    protected void clearPendingEvents() {
         pendingEvents.clear();
     }
 

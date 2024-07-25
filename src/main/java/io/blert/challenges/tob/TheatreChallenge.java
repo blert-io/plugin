@@ -75,6 +75,7 @@ public class TheatreChallenge extends RecordableChallenge {
             Pattern.compile("Theatre of Blood total completion time: ([0-9:.]+).*");
 
     private Location location = Location.ELSEWHERE;
+    private boolean locationChangedThisTick = false;
 
     private RoomState roomState = RoomState.INACTIVE;
     @Nullable
@@ -118,17 +119,34 @@ public class TheatreChallenge extends RecordableChallenge {
             deferredTask.tick();
         }
 
-        if (getState() == ChallengeState.STARTING && location.inRaid()) {
+        if (getState().isInactive() && location.inRaid()) {
+            queueRaidStart(ChallengeMode.NO_MODE, true);
+        } else if (getState() == ChallengeState.STARTING && location.inRaid()) {
             setState(ChallengeState.ACTIVE);
-        } else if (getState().hasStarted() && !location.inRaid()) {
-            if (getState() == ChallengeState.COMPLETE) {
-                setState(ChallengeState.INACTIVE);
-            } else if (getState() != ChallengeState.ENDING) {
-                queueRaidEnd(ChallengeState.INACTIVE);
+        } else if (!getState().isInactive() && !location.inRaid()) {
+            // The player has left the raid.
+            switch (getState()) {
+                case COMPLETE:
+                    setState(ChallengeState.INACTIVE);
+                    break;
+                case ACTIVE:
+                    queueRaidEnd(ChallengeState.INACTIVE);
+                    break;
+                case STARTING:
+                case PREPARING:
+                    if (locationChangedThisTick) {
+                        // If the player leaves the raid before it starts, cancel the start.
+                        queueRaidEnd(ChallengeState.INACTIVE);
+                    }
+                    break;
+                case ENDING:
+                case INACTIVE:
+                    // Do nothing.
+                    break;
             }
-            return;
         }
 
+        locationChangedThisTick = false;
         if (!inChallenge()) {
             return;
         }
@@ -224,6 +242,17 @@ public class TheatreChallenge extends RecordableChallenge {
     }
 
     private void queueRaidEnd(ChallengeState state, int overallTime) {
+        if (getState() == ChallengeState.PREPARING) {
+            // If a raid start is pending, cancel it.
+            setState(ChallengeState.INACTIVE);
+            updateMode(ChallengeMode.NO_MODE);
+            clearPendingEvents();
+            resetParty();
+            deferredTask = null;
+            log.info("Raid ended before it started");
+            return;
+        }
+
         setState(ChallengeState.ENDING);
         deferredTask = new DeferredTask(() -> endRaid(state, overallTime), 3);
     }
@@ -247,18 +276,16 @@ public class TheatreChallenge extends RecordableChallenge {
     /**
      * Checks the location of the logged-in player, initializing the appropriate {@link RoomDataTracker} if a new room
      * has been entered.
-     *
-     * @return {@code true} if the player's location has changed from the last recorded one.
      */
-    private boolean updateLocation() {
+    private void updateLocation() {
         Player player = client.getLocalPlayer();
         if (player == null) {
-            return false;
+            return;
         }
 
         Location loc = Location.fromWorldPoint(WorldPoint.fromLocalInstance(client, player.getLocalLocation()));
         if (location == loc) {
-            return false;
+            return;
         }
 
         log.debug("Location changed to {}", loc);
@@ -268,12 +295,15 @@ public class TheatreChallenge extends RecordableChallenge {
             // When entering a new instance for the first time, its room data tracker must be initialized.
             initializeRoomDataTracker();
         }
-        return true;
+
+        locationChangedThisTick = true;
     }
 
     @Subscribe(priority = 10)
     private void onNpcSpawned(NpcSpawned npcSpawned) {
-        if (updateLocation() && roomDataTracker != null) {
+        updateLocation();
+
+        if (locationChangedThisTick && roomDataTracker != null) {
             // When the room changes, the event must be manually forwarded to the new `roomDataTracker`.
             roomDataTracker.onNpcSpawned(npcSpawned);
         }
@@ -281,8 +311,6 @@ public class TheatreChallenge extends RecordableChallenge {
 
     @Subscribe(priority = 10)
     private void onVarbitChanged(VarbitChanged varbit) {
-        updateLocation();
-
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
             if (getState().isInactive() && varbit.getValue() == 2) {
                 // A raid start due to a varbit change usually means that the player is joining late, rejoining, or

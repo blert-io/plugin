@@ -144,6 +144,15 @@ public abstract class DataTracker {
     protected abstract void onTick();
 
     /**
+     * Implementation-specific equivalent of the {@code onGameStateChanged} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGameState(GameStateChanged event) {
+    }
+
+    /**
      * Event handler invoked when a new NPC spawns. If the spawned NPC should be tracked and have its data reported,
      * returns a {@link TrackedNpc} describing it. Otherwise, returns {@link Optional#empty()}, performing any desired
      * actions to handle the spawn.
@@ -513,6 +522,15 @@ public abstract class DataTracker {
     private void onSpecialAttack(SpecialAttackTracker.SpecialAttack spec) {
         var weapon = client.getItemDefinition(spec.getWeapon().getId());
         log.debug("Hit a {} with {} on {}", spec.getDamage(), weapon.getName(), spec.getTarget().getName());
+    }
+
+    @Subscribe
+    public final void onGameStateChanged(GameStateChanged event) {
+        if (terminating()) {
+            return;
+        }
+
+        onGameState(event);
     }
 
     @Subscribe

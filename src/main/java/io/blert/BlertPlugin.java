@@ -85,8 +85,34 @@ public class BlertPlugin extends Plugin {
     @Getter
     private @Nullable RecordableChallenge activeChallenge = null;
 
+    private enum LoginState {
+        LOGGED_IN,
+        JUST_LOGGED_IN,
+        LOGGED_OUT;
+
+        LoginState logIn() {
+            if (this == LOGGED_OUT) {
+                log.info("LOGGED_OUT -> JUST_LOGGED_IN");
+                return JUST_LOGGED_IN;
+            }
+            return LOGGED_IN;
+        }
+
+        LoginState update() {
+            if (this == JUST_LOGGED_IN) {
+                log.info("state JUST_LOGGED_IN -> LOGGED_IN");
+                return LOGGED_IN;
+            }
+            return this;
+        }
+
+        boolean isLoggedIn() {
+            return this != LOGGED_OUT;
+        }
+    }
+
     private GameState previousGameState = null;
-    private boolean isLoggedIn = false;
+    private LoginState loginState = LoginState.LOGGED_OUT;
 
     private DeferredTask deferredTask;
 
@@ -105,7 +131,7 @@ public class BlertPlugin extends Plugin {
         challenges.add(new ColosseumChallenge(client, eventBus, clientThread));
 
         previousGameState = client.getGameState();
-        isLoggedIn = previousGameState == GameState.LOGGED_IN;
+        loginState = previousGameState == GameState.LOGGED_IN ? LoginState.LOGGED_IN : LoginState.LOGGED_OUT;
     }
 
     @Override
@@ -130,11 +156,20 @@ public class BlertPlugin extends Plugin {
             deferredTask.tick();
         }
 
-        updateActiveChallenge();
+        if (loginState == LoginState.JUST_LOGGED_IN) {
+            // Resume the active challenge at the end of the login tick.
+            if (activeChallenge != null) {
+                eventBus.register(activeChallenge);
+            }
+        } else {
+            updateActiveChallenge();
 
-        if (activeChallenge != null) {
-            activeChallenge.tick();
+            if (activeChallenge != null) {
+                activeChallenge.tick();
+            }
         }
+
+        loginState = loginState.update();
     }
 
     @Subscribe
@@ -149,12 +184,12 @@ public class BlertPlugin extends Plugin {
                 try {
                     websocketManager.open().get();
                 } catch (InterruptedException | ExecutionException e) {
-                    isLoggedIn = true;
+                    // Pass.
                 }
             }
 
             // If the player was not already logged in, notify the server that they have.
-            if (!isLoggedIn) {
+            if (!loginState.isLoggedIn()) {
                 deferredTask = new DeferredTask(() -> {
                     if (websocketManager.getEventHandler() != null) {
                         websocketManager.getEventHandler().updateGameState(GameState.LOGGED_IN);
@@ -162,13 +197,18 @@ public class BlertPlugin extends Plugin {
                 }, 3);
             }
 
-            isLoggedIn = true;
+            loginState = loginState.logIn();
         } else if (gameState == GameState.LOGIN_SCREEN) {
-            if (isLoggedIn && websocketManager.getEventHandler() != null) {
+            if (loginState.isLoggedIn() && websocketManager.getEventHandler() != null) {
                 websocketManager.getEventHandler().updateGameState(GameState.LOGIN_SCREEN);
             }
 
-            isLoggedIn = false;
+            if (activeChallenge != null) {
+                // Suspend the challenge while the player is logged out.
+                eventBus.unregister(activeChallenge);
+            }
+
+            loginState = LoginState.LOGGED_OUT;
         }
 
         previousGameState = gameState;
@@ -197,12 +237,14 @@ public class BlertPlugin extends Plugin {
             }
 
             activeChallenge = challenge;
+            eventBus.register(activeChallenge);
             activeChallenge.initialize(websocketManager.getEventHandler());
 
             log.info("Entered challenge \"{}\"", activeChallenge.getName());
         } else if (activeChallenge != null) {
             log.info("Exited challenge \"{}\"", activeChallenge.getName());
 
+            eventBus.unregister(activeChallenge);
             activeChallenge.terminate();
             activeChallenge = null;
         }

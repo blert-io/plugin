@@ -92,7 +92,9 @@ public class WebsocketManager {
 
     private void initializeWebSocketClient() {
         if (wsClient != null) {
-            plugin.getSidePanel().updateUser(null);
+            if (plugin != null && plugin.getSidePanel() != null) {
+                plugin.getSidePanel().updateUser(null);
+            }
 
             if (wsClient.isOpen()) {
                 try {
