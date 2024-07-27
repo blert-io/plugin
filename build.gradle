@@ -46,7 +46,7 @@ protobuf {
 }
 
 group = 'io.blert'
-version = '0.1.8'
+version = '0.1.9'
 
 def getGitHash = { ->
     def stdout = new ByteArrayOutputStream()
@@ -55,16 +55,6 @@ def getGitHash = { ->
         standardOutput = stdout
     }
     return stdout.toString().trim()
-}
-
-tasks.register('checkAgainstOrigin', Exec) {
-    commandLine 'git', 'diff', 'origin/main', '--exit-code'
-    standardOutput = new ByteArrayOutputStream()
-    ignoreExitValue = true
-
-    doLast {
-        ext.exitCode = execResult.exitValue
-    }
 }
 
 tasks.register('checkForLocalChanges', Exec) {
@@ -78,7 +68,6 @@ tasks.register('checkForLocalChanges', Exec) {
 }
 
 tasks.register('generateBuildProperties') {
-    dependsOn checkAgainstOrigin
     dependsOn checkForLocalChanges
     ext.outputDir = "$buildDir/generated/java"
     inputs.property('version', version)
@@ -88,7 +77,7 @@ tasks.register('generateBuildProperties') {
         def customHeaders =
                 System.getenv('BLERT_CUSTOM_HEADERS')?.split(';')?.collect { "\"${it.trim()}\"" }?.join(', ') ?: ""
 
-        def rev2 = checkAgainstOrigin.exitCode == 0 && checkForLocalChanges.isClean ? 0 : 1
+        def rev2 = checkForLocalChanges.isClean ? 0 : 1
         mkdir "$outputDir/io/blert"
         file("$outputDir/io/blert/BuildProperties.java").text =
                 """|package io.blert;
