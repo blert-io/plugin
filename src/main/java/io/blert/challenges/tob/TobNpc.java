@@ -321,6 +321,10 @@ public enum TobNpc {
         return idMatches(id, SOTETSEG_ENTRY, SOTETSEG_REGULAR, SOTETSEG_HARD);
     }
 
+    public static boolean isAnySotetseg(int id) {
+        return isSotetsegIdle(id) || isSotetseg(id);
+    }
+
     public static boolean isXarpusIdle(int id) {
         return idMatches(id, XARPUS_IDLE_ENTRY, XARPUS_IDLE_REGULAR, XARPUS_IDLE_HARD);
     }

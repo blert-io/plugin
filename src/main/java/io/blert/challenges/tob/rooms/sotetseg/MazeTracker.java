@@ -335,7 +335,8 @@ public class MazeTracker {
     }
 
     public int[] getPivots() {
-        return overworldPoints.stream().mapToInt(WorldPoint::getX).toArray();
+        List<WorldPoint> pivots = hasUnderworldPivots() ? underworldPivots : overworldPoints;
+        return pivots.stream().mapToInt(WorldPoint::getX).toArray();
     }
 
     public void reset() {

@@ -66,6 +66,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private @Nullable HpVarbitTrackedNpc sotetseg = null;
     private final MazeTracker mazeTracker = new MazeTracker();
     boolean inMaze = false;
+    boolean chosen = false;
     private final Set<GroundObject> activeMazeTiles = new HashSet<>();
 
     public SotetsegDataTracker(TheatreChallenge manager, Client client) {
@@ -115,6 +116,14 @@ public class SotetsegDataTracker extends RoomDataTracker {
                         .collect(Collectors.toList());
                 dispatchEvent(SoteMazePathEvent.overworldTiles(tick, maze, activeTilePoints));
             }
+
+            if (playerLocation.inSotetsegUnderworld()) {
+                chosen = true;
+            }
+
+            if (chosen && playerLocation.inSotetsegOverworld()) {
+                finishMaze(tick);
+            }
         }
     }
 
@@ -123,9 +132,11 @@ public class SotetsegDataTracker extends RoomDataTracker {
         NPC npc = event.getNpc();
 
         return TobNpc.withId(npc.getId())
-                .filter(tobNpc -> TobNpc.isSotetsegIdle(tobNpc.getId()))
+                .filter(tobNpc -> TobNpc.isAnySotetseg(tobNpc.getId()))
                 .map(tobNpc -> {
-                    if (sotetseg == null) {
+                    if (sotetseg != null) {
+                        sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, sotetseg.getRoomId(), sotetseg.getHitpoints());
+                    } else {
                         sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                                 new Hitpoints(tobNpc, theatreChallenge.getScale()));
                     }
@@ -135,7 +146,13 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned event, TrackedNpc trackedNpc) {
-        return true;
+        if (sotetseg != null && trackedNpc == sotetseg) {
+            if (sotetseg.getNpc().isDead()) {
+                sotetseg = null;
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -226,6 +243,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
         mazeTracker.reset();
         activeMazeTiles.clear();
         inMaze = true;
+        chosen = false;
 
         dispatchEvent(SoteMazeEvent.mazeProc(tick, maze));
 
@@ -236,6 +254,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     private void finishMaze(int tick) {
         inMaze = false;
+        chosen = false;
         mazeTracker.finishMaze();
         log.debug("{} finished; pivots: {}", maze, mazeTracker.getPivots());
 
