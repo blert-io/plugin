@@ -393,7 +393,7 @@ public class TheatreChallenge extends RecordableChallenge {
 
         Arrays.stream(tobPartyWidget.getText().split("<br>"))
                 .filter(s -> !s.equals("-"))
-                .map(Text::sanitize)
+                .map((name) -> Text.sanitize(name).replace(" (R)", ""))
                 .forEach(s -> addRaider(new Raider(s, s.equals(client.getLocalPlayer().getName()))));
     }
 
