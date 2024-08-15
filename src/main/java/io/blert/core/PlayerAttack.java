@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public enum PlayerAttack {
     ABYSSAL_BLUDGEON(ItemID.ABYSSAL_BLUDGEON, 3298, 4, io.blert.proto.PlayerAttack.ABYSSAL_BLUDGEON),
     AGS_SPEC(
-            new int[]{ItemID.ARMADYL_GODSWORD, ItemID.ARMADYL_GODSWORD_OR},
+            new int[]{ItemID.ARMADYL_GODSWORD, ItemID.ARMADYL_GODSWORD_OR, ItemID.ARMADYL_GODSWORD_DEADMAN},
             new int[]{7644, 7645},
             6,
             io.blert.proto.PlayerAttack.AGS_SPEC
@@ -143,6 +143,12 @@ public enum PlayerAttack {
             5,
             io.blert.proto.PlayerAttack.FANG_STAB
     ),
+    FANG_SPEC(
+            new int[]{ItemID.OSMUMTENS_FANG, ItemID.OSMUMTENS_FANG_OR},
+            11222,
+            5,
+            io.blert.proto.PlayerAttack.FANG_SPEC
+    ),
     GOBLIN_PAINT_CANNON(
             ItemID.GOBLIN_PAINT_CANNON,
             2323,
@@ -155,6 +161,7 @@ public enum PlayerAttack {
                     ItemID.ANCIENT_GODSWORD_27184,
                     ItemID.ARMADYL_GODSWORD,
                     ItemID.ARMADYL_GODSWORD_OR,
+                    ItemID.ARMADYL_GODSWORD_DEADMAN,
                     ItemID.BANDOS_GODSWORD,
                     ItemID.BANDOS_GODSWORD_OR,
                     ItemID.SARADOMIN_GODSWORD,
@@ -184,13 +191,25 @@ public enum PlayerAttack {
     KODAI_BARRAGE(ItemID.KODAI_WAND, 1979, 5, io.blert.proto.PlayerAttack.KODAI_BARRAGE),
     KODAI_BASH(ItemID.KODAI_WAND, 393, 5, io.blert.proto.PlayerAttack.KODAI_BASH),
     NM_STAFF_BARRAGE(
-            new int[]{ItemID.NIGHTMARE_STAFF, ItemID.VOLATILE_NIGHTMARE_STAFF, ItemID.HARMONISED_NIGHTMARE_STAFF, ItemID.ELDRITCH_NIGHTMARE_STAFF},
+            new int[]{
+                    ItemID.NIGHTMARE_STAFF,
+                    ItemID.VOLATILE_NIGHTMARE_STAFF,
+                    ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN,
+                    ItemID.HARMONISED_NIGHTMARE_STAFF,
+                    ItemID.ELDRITCH_NIGHTMARE_STAFF,
+            },
             1979,
             5,
             io.blert.proto.PlayerAttack.NM_STAFF_BARRAGE
     ),
     NM_STAFF_BASH(
-            new int[]{ItemID.NIGHTMARE_STAFF, ItemID.VOLATILE_NIGHTMARE_STAFF, ItemID.HARMONISED_NIGHTMARE_STAFF, ItemID.ELDRITCH_NIGHTMARE_STAFF},
+            new int[]{
+                    ItemID.NIGHTMARE_STAFF,
+                    ItemID.VOLATILE_NIGHTMARE_STAFF,
+                    ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN,
+                    ItemID.HARMONISED_NIGHTMARE_STAFF,
+                    ItemID.ELDRITCH_NIGHTMARE_STAFF,
+            },
             4505,
             5,
             io.blert.proto.PlayerAttack.NM_STAFF_BASH
@@ -367,10 +386,20 @@ public enum PlayerAttack {
     ),
     TWISTED_BOW(ItemID.TWISTED_BOW, 426, 5, io.blert.proto.PlayerAttack.TWISTED_BOW),
     VENATOR_BOW(ItemID.VENATOR_BOW, 9858, 4, io.blert.proto.PlayerAttack.VENATOR_BOW),
-    VOIDWAKER_AUTO(ItemID.VOIDWAKER, new int[]{386, 390}, 4, io.blert.proto.PlayerAttack.VOIDWAKER_AUTO),
-    VOIDWAKER_SPEC(ItemID.VOIDWAKER, 1378, 4, io.blert.proto.PlayerAttack.VOIDWAKER_SPEC),
+    VOIDWAKER_AUTO(
+            new int[]{ItemID.VOIDWAKER, ItemID.VOIDWAKER_DEADMAN},
+            new int[]{386, 390},
+            4,
+            io.blert.proto.PlayerAttack.VOIDWAKER_AUTO
+    ),
+    VOIDWAKER_SPEC(
+            new int[]{ItemID.VOIDWAKER, ItemID.VOIDWAKER_DEADMAN},
+            new int[]{1378, 11275},
+            4,
+            io.blert.proto.PlayerAttack.VOIDWAKER_SPEC
+    ),
     VOLATILE_NM_SPEC(
-            ItemID.VOLATILE_NIGHTMARE_STAFF,
+            new int[]{ItemID.VOLATILE_NIGHTMARE_STAFF, ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN},
             8532,
             5,
             io.blert.proto.PlayerAttack.VOLATILE_NM_SPEC
