@@ -301,6 +301,7 @@ message Event {
 
     Status status = 1;
     bool accurate = 2;
+    optional int32 in_game_ticks = 3;
   }
 
   message Player {

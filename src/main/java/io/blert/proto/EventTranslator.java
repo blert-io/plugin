@@ -89,6 +89,7 @@ public class EventTranslator {
                 Event.StageUpdate.Builder builder = Event.StageUpdate.newBuilder()
                         .setStatus(translateStageStatus(stageUpdateEvent.getStatus()))
                         .setAccurate(stageUpdateEvent.isAccurate());
+                stageUpdateEvent.getInGameTicks().ifPresent(builder::setInGameTicks);
                 eventBuilder.setStageUpdate(builder);
                 break;
             }

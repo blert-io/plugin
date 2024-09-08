@@ -348,8 +348,10 @@ public abstract class DataTracker {
 
             // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
             // own events first.
-            clientThread.invokeLater(() ->
-                    challenge.dispatchEvent(new StageUpdateEvent(getStage(), finalRoomTick, status, accurate)));
+            clientThread.invokeLater(() -> {
+                Optional<Integer> gameTicks = inGameStageTicks == -1 ? Optional.empty() : Optional.of(inGameStageTicks);
+                challenge.dispatchEvent(new StageUpdateEvent(getStage(), finalRoomTick, status, accurate, gameTicks));
+            });
         }
     }
 
