@@ -214,6 +214,7 @@ public enum PlayerAttack {
             5,
             io.blert.proto.PlayerAttack.NM_STAFF_BASH
     ),
+    NOXIOUS_HALBERD(ItemID.NOXIOUS_HALBERD, new int[]{428, 440}, 5, io.blert.proto.PlayerAttack.NOXIOUS_HALBERD),
     PUNCH(-1, 422, 4, io.blert.proto.PlayerAttack.PUNCH),
     RAPIER(
             new int[]{ItemID.GHRAZI_RAPIER, ItemID.HOLY_GHRAZI_RAPIER},

@@ -194,6 +194,7 @@ enum PlayerAttack {
   GOBLIN_PAINT_CANNON = 87;
   BURNING_CLAW_SCRATCH = 88;
   BURNING_CLAW_SPEC = 89;
+  NOXIOUS_HALBERD = 90;
 }
 
 enum NpcAttack {
