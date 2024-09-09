@@ -316,15 +316,17 @@ public abstract class DataTracker {
         }
 
         setState(State.COMPLETED);
-        int lastRecordedRoomTick = getTick();
+        final int lastRecordedRoomTick = getTick();
         boolean accurate;
+
+        totalTicks = lastRecordedRoomTick;
 
         if (inGameStageTicks != -1) {
             if (inGameStageTicks != lastRecordedRoomTick) {
                 log.warn("Stage {} completion time mismatch: in-game room ticks = {}, recorded ticks = {}",
                         stage, inGameStageTicks, lastRecordedRoomTick);
                 accurate = false;
-                lastRecordedRoomTick = inGameStageTicks;
+                totalTicks = inGameStageTicks;
             } else {
                 accurate = true;
             }
@@ -333,9 +335,6 @@ public abstract class DataTracker {
                     stage, lastRecordedRoomTick, Tick.asTimeString(lastRecordedRoomTick));
             accurate = false;
         }
-
-        final int finalRoomTick = lastRecordedRoomTick;
-        totalTicks = finalRoomTick;
 
         boolean spectator = !challenge.playerIsInChallenge(client.getLocalPlayer().getName());
         boolean isWipe = challenge.getParty().stream().allMatch(Raider::isDead);
@@ -350,7 +349,8 @@ public abstract class DataTracker {
             // own events first.
             clientThread.invokeLater(() -> {
                 Optional<Integer> gameTicks = inGameStageTicks == -1 ? Optional.empty() : Optional.of(inGameStageTicks);
-                challenge.dispatchEvent(new StageUpdateEvent(getStage(), finalRoomTick, status, accurate, gameTicks));
+                challenge.dispatchEvent(
+                        new StageUpdateEvent(getStage(), lastRecordedRoomTick, status, accurate, gameTicks));
             });
         }
     }
