@@ -81,16 +81,16 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
     @Override
     protected void onInitialize() {
+        reset();
         addRaider(new Raider(client.getLocalPlayer(), true));
-        currentWave = 0;
-        recordedChallengeTicks = 0;
-        reportedChallengeTicks = -1;
-        stateChangeCooldown = false;
-        waveHandicapOptions.clear();
     }
 
     @Override
     protected void onTerminate() {
+        if (getState().inChallenge()) {
+            log.warn("Terminating Colosseum challenge while still active");
+            finishColosseum(ChallengeState.INACTIVE);
+        }
         cleanup();
     }
 
@@ -202,7 +202,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
             if (COLOSSEUM_AREA.contains(playerLocation)) {
                 startColosseum();
             }
-        } else if (playerLocation.getRegionID() != COLOSSEUM_REGION_ID) {
+        } else if (playerLocation.getRegionID() != COLOSSEUM_REGION_ID || !COLOSSEUM_AREA.contains(playerLocation)) {
             clearWaveDataTracker();
             if (getState() == ChallengeState.COMPLETE) {
                 setState(ChallengeState.INACTIVE);
@@ -231,10 +231,11 @@ public final class ColosseumChallenge extends RecordableChallenge {
     private void finishColosseum(ChallengeState state) {
         log.debug("Ending Colosseum challenge: {}", state);
         stateChangeCooldown = false;
-        setState(state);
 
         cleanup();
         dispatchEvent(new ChallengeEndEvent(reportedChallengeTicks, -1));
+
+        setState(state);
     }
 
     private void prepareNextWave() {
@@ -260,9 +261,14 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
     private void cleanup() {
         clearWaveDataTracker();
-        waveHandicapOptions.clear();
+        reset();
+    }
+
+    private void reset() {
         currentWave = 0;
         recordedChallengeTicks = 0;
+        reportedChallengeTicks = -1;
         stateChangeCooldown = false;
+        waveHandicapOptions.clear();
     }
 }

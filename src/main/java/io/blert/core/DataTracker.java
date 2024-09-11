@@ -102,9 +102,11 @@ public abstract class DataTracker {
      */
     public void terminate() {
         if (getState() == State.IN_PROGRESS) {
+            state = State.TERMINATING;
             finish(false);
+        } else {
+            state = State.TERMINATING;
         }
-        state = State.TERMINATING;
     }
 
     public void tick() {
@@ -311,11 +313,20 @@ public abstract class DataTracker {
      *                         available. If provided, it is used to verify the accuracy of the recorded stage time.
      */
     protected void finish(boolean completion, int inGameStageTicks) {
-        if (state != State.IN_PROGRESS) {
-            return;
+        boolean waitToDispatch = true;
+
+        switch (state) {
+            case TERMINATING:
+                log.debug("Forcefully terminating stage {}", stage);
+                waitToDispatch = false;
+                break;
+            case IN_PROGRESS:
+                setState(State.COMPLETED);
+                break;
+            default:
+                return;
         }
 
-        setState(State.COMPLETED);
         final int lastRecordedRoomTick = getTick();
         boolean accurate;
 
@@ -345,13 +356,17 @@ public abstract class DataTracker {
             var status = completion ? StageUpdateEvent.Status.COMPLETED : StageUpdateEvent.Status.WIPED;
             log.info("Stage {} finished, status: {}", stage, status);
 
-            // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
-            // own events first.
-            clientThread.invokeLater(() -> {
-                Optional<Integer> gameTicks = inGameStageTicks == -1 ? Optional.empty() : Optional.of(inGameStageTicks);
-                challenge.dispatchEvent(
-                        new StageUpdateEvent(getStage(), lastRecordedRoomTick, status, accurate, gameTicks));
-            });
+            Optional<Integer> gameTicks = inGameStageTicks == -1 ? Optional.empty() : Optional.of(inGameStageTicks);
+            Runnable dispatch = () -> challenge.dispatchEvent(
+                    new StageUpdateEvent(getStage(), lastRecordedRoomTick, status, accurate, gameTicks));
+
+            if (waitToDispatch) {
+                // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
+                // own events first.
+                clientThread.invokeLater(dispatch);
+            } else {
+                dispatch.run();
+            }
         }
     }
 

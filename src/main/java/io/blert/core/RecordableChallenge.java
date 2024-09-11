@@ -181,11 +181,11 @@ public abstract class RecordableChallenge {
     }
 
     public void terminate() {
+        onTerminate();
+
         this.eventHandler = null;
         state = ChallengeState.INACTIVE;
         party.clear();
-
-        onTerminate();
     }
 
     public void tick() {
