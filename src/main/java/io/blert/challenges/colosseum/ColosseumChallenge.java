@@ -202,7 +202,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
             if (COLOSSEUM_AREA.contains(playerLocation)) {
                 startColosseum();
             }
-        } else if (playerLocation.getRegionID() != COLOSSEUM_REGION_ID || !COLOSSEUM_AREA.contains(playerLocation)) {
+        } else if (playerLocation.getRegionID() != COLOSSEUM_REGION_ID) {
             clearWaveDataTracker();
             if (getState() == ChallengeState.COMPLETE) {
                 setState(ChallengeState.INACTIVE);
