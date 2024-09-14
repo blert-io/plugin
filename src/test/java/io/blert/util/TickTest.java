@@ -24,6 +24,7 @@
 package io.blert.util;
 
 import junit.framework.TestCase;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class TickTest extends TestCase {
     public void testAsTimeString() {
@@ -38,26 +39,27 @@ public class TickTest extends TestCase {
     }
 
     public void testFromTimeString() {
-        assertEquals(0, Tick.fromTimeString(""));
-        assertEquals(0, Tick.fromTimeString("0:00.00"));
-        assertEquals(1, Tick.fromTimeString("0:00.60"));
-        assertEquals(10, Tick.fromTimeString("0:06.00"));
-        assertEquals(100, Tick.fromTimeString("1:00.00"));
-        assertEquals(101, Tick.fromTimeString("1:00.60"));
-        assertEquals(296, Tick.fromTimeString("2:57.60"));
-        assertEquals(999, Tick.fromTimeString("9:59.40"));
-        assertEquals(1000, Tick.fromTimeString("10:00.00"));
+        assertTrue(Tick.fromTimeString("").isEmpty());
+
+        assertEquals(Pair.of(0, true), Tick.fromTimeString("0:00.00").orElseThrow());
+        assertEquals(Pair.of(1, true), Tick.fromTimeString("0:00.60").orElseThrow());
+        assertEquals(Pair.of(10, true), Tick.fromTimeString("0:06.00").orElseThrow());
+        assertEquals(Pair.of(100, true), Tick.fromTimeString("1:00.00").orElseThrow());
+        assertEquals(Pair.of(101, true), Tick.fromTimeString("1:00.60").orElseThrow());
+        assertEquals(Pair.of(296, true), Tick.fromTimeString("2:57.60").orElseThrow());
+        assertEquals(Pair.of(999, true), Tick.fromTimeString("9:59.40").orElseThrow());
+        assertEquals(Pair.of(1000, true), Tick.fromTimeString("10:00.00").orElseThrow());
 
         // Non-precise time strings without centiseconds.
-        assertEquals(0, Tick.fromTimeString("0:00"));
-        assertEquals(2, Tick.fromTimeString("0:01"));
-        assertEquals(4, Tick.fromTimeString("0:02"));
-        assertEquals(10, Tick.fromTimeString("0:06"));
-        assertEquals(99, Tick.fromTimeString("0:59"));
-        assertEquals(100, Tick.fromTimeString("1:00"));
-        assertEquals(295, Tick.fromTimeString("2:57"));
-        assertEquals(297, Tick.fromTimeString("2:58"));
-        assertEquals(999, Tick.fromTimeString("9:59"));
-        assertEquals(1000, Tick.fromTimeString("10:00"));
+        assertEquals(Pair.of(0, false), Tick.fromTimeString("0:00").orElseThrow());
+        assertEquals(Pair.of(2, false), Tick.fromTimeString("0:01").orElseThrow());
+        assertEquals(Pair.of(4, false), Tick.fromTimeString("0:02").orElseThrow());
+        assertEquals(Pair.of(10, false), Tick.fromTimeString("0:06").orElseThrow());
+        assertEquals(Pair.of(99, false), Tick.fromTimeString("0:59").orElseThrow());
+        assertEquals(Pair.of(100, false), Tick.fromTimeString("1:00").orElseThrow());
+        assertEquals(Pair.of(295, false), Tick.fromTimeString("2:57").orElseThrow());
+        assertEquals(Pair.of(297, false), Tick.fromTimeString("2:58").orElseThrow());
+        assertEquals(Pair.of(999, false), Tick.fromTimeString("9:59").orElseThrow());
+        assertEquals(Pair.of(1000, false), Tick.fromTimeString("10:00").orElseThrow());
     }
 }

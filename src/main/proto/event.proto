@@ -245,10 +245,12 @@ enum NpcAttack {
 
 message Event {
   enum Type {
-    CHALLENGE_START = 0;
-    CHALLENGE_END = 1;
-    CHALLENGE_UPDATE = 2;
-    STAGE_UPDATE = 3;
+    // Deprecated: These are now handled through server messages instead of challenge events.
+    DEPRECATED_CHALLENGE_START = 0;
+    DEPRECATED_CHALLENGE_END = 1;
+    DEPRECATED_CHALLENGE_UPDATE = 2;
+    DEPRECATED_STAGE_UPDATE = 3;
+
     PLAYER_UPDATE = 4;
     PLAYER_ATTACK = 5;
     PLAYER_DEATH = 6;
@@ -276,7 +278,7 @@ message Event {
     COLOSSEUM_HANDICAP_CHOICE = 200;
   }
 
-  // Information about an ongoing PvM challenge.
+  // Deprecated: This information is now handled through server messages instead of challenge events.
   message ChallengeInfo {
     repeated string party = 1;
     ChallengeMode mode = 2;
@@ -284,7 +286,7 @@ message Event {
     Challenge challenge = 4;
   }
 
-  // Information about a challenge that has been completed.
+  // Deprecated: This information is now handled through server messages instead of challenge events.
   message CompletedChallenge {
     // The overall (wall-clock) time taken to complete the challenge, in ticks.
     int32 overall_time_ticks = 1;
@@ -292,6 +294,7 @@ message Event {
     int32 challenge_time_ticks = 2;
   }
 
+  // Deprecated: This information is now handled through server messages instead of challenge events.
   message StageUpdate {
     enum Status {
       ENTERED = 0;
@@ -516,9 +519,9 @@ message Event {
   int32 y_coord = 6;
 
   // Event-specific fields.
-  optional ChallengeInfo challenge_info = 7;
-  optional CompletedChallenge completed_challenge = 8;
-  optional StageUpdate stage_update = 9;
+  optional ChallengeInfo challenge_info = 7;  // DEPRECATED
+  optional CompletedChallenge completed_challenge = 8;  // DEPRECATED
+  optional StageUpdate stage_update = 9;  // DEPRECATED
   optional Player player = 10;
   optional Attack player_attack = 11;
   optional Npc npc = 12;

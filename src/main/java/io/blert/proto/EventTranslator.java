@@ -35,7 +35,6 @@ import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
 import io.blert.events.tob.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
@@ -56,43 +55,11 @@ public class EventTranslator {
         }
 
         switch (event.getType()) {
-            case CHALLENGE_START: {
-                ChallengeStartEvent challengeStartEvent = (ChallengeStartEvent) event;
-                Event.ChallengeInfo.Builder builder = Event.ChallengeInfo.newBuilder()
-                        .setChallenge(challengeStartEvent.getChallenge().toProto())
-                        .setMode(challengeStartEvent.getMode().toProto())
-                        .addAllParty(challengeStartEvent.getParty())
-                        .setSpectator(challengeStartEvent.isSpectator());
-                eventBuilder.setChallengeInfo(builder);
-                break;
-            }
-
-            case CHALLENGE_UPDATE: {
-                ChallengeUpdateEvent challengeUpdateEvent = (ChallengeUpdateEvent) event;
-                Event.ChallengeInfo.Builder builder = Event.ChallengeInfo.newBuilder()
-                        .setMode(challengeUpdateEvent.getMode().toProto());
-                eventBuilder.setChallengeInfo(builder);
-                break;
-            }
-
-            case CHALLENGE_END: {
-                ChallengeEndEvent challengeEndEvent = (ChallengeEndEvent) event;
-                Event.CompletedChallenge.Builder builder = Event.CompletedChallenge.newBuilder()
-                        .setChallengeTimeTicks(challengeEndEvent.getChallengeTime())
-                        .setOverallTimeTicks(challengeEndEvent.getOverallTime());
-                eventBuilder.setCompletedChallenge(builder);
-                break;
-            }
-
-            case STAGE_UPDATE: {
-                StageUpdateEvent stageUpdateEvent = (StageUpdateEvent) event;
-                Event.StageUpdate.Builder builder = Event.StageUpdate.newBuilder()
-                        .setStatus(translateStageStatus(stageUpdateEvent.getStatus()))
-                        .setAccurate(stageUpdateEvent.isAccurate());
-                stageUpdateEvent.getInGameTicks().ifPresent(builder::setInGameTicks);
-                eventBuilder.setStageUpdate(builder);
-                break;
-            }
+            case CHALLENGE_START:
+            case CHALLENGE_END:
+            case CHALLENGE_UPDATE:
+            case STAGE_UPDATE:
+                throw new AssertionError(String.format("Event type %s has no proto representation", event.getType()));
 
             case PLAYER_UPDATE: {
                 PlayerUpdateEvent playerUpdateEvent = (PlayerUpdateEvent) event;
@@ -270,21 +237,6 @@ public class EventTranslator {
         }
 
         return eventBuilder.build();
-    }
-
-    private static Event.StageUpdate.Status translateStageStatus(StageUpdateEvent.Status status) {
-        switch (status) {
-            case ENTERED:
-                return Event.StageUpdate.Status.ENTERED;
-            case STARTED:
-                return Event.StageUpdate.Status.STARTED;
-            case COMPLETED:
-                return Event.StageUpdate.Status.COMPLETED;
-            case WIPED:
-                return Event.StageUpdate.Status.WIPED;
-            default:
-                throw new NotImplementedException("Stage status translation not implemented for " + status);
-        }
     }
 
     private static Event.Player.EquippedItem.Builder translateEquippedItem(EquipmentSlot slot, Item item) {
