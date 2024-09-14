@@ -302,7 +302,16 @@ public abstract class DataTracker {
     }
 
     protected void finish(boolean completion) {
-        finish(completion, -1);
+        finish(completion, -1, false);
+    }
+
+    protected void finish(String inGameTime) {
+        var ticks = Tick.fromTimeString(inGameTime);
+        if (ticks.isPresent()) {
+            finish(true, ticks.get().getLeft(), ticks.get().getRight());
+        } else {
+            finish(true);
+        }
     }
 
     /**
@@ -311,8 +320,9 @@ public abstract class DataTracker {
      * @param completion       Whether the stage was completed successfully.
      * @param inGameStageTicks The number of in-game ticks the stage took to complete, or -1 if the in-game timer is not
      *                         available. If provided, it is used to verify the accuracy of the recorded stage time.
+     * @param gameTicksPrecise Whether the in-game tick timer is precise or rounded.
      */
-    protected void finish(boolean completion, int inGameStageTicks) {
+    protected void finish(boolean completion, int inGameStageTicks, boolean gameTicksPrecise) {
         boolean waitToDispatch = true;
 
         switch (state) {
@@ -358,7 +368,7 @@ public abstract class DataTracker {
 
             Optional<Integer> gameTicks = inGameStageTicks == -1 ? Optional.empty() : Optional.of(inGameStageTicks);
             Runnable dispatch = () -> challenge.dispatchEvent(
-                    new StageUpdateEvent(getStage(), lastRecordedRoomTick, status, accurate, gameTicks));
+                    new StageUpdateEvent(getStage(), lastRecordedRoomTick, status, accurate, gameTicks, gameTicksPrecise));
 
             if (waitToDispatch) {
                 // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their

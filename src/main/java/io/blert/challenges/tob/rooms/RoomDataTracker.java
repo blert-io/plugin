@@ -235,7 +235,7 @@ public abstract class RoomDataTracker extends DataTracker {
         if (matcher.find()) {
             try {
                 String inGameTime = matcher.group(1);
-                finish(true, Tick.fromTimeString(inGameTime));
+                finish(inGameTime);
             } catch (IndexOutOfBoundsException e) {
                 log.warn("Could not parse timestamp from wave end message: {}", stripped);
                 finish(true);

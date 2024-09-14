@@ -50,6 +50,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -370,12 +371,12 @@ public class TheatreChallenge extends RecordableChallenge {
 
         Matcher matcher = RAID_COMPLETION_CHALLENGE_REGEX.matcher(stripped);
         if (matcher.matches()) {
-            reportedChallengeTime = Tick.fromTimeString(matcher.group(1));
+            reportedChallengeTime = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
         }
 
         matcher = RAID_COMPLETION_OVERALL_REGEX.matcher(stripped);
         if (matcher.matches()) {
-            int overallTime = Tick.fromTimeString(matcher.group(1));
+            int overallTime = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
             queueRaidEnd(ChallengeState.COMPLETE, overallTime);
         }
     }

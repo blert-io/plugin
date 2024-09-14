@@ -40,16 +40,19 @@ public class StageUpdateEvent extends Event {
     private final Status status;
     private final boolean accurate;
     private final Optional<Integer> inGameTicks;
+    private final boolean gameTicksPrecise;
 
     public StageUpdateEvent(Stage stage, int tick, Status status) {
-        this(stage, tick, status, false, Optional.empty());
+        this(stage, tick, status, false, Optional.empty(), false);
     }
 
-    public StageUpdateEvent(Stage stage, int tick, Status status, boolean accurate, Optional<Integer> inGameTicks) {
+    public StageUpdateEvent(Stage stage, int tick, Status status, boolean accurate,
+                            Optional<Integer> inGameTicks, boolean gameTicksPrecise) {
         super(EventType.STAGE_UPDATE, stage, tick, null);
         this.status = status;
         this.accurate = accurate;
         this.inGameTicks = inGameTicks;
+        this.gameTicksPrecise = gameTicksPrecise;
     }
 
     @Override

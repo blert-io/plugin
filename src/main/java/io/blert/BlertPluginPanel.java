@@ -315,6 +315,10 @@ public class BlertPluginPanel extends PluginPanel {
                 activeChallengeLabel.setText("Starting...");
                 activeChallengeLabel.setForeground(Color.YELLOW);
                 break;
+            case CHALLENGE_ENDING:
+                activeChallengeLabel.setText("Ending...");
+                activeChallengeLabel.setForeground(Color.YELLOW);
+                break;
             case CHALLENGE_ACTIVE:
                 activeChallengeLabel.setText("Streaming challenge data!");
                 activeChallengeLabel.setForeground(Color.GREEN);

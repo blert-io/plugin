@@ -23,6 +23,10 @@
 
 package io.blert.util;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.Optional;
+
 public class Tick {
     public static final int MILLISECONDS_PER_TICK = 600;
 
@@ -53,9 +57,9 @@ public class Tick {
      * @param timeString The time string.
      * @return The number of ticks.
      */
-    public static int fromTimeString(String timeString) {
+    public static Optional<Pair<Integer, Boolean>> fromTimeString(String timeString) {
         if (timeString.isEmpty()) {
-            return 0;
+            return Optional.empty();
         }
 
         if (!timeString.matches("\\d+:\\d{2}(\\.\\d{2})?")) {
@@ -68,11 +72,14 @@ public class Tick {
         String[] secondsAndCentiseconds = parts[1].split("\\.");
         int seconds = Integer.parseInt(secondsAndCentiseconds[0]);
 
+        boolean precise = true;
+
         int milliseconds = minutes * 60 * 1000 + seconds * 1000;
         if (secondsAndCentiseconds.length == 2) {
             int centiseconds = Integer.parseInt(secondsAndCentiseconds[1]);
             milliseconds += centiseconds * 10;
         } else {
+            precise = false;
             int remainder = milliseconds % MILLISECONDS_PER_TICK;
             if (remainder != 0) {
                 // Round up to the next tick.
@@ -80,6 +87,6 @@ public class Tick {
             }
         }
 
-        return milliseconds / MILLISECONDS_PER_TICK;
+        return Optional.of(Pair.of(milliseconds / MILLISECONDS_PER_TICK, precise));
     }
 }

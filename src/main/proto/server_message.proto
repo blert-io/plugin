@@ -40,11 +40,20 @@ message ServerMessage {
     HISTORY_REQUEST = 4;
     HISTORY_RESPONSE = 5;
     EVENT_STREAM = 6;
-    ACTIVE_CHALLENGE_INFO = 7;
+
+    // Deprecated: CHALLENGE_START_REQUEST and CHALLENGE_START_RESPONSE are now used.
+    DEPRECATED_ACTIVE_CHALLENGE_INFO = 7;
+
     SERVER_STATUS = 8;
     GAME_STATE = 10;
     PLAYER_STATE = 11;
     CHALLENGE_STATE_CONFIRMATION = 12;
+
+    CHALLENGE_START_REQUEST = 13;
+    CHALLENGE_START_RESPONSE = 14;
+    CHALLENGE_END_REQUEST = 15;
+    CHALLENGE_END_RESPONSE = 16;
+    CHALLENGE_UPDATE = 17;
   }
 
   message Error {
@@ -132,12 +141,15 @@ message ServerMessage {
     // The player whose state to confirm.
     string username = 2;
 
-    // The other challenge state fields are set by the server in CHALLENGE_STATE_CONFIRMATION messages to request
-    // confirmation from the client.
+    // Challenge state fields are set by the server in CHALLENGE_STATE_CONFIRMATION messages to request confirmation
+    // from the client.
     Challenge challenge = 3;
     ChallengeMode mode = 4;
     Stage stage = 5;
     repeated string party = 6;
+
+    // Set by the client to indicate that the player is a spectator.
+    bool spectator = 7;
   }
 
   // Set on all messages. Indicates which fields are present.
@@ -167,4 +179,55 @@ message ServerMessage {
   // In CHALLENGE_STATE_CONFIRMATION messages from the server, the last known state for the player.
   // In CHALLENGE_STATE_CONFIRMATION messages from the client,
   optional ChallengeStateConfirmation challenge_state_confirmation = 10;
+
+  // In CHALLENGE_START_REQUEST messages, information about the challenge to start.
+  optional ChallengeStartRequest challenge_start_request = 11;
+
+  // In CHALLENGE_END_REQUEST messages, information about the challenge that ended.
+  // The challenge ID is set in the `active_challenge_id` field.
+  optional ChallengeEndRequest challenge_end_request = 12;
+
+  // In CHALLENGE_UPDATE messages, the new state of the challenge.
+  optional ChallengeUpdate challenge_update = 13;
+
+  // Set by the client to associate a request with a server response.
+  uint32 request_id = 50;
+}
+
+message ChallengeStartRequest {
+  // The challenge to start.
+  Challenge challenge = 1;
+  ChallengeMode mode = 2;
+  Stage stage = 3;
+  repeated string party = 4;
+  bool spectator = 5;
+}
+
+message ChallengeEndRequest {
+  // The overall (wall-clock) time taken to complete the challenge, in ticks.
+  int32 overall_time_ticks = 1;
+  // The reported in-game time taken to complete the challenge, in ticks.
+  int32 challenge_time_ticks = 2;
+}
+
+message ChallengeUpdate {
+  message StageUpdate {
+    enum Status {
+      ENTERED = 0;
+      STARTED = 1;
+      COMPLETED = 2;
+      WIPED = 3;
+    }
+
+    Stage stage = 1;
+    Status status = 2;
+    bool accurate = 3;
+    uint32 recorded_ticks = 4;
+    optional int32 game_server_ticks = 5;
+    bool game_ticks_precise = 6;
+  }
+
+  ChallengeMode mode = 1;
+  repeated string party = 2;
+  optional StageUpdate stage_update = 3;
 }

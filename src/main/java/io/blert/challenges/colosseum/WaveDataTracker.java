@@ -151,10 +151,14 @@ public class WaveDataTracker extends DataTracker {
             Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(stripped);
             if (matcher.find()) {
                 try {
-                    String inGameTime = matcher.group(1);
-                    int challengeTicks = Tick.fromTimeString(inGameTime);
-                    int bossTicks = challengeTicks - ticksOnEntry;
-                    finish(true, bossTicks);
+                    var ticks = Tick.fromTimeString(matcher.group(1));
+                    if (ticks.isPresent()) {
+                        int challengeTicks = ticks.get().getLeft();
+                        int bossTicks = challengeTicks - ticksOnEntry;
+                        finish(true, bossTicks, ticks.get().getRight());
+                    } else {
+                        finish(true);
+                    }
                 } catch (Exception e) {
                     log.warn("Could not parse timestamp from colosseum end message: {}", stripped);
                     finish(true);
@@ -165,7 +169,7 @@ public class WaveDataTracker extends DataTracker {
             if (matcher.find()) {
                 try {
                     String inGameTime = matcher.group(1);
-                    finish(true, Tick.fromTimeString(inGameTime));
+                    finish(inGameTime);
                 } catch (Exception e) {
                     log.warn("Could not parse timestamp from wave end message: {}", stripped);
                     finish(true);

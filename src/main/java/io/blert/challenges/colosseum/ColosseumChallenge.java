@@ -38,6 +38,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -171,8 +172,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
         Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(Text.removeTags(event.getMessage()));
         if (matcher.find()) {
             try {
-                String time = matcher.group(1);
-                reportedChallengeTicks = Tick.fromTimeString(time);
+                reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
             } catch (Exception e) {
                 reportedChallengeTicks = -1;
             }
