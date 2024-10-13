@@ -159,7 +159,7 @@ public enum TobNpc {
     VERZIK_P3_HARD(10852, 2, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
 
     // Pillars at Verzik.
-    VERZIK_PILLAR(8379, 1, ChallengeMode.TOB_REGULAR, 0),
+    VERZIK_PILLAR(8379, 1, ChallengeMode.NO_MODE, 0),
 
     // Nylos at Verzik.
     // TODO(frolv): Correct HP values.
