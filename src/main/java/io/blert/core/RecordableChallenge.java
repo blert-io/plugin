@@ -143,12 +143,17 @@ public abstract class RecordableChallenge {
 
     /**
      * Updates the challenge mode. If the challenge is active and the mode has changed, an update event is dispatched.
+     * Updates to {@link ChallengeMode#NO_MODE} are ignored.
      *
      * @param mode The new challenge mode.
      */
     public void updateMode(ChallengeMode mode) {
+        if (mode == ChallengeMode.NO_MODE) {
+            return;
+        }
+
         if (challengeMode != mode) {
-            log.debug("Raid mode set to " + mode);
+            log.debug("Raid mode set to {}", mode);
             challengeMode = mode;
 
             if (state == ChallengeState.STARTING || state == ChallengeState.ACTIVE) {
