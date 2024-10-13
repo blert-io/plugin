@@ -603,8 +603,7 @@ public class WebsocketEventHandler implements EventHandler {
             return;
         }
 
-        RecordableChallenge challenge = plugin.getActiveChallenge();
-        if (challenge == null) {
+        if (plugin.getActiveChallenge() == null) {
             ServerMessage.Builder response = ServerMessage.newBuilder()
                     .setType(ServerMessage.Type.CHALLENGE_STATE_CONFIRMATION)
                     .setActiveChallengeId(message.getActiveChallengeId())
@@ -617,16 +616,26 @@ public class WebsocketEventHandler implements EventHandler {
 
         // Getting the challenge status is a blocking operation, so run it in a separate thread.
         new Thread(() -> {
+            ServerMessage.Builder response = ServerMessage.newBuilder()
+                    .setType(ServerMessage.Type.CHALLENGE_STATE_CONFIRMATION)
+                    .setActiveChallengeId(message.getActiveChallengeId());
+
+            RecordableChallenge activeChallenge = plugin.getActiveChallenge();
+            if (activeChallenge == null) {
+                response.setChallengeStateConfirmation(
+                        ServerMessage.ChallengeStateConfirmation.newBuilder().setIsValid(false));
+                webSocketClient.sendMessage(response.build().toByteArray());
+                return;
+            }
+
             RecordableChallenge.Status status = null;
+
             try {
-                status = challenge.getStatus().get();
+                status = activeChallenge.getStatus().get();
             } catch (InterruptedException | ExecutionException e) {
                 log.error("Failed to get challenge status", e);
             }
 
-            ServerMessage.Builder response = ServerMessage.newBuilder()
-                    .setType(ServerMessage.Type.CHALLENGE_STATE_CONFIRMATION)
-                    .setActiveChallengeId(message.getActiveChallengeId());
             ServerMessage.ChallengeStateConfirmation.Builder confirmationBuilder =
                     ServerMessage.ChallengeStateConfirmation.newBuilder().setUsername(username);
 
@@ -640,7 +649,8 @@ public class WebsocketEventHandler implements EventHandler {
                         .collect(Collectors.toSet());
 
                 isValid = status.getChallenge().toProto().equals(stateToConfirm.getChallenge()) &&
-                        status.getStage().toProto().equals(stateToConfirm.getStage()) &&
+                        status.getStage() != null &&
+                        status.getStage().toProto().getNumber() >= stateToConfirm.getStage().getNumber() &&
                         party.equals(partyToConfirm);
 
                 if (!party.contains(username)) {
