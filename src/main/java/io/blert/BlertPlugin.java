@@ -34,6 +34,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
@@ -113,6 +114,7 @@ public class BlertPlugin extends Plugin {
 
     private GameState previousGameState = null;
     private LoginState loginState = LoginState.LOGGED_OUT;
+    private boolean enabled = true;
 
     private DeferredTask deferredTask;
 
@@ -132,6 +134,10 @@ public class BlertPlugin extends Plugin {
 
         previousGameState = client.getGameState();
         loginState = previousGameState == GameState.LOGGED_IN ? LoginState.LOGGED_IN : LoginState.LOGGED_OUT;
+
+        if (loginState.isLoggedIn()) {
+            checkWorldType();
+        }
     }
 
     @Override
@@ -188,6 +194,8 @@ public class BlertPlugin extends Plugin {
                 }
             }
 
+            checkWorldType();
+
             // If the player was not already logged in, notify the server that they have.
             if (!loginState.isLoggedIn()) {
                 deferredTask = new DeferredTask(() -> {
@@ -226,7 +234,7 @@ public class BlertPlugin extends Plugin {
         WorldPoint playerLocation = Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
 
         var maybeChallenge = challenges.stream().filter(c -> c.containsLocation(playerLocation)).findFirst();
-        if (maybeChallenge.isPresent()) {
+        if (enabled && maybeChallenge.isPresent()) {
             RecordableChallenge challenge = maybeChallenge.get();
             if (activeChallenge == challenge) {
                 return;
@@ -247,6 +255,17 @@ public class BlertPlugin extends Plugin {
             eventBus.unregister(activeChallenge);
             activeChallenge.terminate();
             activeChallenge = null;
+        }
+    }
+
+    private void checkWorldType() {
+        var worldTypes = client.getWorldType();
+        enabled = !worldTypes.contains(WorldType.BETA_WORLD)
+                && !worldTypes.contains(WorldType.DEADMAN)
+                && !worldTypes.contains(WorldType.QUEST_SPEEDRUNNING)
+                && !worldTypes.contains(WorldType.SEASONAL);
+        if (!enabled) {
+            log.info("Plugin is disabled due to world type: {}", worldTypes);
         }
     }
 }
