@@ -33,6 +33,18 @@ import java.util.stream.Collectors;
 
 public enum PlayerAttack {
     ABYSSAL_BLUDGEON(ItemID.ABYSSAL_BLUDGEON, 3298, 4, io.blert.proto.PlayerAttack.ABYSSAL_BLUDGEON),
+    ACCURSED_SCEPTRE_AUTO(
+            new int[]{ItemID.ACCURSED_SCEPTRE, ItemID.ACCURSED_SCEPTRE_A},
+            1167,
+            4,
+            io.blert.proto.PlayerAttack.ACCURSED_SCEPTRE_AUTO
+    ),
+    ACCURSED_SCEPTRE_SPEC(
+            new int[]{ItemID.ACCURSED_SCEPTRE, ItemID.ACCURSED_SCEPTRE_A},
+            9961,
+            4,
+            io.blert.proto.PlayerAttack.ACCURSED_SCEPTRE_SPEC
+    ),
     AGS_SPEC(
             new int[]{ItemID.ARMADYL_GODSWORD, ItemID.ARMADYL_GODSWORD_OR, ItemID.ARMADYL_GODSWORD_DEADMAN},
             new int[]{7644, 7645},
@@ -118,12 +130,25 @@ public enum PlayerAttack {
             4,
             io.blert.proto.PlayerAttack.DDS_SPEC
     ),
+    DHAROKS_GREATAXE(
+            new int[]{ItemID.DHAROKS_GREATAXE, ItemID.DHAROKS_GREATAXE_25, ItemID.DHAROKS_GREATAXE_50, ItemID.DHAROKS_GREATAXE_75, ItemID.DHAROKS_GREATAXE_100},
+            new int[]{2066, 2067},
+            7,
+            io.blert.proto.PlayerAttack.DHAROKS_GREATAXE
+    ),
     DINHS_SPEC(
             new int[]{ItemID.DINHS_BULWARK, ItemID.DINHS_BLAZING_BULWARK},
             7511,
             5,
             io.blert.proto.PlayerAttack.DINHS_SPEC
     ),
+    DRAGON_HUNTER_LANCE(
+            ItemID.DRAGON_HUNTER_LANCE,
+            new int[]{8288, 8289, 8290},
+            4,
+            io.blert.proto.PlayerAttack.DRAGON_HUNTER_LANCE
+    ),
+    DRAGON_SCIMITAR(ItemID.DRAGON_SCIMITAR, new int[]{386, 390}, 4, io.blert.proto.PlayerAttack.DRAGON_SCIMITAR),
     DUAL_MACUAHUITL(ItemID.DUAL_MACUAHUITL, 10989, 4, io.blert.proto.PlayerAttack.DUAL_MACUAHUITL),
     ELDER_MAUL(
             new int[]{ItemID.ELDER_MAUL, ItemID.ELDER_MAUL_OR},
@@ -173,6 +198,12 @@ public enum PlayerAttack {
             6,
             io.blert.proto.PlayerAttack.GODSWORD_SMACK
     ),
+    GUTHANS_WARSPEAR(
+            new int[]{ItemID.GUTHANS_WARSPEAR, ItemID.GUTHANS_WARSPEAR_25, ItemID.GUTHANS_WARSPEAR_50, ItemID.GUTHANS_WARSPEAR_75, ItemID.GUTHANS_WARSPEAR_100},
+            new int[]{2080, 2081, 2082},
+            5,
+            io.blert.proto.PlayerAttack.GUTHANS_WARSPEAR
+    ),
     HAMMER_BOP(
             new int[]{ItemID.DRAGON_WARHAMMER, ItemID.DRAGON_WARHAMMER_CR},
             401,
@@ -187,6 +218,12 @@ public enum PlayerAttack {
     ),
     HAM_JOINT(ItemID.HAM_JOINT, 401, 3, io.blert.proto.PlayerAttack.HAM_JOINT),
     INQUISITORS_MACE(ItemID.INQUISITORS_MACE, new int[]{400, 4503}, 4, io.blert.proto.PlayerAttack.INQUISITORS_MACE),
+    KARILS_CROSSBOW(
+            new int[]{ItemID.KARILS_CROSSBOW, ItemID.KARILS_CROSSBOW_25, ItemID.KARILS_CROSSBOW_50, ItemID.KARILS_CROSSBOW_75, ItemID.KARILS_CROSSBOW_100},
+            2075,
+            4,
+            io.blert.proto.PlayerAttack.KARILS_CROSSBOW
+    ),
     KICK(-1, 423, 4, io.blert.proto.PlayerAttack.KICK),
     KODAI_BARRAGE(ItemID.KODAI_WAND, 1979, 5, io.blert.proto.PlayerAttack.KODAI_BARRAGE),
     KODAI_BASH(ItemID.KODAI_WAND, 393, 5, io.blert.proto.PlayerAttack.KODAI_BASH),
@@ -345,6 +382,12 @@ public enum PlayerAttack {
             6,
             io.blert.proto.PlayerAttack.TONALZTICS_UNCHARGED
     ),
+    TORAGS_HAMMERS(
+            new int[]{ItemID.TORAGS_HAMMERS, ItemID.TORAGS_HAMMERS_25, ItemID.TORAGS_HAMMERS_50, ItemID.TORAGS_HAMMERS_75, ItemID.TORAGS_HAMMERS_100},
+            2068,
+            5,
+            io.blert.proto.PlayerAttack.TORAGS_HAMMERS
+    ),
     // TOXIC_TRIDENT must come before TOXIC_TRIDENT_BARRAGE as it is the default assumption when the animation is unknown.
     TOXIC_TRIDENT(
             new int[]{ItemID.TRIDENT_OF_THE_SWAMP, ItemID.TRIDENT_OF_THE_SWAMP_E},
@@ -387,6 +430,12 @@ public enum PlayerAttack {
     ),
     TWISTED_BOW(ItemID.TWISTED_BOW, 426, 5, io.blert.proto.PlayerAttack.TWISTED_BOW),
     VENATOR_BOW(ItemID.VENATOR_BOW, 9858, 4, io.blert.proto.PlayerAttack.VENATOR_BOW),
+    VERACS_FLAIL(
+            new int[]{ItemID.VERACS_FLAIL, ItemID.VERACS_FLAIL_25, ItemID.VERACS_FLAIL_50, ItemID.VERACS_FLAIL_75, ItemID.VERACS_FLAIL_100},
+            2062,
+            5,
+            io.blert.proto.PlayerAttack.VERACS_FLAIL
+    ),
     VOIDWAKER_AUTO(
             new int[]{ItemID.VOIDWAKER, ItemID.VOIDWAKER_DEADMAN},
             new int[]{386, 390},
