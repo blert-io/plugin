@@ -23,11 +23,13 @@
 
 package io.blert.core;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.client.game.ItemVariationMapping;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -37,6 +39,12 @@ import java.util.*;
  */
 @Slf4j
 public class Raider {
+    private static final Set<Integer> DIZANAS_QUIVER_IDS = ImmutableSet.<Integer>builder()
+            .addAll(ItemVariationMapping.getVariations(ItemVariationMapping.map(ItemID.DIZANAS_QUIVER)))
+            .addAll(ItemVariationMapping.getVariations(ItemVariationMapping.map(ItemID.BLESSED_DIZANAS_QUIVER)))
+            .addAll(ItemVariationMapping.getVariations(ItemVariationMapping.map(ItemID.DIZANAS_MAX_CAPE)))
+            .build();
+
     private enum BlowpipeState {
         NOT_PIPING,
         PIPING,
@@ -210,7 +218,21 @@ public class Raider {
         }
 
         for (EquipmentSlot slot : EquipmentSlot.values()) {
-            var item = equippedItems.getItem(slot.getInventorySlotIndex());
+            net.runelite.api.Item item;
+
+            if (slot == EquipmentSlot.QUIVER) {
+                if (!hasQuiver(client)) {
+                    continue;
+                }
+                final int quiverAmmoId = client.getVarpValue(VarPlayer.DIZANAS_QUIVER_ITEM_ID);
+                if (quiverAmmoId <= 0) {
+                    continue;
+                }
+                item = new net.runelite.api.Item(quiverAmmoId, client.getVarpValue(VarPlayer.DIZANAS_QUIVER_ITEM_COUNT));
+            } else {
+                item = equippedItems.getItem(slot.getInventorySlotIndex());
+            }
+
             Item previous = this.equipment[slot.ordinal()];
 
             if (item != null) {
@@ -285,5 +307,26 @@ public class Raider {
                 overheadPrayer = null;
                 break;
         }
+    }
+
+    private boolean hasQuiver(Client client) {
+        var equippedItems = client.getItemContainer(InventoryID.EQUIPMENT);
+        if (equippedItems != null) {
+            var cape = equippedItems.getItem(EquipmentInventorySlot.CAPE.getSlotIdx());
+            if (cape != null && DIZANAS_QUIVER_IDS.contains(cape.getId())) {
+                return true;
+            }
+        }
+
+        var inventoryItems = client.getItemContainer(InventoryID.INVENTORY);
+        if (inventoryItems != null) {
+            for (var item : inventoryItems.getItems()) {
+                if (DIZANAS_QUIVER_IDS.contains(item.getId())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
