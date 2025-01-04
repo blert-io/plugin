@@ -335,6 +335,7 @@ message Event {
       GLOVES = 8;
       BOOTS = 9;
       RING = 10;
+      QUIVER = 11;
     }
 
     message EquippedItem {

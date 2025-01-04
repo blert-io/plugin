@@ -43,6 +43,7 @@ public enum EquipmentSlot {
     GLOVES(EquipmentInventorySlot.GLOVES, KitType.HANDS, Event.Player.EquipmentSlot.GLOVES),
     BOOTS(EquipmentInventorySlot.BOOTS, KitType.BOOTS, Event.Player.EquipmentSlot.BOOTS),
     RING(EquipmentInventorySlot.RING, null, Event.Player.EquipmentSlot.RING),
+    QUIVER(EquipmentInventorySlot.AMMO, null, Event.Player.EquipmentSlot.QUIVER),
     ;
 
     @Getter
