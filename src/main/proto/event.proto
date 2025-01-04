@@ -204,6 +204,7 @@ enum PlayerAttack {
   VERACS_FLAIL = 97;
   GUTHANS_WARSPEAR = 98;
   TORAGS_HAMMERS = 99;
+  ICE_RUSH = 100;
 }
 
 enum NpcAttack {
