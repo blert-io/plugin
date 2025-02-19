@@ -133,7 +133,7 @@ public abstract class RoomDataTracker extends DataTracker {
      * @return True if there is at least one player within the room.
      */
     public boolean playersAreInRoom() {
-        return client.getPlayers().stream()
+        return client.getTopLevelWorldView().players().stream()
                 .filter(player -> theatreChallenge.playerIsInChallenge(player.getName()))
                 .anyMatch(player -> Location.fromWorldPoint(getWorldLocation(player)).inRoom(room));
     }
