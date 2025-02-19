@@ -164,7 +164,7 @@ public class TheatreChallenge extends RecordableChallenge {
                 }
 
                 roomDataTracker.startRoomInaccurate();
-                log.debug("Room " + roomDataTracker.getRoom() + " started via activity check");
+                log.debug("Room {} started via activity check", roomDataTracker.getRoom());
             }
 
             roomDataTracker.tick();

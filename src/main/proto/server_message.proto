@@ -68,6 +68,7 @@ message ServerMessage {
 
     Type type = 1;
     string username = 2;
+    optional string message = 3;
   }
 
   message User {

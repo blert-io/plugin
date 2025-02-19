@@ -105,7 +105,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
     @Override
     protected void onRoomStart() {
-        client.getNpcs().stream().filter(npc -> TobNpc.isAnyVerzik(npc.getId())).findFirst().ifPresent(npc -> {
+        client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isAnyVerzik(npc.getId())).findFirst().ifPresent(npc -> {
             TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
 
             if (verzik == null) {

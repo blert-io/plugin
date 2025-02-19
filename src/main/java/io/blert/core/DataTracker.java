@@ -283,7 +283,7 @@ public abstract class DataTracker {
         this.startClientTick = client.getTickCount() + tickOffset;
         setState(State.IN_PROGRESS);
 
-        client.getPlayers().forEach(player -> {
+        client.getTopLevelWorldView().players().forEach(player -> {
             Raider raider = challenge.getRaider(player.getName());
             if (raider != null) {
                 raider.setPlayer(player);
@@ -383,7 +383,7 @@ public abstract class DataTracker {
     private void updatePlayers() {
         int tick = getTick();
 
-        client.getPlayers().forEach(player -> {
+        client.getTopLevelWorldView().players().forEach(player -> {
             Raider raider = challenge.getRaider(player.getName());
             if (raider == null || raider.isDead()) {
                 return;

@@ -64,7 +64,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     private final Map<Integer, MaidenCrab> crabs = new HashMap<>();
 
     public MaidenDataTracker(TheatreChallenge manager, Client client) {
-        super(manager, client, Room.MAIDEN);
+        super(manager, client, Room.MAIDEN, true);
     }
 
     @Override
@@ -81,7 +81,7 @@ public class MaidenDataTracker extends RoomDataTracker {
         List<WorldPoint> bloodSplats = new ArrayList<>();
 
         // Search for active blood splats thrown by Maiden, and report them if they exist.
-        for (GraphicsObject object : client.getGraphicsObjects()) {
+        for (GraphicsObject object : client.getTopLevelWorldView().getGraphicsObjects()) {
             WorldPoint point = WorldPoint.fromLocalInstance(client, object.getLocation());
             if (Location.fromWorldPoint(point).inMaiden() && object.getId() == MAIDEN_BLOODSPLAT_GRAPHIC_ID) {
                 bloodSplats.add(point);
@@ -147,10 +147,11 @@ public class MaidenDataTracker extends RoomDataTracker {
         NPC npc = spawned.getNpc();
         return TobNpc.withId(npc.getId()).flatMap(tobNpc -> {
             if (TobNpc.isMaiden(tobNpc.getId())) {
-                startRoom();
-
-                maiden = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                        new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getScale())));
+                if (maiden == null) {
+                    startRoom();
+                    maiden = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                            new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getScale())));
+                }
                 return Optional.of(maiden);
             }
 
@@ -189,7 +190,6 @@ public class MaidenDataTracker extends RoomDataTracker {
                 attackThisTick = NpcAttack.TOB_MAIDEN_AUTO;
                 break;
             default:
-                return;
         }
     }
 
@@ -211,7 +211,7 @@ public class MaidenDataTracker extends RoomDataTracker {
                 theatreChallenge.getScale(), npc, generateRoomId(npc), currentSpawn, spawnLocation);
         if (maybeCrab.isPresent()) {
             MaidenCrab maidenCrab = maybeCrab.get();
-            log.debug("Crab position: " + maidenCrab.getPosition() + " scuffed: " + maidenCrab.isScuffed());
+            log.debug("Crab position: {} scuffed: {}", maidenCrab.getPosition(), maidenCrab.isScuffed());
             crabs.put(npc.hashCode(), maidenCrab);
         }
 
@@ -234,6 +234,6 @@ public class MaidenDataTracker extends RoomDataTracker {
         }
 
         spawnTicks[currentSpawn.ordinal()] = getTick();
-        log.debug("Maiden " + currentSpawn + " spawned on tick " + getTick() + " (" + formattedRoomTime() + ")");
+        log.debug("Maiden {} spawned on tick {} ({})", currentSpawn, getTick(), formattedRoomTime());
     }
 }

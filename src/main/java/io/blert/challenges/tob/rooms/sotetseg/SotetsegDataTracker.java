@@ -76,7 +76,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (sotetseg == null) {
-            client.getNpcs().stream().filter(npc -> TobNpc.isSotetseg(npc.getId())).findFirst().ifPresent(npc -> {
+            client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isSotetseg(npc.getId())).findFirst().ifPresent(npc -> {
                 TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
                 sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc, theatreChallenge.getScale()));

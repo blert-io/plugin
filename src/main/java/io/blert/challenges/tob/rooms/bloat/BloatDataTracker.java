@@ -79,7 +79,7 @@ public class BloatDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (bloat == null) {
-            client.getNpcs().stream().filter(npc -> TobNpc.isBloat(npc.getId())).findFirst().ifPresent(npc -> {
+            client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isBloat(npc.getId())).findFirst().ifPresent(npc -> {
                 TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
                 bloat = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc, theatreChallenge.getScale()));

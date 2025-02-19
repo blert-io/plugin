@@ -339,7 +339,7 @@ public class WebsocketEventHandler implements EventHandler {
                 plugin.getSidePanel().setRecentRecordings(serverMessage.getRecentRecordingsList());
                 break;
 
-            case CHALLENGE_START_RESPONSE:
+            case CHALLENGE_START_RESPONSE: {
                 if (status != Status.CHALLENGE_STARTING || serverMessage.getRequestId() != lastRequestId) {
                     log.warn("Received unexpected CHALLENGE_START_RESPONSE from server");
                     return;
@@ -351,6 +351,13 @@ public class WebsocketEventHandler implements EventHandler {
                     currentChallenge = null;
                     challengeId = null;
                     setStatus(Status.IDLE);
+
+                    if (serverMessage.hasError()) {
+                        var error = serverMessage.getError();
+                        if (error.hasMessage()) {
+                            sendGameMessage(ChatMessageType.GAMEMESSAGE, "<col=ef1020>[Blert] " + error.getMessage() + "</col>");
+                        }
+                    }
                     return;
                 }
 
@@ -363,6 +370,7 @@ public class WebsocketEventHandler implements EventHandler {
                     sendEvents(protoEventHandler.flushEventsUpTo(currentTick));
                 }
                 break;
+            }
 
             case CHALLENGE_END_RESPONSE:
                 if (status != Status.CHALLENGE_ENDING || serverMessage.getRequestId() != lastRequestId) {

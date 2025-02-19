@@ -63,7 +63,7 @@ public class XarpusDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (xarpus == null) {
-            client.getNpcs().stream().filter(npc -> TobNpc.isAnyXarpus(npc.getId())).findFirst().ifPresent(npc -> {
+            client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isAnyXarpus(npc.getId())).findFirst().ifPresent(npc -> {
                 TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
                 xarpus = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc, theatreChallenge.getScale()));
