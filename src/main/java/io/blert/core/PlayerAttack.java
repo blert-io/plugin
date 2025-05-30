@@ -174,6 +174,12 @@ public enum PlayerAttack {
             5,
             io.blert.proto.PlayerAttack.FANG_SPEC
     ),
+    GLACIAL_TEMOTLI(
+            ItemID.GLACIAL_TEMOTLI,
+            2068,
+            4,
+            io.blert.proto.PlayerAttack.GLACIAL_TEMOTLI
+    ),
     GOBLIN_PAINT_CANNON(
             ItemID.GOBLIN_PAINT_CANNON,
             2323,
@@ -387,6 +393,12 @@ public enum PlayerAttack {
             4,
             io.blert.proto.PlayerAttack.STAFF_OF_LIGHT_SWIPE
     ),
+    SULPHUR_BLADES(
+            ItemID.SULPHUR_BLADES,
+            2068,
+            4,
+            io.blert.proto.PlayerAttack.SULPHUR_BLADES
+    ),
     SWIFT(
             ItemID.SWIFT_BLADE,
             new int[]{390, 8288},
@@ -464,7 +476,7 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.TRIDENT_BARRAGE
     ),
     TWISTED_BOW(ItemID.TWISTED_BOW, 426, 5, io.blert.proto.PlayerAttack.TWISTED_BOW),
-    VENATOR_BOW(ItemID.VENATOR_BOW, 9858, 4, io.blert.proto.PlayerAttack.VENATOR_BOW),
+    VENATOR_BOW(new int[]{ItemID.VENATOR_BOW, ItemID.ECHO_VENATOR_BOW}, 9858, 4, io.blert.proto.PlayerAttack.VENATOR_BOW),
     VERACS_FLAIL(
             new int[]{ItemID.VERACS_FLAIL, ItemID.VERACS_FLAIL_25, ItemID.VERACS_FLAIL_50, ItemID.VERACS_FLAIL_75, ItemID.VERACS_FLAIL_100},
             2062,

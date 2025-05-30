@@ -205,6 +205,8 @@ enum PlayerAttack {
   GUTHANS_WARSPEAR = 98;
   TORAGS_HAMMERS = 99;
   ICE_RUSH = 100;
+  SULPHUR_BLADES = 101;
+  GLACIAL_TEMOTLI = 102;
 }
 
 enum NpcAttack {
