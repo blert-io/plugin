@@ -283,6 +283,8 @@ message Event {
     TOB_SOTE_MAZE_PATH = 131;
     TOB_SOTE_MAZE_END = 132;
     TOB_XARPUS_PHASE = 140;
+    TOB_XARPUS_EXHUMED = 141;
+    TOB_XARPUS_SPLAT = 142;
     TOB_VERZIK_PHASE = 150;
     TOB_VERZIK_REDS_SPAWN = 151;
     TOB_VERZIK_ATTACK_STYLE = 152;
@@ -488,6 +490,24 @@ message Event {
     XARPUS_P3 = 2;
   }
 
+  // Sent once an exhumed has completed.
+  message XarpusExhumed {
+    uint32 spawn_tick = 1;
+    uint32 heal_amount = 2;
+    repeated uint32 heal_ticks = 3;
+  }
+
+  message XarpusSplat {
+    enum Source {
+      UNKNOWN = 0;
+      XARPUS = 1;
+      BOUNCE = 2;
+    }
+
+    Source source = 1;
+    optional Coords bounce_from = 2;
+  }
+
   enum VerzikPhase {
     VERZIK_IDLE = 0;
     VERZIK_P1 = 1;
@@ -548,10 +568,12 @@ message Event {
   optional NyloWave nylo_wave = 66;
   optional SoteMaze sote_maze = 67;
   optional XarpusPhase xarpus_phase = 68;
+  optional XarpusExhumed xarpus_exhumed = 71;
+  optional XarpusSplat xarpus_splat = 72;
   optional VerzikPhase verzik_phase = 69;
   optional VerzikAttackStyle verzik_attack_style = 70;
 
-  reserved 71 to 99;
+  reserved 73 to 99;
 
   // Colosseum event-specific fields.
   optional ColosseumHandicap handicap = 100;

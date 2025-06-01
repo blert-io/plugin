@@ -33,17 +33,18 @@ import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
 import io.blert.events.NpcAttackEvent;
+import io.blert.events.tob.XarpusExhumedEvent;
 import io.blert.events.tob.XarpusPhaseEvent;
+import io.blert.events.tob.XarpusSplatEvent;
+import io.blert.util.Location;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.NPC;
+import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.NpcChanged;
-import net.runelite.api.events.NpcDespawned;
-import net.runelite.api.events.NpcSpawned;
+import net.runelite.api.events.*;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
+import java.util.*;
 
 @Slf4j
 public class XarpusDataTracker extends RoomDataTracker {
@@ -51,10 +52,47 @@ public class XarpusDataTracker extends RoomDataTracker {
     private static final int TICKS_PER_TURN_P2 = 4;
     private static final int TICKS_PER_TURN_P3 = 8;
 
+    private static final int EXHUMED_GROUND_OBJECT_ID = 32743;
+    private static final int EXHUMED_PROJECTILE_ID = 1550;
+    private static final int SPLAT_GROUND_OBJECT_ID = 32744;
+    private static final int SPLAT_PROJECTILE_ID = 1555;
+    private static final int SPLAT_GRAPHICS_OBJECT_ID = 1556;
+
     private XarpusPhase phase;
     private @Nullable HpVarbitTrackedNpc xarpus = null;
 
+    private int exhumedHealAmount;
+    private final Map<GroundObject, Exhumed> exhumeds = new HashMap<>();
+    private final Map<WorldPoint, ActiveSplat> splatsByTarget = new HashMap<>();
     private int nextTurnTick = -1;
+
+    private static class Exhumed {
+        final int spawnTick;
+        final List<Integer> healTicks = new ArrayList<>();
+        final Set<Projectile> projectiles = new HashSet<>();
+
+        Exhumed(int spawnTick) {
+            this.spawnTick = spawnTick;
+        }
+    }
+
+    private static class ActiveSplat {
+        final Set<Projectile> projectiles = new HashSet<>();
+        LocalPoint landedLocal;
+
+        ActiveSplat(Projectile projectile) {
+            this.projectiles.add(projectile);
+            this.landedLocal = null;
+        }
+
+        ActiveSplat(LocalPoint landedLocal) {
+            this.landedLocal = landedLocal;
+        }
+
+        boolean hasLanded() {
+            return landedLocal != null;
+        }
+    }
 
     public XarpusDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.XARPUS);
@@ -143,5 +181,158 @@ public class XarpusDataTracker extends RoomDataTracker {
             dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(changed.getNpc()), phase));
             log.debug("Exhumes: {} ({})", tick, formattedRoomTime());
         }
+    }
+
+    @Override
+    protected void onHitsplat(HitsplatApplied event) {
+        if (xarpus == null || event.getActor() != xarpus.getNpc()) {
+            return;
+        }
+
+        Hitsplat hitsplat = event.getHitsplat();
+        if (phase == XarpusPhase.P1 && hitsplat.getHitsplatType() == HitsplatID.HEAL) {
+            exhumedHealAmount = hitsplat.getAmount();
+        }
+    }
+
+    @Override
+    protected void onGroundObjectSpawn(GroundObjectSpawned event) {
+        GroundObject groundObject = event.getGroundObject();
+        int id = groundObject.getId();
+
+        if (id == EXHUMED_GROUND_OBJECT_ID) {
+            exhumeds.put(groundObject, new Exhumed(getTick()));
+            return;
+        }
+
+        if (id == SPLAT_GROUND_OBJECT_ID) {
+            // If a splat's ground object spawns without it having been previously recorded, it indicates that
+            // the has client missed the projectile that spawned it (perhaps by joining late).
+            // Record the splat as existing, but without a known source.
+            WorldPoint splatWorld = getWorldLocation(groundObject);
+            if (!splatsByTarget.containsKey(splatWorld)) {
+                log.warn("Splat ground object spawned at {} without a projectile", splatWorld);
+                LocalPoint splatLocal = groundObject.getLocalLocation();
+                splatsByTarget.put(getWorldLocation(groundObject), new ActiveSplat(splatLocal));
+                dispatchEvent(new XarpusSplatEvent(getTick(), splatWorld, XarpusSplatEvent.Source.UNKNOWN, null));
+            }
+        }
+    }
+
+    @Override
+    protected void onGroundObjectDespawn(GroundObjectDespawned event) {
+        GroundObject groundObject = event.getGroundObject();
+
+        if (groundObject.getId() != EXHUMED_GROUND_OBJECT_ID) {
+            return;
+        }
+
+        Exhumed exhumed = exhumeds.remove(groundObject);
+        if (exhumed != null) {
+            dispatchEvent(new XarpusExhumedEvent(
+                    getTick(),
+                    getWorldLocation(groundObject),
+                    exhumed.spawnTick,
+                    exhumedHealAmount,
+                    exhumed.healTicks
+            ));
+        }
+    }
+
+    @Override
+    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
+        if (event.getGraphicsObject().getId() == SPLAT_GRAPHICS_OBJECT_ID) {
+            try {
+                recordAndSendSplat(event.getGraphicsObject().getLocation());
+            } catch (IllegalStateException e) {
+                log.warn("Failed to record splat: {}", e.getMessage());
+            }
+        }
+    }
+
+    @Override
+    protected void onProjectile(ProjectileMoved event) {
+        Projectile projectile = event.getProjectile();
+
+        if (projectile.getId() == EXHUMED_PROJECTILE_ID) {
+            if (phase != XarpusPhase.P1) {
+                return;
+            }
+
+            exhumeds.entrySet()
+                    .stream()
+                    .filter(entry -> {
+                        LocalPoint location = entry.getKey().getLocalLocation();
+                        return location.getX() == projectile.getX1() && location.getY() == projectile.getY1();
+                    })
+                    .findFirst()
+                    .ifPresent(entry -> {
+                        Exhumed exhumed = entry.getValue();
+                        if (!exhumed.projectiles.contains(projectile)) {
+                            exhumed.healTicks.add(getTick());
+                            exhumed.projectiles.add(projectile);
+                        }
+                    });
+
+            return;
+        }
+
+        if (projectile.getId() == SPLAT_PROJECTILE_ID) {
+            // The splat projectile is spawned at its target location.
+            WorldPoint target = Location.getWorldLocation(client, WorldPoint.fromLocal(client, event.getPosition()));
+            splatsByTarget.compute(target, (point, splat) -> {
+                if (splat == null) {
+                    splat = new ActiveSplat(projectile);
+                } else if (!splat.hasLanded()) {
+                    splat.projectiles.add(projectile);
+                }
+                return splat;
+            });
+        }
+    }
+
+    void recordAndSendSplat(LocalPoint splatLocal) throws IllegalStateException {
+        WorldPoint splatWorld = Location.getWorldLocation(client, WorldPoint.fromLocal(client, splatLocal));
+        ActiveSplat splat = splatsByTarget.get(splatWorld);
+
+        XarpusSplatEvent.Source source = XarpusSplatEvent.Source.UNKNOWN;
+        WorldPoint bounceFrom = null;
+
+        if (splat != null) {
+            if (splat.hasLanded()) {
+                // This splat has already been recorded, no need to do it again.
+                return;
+            }
+
+            Projectile firstLanded = splat.projectiles.stream()
+                    .min(Comparator.comparingInt(Projectile::getEndCycle))
+                    .orElseThrow(() -> new IllegalStateException("No projectiles to splat at " + splatWorld));
+            LocalPoint xarpusLocal = xarpus != null ? xarpus.getNpc().getLocalLocation() : null;
+
+            if (xarpusLocal != null
+                    && firstLanded.getX1() == xarpusLocal.getX()
+                    && firstLanded.getY1() == xarpusLocal.getY()) {
+                source = XarpusSplatEvent.Source.XARPUS;
+            } else {
+                // if the splat did not come from Xarpus, try to find a previously landed splat
+                // matching its starting coordinates.
+                Optional<Map.Entry<WorldPoint, ActiveSplat>> bouncedFrom = splatsByTarget.entrySet().stream()
+                        .filter((entry) -> {
+                            LocalPoint l = entry.getValue().landedLocal;
+                            return l != null && l.getX() == firstLanded.getX1() && l.getY() == firstLanded.getY1();
+                        })
+                        .findFirst();
+                if (bouncedFrom.isPresent()) {
+                    source = XarpusSplatEvent.Source.BOUNCE;
+                    bounceFrom = bouncedFrom.get().getKey();
+                }
+            }
+            splat.landedLocal = splatLocal;
+        } else {
+            log.warn("Splat at {} without projectiles", splatWorld);
+            splatsByTarget.put(splatWorld, new ActiveSplat(splatLocal));
+        }
+
+        dispatchEvent(new XarpusSplatEvent(getTick(), splatWorld, source, bounceFrom));
     }
 }

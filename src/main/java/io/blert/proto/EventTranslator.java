@@ -212,6 +212,29 @@ public class EventTranslator {
                 break;
             }
 
+            case XARPUS_EXHUMED: {
+                XarpusExhumedEvent xarpusExhumedEvent = (XarpusExhumedEvent) event;
+                Event.XarpusExhumed.Builder builder = Event.XarpusExhumed.newBuilder()
+                        .setSpawnTick(xarpusExhumedEvent.getSpawnTick())
+                        .setHealAmount(xarpusExhumedEvent.getHealAmount())
+                        .addAllHealTicks(xarpusExhumedEvent.getHealTicks());
+                eventBuilder.setXarpusExhumed(builder);
+                break;
+            }
+
+            case XARPUS_SPLAT: {
+                XarpusSplatEvent xarpusSplatEvent = (XarpusSplatEvent) event;
+                Event.XarpusSplat.Builder builder = Event.XarpusSplat.newBuilder()
+                        .setSource(xarpusSplatEvent.getSource().toProto());
+                if (xarpusSplatEvent.getBounceFrom() != null) {
+                    builder.setBounceFrom(Coords.newBuilder()
+                            .setX(xarpusSplatEvent.getBounceFrom().getX())
+                            .setY(xarpusSplatEvent.getBounceFrom().getY()));
+                }
+                eventBuilder.setXarpusSplat(builder);
+                break;
+            }
+
             case VERZIK_PHASE: {
                 VerzikPhaseEvent verzikPhaseEvent = (VerzikPhaseEvent) event;
                 eventBuilder.setVerzikPhaseValue(verzikPhaseEvent.getPhase().ordinal());
