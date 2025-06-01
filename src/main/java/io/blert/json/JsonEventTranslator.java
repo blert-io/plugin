@@ -39,6 +39,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -245,6 +246,27 @@ public class JsonEventTranslator {
             case XARPUS_PHASE: {
                 XarpusPhaseEvent xarpusPhaseEvent = (XarpusPhaseEvent) event;
                 json.xarpusPhase = xarpusPhaseEvent.getPhase().ordinal();
+                break;
+            }
+
+            case XARPUS_EXHUMED: {
+                XarpusExhumedEvent xarpusExhumedEvent = (XarpusExhumedEvent) event;
+                json.xarpusExhumed = new Event.XarpusExhumed();
+                json.xarpusExhumed.spawnTick = xarpusExhumedEvent.getSpawnTick();
+                json.xarpusExhumed.healAmount = xarpusExhumedEvent.getHealAmount();
+                json.xarpusExhumed.healTicks = new ArrayList<>(xarpusExhumedEvent.getHealTicks());
+                break;
+            }
+
+
+            case XARPUS_SPLAT: {
+                XarpusSplatEvent xarpusSplatEvent = (XarpusSplatEvent) event;
+                json.xarpusSplat = new Event.XarpusSplat();
+                json.xarpusSplat.source = xarpusSplatEvent.getSource().getId();
+                if (xarpusSplatEvent.getBounceFrom() != null) {
+                    json.xarpusSplat.bounceFrom =
+                            worldPointToCoords(xarpusSplatEvent.getBounceFrom());
+                }
                 break;
             }
 

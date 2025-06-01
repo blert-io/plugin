@@ -50,6 +50,8 @@ public class Event {
     public NyloWave nyloWave;
     public SoteMaze soteMaze;
     public Integer xarpusPhase;
+    public XarpusExhumed xarpusExhumed;
+    public XarpusSplat xarpusSplat;
     public Integer verzikPhase;
     public AttackStyle verzikAttackStyle;
 
@@ -147,6 +149,21 @@ public class Event {
         public List<Coords> overworldTiles;
         public List<Coords> overworldPivots;
         public List<Coords> underworldPivots;
+    }
+
+    public static class XarpusExhumed {
+        public int spawnTick;
+        public int healAmount;
+        public List<Integer> healTicks;
+    }
+
+    public static class XarpusSplat {
+        public static final int SOURCE_UNKNOWN = 0;
+        public static final int SOURCE_XARPUS = 1;
+        public static final int SOURCE_BOUNCE = 2;
+
+        public int source;
+        public Coords bounceFrom;
     }
 
     public static class AttackStyle {

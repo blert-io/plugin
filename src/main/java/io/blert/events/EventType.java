@@ -57,6 +57,8 @@ public enum EventType {
     SOTE_MAZE_END(132),
 
     XARPUS_PHASE(140),
+    XARPUS_EXHUMED(141),
+    XARPUS_SPLAT(142),
 
     VERZIK_PHASE(150),
     VERZIK_REDS_SPAWN(151),
