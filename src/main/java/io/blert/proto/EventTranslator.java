@@ -249,6 +249,13 @@ public class EventTranslator {
                 break;
             }
 
+            case VERZIK_YELLOWS: {
+                VerzikYellowsEvent verzikYellowsEvent = (VerzikYellowsEvent) event;
+                verzikYellowsEvent.getYellows().forEach(yellow -> eventBuilder.addVerzikYellows(
+                        Coords.newBuilder().setX(yellow.getX()).setY(yellow.getY())));
+                break;
+            }
+
             case COLOSSEUM_HANDICAP_CHOICE: {
                 HandicapChoiceEvent handicapChoiceEvent = (HandicapChoiceEvent) event;
                 eventBuilder.setHandicapValue(handicapChoiceEvent.getHandicap().getId());

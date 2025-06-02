@@ -34,6 +34,7 @@ import io.blert.events.NpcAttackEvent;
 import io.blert.events.tob.VerzikAttackStyleEvent;
 import io.blert.events.tob.VerzikPhaseEvent;
 import io.blert.events.tob.VerzikRedsSpawnEvent;
+import io.blert.events.tob.VerzikYellowsEvent;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -157,6 +158,14 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             activeSpecial = null;
             yellowPools.clear();
+        } else if (activeSpecial == VerzikSpecial.YELLOWS) {
+            HashSet<WorldPoint> currentYellows = new HashSet<>(yellowPools.size());
+            client.getTopLevelWorldView().getGraphicsObjects().forEach(g -> {
+                if (g.getId() == VERZIK_YELLOW_OBJECT_ID) {
+                    currentYellows.add(WorldPoint.fromLocalInstance(client, g.getLocation()));
+                }
+            });
+            dispatchEvent(new VerzikYellowsEvent(tick, new ArrayList<>(currentYellows)));
         }
 
         if (tick > phaseStartTick + 5 && verzik != null) {

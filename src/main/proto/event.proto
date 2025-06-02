@@ -288,6 +288,7 @@ message Event {
     TOB_VERZIK_PHASE = 150;
     TOB_VERZIK_REDS_SPAWN = 151;
     TOB_VERZIK_ATTACK_STYLE = 152;
+    TOB_VERZIK_YELLOWS = 153;
 
     COLOSSEUM_HANDICAP_CHOICE = 200;
   }
@@ -572,8 +573,9 @@ message Event {
   optional XarpusSplat xarpus_splat = 72;
   optional VerzikPhase verzik_phase = 69;
   optional VerzikAttackStyle verzik_attack_style = 70;
+  repeated Coords verzik_yellows = 73;
 
-  reserved 73 to 99;
+  reserved 74 to 99;
 
   // Colosseum event-specific fields.
   optional ColosseumHandicap handicap = 100;
