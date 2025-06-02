@@ -54,6 +54,7 @@ public class Event {
     public XarpusExhumed xarpusExhumed;
     public XarpusSplat xarpusSplat;
     public Integer verzikPhase;
+    public List<Coords> verzikYellows;
     public AttackStyle verzikAttackStyle;
 
     // Colosseum event-specific fields

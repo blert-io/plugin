@@ -292,6 +292,12 @@ public class JsonEventTranslator {
                 break;
             }
 
+            case VERZIK_YELLOWS: {
+                VerzikYellowsEvent verzikYellowsEvent = (VerzikYellowsEvent) event;
+                json.verzikYellows = toCoordsList(verzikYellowsEvent.getYellows());
+                break;
+            }
+
             case COLOSSEUM_HANDICAP_CHOICE: {
                 HandicapChoiceEvent handicapChoiceEvent = (HandicapChoiceEvent) event;
                 json.handicap = handicapChoiceEvent.getHandicap().getId();
