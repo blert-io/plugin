@@ -196,6 +196,13 @@ public class JsonEventTranslator {
                 break;
             }
 
+            case BLOAT_HANDS_DROP:
+            case BLOAT_HANDS_SPLAT: {
+                BloatHandsEvent bloatHandsEvent = (BloatHandsEvent) event;
+                json.bloatHands = toCoordsList(bloatHandsEvent.getHands());
+                break;
+            }
+
             case NYLO_WAVE_SPAWN:
             case NYLO_WAVE_STALL: {
                 NyloWaveEvent nyloWaveEvent = (NyloWaveEvent) event;

@@ -46,6 +46,8 @@ public enum EventType {
 
     BLOAT_DOWN(110),
     BLOAT_UP(111),
+    BLOAT_HANDS_DROP(112),
+    BLOAT_HANDS_SPLAT(113),
 
     NYLO_WAVE_SPAWN(120),
     NYLO_WAVE_STALL(121),

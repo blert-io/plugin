@@ -47,6 +47,7 @@ public class Event {
     // ToB event-specific fields
     public List<Coords> maidenBloodSplats;
     public BloatDown bloatDown;
+    public List<Coords> bloatHands;
     public NyloWave nyloWave;
     public SoteMaze soteMaze;
     public Integer xarpusPhase;
