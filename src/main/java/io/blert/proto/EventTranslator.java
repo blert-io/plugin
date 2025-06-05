@@ -162,6 +162,14 @@ public class EventTranslator {
                 break;
             }
 
+            case BLOAT_HANDS_DROP:
+            case BLOAT_HANDS_SPLAT: {
+                BloatHandsEvent bloatHandsEvent = (BloatHandsEvent) event;
+                bloatHandsEvent.getHands().forEach(hand -> eventBuilder.addBloatHands(
+                        Coords.newBuilder().setX(hand.getX()).setY(hand.getY())));
+                break;
+            }
+
             case NYLO_WAVE_SPAWN:
             case NYLO_WAVE_STALL: {
                 NyloWaveEvent nyloWaveEvent = (NyloWaveEvent) event;

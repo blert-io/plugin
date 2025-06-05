@@ -23,6 +23,7 @@
 
 package io.blert.challenges.tob.rooms.bloat;
 
+import com.sun.tools.jconsole.JConsoleContext;
 import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
@@ -33,16 +34,22 @@ import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.tob.BloatDownEvent;
+import io.blert.events.tob.BloatHandsEvent;
 import io.blert.events.tob.BloatUpEvent;
+import io.blert.util.Location;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
+import net.runelite.api.GraphicsObject;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
+import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -51,6 +58,10 @@ public class BloatDataTracker extends RoomDataTracker {
     private static final int BLOAT_DOWN_ANIMATION = 8082;
     private static final int BLOAT_DOWN_CYCLE_TICKS = 32;
     private static final int BLOAT_STOMP_TICK = 3;
+
+    private static final int BLOAT_HANDS_GRAPHICS_START_ID = 1570;
+    private static final int BLOAT_HANDS_GRAPHICS_END_ID = 1573;
+    private static final int BLOAT_SPLAT_GRAPHIC_ID = 1576;
 
     private enum State {
         WALKING,
@@ -65,6 +76,9 @@ public class BloatDataTracker extends RoomDataTracker {
     private int lastDownTick;
     private int lastUpTick;
     private int nextUpTick;
+
+    private final List<WorldPoint> fallingHands = new ArrayList<>(16);
+    private final List<WorldPoint> splatHands = new ArrayList<>(16);
 
     public BloatDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.BLOAT, true);
@@ -113,6 +127,15 @@ public class BloatDataTracker extends RoomDataTracker {
                 dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_BLOAT_STOMP, bloat));
             }
         }
+
+        if (!fallingHands.isEmpty()) {
+            dispatchEvent(BloatHandsEvent.drop(tick, new ArrayList<>(fallingHands)));
+            fallingHands.clear();
+        }
+        if (!splatHands.isEmpty()) {
+            dispatchEvent(BloatHandsEvent.splat(tick, new ArrayList<>(splatHands)));
+            splatHands.clear();
+        }
     }
 
     @Override
@@ -152,6 +175,19 @@ public class BloatDataTracker extends RoomDataTracker {
             handleBloatDown(npc, tick);
         } else if (state == State.DOWN && npc.getAnimation() == -1) {
             handleBloatUp(npc, tick);
+        }
+    }
+
+    @Override
+    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
+        GraphicsObject object = event.getGraphicsObject();
+        if (object.getId() >= BLOAT_HANDS_GRAPHICS_START_ID && object.getId() <= BLOAT_HANDS_GRAPHICS_END_ID) {
+            WorldPoint point = Location.getWorldLocation(client, WorldPoint.fromLocal(client, object.getLocation()));
+            fallingHands.add(point);
+        }
+        if (object.getId() == BLOAT_SPLAT_GRAPHIC_ID) {
+            WorldPoint point = Location.getWorldLocation(client, WorldPoint.fromLocal(client, object.getLocation()));
+            splatHands.add(point);
         }
     }
 

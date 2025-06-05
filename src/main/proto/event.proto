@@ -275,6 +275,8 @@ message Event {
     TOB_MAIDEN_BLOOD_SPLATS = 101;
     TOB_BLOAT_DOWN = 110;
     TOB_BLOAT_UP = 111;
+    TOB_BLOAT_HANDS_DROP = 112;
+    TOB_BLOAT_HANDS_SPLAT = 113;
     TOB_NYLO_WAVE_SPAWN = 120;
     TOB_NYLO_WAVE_STALL = 121;
     TOB_NYLO_CLEANUP_END = 122;
@@ -566,6 +568,7 @@ message Event {
   // ToB event-specific fields.
   repeated Coords maiden_blood_splats = 64;
   optional BloatDown bloat_down = 65;
+  repeated Coords bloat_hands = 74;
   optional NyloWave nylo_wave = 66;
   optional SoteMaze sote_maze = 67;
   optional XarpusPhase xarpus_phase = 68;
@@ -575,7 +578,7 @@ message Event {
   optional VerzikAttackStyle verzik_attack_style = 70;
   repeated Coords verzik_yellows = 73;
 
-  reserved 74 to 99;
+  reserved 75 to 99;
 
   // Colosseum event-specific fields.
   optional ColosseumHandicap handicap = 100;
