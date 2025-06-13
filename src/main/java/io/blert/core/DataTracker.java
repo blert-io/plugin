@@ -32,7 +32,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
@@ -120,7 +119,11 @@ public abstract class DataTracker {
         challenge.getParty().forEach(this::checkForPlayerAttack);
 
         // Run implementation-specific behavior.
-        onTick();
+        try {
+            onTick();
+        } catch (Exception e) {
+            log.error("Error during onTick for stage {}", stage, e);
+        }
 
         // Send out an update for every tracked NPC. This must be done after `onTick` to ensure any
         // implementation-specific changes to the NPC are complete.
@@ -434,20 +437,24 @@ public abstract class DataTracker {
         }
 
         maybeAttack.ifPresent(attack -> {
-            if (attack == PlayerAttack.BLOWPIPE) {
-                if (checkForBlowpipeSpecial(raider)) {
-                    attack = PlayerAttack.BLOWPIPE_SPEC;
+            try {
+                if (attack == PlayerAttack.BLOWPIPE) {
+                    if (checkForBlowpipeSpecial(raider)) {
+                        attack = PlayerAttack.BLOWPIPE_SPEC;
+                    }
+                } else if (attack.hasProjectile()) {
+                    attack = adjustForProjectile(attack, raider);
                 }
-            } else if (attack.hasProjectile()) {
-                attack = adjustForProjectile(attack, raider);
+
+                raider.recordAttack(tick, attack);
+
+                TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
+                int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);
+                dispatchEvent(new PlayerAttackEvent(getStage(), tick, point, attack, weapon.orElse(null),
+                        raider, roomTarget, distanceToNpc));
+            } catch (Exception e) {
+                log.error("Error processing attack {} for {} on tick {}", attack, raider.getUsername(), tick, e);
             }
-
-            raider.recordAttack(tick, attack);
-
-            TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
-            int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);
-            dispatchEvent(new PlayerAttackEvent(getStage(), tick, point, attack, weapon.orElse(null),
-                    raider, roomTarget, distanceToNpc));
         });
     }
 
@@ -497,7 +504,7 @@ public abstract class DataTracker {
             return false;
         }
 
-        WorldPoint origin = WorldPoint.fromLocalInstance(client, new LocalPoint(p.getX1(), p.getY1()));
+        WorldPoint origin = WorldPoint.fromLocalInstance(client, p.getSourcePoint());
         boolean originatesFromPlayer = origin.distanceTo2D(getWorldLocation(player)) == 0;
         boolean startCycleMatches = p.getStartCycle() - client.getGameCycle() == projectile.getStartCycleOffset();
 

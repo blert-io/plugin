@@ -228,6 +228,7 @@ public enum PlayerAttack {
                     ItemID.KODAI_WAND,
                     ItemID.NIGHTMARE_STAFF,
                     ItemID.VOLATILE_NIGHTMARE_STAFF,
+                    ItemID.CORRUPTED_VOLATILE_NIGHTMARE_STAFF,
                     ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN,
                     ItemID.HARMONISED_NIGHTMARE_STAFF,
                     ItemID.ELDRITCH_NIGHTMARE_STAFF,
@@ -271,6 +272,7 @@ public enum PlayerAttack {
     NM_STAFF_BARRAGE(
             new int[]{
                     ItemID.NIGHTMARE_STAFF,
+                    ItemID.CORRUPTED_VOLATILE_NIGHTMARE_STAFF,
                     ItemID.VOLATILE_NIGHTMARE_STAFF,
                     ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN,
                     ItemID.HARMONISED_NIGHTMARE_STAFF,
@@ -283,6 +285,7 @@ public enum PlayerAttack {
     NM_STAFF_BASH(
             new int[]{
                     ItemID.NIGHTMARE_STAFF,
+                    ItemID.CORRUPTED_VOLATILE_NIGHTMARE_STAFF,
                     ItemID.VOLATILE_NIGHTMARE_STAFF,
                     ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN,
                     ItemID.HARMONISED_NIGHTMARE_STAFF,
@@ -496,7 +499,7 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.VOIDWAKER_SPEC
     ),
     VOLATILE_NM_SPEC(
-            new int[]{ItemID.VOLATILE_NIGHTMARE_STAFF, ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN},
+            new int[]{ItemID.VOLATILE_NIGHTMARE_STAFF, ItemID.CORRUPTED_VOLATILE_NIGHTMARE_STAFF, ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN},
             8532,
             5,
             io.blert.proto.PlayerAttack.VOLATILE_NM_SPEC
