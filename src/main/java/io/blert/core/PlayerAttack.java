@@ -254,7 +254,7 @@ public enum PlayerAttack {
                     ItemID.TOXIC_STAFF_UNCHARGED,
                     ItemID.TUMEKENS_SHADOW,
             },
-            new int[]{1978},
+            new int[]{1978, 10091},
             5,
             new Projectile(360, 51),
             io.blert.proto.PlayerAttack.ICE_RUSH
@@ -267,7 +267,8 @@ public enum PlayerAttack {
             io.blert.proto.PlayerAttack.KARILS_CROSSBOW
     ),
     KICK(-1, 423, 4, io.blert.proto.PlayerAttack.KICK),
-    KODAI_BARRAGE(ItemID.KODAI_WAND, 1979, 5, io.blert.proto.PlayerAttack.KODAI_BARRAGE),
+    KODAI_BARRAGE(ItemID.KODAI_WAND, 10092, 5,
+            io.blert.proto.PlayerAttack.KODAI_BARRAGE),
     KODAI_BASH(ItemID.KODAI_WAND, 393, 5, io.blert.proto.PlayerAttack.KODAI_BASH),
     NM_STAFF_BARRAGE(
             new int[]{
@@ -278,7 +279,7 @@ public enum PlayerAttack {
                     ItemID.HARMONISED_NIGHTMARE_STAFF,
                     ItemID.ELDRITCH_NIGHTMARE_STAFF,
             },
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.NM_STAFF_BARRAGE
     ),
@@ -311,13 +312,13 @@ public enum PlayerAttack {
     ),
     SANG(
             new int[]{ItemID.SANGUINESTI_STAFF, ItemID.HOLY_SANGUINESTI_STAFF},
-            1167,
+            11430,
             4,
             io.blert.proto.PlayerAttack.SANG
     ),
     SANG_BARRAGE(
             new int[]{ItemID.SANGUINESTI_STAFF, ItemID.HOLY_SANGUINESTI_STAFF},
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.SANG_BARRAGE
     ),
@@ -338,7 +339,7 @@ public enum PlayerAttack {
                     ItemID.ICE_ANCIENT_SCEPTRE_28262,
                     ItemID.ICE_ANCIENT_SCEPTRE_L,
             },
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.SCEPTRE_BARRAGE
     ),
@@ -368,13 +369,13 @@ public enum PlayerAttack {
     ),
     SHADOW_BARRAGE(  // please don't tob ever again
             ItemID.TUMEKENS_SHADOW,
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.SHADOW_BARRAGE
     ),
     SOTD_BARRAGE(
             ItemID.STAFF_OF_THE_DEAD,
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.SOTD_BARRAGE
     ),
@@ -386,7 +387,7 @@ public enum PlayerAttack {
     ),
     STAFF_OF_LIGHT_BARRAGE(
             ItemID.STAFF_OF_LIGHT,
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.STAFF_OF_LIGHT_BARRAGE
     ),
@@ -441,13 +442,13 @@ public enum PlayerAttack {
     // TOXIC_TRIDENT must come before TOXIC_TRIDENT_BARRAGE as it is the default assumption when the animation is unknown.
     TOXIC_TRIDENT(
             new int[]{ItemID.TRIDENT_OF_THE_SWAMP, ItemID.TRIDENT_OF_THE_SWAMP_E},
-            1167,
+            11430,
             4,
             io.blert.proto.PlayerAttack.TOXIC_TRIDENT
     ),
     TOXIC_TRIDENT_BARRAGE(
             new int[]{ItemID.TRIDENT_OF_THE_SWAMP, ItemID.TRIDENT_OF_THE_SWAMP_E},
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.TOXIC_TRIDENT_BARRAGE
     ),
@@ -455,7 +456,7 @@ public enum PlayerAttack {
     // TODO(frolv): Track uncharged separately?
     TOXIC_STAFF_BARRAGE(
             new int[]{ItemID.TOXIC_STAFF_OF_THE_DEAD, ItemID.TOXIC_STAFF_UNCHARGED},
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.TOXIC_STAFF_BARRAGE
     ),
@@ -468,13 +469,13 @@ public enum PlayerAttack {
     // TRIDENT must come before TRIDENT_BARRAGE as it is the default assumption when the animation is unknown.
     TRIDENT(
             new int[]{ItemID.TRIDENT_OF_THE_SEAS, ItemID.TRIDENT_OF_THE_SEAS_E},
-            1167,
+            11430,
             4,
             io.blert.proto.PlayerAttack.TRIDENT
     ),
     TRIDENT_BARRAGE(
             new int[]{ItemID.TRIDENT_OF_THE_SEAS, ItemID.TRIDENT_OF_THE_SEAS_E},
-            1979,
+            10092,
             5,
             io.blert.proto.PlayerAttack.TRIDENT_BARRAGE
     ),
@@ -524,7 +525,7 @@ public enum PlayerAttack {
 
     // Attacks where the animation matches a known style of attack, but the weapon does not.
     UNKNOWN_BOW(426, io.blert.proto.PlayerAttack.UNKNOWN_BOW),
-    UNKNOWN_BARRAGE(1979, 5, io.blert.proto.PlayerAttack.UNKNOWN_BARRAGE),
+    UNKNOWN_BARRAGE(10092, 5, io.blert.proto.PlayerAttack.UNKNOWN_BARRAGE),
     UNKNOWN_POWERED_STAFF(1167, io.blert.proto.PlayerAttack.UNKNOWN_POWERED_STAFF),
     UNKNOWN(-1, io.blert.proto.PlayerAttack.UNKNOWN),
     ;
