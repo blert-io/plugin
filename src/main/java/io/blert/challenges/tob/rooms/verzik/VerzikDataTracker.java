@@ -37,6 +37,7 @@ import io.blert.events.tob.VerzikRedsSpawnEvent;
 import io.blert.events.tob.VerzikYellowsEvent;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 
@@ -78,6 +79,8 @@ public class VerzikDataTracker extends RoomDataTracker {
 
     private int unidentifiedVerzikAttackTick;
     private int nextVerzikAttackTick;
+    private final Set<Number> p3MeleeChanceTicks = new HashSet<>();
+    private int firstP3AttackTick;
     private @Nullable NpcAttack nextVerzikAttack;
     private int verzikAttacksUntilSpecial;
     private @Nullable VerzikSpecial activeSpecial;
@@ -96,6 +99,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         this.phase = VerzikPhase.IDLE;
         this.unidentifiedVerzikAttackTick = -1;
         this.nextVerzikAttackTick = -1;
+        this.firstP3AttackTick = -1;
         this.nextVerzikAttack = null;
         this.verzikAttacksUntilSpecial = -1;
         this.redCrabsTick = -1;
@@ -138,6 +142,10 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             // TODO(frolv): Remove this in favor of the generic NPC spawn event.
             dispatchEvent(new VerzikRedsSpawnEvent(tick));
+        }
+
+        if (phase == VerzikPhase.P3 && tick == nextVerzikAttackTick - 1) {
+            checkForMeleeChance();
         }
 
         if (tick == nextVerzikAttackTick) {
@@ -305,6 +313,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
         if (phase == VerzikPhase.P2 && TobNpc.isVerzikP2(npcId) && animationId == P3_TRANSITION_ANIMATION) {
             startVerzikPhase(VerzikPhase.P3, tick, true);
+            firstP3AttackTick = nextVerzikAttackTick;
             log.debug("P2: {} ({})", tick, formattedRoomTime());
             return;
         }
@@ -399,6 +408,27 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
     }
 
+    private void checkForMeleeChance() {
+        if (nextVerzikAttackTick == firstP3AttackTick) {
+            // First P3 attack can't be melee.
+            return;
+        }
+
+        Actor tank = verzik.getNpc().getInteracting();
+        if (!(tank instanceof Player)) {
+            return;
+        }
+
+        WorldArea verzikArea = verzik.getNpc().getWorldArea();
+        boolean isMeleeDistance = verzikArea.isInMeleeDistance(tank.getWorldLocation());
+        boolean isUnderVerzik = verzikArea.contains(tank.getWorldLocation());
+        if (isMeleeDistance && !isUnderVerzik) {
+            log.debug("Player {} chanced a melee on tick {} ({})",
+                    tank.getName(), getTick(), formattedRoomTime());
+            p3MeleeChanceTicks.add(nextVerzikAttackTick);
+        }
+    }
+
     private void handleVerzikAttack(int tick) {
         switch (phase) {
             case P1:
@@ -417,9 +447,12 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             case P3:
                 if (unidentifiedVerzikAttackTick != -1) {
-                    // No projectiles were recorded since the last Verzik attack, so it must be a melee.
-                    dispatchEvent(new VerzikAttackStyleEvent(
-                            tick, VerzikAttackStyleEvent.Style.MELEE, unidentifiedVerzikAttackTick));
+                    // No projectiles were recorded since the last Verzik
+                    // attack. Check if it could have been a melee attack.
+                    if (p3MeleeChanceTicks.contains(unidentifiedVerzikAttackTick)) {
+                        dispatchEvent(new VerzikAttackStyleEvent(
+                                tick, VerzikAttackStyleEvent.Style.MELEE, unidentifiedVerzikAttackTick));
+                    }
                     unidentifiedVerzikAttackTick = -1;
                 }
 
@@ -454,6 +487,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                             dispatchEvent(new NpcAttackEvent(getStage(), tick, point, attack, verzik));
 
                             // Other specials pause the attack cycle until they are completed.
+                            p3MeleeChanceTicks.remove(tick);
                             nextSpecial = nextSpecial.next();
                             nextVerzikAttackTick = -1;
                             nextVerzikAttack = null;
@@ -506,6 +540,7 @@ public class VerzikDataTracker extends RoomDataTracker {
             nextVerzikAttackTick = tick + P2_TICKS_BEFORE_FIRST_ATTACK_AFTER_SPAWN;
         } else if (phase == VerzikPhase.P3) {
             nextVerzikAttackTick = tick + P3_TICKS_BEFORE_FIRST_ATTACK;
+            p3MeleeChanceTicks.clear();
             verzikAttacksUntilSpecial = P3_ATTACKS_BEFORE_SPECIAL;
             nextSpecial = VerzikSpecial.CRABS;
             activeSpecial = null;
