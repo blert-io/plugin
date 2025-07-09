@@ -504,8 +504,9 @@ public abstract class DataTracker {
             return false;
         }
 
-        WorldPoint origin = WorldPoint.fromLocalInstance(client, p.getSourcePoint());
-        boolean originatesFromPlayer = origin.distanceTo2D(getWorldLocation(player)) == 0;
+        WorldPoint origin = Location.getWorldLocation(client, p.getSourcePoint());
+        boolean originatesFromPlayer =
+                origin == null || origin.distanceTo2D(getWorldLocation(player)) == 0;
         boolean startCycleMatches = p.getStartCycle() - client.getGameCycle() == projectile.getStartCycleOffset();
 
         return originatesFromPlayer && startCycleMatches;
