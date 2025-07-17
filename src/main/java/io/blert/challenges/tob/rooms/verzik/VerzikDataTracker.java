@@ -40,6 +40,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 
@@ -82,6 +83,7 @@ public class VerzikDataTracker extends RoomDataTracker {
     private int firstP3AttackTick;
     private @Nullable NpcAttack nextVerzikAttack;
     private int verzikAttacksUntilSpecial;
+    private final P2AttackTracker p2AttackTracker = new P2AttackTracker();
     private @Nullable VerzikSpecial activeSpecial;
     private VerzikSpecial nextSpecial;
     boolean enraged;
@@ -92,6 +94,78 @@ public class VerzikDataTracker extends RoomDataTracker {
     private final Set<VerzikCrab> explodingCrabs = new HashSet<>();
     private final Set<BasicTrackedNpc> specialCrabs = new HashSet<>();
     private final List<WorldPoint> yellowPools = new ArrayList<>();
+
+    private static class P2AttackTracker {
+        private static final int MIN_ATTACKS_BEFORE_ZAP = 4;
+        // This isn't the actual minimum, it's just large enough to avoid false
+        // positives, even when accounting for client lag.
+        private static final int MIN_ATTACKS_BEFORE_PURPLE = 16;
+
+        private int untilZap;
+        private int untilPurple;
+        private boolean foundAttack;
+
+        P2AttackTracker() {
+            this.untilZap = 0;
+            this.untilPurple = 0;
+            this.foundAttack = false;
+        }
+
+        NpcAttack checkProjectile(Projectile projectile) {
+            if (foundAttack) {
+                return null;
+            }
+
+            NpcAttack attack = null;
+
+            switch (projectile.getId()) {
+                case P2_CABBAGE_PROJECTILE:
+                    attack = NpcAttack.TOB_VERZIK_P2_CABBAGE;
+                    break;
+                case P2_ZAP_PROJECTILE:
+                    if (untilZap <= 0) {
+                        attack = NpcAttack.TOB_VERZIK_P2_ZAP;
+                    }
+                    break;
+                case P2_PURPLE_PROJECTILE:
+                    if (untilPurple <= 0) {
+                        attack = NpcAttack.TOB_VERZIK_P2_PURPLE;
+                    }
+                    break;
+                case P2_MAGE_PROJECTILE:
+                    attack = NpcAttack.TOB_VERZIK_P2_MAGE;
+                    break;
+            }
+
+            if (attack != null) {
+                foundAttack = true;
+            }
+
+            return attack;
+        }
+
+        void trackAttack(@Nonnull NpcAttack attack) {
+            foundAttack = false;
+
+            if (attack == NpcAttack.TOB_VERZIK_P2_PURPLE) {
+                untilPurple = MIN_ATTACKS_BEFORE_PURPLE;
+            } else {
+                untilPurple--;
+            }
+
+            if (attack == NpcAttack.TOB_VERZIK_P2_ZAP) {
+                untilZap = MIN_ATTACKS_BEFORE_ZAP;
+            } else {
+                untilZap--;
+            }
+        }
+
+        void reset() {
+            untilZap = 0;
+            untilPurple = 0;
+            foundAttack = false;
+        }
+    }
 
     public VerzikDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.VERZIK);
@@ -322,8 +396,7 @@ public class VerzikDataTracker extends RoomDataTracker {
             }
 
             if (animationId == P2_BOUNCE_ANIMATION && phase == VerzikPhase.P2) {
-                WorldPoint point = getWorldLocation(verzik);
-                dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_VERZIK_P2_BOUNCE, verzik));
+                nextVerzikAttack = NpcAttack.TOB_VERZIK_P2_BOUNCE;
             }
         }
     }
@@ -334,22 +407,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         Projectile projectile = event.getProjectile();
 
         if (phase == VerzikPhase.P2 && tick == nextVerzikAttackTick && nextVerzikAttack == null) {
-            switch (projectile.getId()) {
-                case P2_CABBAGE_PROJECTILE:
-                    nextVerzikAttack = NpcAttack.TOB_VERZIK_P2_CABBAGE;
-                    break;
-                case P2_ZAP_PROJECTILE:
-                    if (verzikAttacksUntilSpecial <= 0) {
-                        nextVerzikAttack = NpcAttack.TOB_VERZIK_P2_ZAP;
-                        verzikAttacksUntilSpecial = 4;
-                    }
-                    break;
-                case P2_PURPLE_PROJECTILE:
-                    nextVerzikAttack = NpcAttack.TOB_VERZIK_P2_PURPLE;
-                    break;
-                case P2_MAGE_PROJECTILE:
-                    nextVerzikAttack = NpcAttack.TOB_VERZIK_P2_MAGE;
-                    break;
+            if (tick != redCrabsTick) {
+                nextVerzikAttack = p2AttackTracker.checkProjectile(projectile);
             }
         }
 
@@ -427,6 +486,21 @@ public class VerzikDataTracker extends RoomDataTracker {
                 break;
 
             case P2:
+                if (nextVerzikAttack == null && tick != redCrabsTick) {
+                    for (Projectile projectile : client.getProjectiles()) {
+                        NpcAttack maybeAttack =
+                                p2AttackTracker.checkProjectile(projectile);
+                        if (maybeAttack != null) {
+                            nextVerzikAttack = maybeAttack;
+                            break;
+                        }
+                    }
+                }
+
+                if (nextVerzikAttack != null) {
+                    p2AttackTracker.trackAttack(nextVerzikAttack);
+                }
+
                 if (verzikAttacksUntilSpecial > 0) {
                     verzikAttacksUntilSpecial--;
                 }
@@ -529,6 +603,7 @@ public class VerzikDataTracker extends RoomDataTracker {
 
         if (phase == VerzikPhase.P2) {
             nextVerzikAttackTick = tick + P2_TICKS_BEFORE_FIRST_ATTACK_AFTER_SPAWN;
+            p2AttackTracker.reset();
         } else if (phase == VerzikPhase.P3) {
             nextVerzikAttackTick = tick + P3_TICKS_BEFORE_FIRST_ATTACK;
             p3MeleeChanceTicks.clear();
