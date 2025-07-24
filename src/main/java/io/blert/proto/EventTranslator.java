@@ -186,7 +186,10 @@ public class EventTranslator {
                 var maze = mazeEvent.getMaze() == Maze.MAZE_66
                         ? Event.SoteMaze.Maze.MAZE_66
                         : Event.SoteMaze.Maze.MAZE_33;
-                eventBuilder.setSoteMaze(Event.SoteMaze.newBuilder().setMaze(maze));
+                Event.SoteMaze.Builder mazeBuilder =
+                        Event.SoteMaze.newBuilder().setMaze(maze);
+                mazeEvent.getChosenPlayer().ifPresent(mazeBuilder::setChosenPlayer);
+                eventBuilder.setSoteMaze(mazeBuilder);
                 break;
             }
 

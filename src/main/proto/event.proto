@@ -485,6 +485,9 @@ message Event {
     repeated Coords overworld_tiles = 2;
     repeated Coords overworld_pivots = 3;
     repeated Coords underworld_pivots = 4;
+
+    // In SOTE_MAZE_END events, the player who ran the maze.
+    optional string chosen_player = 5;
   }
 
   enum XarpusPhase {
