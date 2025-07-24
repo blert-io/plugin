@@ -221,6 +221,7 @@ public class JsonEventTranslator {
                         : Event.SoteMaze.MAZE_33;
                 json.soteMaze = new Event.SoteMaze();
                 json.soteMaze.maze = maze;
+                mazeEvent.getChosenPlayer().ifPresent(p -> json.soteMaze.chosenPlayer = p);
                 break;
             }
 

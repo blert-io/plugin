@@ -28,21 +28,31 @@ import io.blert.challenges.tob.rooms.sotetseg.Maze;
 import io.blert.events.EventType;
 import lombok.Getter;
 
+import javax.annotation.Nullable;
+import java.util.Optional;
+
 @Getter
 public class SoteMazeEvent extends TobEvent {
     private final Maze maze;
+    private final String chosenPlayer;
 
     public static SoteMazeEvent mazeProc(int tick, Maze maze) {
-        return new SoteMazeEvent(EventType.SOTE_MAZE_PROC, tick, maze);
+        return new SoteMazeEvent(EventType.SOTE_MAZE_PROC, tick, maze, null);
     }
 
-    public static SoteMazeEvent mazeEnd(int tick, Maze maze) {
-        return new SoteMazeEvent(EventType.SOTE_MAZE_END, tick, maze);
+    public static SoteMazeEvent mazeEnd(int tick, Maze maze,
+                                        @Nullable String chosen) {
+        return new SoteMazeEvent(EventType.SOTE_MAZE_END, tick, maze, chosen);
     }
 
-    private SoteMazeEvent(EventType type, int tick, Maze maze) {
+    private SoteMazeEvent(EventType type, int tick, Maze maze, String chosen) {
         super(type, Room.SOTETSEG, tick, null);
         this.maze = maze;
+        this.chosenPlayer = chosen;
+    }
+
+    public Optional<String> getChosenPlayer() {
+        return Optional.ofNullable(chosenPlayer);
     }
 
     @Override

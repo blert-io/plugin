@@ -150,6 +150,7 @@ public class Event {
         public List<Coords> overworldTiles;
         public List<Coords> overworldPivots;
         public List<Coords> underworldPivots;
+        public String chosenPlayer;
     }
 
     public static class XarpusExhumed {

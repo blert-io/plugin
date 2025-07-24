@@ -29,9 +29,7 @@ import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
-import io.blert.core.Hitpoints;
-import io.blert.core.NpcAttack;
-import io.blert.core.TrackedNpc;
+import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.tob.SoteMazeEvent;
 import io.blert.events.tob.SoteMazePathEvent;
@@ -39,9 +37,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
+import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -66,7 +66,8 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private @Nullable HpVarbitTrackedNpc sotetseg = null;
     private final MazeTracker mazeTracker = new MazeTracker();
     boolean inMaze = false;
-    boolean chosen = false;
+    boolean isUnder = false;
+    private String chosenPlayer = null;
     private final Set<GroundObject> activeMazeTiles = new HashSet<>();
 
     public SotetsegDataTracker(TheatreChallenge manager, Client client) {
@@ -121,11 +122,32 @@ public class SotetsegDataTracker extends RoomDataTracker {
                 dispatchEvent(SoteMazePathEvent.overworldTiles(tick, maze, activeTilePoints));
             }
 
-            if (playerLocation.inSotetsegUnderworld()) {
-                chosen = true;
+            if (theatreChallenge.getChallengeMode().equals(ChallengeMode.TOB_HARD)) {
+                if (playerLocation.inSotetsegUnderworld()) {
+                    isUnder = true;
+                    // In hard mode, the chosen player is up top.
+                    if (chosenPlayer == null) {
+                        chosenPlayer = findMissingPlayer();
+                    }
+                } else if (chosenPlayer == null && !activeMazeTiles.isEmpty()) {
+                    chosenPlayer = client.getTopLevelWorldView()
+                            .players()
+                            .stream()
+                            .filter(p -> Location.fromWorldPoint(getWorldLocation(p)).inSotetseg())
+                            .map(p -> Objects.requireNonNull(p.getName()))
+                            .findFirst()
+                            .orElse(null);
+                }
+            } else {
+                if (playerLocation.inSotetsegUnderworld()) {
+                    isUnder = true;
+                    chosenPlayer = client.getLocalPlayer().getName();
+                } else if (chosenPlayer == null && !activeMazeTiles.isEmpty()) {
+                    chosenPlayer = findMissingPlayer();
+                }
             }
 
-            if (chosen && playerLocation.inSotetsegOverworld()) {
+            if (isUnder && playerLocation.inSotetsegOverworld()) {
                 finishMaze(tick);
             }
         }
@@ -262,7 +284,8 @@ public class SotetsegDataTracker extends RoomDataTracker {
         mazeTracker.reset();
         activeMazeTiles.clear();
         inMaze = true;
-        chosen = false;
+        isUnder = false;
+        chosenPlayer = null;
 
         dispatchEvent(SoteMazeEvent.mazeProc(tick, maze));
 
@@ -273,9 +296,10 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     private void finishMaze(int tick) {
         inMaze = false;
-        chosen = false;
+        isUnder = false;
         mazeTracker.finishMaze();
-        log.debug("{} finished; pivots: {}", maze, mazeTracker.getPivots());
+        log.debug("{} finished; pivots: {}, chosen: {}",
+                maze, mazeTracker.getPivots(), chosenPlayer);
 
         if (mazeTracker.hasUnderworldPivots()) {
             dispatchEvent(SoteMazePathEvent.underworldPivots(getTick(), maze, mazeTracker.getUnderworldPivots()));
@@ -285,14 +309,39 @@ public class SotetsegDataTracker extends RoomDataTracker {
             dispatchEvent(SoteMazePathEvent.overworldPivots(getTick(), maze, mazeTracker.getOverworldPoints()));
         }
 
-        dispatchEvent(SoteMazeEvent.mazeEnd(tick, maze));
+        dispatchEvent(SoteMazeEvent.mazeEnd(tick, maze, chosenPlayer));
 
         // Advance to the next maze.
         maze = Maze.MAZE_33;
         mazeTracker.reset();
+        chosenPlayer = null;
 
         if (sotetseg != null) {
             sotetseg.setDisableVarbitUpdates(false);
         }
+    }
+
+    private String findMissingPlayer() {
+        Set<String> allPlayers =
+                theatreChallenge.getParty()
+                        .stream()
+                        .filter(Raider::isAlive)
+                        .map(r -> Text.standardize(r.getUsername()))
+                        .collect(Collectors.toSet());
+
+        client.getTopLevelWorldView()
+                .players()
+                .forEach(p -> allPlayers.remove(Text.standardize(p.getName())));
+
+        if (allPlayers.isEmpty()) {
+            return null;
+        }
+        if (allPlayers.size() > 1) {
+            log.warn("Multiple missing players found in Sotetseg maze: {}", allPlayers);
+            return null;
+        }
+
+        Raider r = theatreChallenge.getRaider(allPlayers.iterator().next());
+        return r != null ? r.getUsername() : null;
     }
 }
