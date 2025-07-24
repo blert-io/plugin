@@ -284,6 +284,25 @@ public class JsonEventTranslator {
                 break;
             }
 
+            case VERZIK_DAWN: {
+                VerzikDawnEvent verzikDawnEvent = (VerzikDawnEvent) event;
+                json.verzikDawn = new Event.VerzikDawn();
+                json.verzikDawn.attackTick = verzikDawnEvent.getAttackTick();
+                json.verzikDawn.damage = verzikDawnEvent.getDamage();
+                json.verzikDawn.player = verzikDawnEvent.getPlayer();
+                break;
+            }
+
+            case VERZIK_BOUNCE: {
+                VerzikBounceEvent verzikBounceEvent = (VerzikBounceEvent) event;
+                json.verzikBounce = new Event.VerzikBounce();
+                json.verzikBounce.npcAttackTick = verzikBounceEvent.getAttackTick();
+                json.verzikBounce.playersInRange = verzikBounceEvent.getPlayersInRange();
+                json.verzikBounce.playersNotInRange = verzikBounceEvent.getPlayersNotInRange();
+                verzikBounceEvent.getBouncedPlayer().ifPresent(p -> json.verzikBounce.bouncedPlayer = p);
+                break;
+            }
+
             case VERZIK_ATTACK_STYLE: {
                 VerzikAttackStyleEvent verzikAttackStyleEvent = (VerzikAttackStyleEvent) event;
                 json.verzikAttackStyle = new Event.AttackStyle();
@@ -295,6 +314,14 @@ public class JsonEventTranslator {
             case VERZIK_YELLOWS: {
                 VerzikYellowsEvent verzikYellowsEvent = (VerzikYellowsEvent) event;
                 json.verzikYellows = toCoordsList(verzikYellowsEvent.getYellows());
+                break;
+            }
+
+            case VERZIK_HEAL: {
+                VerzikHealEvent verzikHealEvent = (VerzikHealEvent) event;
+                json.verzikHeal = new Event.VerzikHeal();
+                json.verzikHeal.player = verzikHealEvent.getPlayer();
+                json.verzikHeal.healAmount = verzikHealEvent.getHealAmount();
                 break;
             }
 

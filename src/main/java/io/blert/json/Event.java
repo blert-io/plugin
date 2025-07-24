@@ -54,8 +54,11 @@ public class Event {
     public XarpusExhumed xarpusExhumed;
     public XarpusSplat xarpusSplat;
     public Integer verzikPhase;
-    public List<Coords> verzikYellows;
     public AttackStyle verzikAttackStyle;
+    public List<Coords> verzikYellows;
+    public VerzikBounce verzikBounce;
+    public VerzikHeal verzikHeal;
+    public VerzikDawn verzikDawn;
 
     // Colosseum event-specific fields
     public Integer handicap;
@@ -176,5 +179,23 @@ public class Event {
 
         public int style;
         public int npcAttackTick;
+    }
+
+    public static class VerzikBounce {
+        public int npcAttackTick;
+        public int playersInRange;
+        public int playersNotInRange;
+        public String bouncedPlayer;
+    }
+
+    public static class VerzikHeal {
+        public String player;
+        public int healAmount;
+    }
+
+    public static class VerzikDawn {
+        public int attackTick;
+        public int damage;
+        public String player;
     }
 }
