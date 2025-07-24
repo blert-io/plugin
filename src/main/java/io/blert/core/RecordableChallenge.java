@@ -27,7 +27,10 @@ import io.blert.events.ChallengeUpdateEvent;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.EventType;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
@@ -55,8 +58,7 @@ public abstract class RecordableChallenge {
     @Getter
     private final ClientThread clientThread;
 
-    @Setter
-    private EventHandler eventHandler;
+    private final List<EventHandler> eventHandlers = new ArrayList<>();
     List<Event> pendingEvents = new ArrayList<>();
 
     @Getter(AccessLevel.PROTECTED)
@@ -129,6 +131,10 @@ public abstract class RecordableChallenge {
         return inChallenge() ? party.size() : 0;
     }
 
+    public int getLivingRaiderCount() {
+        return (int) party.values().stream().filter(Raider::isAlive).count();
+    }
+
     public Collection<Raider> getParty() {
         return party.values();
     }
@@ -182,15 +188,23 @@ public abstract class RecordableChallenge {
 
     public void initialize(EventHandler handler) {
         onInitialize();
-        this.eventHandler = handler;
+        addEventHandler(handler);
     }
 
     public void terminate() {
         onTerminate();
 
-        this.eventHandler = null;
         state = ChallengeState.INACTIVE;
+        eventHandlers.clear();
         party.clear();
+    }
+
+    public void addEventHandler(EventHandler handler) {
+        eventHandlers.add(handler);
+    }
+
+    public void removeEventHandler(EventHandler handler) {
+        eventHandlers.remove(handler);
     }
 
     public void tick() {
@@ -223,7 +237,7 @@ public abstract class RecordableChallenge {
             }
         }
 
-        if (eventHandler != null) {
+        for (EventHandler eventHandler : eventHandlers) {
             eventHandler.handleEvent(client.getTickCount(), event);
         }
     }

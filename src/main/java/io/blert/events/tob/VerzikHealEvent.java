@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Alexei Frolov
+ * Copyright (c) 2025 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -21,39 +21,28 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.tob;
 
-import io.blert.core.NpcAttack;
-import io.blert.core.Stage;
-import io.blert.core.TrackedNpc;
+import io.blert.challenges.tob.rooms.Room;
+import io.blert.events.EventType;
 import lombok.Getter;
+import lombok.NonNull;
+import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 
-import javax.annotation.Nullable;
-
 @Getter
-public class NpcAttackEvent extends Event {
-    private final NpcAttack attack;
-    private final int npcId;
-    private final long roomId;
-    private final @Nullable String target;
+public class VerzikHealEvent extends TobEvent {
+    private final String player;
+    private final int healAmount;
 
-    public NpcAttackEvent(Stage stage, int tick, @Nullable WorldPoint point,
-                          NpcAttack attack, TrackedNpc npc, @Nullable String target) {
-        super(EventType.NPC_ATTACK, stage, tick, point);
-        this.attack = attack;
-        this.npcId = npc.getNpcId();
-        this.roomId = npc.getRoomId();
-        this.target = target;
-    }
-
-    public NpcAttackEvent(Stage stage, int tick, @Nullable WorldPoint point, NpcAttack attack, TrackedNpc npc) {
-        this(stage, tick, point, attack, npc,
-                npc.getNpc().getInteracting() != null ? npc.getNpc().getInteracting().getName() : null);
+    public VerzikHealEvent(int tick, WorldPoint point, @NonNull Player player, int healAmount) {
+        super(EventType.VERZIK_HEAL, Room.VERZIK, tick, point);
+        this.player = player.getName();
+        this.healAmount = healAmount;
     }
 
     @Override
     protected String eventDataString() {
-        return "npc_attack=(attack=" + attack + ", target=" + (target != null ? target : "none") + ")";
+        return "player=" + player + ", healAmount=" + healAmount;
     }
 }

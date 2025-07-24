@@ -29,8 +29,8 @@ import io.blert.challenges.tob.rooms.maiden.MaidenCrab;
 import io.blert.challenges.tob.rooms.nylocas.Nylo;
 import io.blert.challenges.tob.rooms.sotetseg.Maze;
 import io.blert.challenges.tob.rooms.verzik.VerzikCrab;
-import io.blert.core.Stage;
 import io.blert.core.*;
+import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
 import io.blert.events.tob.*;
@@ -252,6 +252,27 @@ public class EventTranslator {
                 break;
             }
 
+            case VERZIK_DAWN: {
+                VerzikDawnEvent verzikDawnEvent = (VerzikDawnEvent) event;
+                Event.VerzikDawn.Builder verzikDawnBuilder = Event.VerzikDawn.newBuilder()
+                        .setAttackTick(verzikDawnEvent.getAttackTick())
+                        .setDamage(verzikDawnEvent.getDamage())
+                        .setPlayer(verzikDawnEvent.getPlayer());
+                eventBuilder.setVerzikDawn(verzikDawnBuilder);
+                break;
+            }
+
+            case VERZIK_BOUNCE: {
+                VerzikBounceEvent verzikBounceEvent = (VerzikBounceEvent) event;
+                Event.VerzikBounce.Builder verzikBounceBuilder = Event.VerzikBounce.newBuilder()
+                        .setNpcAttackTick(verzikBounceEvent.getAttackTick())
+                        .setPlayersInRange(verzikBounceEvent.getPlayersInRange())
+                        .setPlayersNotInRange(verzikBounceEvent.getPlayersNotInRange());
+                verzikBounceEvent.getBouncedPlayer().ifPresent(verzikBounceBuilder::setBouncedPlayer);
+                eventBuilder.setVerzikBounce(verzikBounceBuilder);
+                break;
+            }
+
             case VERZIK_ATTACK_STYLE: {
                 VerzikAttackStyleEvent verzikAttackStyleEvent = (VerzikAttackStyleEvent) event;
                 eventBuilder.setVerzikAttackStyle(Event.VerzikAttackStyle.newBuilder()
@@ -264,6 +285,14 @@ public class EventTranslator {
                 VerzikYellowsEvent verzikYellowsEvent = (VerzikYellowsEvent) event;
                 verzikYellowsEvent.getYellows().forEach(yellow -> eventBuilder.addVerzikYellows(
                         Coords.newBuilder().setX(yellow.getX()).setY(yellow.getY())));
+                break;
+            }
+
+            case VERZIK_HEAL: {
+                VerzikHealEvent verzikHealEvent = (VerzikHealEvent) event;
+                eventBuilder.setVerzikHeal(Event.VerzikHeal.newBuilder()
+                        .setPlayer(verzikHealEvent.getPlayer())
+                        .setHealAmount(verzikHealEvent.getHealAmount()));
                 break;
             }
 

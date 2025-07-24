@@ -183,6 +183,11 @@ public enum TobNpc {
     VERZIK_MATOMENOS_REGULAR(8385, 1, ChallengeMode.TOB_REGULAR, new int[]{150, 175, 200}),
     VERZIK_MATOMENOS_HARD(10862, 1, ChallengeMode.TOB_HARD, new int[]{150, 175, 200}),
 
+    // Tornadoes at Verzik.
+    VERZIK_TORNADO_ENTRY(10846, 1, ChallengeMode.TOB_ENTRY, 0),
+    VERZIK_TORNADO_REGULAR(8386, 1, ChallengeMode.TOB_REGULAR, 0),
+    VERZIK_TORNADO_HARD(10863, 1, ChallengeMode.TOB_HARD, 0),
+
     ;
 
     @Getter
@@ -441,6 +446,14 @@ public enum TobNpc {
 
     public boolean isVerzikMatomenos() {
         return isVerzikMatomenos(this.id);
+    }
+
+    public static boolean isVerzikTornado(int id) {
+        return idMatches(id, VERZIK_TORNADO_ENTRY, VERZIK_TORNADO_REGULAR, VERZIK_TORNADO_HARD);
+    }
+
+    public boolean isVerzikTornado() {
+        return isVerzikTornado(this.id);
     }
 
     public int getBaseHitpoints(int scale) {

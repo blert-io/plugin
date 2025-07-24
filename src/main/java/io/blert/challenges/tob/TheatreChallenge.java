@@ -418,6 +418,7 @@ public class TheatreChallenge extends RecordableChallenge {
     private void clearRoomDataTracker() {
         if (roomDataTracker != null) {
             roomDataTracker.terminate();
+            removeEventHandler(roomDataTracker);
             getEventBus().unregister(roomDataTracker);
             roomDataTracker = null;
         }
@@ -443,6 +444,7 @@ public class TheatreChallenge extends RecordableChallenge {
         if (roomDataTracker != null) {
             log.info("Initialized room data tracker for {} from {}", roomDataTracker.getRoom(), location);
             getEventBus().register(roomDataTracker);
+            addEventHandler(roomDataTracker);
             dispatchEvent(new StageUpdateEvent(roomDataTracker.getStage(), 0, StageUpdateEvent.Status.ENTERED));
             getParty().forEach(Raider::resetForNewRoom);
         }

@@ -30,6 +30,8 @@ import io.blert.challenges.tob.TobNpc;
 import io.blert.core.DataTracker;
 import io.blert.core.Hitpoints;
 import io.blert.core.Raider;
+import io.blert.events.Event;
+import io.blert.events.EventHandler;
 import io.blert.events.PlayerDeathEvent;
 import io.blert.util.Tick;
 import lombok.Getter;
@@ -44,7 +46,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
-public abstract class RoomDataTracker extends DataTracker {
+public abstract class RoomDataTracker extends DataTracker implements EventHandler {
     private static int TOB_HITPOINTS_VARBIT = 6448;
 
     protected final TheatreChallenge theatreChallenge;
@@ -188,6 +190,21 @@ public abstract class RoomDataTracker extends DataTracker {
      * @param event The event.
      */
     protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
+    }
+
+    /**
+     * Handler function for Blert events which originate from the data tracker.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event to handle.
+     */
+    protected void onBlertEvent(Event event) {
+    }
+
+    public void handleEvent(int clientTick, Event event) {
+        if (!terminating()) {
+            onBlertEvent(event);
+        }
     }
 
     @Subscribe

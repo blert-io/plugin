@@ -242,6 +242,16 @@ public abstract class DataTracker {
     }
 
     /**
+     * Implementation-specific equivalent of the {@code onGraphicChanged}
+     * Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGraphicChange(GraphicChanged event) {
+    }
+
+    /**
      * Implementation-specific equivalent of the {@code onActorDeath} Runelite event handler.
      * Should be overriden by implementations which require special handling.
      *
@@ -663,6 +673,13 @@ public abstract class DataTracker {
     protected final void onGroundObjectDespawned(GroundObjectDespawned event) {
         if (!terminating()) {
             onGroundObjectDespawn(event);
+        }
+    }
+
+    @Subscribe
+    protected final void onGraphicChanged(GraphicChanged event) {
+        if (!terminating()) {
+            onGraphicChange(event);
         }
     }
 

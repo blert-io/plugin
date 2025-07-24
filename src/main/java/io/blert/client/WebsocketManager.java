@@ -112,11 +112,15 @@ public class WebsocketManager {
         String runeliteVersion = String.format(
                 "runelite-%s%s", RuneLiteProperties.getVersion(), developerMode ? "-dev" : "");
         wsClient = new WebSocketClient(DEFAULT_SERVER_HOST, config.apiKey(), runeliteVersion, httpClient);
-        eventHandler = new WebsocketEventHandler(plugin, wsClient, runeliteClient, runeLiteClientThread);
+        WebsocketEventHandler newEventHandler = new WebsocketEventHandler(
+                plugin, wsClient, runeliteClient, runeLiteClientThread);
 
         if (plugin.getActiveChallenge() != null) {
-            plugin.getActiveChallenge().setEventHandler(eventHandler);
+            plugin.getActiveChallenge().removeEventHandler(eventHandler);
+            plugin.getActiveChallenge().addEventHandler(newEventHandler);
         }
+
+        eventHandler = newEventHandler;
     }
 
     @Subscribe
