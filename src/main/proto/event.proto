@@ -207,6 +207,9 @@ enum PlayerAttack {
   ICE_RUSH = 100;
   SULPHUR_BLADES = 101;
   GLACIAL_TEMOTLI = 102;
+  EARTHBOUND_TECPATL = 103;
+  EYE_OF_AYAK_AUTO = 104;
+  EYE_OF_AYAK_SPEC = 105;
 }
 
 enum NpcAttack {

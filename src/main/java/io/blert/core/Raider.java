@@ -45,6 +45,7 @@ public class Raider {
             .addAll(ItemVariationMapping.getVariations(ItemVariationMapping.map(ItemID.DIZANAS_MAX_CAPE)))
             .build();
 
+    // Whether the player is using a continuous animation weapon such as a toxic blowpipe.
     private enum BlowpipeState {
         NOT_PIPING,
         PIPING,
@@ -166,6 +167,10 @@ public class Raider {
 
         equipmentChangesThisTick.clear();
 
+        int oldWeaponId = equipment[EquipmentSlot.WEAPON.ordinal()] != null
+                ? equipment[EquipmentSlot.WEAPON.ordinal()].getId()
+                : -1;
+
         if (localPlayer) {
             updateEquipmentFromLocalPlayer(client);
         } else {
@@ -175,12 +180,14 @@ public class Raider {
         Item newWeapon = equipment[EquipmentSlot.WEAPON.ordinal()];
 
         if (isBlowpiping() && isOffCooldownOn(tick)) {
-            // The blowpipe animation is continuous, so it can't be relied on to determine when a player stops
-            // attacking. When a blowpiping player comes off cooldown, infer whether they are continuing to attack or
+            // Some weapon animations are continuous and can't be relied on to
+            // determine when a player stops attacking. When a blowpiping player
+            // comes off cooldown, infer whether they are continuing to attack or
             // have stopped.
             boolean hasTarget = getTarget().map(npc -> !npc.isDead()).orElse(false);
+            int newWeaponId = newWeapon != null ? newWeapon.getId() : -1;
 
-            if (newWeapon != null && PlayerAttack.BLOWPIPE.hasWeapon(newWeapon.getId()) && hasTarget) {
+            if (newWeaponId == oldWeaponId && hasTarget) {
                 blowpiping = BlowpipeState.PIPING;
             } else {
                 blowpiping = BlowpipeState.STOPPED_PIPING;
@@ -192,7 +199,7 @@ public class Raider {
         lastAttack = attack;
         offCooldownTick = tick + attack.getCooldown();
 
-        if (attack == PlayerAttack.BLOWPIPE || attack == PlayerAttack.BLOWPIPE_SPEC) {
+        if (attack.isContinuousAnimation()) {
             blowpiping = BlowpipeState.PIPING;
         } else {
             blowpiping = BlowpipeState.NOT_PIPING;
@@ -203,7 +210,7 @@ public class Raider {
         animationTick = tick;
         this.animationId = animationId;
 
-        if (PlayerAttack.BLOWPIPE.hasAnimation(animationId)) {
+        if (PlayerAttack.firstWithAnimation(animationId).map(PlayerAttack::isContinuousAnimation).orElse(false)) {
             blowpiping = BlowpipeState.PIPING;
         } else {
             blowpiping = BlowpipeState.NOT_PIPING;

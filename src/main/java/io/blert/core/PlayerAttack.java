@@ -63,13 +63,15 @@ public enum PlayerAttack {
             new int[]{ItemID.TOXIC_BLOWPIPE, ItemID.BLAZING_BLOWPIPE},
             new int[]{5061, 10656},
             2,
-            io.blert.proto.PlayerAttack.BLOWPIPE
+            io.blert.proto.PlayerAttack.BLOWPIPE,
+            true
     ),
     BLOWPIPE_SPEC(
             new int[]{ItemID.TOXIC_BLOWPIPE, ItemID.BLAZING_BLOWPIPE},
             new int[]{},  // This is handled specially instead of being assigned automatically.
             2,
-            io.blert.proto.PlayerAttack.BLOWPIPE_SPEC
+            io.blert.proto.PlayerAttack.BLOWPIPE_SPEC,
+            true
     ),
     BOWFA(new int[]{ItemID.BOW_OF_FAERDHINEN, ItemID.BOW_OF_FAERDHINEN_C, 25884, 25886, 25888, 25890, 25892, 25894, 25896},
             426,
@@ -150,6 +152,12 @@ public enum PlayerAttack {
     ),
     DRAGON_SCIMITAR(ItemID.DRAGON_SCIMITAR, new int[]{386, 390}, 4, io.blert.proto.PlayerAttack.DRAGON_SCIMITAR),
     DUAL_MACUAHUITL(ItemID.DUAL_MACUAHUITL, 10989, 4, io.blert.proto.PlayerAttack.DUAL_MACUAHUITL),
+    EARTHBOUND_TECPATL(
+            30957,
+            new int[]{12342, 2068},
+            4,
+            io.blert.proto.PlayerAttack.EARTHBOUND_TECPATL
+    ),
     ELDER_MAUL(
             new int[]{ItemID.ELDER_MAUL, ItemID.ELDER_MAUL_OR},
             7516,
@@ -161,6 +169,20 @@ public enum PlayerAttack {
             11124,
             6,
             io.blert.proto.PlayerAttack.ELDER_MAUL_SPEC
+    ),
+    EYE_OF_AYAK_AUTO(
+            new int[]{31113},
+            new int[]{12397},
+            3,
+            io.blert.proto.PlayerAttack.EYE_OF_AYAK_AUTO,
+            true
+    ),
+    EYE_OF_AYAK_SPEC(
+            new int[]{31113},
+            new int[]{12394},
+            5,
+            io.blert.proto.PlayerAttack.EYE_OF_AYAK_SPEC,
+            true
     ),
     FANG(
             new int[]{ItemID.OSMUMTENS_FANG, ItemID.OSMUMTENS_FANG_OR},
@@ -257,7 +279,8 @@ public enum PlayerAttack {
             new int[]{1978, 10091},
             5,
             new Projectile(360, 51),
-            io.blert.proto.PlayerAttack.ICE_RUSH
+            io.blert.proto.PlayerAttack.ICE_RUSH,
+            false
     ),
     INQUISITORS_MACE(ItemID.INQUISITORS_MACE, new int[]{400, 4503}, 4, io.blert.proto.PlayerAttack.INQUISITORS_MACE),
     KARILS_CROSSBOW(
@@ -312,7 +335,7 @@ public enum PlayerAttack {
     ),
     SANG(
             new int[]{ItemID.SANGUINESTI_STAFF, ItemID.HOLY_SANGUINESTI_STAFF},
-            11430,
+            new int[]{1167, 11430},
             4,
             io.blert.proto.PlayerAttack.SANG
     ),
@@ -545,6 +568,8 @@ public enum PlayerAttack {
     @Getter
     private final boolean unknown;
     private final io.blert.proto.PlayerAttack protoValue;
+    @Getter
+    private final boolean continuousAnimation;
 
     private static final ImmutableSet<Integer> VALID_ANIMATION_IDS;
 
@@ -612,6 +637,25 @@ public enum PlayerAttack {
     }
 
     /**
+     * Finds a player attack based on an animation ID only, ignoring weapon ID.
+     *
+     * @param animationId ID of the animation played with the attack.
+     * @return If the animation ID does not map to any known attack, returns
+     * {@code Optional.empty()}. Otherwise, returns the first attack that
+     * matches the animation ID.
+     */
+    public static Optional<PlayerAttack> firstWithAnimation(int animationId) {
+        if (!VALID_ANIMATION_IDS.contains(animationId)) {
+            return Optional.empty();
+        }
+
+        return Arrays.stream(PlayerAttack.values())
+                .filter(attack -> attack.hasAnimation(animationId))
+                .findFirst()
+                .or(() -> Optional.of(PlayerAttack.UNKNOWN));
+    }
+
+    /**
      * Finds a player attack using only a weapon ID, ignoring animation. If multiple attacks share a weapon,
      * assumptions are made about which to prefer. For example, a {@code CLAW_SCRATCH} will be returned over a
      * {@code CLAW_SPEC}.
@@ -627,18 +671,31 @@ public enum PlayerAttack {
     }
 
     /**
-     * Certain player attack animations are hidden if used immediately after a blowpipe attack. This checks to see
-     * if a player is wielding any affected weapon, and returns that weapon's attack if so.
+     * Certain player attack animations are hidden if used immediately after
+     * a continuous animation. This checks to see if a player is wielding any
+     * affected weapon, and returns that weapon's attack if so.
      *
      * @param weaponId ID of the weapon used.
      * @return A player attack matching the weapon, or {@code Optional.empty()} if none exist.
      */
-    public static Optional<PlayerAttack> findBlowpipeSuppressedAttack(int weaponId) {
+    public static Optional<PlayerAttack> findSuppressedAttack(int weaponId) {
         // TODO(frolv): Barrages are also hidden after a blowpipe, but it requires checking for applied graphics.
         PlayerAttack[] attacks = new PlayerAttack[]{CHIN_BLACK, CHIN_GREY, CHIN_RED};
         return Arrays.stream(attacks)
                 .filter(attack -> attack.hasWeapon(weaponId))
                 .findFirst();
+    }
+
+    /**
+     * Returns whether the given animation ID can suppress the animation of another attack.
+     *
+     * @param animationId ID of the animation to check.
+     * @return {@code true} if the animation ID is one that suppresses other
+     * animations, {@code false} otherwise.
+     */
+    public static boolean isSuppressingAnimation(int animationId) {
+        return Arrays.stream(PlayerAttack.values())
+                .anyMatch(a -> a.isContinuousAnimation() && a.hasAnimation(animationId));
     }
 
     /**
@@ -689,17 +746,25 @@ public enum PlayerAttack {
     }
 
     PlayerAttack(int[] weaponIds, int[] animationIds, int cooldown,
-                 Projectile projectile, io.blert.proto.PlayerAttack protoValue) {
+                 Projectile projectile,
+                 io.blert.proto.PlayerAttack protoValue,
+                 boolean continuousAnimation) {
         this.weaponIds = weaponIds;
         this.animationIds = animationIds;
         this.cooldown = cooldown;
         this.projectile = projectile;
         this.unknown = false;
         this.protoValue = protoValue;
+        this.continuousAnimation = continuousAnimation;
+    }
+
+    PlayerAttack(int[] weaponIds, int[] animationIds, int cooldown,
+                 io.blert.proto.PlayerAttack protoValue, boolean continuousAnimation) {
+        this(weaponIds, animationIds, cooldown, null, protoValue, continuousAnimation);
     }
 
     PlayerAttack(int[] weaponIds, int[] animationIds, int cooldown, io.blert.proto.PlayerAttack protoValue) {
-        this(weaponIds, animationIds, cooldown, null, protoValue);
+        this(weaponIds, animationIds, cooldown, null, protoValue, false);
     }
 
     PlayerAttack(int[] weaponIds, int animationId, int cooldown, io.blert.proto.PlayerAttack protoValue) {
@@ -716,7 +781,8 @@ public enum PlayerAttack {
 
     PlayerAttack(int weaponId, int animationId, int cooldown,
                  Projectile projectile, io.blert.proto.PlayerAttack protoValue) {
-        this(new int[]{weaponId}, new int[]{animationId}, cooldown, projectile, protoValue);
+        this(new int[]{weaponId}, new int[]{animationId}, cooldown,
+                projectile, protoValue, false);
     }
 
     PlayerAttack(int animationId, int cooldown, io.blert.proto.PlayerAttack protoValue) {
@@ -726,6 +792,7 @@ public enum PlayerAttack {
         this.projectile = null;
         this.unknown = true;
         this.protoValue = protoValue;
+        this.continuousAnimation = false;
     }
 
     PlayerAttack(int animationId, io.blert.proto.PlayerAttack protoValue) {
@@ -735,5 +802,6 @@ public enum PlayerAttack {
         this.projectile = null;
         this.unknown = true;
         this.protoValue = protoValue;
+        this.continuousAnimation = false;
     }
 }
