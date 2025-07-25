@@ -425,13 +425,15 @@ public abstract class DataTracker {
         int weaponId = weapon.map(Item::getId).orElse(-1);
 
         if (raider.stoppedBlowpiping()) {
-            // In some instances, the blowpipe animation overrides another weapon's attack animation when the player
-            // attacks on blowpipe cooldown. If the player is still using the blowpipe animation but has just stopped
-            // blowpiping and targeted another NPC, assume that they attacked it with the weapon they're holding.
-            if (!PlayerAttack.BLOWPIPE.hasAnimation(animationId) || target.isEmpty()) {
+            // In some instances, a continuous animation ("blowpiping") overrides
+            // another weapon's attack animation when the player attacks right
+            // off cooldown. If the player is still using the same animation but
+            // has just stopped blowpiping and targeted another NPC, assume that
+            // they attacked it with the weapon they're holding.
+            if (!PlayerAttack.isSuppressingAnimation(animationId) || target.isEmpty()) {
                 return;
             }
-            maybeAttack = PlayerAttack.findBlowpipeSuppressedAttack(weaponId);
+            maybeAttack = PlayerAttack.findSuppressedAttack(weaponId);
         } else {
             maybeAttack = PlayerAttack.find(weaponId, animationId);
         }
