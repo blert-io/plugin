@@ -51,6 +51,8 @@ public enum PlayerAttack {
             6,
             io.blert.proto.PlayerAttack.AGS_SPEC
     ),
+    ARCLIGHT_AUTO(ItemID.ARCLIGHT, new int[]{386, 390}, 4, io.blert.proto.PlayerAttack.ARCLIGHT_AUTO),
+    ARCLIGHT_SPEC(ItemID.ARCLIGHT, 2890, 4, io.blert.proto.PlayerAttack.ARCLIGHT_SPEC),
     ATLATL_AUTO(ItemID.ECLIPSE_ATLATL, 11057, 3, io.blert.proto.PlayerAttack.ATLATL_AUTO),
     ATLATL_SPEC(ItemID.ECLIPSE_ATLATL, 11060, 3, io.blert.proto.PlayerAttack.ATLATL_SPEC),
     BGS_SPEC(
@@ -108,6 +110,7 @@ public enum PlayerAttack {
             4,
             io.blert.proto.PlayerAttack.CLAW_SPEC
     ),
+    DARK_DEMONBANE(ItemID.PURGING_STAFF, 8977, 5, io.blert.proto.PlayerAttack.DARK_DEMONBANE),
     DAWN_SPEC(ItemID.DAWNBRINGER, 1167, 4, new Projectile(1547, 51), io.blert.proto.PlayerAttack.DAWN_SPEC),
     DAWN_AUTO(ItemID.DAWNBRINGER, 1167, 4, new Projectile(1544, 51), io.blert.proto.PlayerAttack.DAWN_AUTO),
     DART(
@@ -170,6 +173,8 @@ public enum PlayerAttack {
             6,
             io.blert.proto.PlayerAttack.ELDER_MAUL_SPEC
     ),
+    EMBERLIGHT_AUTO(ItemID.EMBERLIGHT, new int[]{386, 390}, 4, io.blert.proto.PlayerAttack.EMBERLIGHT_AUTO),
+    EMBERLIGHT_SPEC(ItemID.EMBERLIGHT, 11138, 4, io.blert.proto.PlayerAttack.EMBERLIGHT_SPEC),
     EYE_OF_AYAK_AUTO(
             new int[]{31113},
             new int[]{12397},
@@ -366,6 +371,8 @@ public enum PlayerAttack {
             5,
             io.blert.proto.PlayerAttack.SCEPTRE_BARRAGE
     ),
+    SCORCHING_BOW_AUTO(ItemID.SCORCHING_BOW, 426, 4, io.blert.proto.PlayerAttack.SCORCHING_BOW_AUTO),
+    SCORCHING_BOW_SPEC(ItemID.SCORCHING_BOW, 11133, 4, io.blert.proto.PlayerAttack.SCORCHING_BOW_SPEC),
     SCYTHE(
             new int[]{ItemID.SCYTHE_OF_VITUR, ItemID.HOLY_SCYTHE_OF_VITUR, ItemID.SANGUINE_SCYTHE_OF_VITUR},
             8056,
