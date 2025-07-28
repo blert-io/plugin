@@ -104,7 +104,11 @@ public class DelveDataTracker extends DataTracker {
     public DelveDataTracker(RecordableChallenge challenge, Client client, int delve) {
         super(challenge, client, delveToStage(delve));
         this.delve = delve;
-        this.delveEndRegex = Pattern.compile("Delve level: " + delve + " duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
+        if (delve > 8) {
+            this.delveEndRegex = Pattern.compile("Delve level: 8\\+ (" + delve + ") duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
+        } else {
+            this.delveEndRegex = Pattern.compile("Delve level: " + delve + " duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
+        }
         this.unidentifiedAttackTick = -1;
         this.lastRacecarTick = -1;
         this.phaseChange = PhaseChange.NONE;
