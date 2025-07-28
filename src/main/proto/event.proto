@@ -217,6 +217,8 @@ enum PlayerAttack {
   SCORCHING_BOW_AUTO = 110;
   SCORCHING_BOW_SPEC = 111;
   DARK_DEMONBANE = 112;
+  DARKLIGHT_AUTO = 113;
+  DARKLIGHT_SPEC = 114;
 }
 
 enum NpcAttack {

@@ -110,7 +110,33 @@ public enum PlayerAttack {
             4,
             io.blert.proto.PlayerAttack.CLAW_SPEC
     ),
-    DARK_DEMONBANE(ItemID.PURGING_STAFF, 8977, 5, io.blert.proto.PlayerAttack.DARK_DEMONBANE),
+    DARK_DEMONBANE(
+            new int[]{
+                    ItemID.SLAYERS_STAFF,
+                    ItemID.SLAYERS_STAFF_E,
+                    ItemID.BLUE_MOON_SPEAR,
+                    ItemID.BLUE_MOON_SPEAR_29849,
+                    ItemID.MASTER_WAND,
+                    ItemID.TOXIC_STAFF_OF_THE_DEAD,
+                    ItemID.KODAI_WAND,
+                    ItemID.PURGING_STAFF,
+            },
+            8977,
+            5,
+            io.blert.proto.PlayerAttack.DARK_DEMONBANE
+    ),
+    DARKLIGHT_AUTO(
+            new int[]{ItemID.DARKLIGHT, ItemID.DARKLIGHT_8281},
+            new int[]{386, 390},
+            4,
+            io.blert.proto.PlayerAttack.DARKLIGHT_AUTO
+    ),
+    DARKLIGHT_SPEC(
+            new int[]{ItemID.DARKLIGHT, ItemID.DARKLIGHT_8281},
+            2890,
+            4,
+            io.blert.proto.PlayerAttack.DARKLIGHT_SPEC
+    ),
     DAWN_SPEC(ItemID.DAWNBRINGER, 1167, 4, new Projectile(1547, 51), io.blert.proto.PlayerAttack.DAWN_SPEC),
     DAWN_AUTO(ItemID.DAWNBRINGER, 1167, 4, new Projectile(1544, 51), io.blert.proto.PlayerAttack.DAWN_AUTO),
     DART(
