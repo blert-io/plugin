@@ -26,6 +26,7 @@ package io.blert;
 import com.google.gson.Gson;
 import com.google.inject.Provides;
 import io.blert.challenges.colosseum.ColosseumChallenge;
+import io.blert.challenges.mokhaiotl.MokhaiotlChallenge;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.client.WebSocketManager;
 import io.blert.core.AttackRegistry;
@@ -147,6 +148,7 @@ public class BlertPlugin extends Plugin {
 
         challenges.add(new TheatreChallenge(client, clientThread));
         challenges.add(new ColosseumChallenge(client, clientThread));
+        challenges.add(new MokhaiotlChallenge(client, clientThread));
 
         previousGameState = client.getGameState();
         loginState = previousGameState == GameState.LOGGED_IN ? LoginState.LOGGED_IN : LoginState.LOGGED_OUT;

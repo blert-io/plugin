@@ -64,6 +64,13 @@ public class Event {
     public Integer handicap;
     public List<Integer> handicapOptions;
 
+    // Mokhaiotl event-specific fields
+    public AttackStyle mokhaiotlAttackStyle;
+    public MokhaiotlOrb mokhaiotlOrb;
+    public MokhaiotlObjects mokhaiotlObjects;
+    public MokhaiotlLarvaLeak mokhaiotlLarvaLeak;
+    public MokhaiotlShockwave mokhaiotlShockwave;
+
     public static class Player {
         public static final int DATA_SOURCE_PRIMARY = 0;
         public static final int DATA_SOURCE_SECONDARY = 1;
@@ -197,5 +204,33 @@ public class Event {
         public int attackTick;
         public int damage;
         public String player;
+    }
+
+    public static class MokhaiotlOrb {
+        public static final int SOURCE_UNKNOWN = 0;
+        public static final int SOURCE_MOKHAIOTL = 1;
+        public static final int SOURCE_BALL = 2;
+
+        public int source;
+        public Coords sourcePoint;
+        public int style;
+        public int startTick;
+        public int endTick;
+    }
+
+    public static class MokhaiotlObjects {
+        public List<Coords> rocksSpawned;
+        public List<Coords> rocksDespawned;
+        public List<Coords> splatsSpawned;
+        public List<Coords> splatsDespawned;
+    }
+
+    public static class MokhaiotlLarvaLeak {
+        public long roomId;
+        public int healAmount;
+    }
+
+    public static class MokhaiotlShockwave {
+        public List<Coords> tiles;
     }
 }

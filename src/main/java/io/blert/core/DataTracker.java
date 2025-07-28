@@ -240,7 +240,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
     protected void onGameObjectDespawn(GameObjectDespawned event) {
     }
 
-
     /**
      * Implementation-specific equivalent of the {@code onGroundObjectSpawned} Runelite event handler.
      * Should be overriden by implementations which require special handling.
@@ -285,6 +284,18 @@ public abstract class DataTracker implements RuneliteEventHandler {
      * @param event The event.
      */
     protected void onDeath(ActorDeath event) {
+    }
+
+    /**
+     * Returns whether attacking the NPC with the given ID ignores the player's
+     * attack cooldown.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param npcId The NPC ID.
+     * @return {@code true} if the NPC ignores cooldown, {@code false} otherwise.
+     */
+    protected boolean npcIgnoresCooldown(NPC npc) {
+        return false;
     }
 
     /**
@@ -545,19 +556,23 @@ public abstract class DataTracker implements RuneliteEventHandler {
         }
 
         final int tick = getTick();
+        Optional<NPC> target = raider.getTarget();
 
-        boolean mayHaveAttacked = raider.isOffCooldownOn(tick) &&
-                (raider.getAnimationTick() == tick || raider.isBlowpiping() || raider.stoppedBlowpiping());
+        boolean ignoreCooldown =
+                target.map(this::npcIgnoresCooldown).orElse(false);
+
+        boolean mayHaveAttacked =
+                (ignoreCooldown || raider.isOffCooldownOn(tick)) &&
+                        (raider.getAnimationTick() == tick || raider.isBlowpiping() || raider.stoppedBlowpiping());
         if (!mayHaveAttacked) {
             return;
         }
 
         WorldPoint point = getWorldLocation(player);
 
-        Optional<NPC> target = raider.getTarget();
-
         AttackRegistry registry = challenge.getAttackRegistry();
         Optional<AttackDefinition> maybeAttack;
+
         Optional<Item> weapon = raider.getEquippedItem(EquipmentSlot.WEAPON);
         int weaponId = weapon.map(Item::getId).orElse(-1);
 
@@ -582,7 +597,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
                     finalAttack = adjustForProjectile(registry, attack, player, weaponId);
                 }
 
-                raider.recordAttack(tick, finalAttack);
+                raider.recordAttack(tick, finalAttack, ignoreCooldown);
 
                 TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
                 int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);

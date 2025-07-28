@@ -608,6 +608,34 @@ public class BlertPluginPanel extends PluginPanel {
                 case COLOSSEUM_WAVE_12:
                     boss = "Sol Heredit";
                     break;
+
+                case MOKHAIOTL_DELVE_1:
+                    boss = "Delve 1";
+                    break;
+                case MOKHAIOTL_DELVE_2:
+                    boss = "Delve 2";
+                    break;
+                case MOKHAIOTL_DELVE_3:
+                    boss = "Delve 3";
+                    break;
+                case MOKHAIOTL_DELVE_4:
+                    boss = "Delve 4";
+                    break;
+                case MOKHAIOTL_DELVE_5:
+                    boss = "Delve 5";
+                    break;
+                case MOKHAIOTL_DELVE_6:
+                    boss = "Delve 6";
+                    break;
+                case MOKHAIOTL_DELVE_7:
+                    boss = "Delve 7";
+                    break;
+                case MOKHAIOTL_DELVE_8:
+                    boss = "Delve 8";
+                    break;
+                case MOKHAIOTL_DELVE_8PLUS:
+                    boss = "Delve 8+";
+                    break;
             }
         }
 
@@ -623,6 +651,9 @@ public class BlertPluginPanel extends PluginPanel {
         }
         if (challengeId == Challenge.INFERNO.getId()) {
             return "INF";
+        }
+        if (challengeId == Challenge.MOKHAIOTL.getId()) {
+            return "MOK";
         }
 
         if (modeId == ChallengeMode.TOB_ENTRY.getId()) {
@@ -669,6 +700,8 @@ public class BlertPluginPanel extends PluginPanel {
                 return String.format("%s/challenges/colosseum/%s/overview", hostname, challengeId);
             case INFERNO:
                 return String.format("%s/challenges/inferno/%s/overview", hostname, challengeId);
+            case MOKHAIOTL:
+                return String.format("%s/challenges/mokhaiotl/%s/overview", hostname, challengeId);
         }
 
         return hostname;

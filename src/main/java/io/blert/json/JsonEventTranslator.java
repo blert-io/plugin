@@ -34,6 +34,7 @@ import io.blert.core.Stage;
 import io.blert.core.TrackedNpc;
 import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
+import io.blert.events.mokhaiotl.*;
 import io.blert.events.tob.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
@@ -332,6 +333,56 @@ public class JsonEventTranslator {
                         Arrays.stream(handicapChoiceEvent.getHandicapOptions())
                                 .map(Handicap::getId)
                                 .collect(Collectors.toList());
+                break;
+            }
+
+            case MOKHAIOTL_ATTACK_STYLE: {
+                MokhaiotlAttackStyleEvent mokhaiotlAttackStyleEvent = (MokhaiotlAttackStyleEvent) event;
+                json.mokhaiotlAttackStyle = new Event.AttackStyle();
+                json.mokhaiotlAttackStyle.style = mokhaiotlAttackStyleEvent.getStyle().ordinal();
+                json.mokhaiotlAttackStyle.npcAttackTick = mokhaiotlAttackStyleEvent.getAttackTick();
+                break;
+            }
+
+            case MOKHAIOTL_ORB: {
+                MokhaiotlOrbEvent mokhaiotlOrbEvent = (MokhaiotlOrbEvent) event;
+                json.mokhaiotlOrb = new Event.MokhaiotlOrb();
+                json.mokhaiotlOrb.source = mokhaiotlOrbEvent.getSource().getId();
+                json.mokhaiotlOrb.sourcePoint =
+                        worldPointToCoords(mokhaiotlOrbEvent.getSourcePoint());
+                json.mokhaiotlOrb.style = mokhaiotlOrbEvent.getStyle().getId();
+                json.mokhaiotlOrb.startTick = mokhaiotlOrbEvent.getStartTick();
+                json.mokhaiotlOrb.endTick = mokhaiotlOrbEvent.getEndTick();
+                break;
+            }
+
+            case MOKHAIOTL_OBJECTS: {
+                MokhaiotlObjectsEvent mokhaiotlObjectsEvent = (MokhaiotlObjectsEvent) event;
+                json.mokhaiotlObjects = new Event.MokhaiotlObjects();
+                json.mokhaiotlObjects.rocksSpawned =
+                        toCoordsList(mokhaiotlObjectsEvent.getRocksSpawned());
+                json.mokhaiotlObjects.splatsDespawned =
+                        toCoordsList(mokhaiotlObjectsEvent.getSplatsDespawned());
+                json.mokhaiotlObjects.rocksDespawned =
+                        toCoordsList(mokhaiotlObjectsEvent.getRocksDespawned());
+                json.mokhaiotlObjects.splatsSpawned =
+                        toCoordsList(mokhaiotlObjectsEvent.getSplatsSpawned());
+                break;
+            }
+
+            case MOKHAIOTL_LARVA_LEAK: {
+                MokhaiotlLarvaLeakEvent mokhaiotlLarvaLeakEvent = (MokhaiotlLarvaLeakEvent) event;
+                json.mokhaiotlLarvaLeak = new Event.MokhaiotlLarvaLeak();
+                json.mokhaiotlLarvaLeak.roomId = mokhaiotlLarvaLeakEvent.getRoomId();
+                json.mokhaiotlLarvaLeak.healAmount = mokhaiotlLarvaLeakEvent.getHealAmount();
+                break;
+            }
+
+            case MOKHAIOTL_SHOCKWAVE: {
+                MokhaiotlShockwaveEvent mokhaiotlShockwaveEvent = (MokhaiotlShockwaveEvent) event;
+                json.mokhaiotlShockwave = new Event.MokhaiotlShockwave();
+                json.mokhaiotlShockwave.tiles =
+                        toCoordsList(mokhaiotlShockwaveEvent.getShockwaveTiles());
                 break;
             }
 

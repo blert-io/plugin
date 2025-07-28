@@ -33,6 +33,7 @@ public enum Challenge {
     TOA("Tombs of Amascut", 3),
     COLOSSEUM("Colosseum", 4),
     INFERNO("Inferno", 5),
+    MOKHAIOTL("Mokhaiotl", 6),
     ;
 
     @Getter
