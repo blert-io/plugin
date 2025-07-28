@@ -37,6 +37,8 @@ public class NpcEvent extends Event {
     @Getter
     private final Hitpoints hitpoints;
     @Getter
+    private final long prayers;
+    @Getter
     private final TrackedNpc.Properties properties;
     private final boolean propertiesChanged;
 
@@ -57,6 +59,7 @@ public class NpcEvent extends Event {
         this.roomId = trackedNpc.getRoomId();
         this.npcId = trackedNpc.getNpcId();
         this.hitpoints = trackedNpc.getHitpoints();
+        this.prayers = trackedNpc.getActivePrayers().getValue();
         this.properties = trackedNpc.getProperties();
         this.propertiesChanged = trackedNpc.hasUpdatedProperties();
     }

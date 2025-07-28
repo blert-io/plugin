@@ -195,9 +195,11 @@ public class Raider {
         }
     }
 
-    public void recordAttack(int tick, @NonNull PlayerAttack attack) {
+    public void recordAttack(int tick, @NonNull PlayerAttack attack, boolean ignoreCooldown) {
         lastAttack = attack;
-        offCooldownTick = tick + attack.getCooldown();
+        if (!ignoreCooldown) {
+            offCooldownTick = tick + attack.getCooldown();
+        }
 
         if (attack.isContinuousAnimation()) {
             blowpiping = BlowpipeState.PIPING;

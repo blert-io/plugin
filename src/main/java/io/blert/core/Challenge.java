@@ -31,6 +31,7 @@ public enum Challenge {
     TOA("Tombs of Amascut", io.blert.proto.Challenge.TOA),
     COLOSSEUM("Colosseum", io.blert.proto.Challenge.COLOSSEUM),
     INFERNO("Inferno", io.blert.proto.Challenge.INFERNO),
+    MOKHAIOTL("Mokhaiotl", io.blert.proto.Challenge.MOKHAIOTL),
     ;
 
     @Getter

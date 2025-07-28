@@ -55,6 +55,16 @@ public enum Stage {
     TOA_ZEBAK(io.blert.proto.Stage.TOA_ZEBAK),
     TOA_WARDENS(io.blert.proto.Stage.TOA_WARDENS),
 
+    MOKHAIOTL_DELVE_1(io.blert.proto.Stage.MOKHAIOTL_DELVE_1),
+    MOKHAIOTL_DELVE_2(io.blert.proto.Stage.MOKHAIOTL_DELVE_2),
+    MOKHAIOTL_DELVE_3(io.blert.proto.Stage.MOKHAIOTL_DELVE_3),
+    MOKHAIOTL_DELVE_4(io.blert.proto.Stage.MOKHAIOTL_DELVE_4),
+    MOKHAIOTL_DELVE_5(io.blert.proto.Stage.MOKHAIOTL_DELVE_5),
+    MOKHAIOTL_DELVE_6(io.blert.proto.Stage.MOKHAIOTL_DELVE_6),
+    MOKHAIOTL_DELVE_7(io.blert.proto.Stage.MOKHAIOTL_DELVE_7),
+    MOKHAIOTL_DELVE_8(io.blert.proto.Stage.MOKHAIOTL_DELVE_8),
+    MOKHAIOTL_DELVE_8PLUS(io.blert.proto.Stage.MOKHAIOTL_DELVE_8PLUS),
+
     COLOSSEUM_WAVE_1(io.blert.proto.Stage.COLOSSEUM_WAVE_1),
     COLOSSEUM_WAVE_2(io.blert.proto.Stage.COLOSSEUM_WAVE_2),
     COLOSSEUM_WAVE_3(io.blert.proto.Stage.COLOSSEUM_WAVE_3),

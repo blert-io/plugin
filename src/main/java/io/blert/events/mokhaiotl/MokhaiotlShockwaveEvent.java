@@ -21,44 +21,30 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.mokhaiotl;
+package io.blert.events.mokhaiotl;
 
+import io.blert.core.Stage;
+import io.blert.events.Event;
+import io.blert.events.EventType;
 import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
-public enum MokhaiotlNpc {
-    MOKHAIOTL(14707),
-    MOKHAIOTL_SHIELDED(14708),
-    MOKHAIOTL_BURROWED(14709),
-    DEMONIC_LARVA(14710),
-    DEMONIC_RANGE_LARVA(14711),
-    DEMONIC_MAGIC_LARVA(14712),
-    DEMONIC_MELEE_LARVA(14713),
-    VOLATILE_EARTH(14714),
-    EARTHEN_SHIELD(14715);
+public class MokhaiotlShockwaveEvent extends Event {
+    private final List<WorldPoint> shockwaveTiles;
 
-    private final int id;
-
-    public static Optional<MokhaiotlNpc> withId(int id) {
-        for (MokhaiotlNpc npc : values()) {
-            if (npc.id == id) {
-                return Optional.of(npc);
-            }
-        }
-        return Optional.empty();
+    public MokhaiotlShockwaveEvent(Stage stage, int tick, List<WorldPoint> shockwaveTiles) {
+        super(EventType.MOKHAIOTL_SHOCKWAVE, stage, tick, null);
+        this.shockwaveTiles = shockwaveTiles;
     }
 
-    public boolean isMokhaiotl() {
-        return this == MOKHAIOTL || this == MOKHAIOTL_SHIELDED || this == MOKHAIOTL_BURROWED;
-    }
-
-    public boolean isLarva() {
-        return this == DEMONIC_LARVA || this == DEMONIC_RANGE_LARVA || this == DEMONIC_MAGIC_LARVA || this == DEMONIC_MELEE_LARVA;
-    }
-
-    MokhaiotlNpc(int id) {
-        this.id = id;
+    @Override
+    protected String eventDataString() {
+        return "shockwaveTiles=" + shockwaveTiles.stream()
+                .map(WorldPoint::toString)
+                .collect(Collectors.joining(","));
     }
 }

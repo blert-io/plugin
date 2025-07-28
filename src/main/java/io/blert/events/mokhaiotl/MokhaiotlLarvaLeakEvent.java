@@ -21,44 +21,26 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.mokhaiotl;
+package io.blert.events.mokhaiotl;
 
+import io.blert.core.Stage;
+import io.blert.events.Event;
+import io.blert.events.EventType;
 import lombok.Getter;
 
-import java.util.Optional;
-
 @Getter
-public enum MokhaiotlNpc {
-    MOKHAIOTL(14707),
-    MOKHAIOTL_SHIELDED(14708),
-    MOKHAIOTL_BURROWED(14709),
-    DEMONIC_LARVA(14710),
-    DEMONIC_RANGE_LARVA(14711),
-    DEMONIC_MAGIC_LARVA(14712),
-    DEMONIC_MELEE_LARVA(14713),
-    VOLATILE_EARTH(14714),
-    EARTHEN_SHIELD(14715);
+public class MokhaiotlLarvaLeakEvent extends Event {
+    private final long roomId;
+    private final int healAmount;
 
-    private final int id;
-
-    public static Optional<MokhaiotlNpc> withId(int id) {
-        for (MokhaiotlNpc npc : values()) {
-            if (npc.id == id) {
-                return Optional.of(npc);
-            }
-        }
-        return Optional.empty();
+    public MokhaiotlLarvaLeakEvent(Stage stage, int tick, long roomId, int healAmount) {
+        super(EventType.MOKHAIOTL_LARVA_LEAK, stage, tick, null);
+        this.roomId = roomId;
+        this.healAmount = healAmount;
     }
 
-    public boolean isMokhaiotl() {
-        return this == MOKHAIOTL || this == MOKHAIOTL_SHIELDED || this == MOKHAIOTL_BURROWED;
-    }
-
-    public boolean isLarva() {
-        return this == DEMONIC_LARVA || this == DEMONIC_RANGE_LARVA || this == DEMONIC_MAGIC_LARVA || this == DEMONIC_MELEE_LARVA;
-    }
-
-    MokhaiotlNpc(int id) {
-        this.id = id;
+    @Override
+    protected String eventDataString() {
+        return "roomId=" + roomId + ", healAmount=" + healAmount;
     }
 }
