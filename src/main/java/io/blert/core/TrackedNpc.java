@@ -28,6 +28,7 @@ import io.blert.events.NpcEvent;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.runelite.api.HeadIcon;
 import net.runelite.api.NPC;
 
 /**
@@ -103,5 +104,43 @@ public abstract class TrackedNpc {
 
     public String getName() {
         return npc.getName();
+    }
+
+    public PrayerSet getActivePrayers() {
+        short[] ids = npc.getOverheadSpriteIds();
+        PrayerSet prayerSet = new PrayerSet(Prayer.PRAYER_BOOK_NORMAL);
+        if (ids != null && ids.length > 0) {
+            // Only the first ID is used to store overhead prayers.
+            HeadIcon icon = HeadIcon.values()[ids[0]];
+            switch (icon) {
+                case RANGED:
+                    prayerSet.add(Prayer.PROTECT_FROM_MISSILES);
+                    break;
+                case MAGIC:
+                    prayerSet.add(Prayer.PROTECT_FROM_MAGIC);
+                    break;
+                case MELEE:
+                    prayerSet.add(Prayer.PROTECT_FROM_MELEE);
+                    break;
+                case RANGE_MAGE:
+                    prayerSet.add(Prayer.PROTECT_FROM_MISSILES);
+                    prayerSet.add(Prayer.PROTECT_FROM_MAGIC);
+                    break;
+                case RANGE_MELEE:
+                    prayerSet.add(Prayer.PROTECT_FROM_MISSILES);
+                    prayerSet.add(Prayer.PROTECT_FROM_MELEE);
+                    break;
+                case MAGE_MELEE:
+                    prayerSet.add(Prayer.PROTECT_FROM_MAGIC);
+                    prayerSet.add(Prayer.PROTECT_FROM_MELEE);
+                    break;
+                case RANGE_MAGE_MELEE:
+                    prayerSet.add(Prayer.PROTECT_FROM_MISSILES);
+                    prayerSet.add(Prayer.PROTECT_FROM_MAGIC);
+                    prayerSet.add(Prayer.PROTECT_FROM_MELEE);
+                    break;
+            }
+        }
+        return prayerSet;
     }
 }

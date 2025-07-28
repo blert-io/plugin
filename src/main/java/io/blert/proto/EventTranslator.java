@@ -33,8 +33,10 @@ import io.blert.core.*;
 import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
+import io.blert.events.mokhaiotl.*;
 import io.blert.events.tob.*;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
@@ -124,7 +126,8 @@ public class EventTranslator {
                 Event.Npc.Builder builder = Event.Npc.newBuilder()
                         .setId(npcEvent.getNpcId())
                         .setRoomId(npcEvent.getRoomId())
-                        .setHitpoints(npcEvent.getHitpoints().getValue());
+                        .setHitpoints(npcEvent.getHitpoints().getValue())
+                        .setActivePrayers(npcEvent.getPrayers());
                 if (npcEvent.propertiesChanged()) {
                     addTranslatedNpcProperties(builder, npcEvent);
                 }
@@ -275,7 +278,7 @@ public class EventTranslator {
 
             case VERZIK_ATTACK_STYLE: {
                 VerzikAttackStyleEvent verzikAttackStyleEvent = (VerzikAttackStyleEvent) event;
-                eventBuilder.setVerzikAttackStyle(Event.VerzikAttackStyle.newBuilder()
+                eventBuilder.setVerzikAttackStyle(Event.AttackStyle.newBuilder()
                         .setStyleValue(verzikAttackStyleEvent.getStyle().ordinal())
                         .setNpcAttackTick(verzikAttackStyleEvent.getAttackTick()));
                 break;
@@ -304,6 +307,56 @@ public class EventTranslator {
                 }
                 break;
             }
+
+            case MOKHAIOTL_ATTACK_STYLE: {
+                MokhaiotlAttackStyleEvent mokhaiotlAttackStyleEvent = (MokhaiotlAttackStyleEvent) event;
+                eventBuilder.setMokhaiotlAttackStyle(Event.AttackStyle.newBuilder()
+                        .setStyleValue(mokhaiotlAttackStyleEvent.getStyle().ordinal())
+                        .setNpcAttackTick(mokhaiotlAttackStyleEvent.getAttackTick()));
+                break;
+            }
+
+            case MOKHAIOTL_ORB: {
+                MokhaiotlOrbEvent mokhaiotlOrbEvent = (MokhaiotlOrbEvent) event;
+                Event.MokhaiotlOrb.Builder builder = Event.MokhaiotlOrb.newBuilder()
+                        .setSource(mokhaiotlOrbEvent.getSource().toProto())
+                        .setSourcePoint(Coords.newBuilder()
+                                .setX(mokhaiotlOrbEvent.getSourcePoint().getX())
+                                .setY(mokhaiotlOrbEvent.getSourcePoint().getY()))
+                        .setStyleValue(mokhaiotlOrbEvent.getStyle().ordinal())
+                        .setStartTick(mokhaiotlOrbEvent.getStartTick())
+                        .setEndTick(mokhaiotlOrbEvent.getEndTick());
+                eventBuilder.setMokhaiotlOrb(builder);
+                break;
+            }
+
+            case MOKHAIOTL_OBJECTS: {
+                MokhaiotlObjectsEvent mokhaiotlObjectsEvent = (MokhaiotlObjectsEvent) event;
+                Event.MokhaiotlObjects.Builder builder = Event.MokhaiotlObjects.newBuilder();
+                mokhaiotlObjectsEvent.getRocksSpawned().forEach(wp -> builder.addRocksSpawned(worldPointToCoords(wp)));
+                mokhaiotlObjectsEvent.getSplatsSpawned().forEach(wp -> builder.addSplatsSpawned(worldPointToCoords(wp)));
+                mokhaiotlObjectsEvent.getRocksDespawned().forEach(wp -> builder.addRocksDespawned(worldPointToCoords(wp)));
+                mokhaiotlObjectsEvent.getSplatsDespawned().forEach(wp -> builder.addSplatsDespawned(worldPointToCoords(wp)));
+                eventBuilder.setMokhaiotlObjects(builder);
+                break;
+            }
+
+            case MOKHAIOTL_LARVA_LEAK: {
+                MokhaiotlLarvaLeakEvent mokhaiotlLarvaLeakEvent = (MokhaiotlLarvaLeakEvent) event;
+                Event.MokhaiotlLarvaLeak.Builder builder = Event.MokhaiotlLarvaLeak.newBuilder()
+                        .setRoomId(mokhaiotlLarvaLeakEvent.getRoomId())
+                        .setHealAmount(mokhaiotlLarvaLeakEvent.getHealAmount());
+                eventBuilder.setMokhaiotlLarvaLeak(builder);
+                break;
+            }
+
+            case MOKHAIOTL_SHOCKWAVE: {
+                MokhaiotlShockwaveEvent mokhaiotlShockwaveEvent = (MokhaiotlShockwaveEvent) event;
+                Event.MokhaiotlShockwave.Builder builder = Event.MokhaiotlShockwave.newBuilder();
+                mokhaiotlShockwaveEvent.getShockwaveTiles().forEach(wp -> builder.addTiles(worldPointToCoords(wp)));
+                eventBuilder.setMokhaiotlShockwave(builder);
+                break;
+            }
         }
 
         return eventBuilder.build();
@@ -314,6 +367,13 @@ public class EventTranslator {
                 .setSlot(slot.toProto())
                 .setId(item.getId())
                 .setQuantity(item.getQuantity());
+    }
+
+    private static Coords worldPointToCoords(WorldPoint point) {
+        return Coords.newBuilder()
+                .setX(point.getX())
+                .setY(point.getY())
+                .build();
     }
 
     /**

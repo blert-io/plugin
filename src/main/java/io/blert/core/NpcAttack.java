@@ -63,6 +63,14 @@ public enum NpcAttack {
     COLOSSEUM_HEREDIT_BREAK(io.blert.proto.NpcAttack.COLOSSEUM_HEREDIT_BREAK),
     COLOSSEUM_HEREDIT_COMBO(io.blert.proto.NpcAttack.COLOSSEUM_HEREDIT_COMBO),
 
+    MOKHAIOTL_AUTO(io.blert.proto.NpcAttack.MOKHAIOTL_AUTO),
+    MOKHAIOTL_BALL(io.blert.proto.NpcAttack.MOKHAIOTL_BALL),
+    MOKHAIOTL_CHARGE(io.blert.proto.NpcAttack.MOKHAIOTL_CHARGE),
+    MOKHAIOTL_BLAST(io.blert.proto.NpcAttack.MOKHAIOTL_BLAST),
+    MOKHAIOTL_RACECAR(io.blert.proto.NpcAttack.MOKHAIOTL_RACECAR),
+    MOKHAIOTL_SLAM(io.blert.proto.NpcAttack.MOKHAIOTL_SLAM),
+    MOKHAIOTL_SHOCKWAVE(io.blert.proto.NpcAttack.MOKHAIOTL_SHOCKWAVE),
+    MOKHAIOTL_MELEE(io.blert.proto.NpcAttack.MOKHAIOTL_MELEE),
     ;
 
     private final io.blert.proto.NpcAttack protoValue;

@@ -224,6 +224,24 @@ public abstract class DataTracker {
     }
 
     /**
+     * Implementation-specific equivalent of the {@code onGameObjectSpawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGameObjectSpawn(GameObjectSpawned event) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onGameObjectDespawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGameObjectDespawn(GameObjectDespawned event) {
+    }
+
+    /**
      * Implementation-specific equivalent of the {@code onGroundObjectSpawned} Runelite event handler.
      * Should be overriden by implementations which require special handling.
      *
@@ -252,12 +270,33 @@ public abstract class DataTracker {
     }
 
     /**
+     * Implementation-specific equivalent of the {@code onGraphicsObjectCreated} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
+    }
+
+    /**
      * Implementation-specific equivalent of the {@code onActorDeath} Runelite event handler.
      * Should be overriden by implementations which require special handling.
      *
      * @param event The event.
      */
     protected void onDeath(ActorDeath event) {
+    }
+
+    /**
+     * Returns whether attacking the NPC with the given ID ignores the player's
+     * attack cooldown.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param npcId The NPC ID.
+     * @return {@code true} if the NPC ignores cooldown, {@code false} otherwise.
+     */
+    protected boolean npcIgnoresCooldown(int npcId) {
+        return false;
     }
 
     /**
@@ -414,23 +453,27 @@ public abstract class DataTracker {
             return;
         }
 
-        final int tick = getTick();
-
-        boolean mayHaveAttacked = raider.isOffCooldownOn(tick)
-                && (raider.getAnimationTick() == tick || raider.isBlowpiping() || raider.stoppedBlowpiping());
-        if (!mayHaveAttacked) {
+        Player player = raider.getPlayer();
+        if (player == null) {
             return;
         }
 
-        Player player = raider.getPlayer();
-        if (player == null) {
+        final int tick = getTick();
+        Optional<NPC> target = raider.getTarget();
+
+        boolean ignoreCooldown =
+                target.map(npc -> npcIgnoresCooldown(npc.getId())).orElse(false);
+
+        boolean mayHaveAttacked =
+                (ignoreCooldown || raider.isOffCooldownOn(tick)) &&
+                        (raider.getAnimationTick() == tick || raider.isBlowpiping() || raider.stoppedBlowpiping());
+        if (!mayHaveAttacked) {
             return;
         }
 
         WorldPoint point = getWorldLocation(player);
 
         Optional<PlayerAttack> maybeAttack;
-        Optional<NPC> target = raider.getTarget();
         Optional<Item> weapon = raider.getEquippedItem(EquipmentSlot.WEAPON);
         int weaponId = weapon.map(Item::getId).orElse(-1);
 
@@ -458,7 +501,7 @@ public abstract class DataTracker {
                     attack = adjustForProjectile(attack, raider);
                 }
 
-                raider.recordAttack(tick, attack);
+                raider.recordAttack(tick, attack, ignoreCooldown);
 
                 TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
                 int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);
@@ -665,6 +708,20 @@ public abstract class DataTracker {
     }
 
     @Subscribe
+    protected final void onGameObjectSpawned(GameObjectSpawned event) {
+        if (!terminating()) {
+            onGameObjectSpawn(event);
+        }
+    }
+
+    @Subscribe
+    protected final void onGameObjectDespawned(GameObjectDespawned event) {
+        if (!terminating()) {
+            onGameObjectDespawn(event);
+        }
+    }
+
+    @Subscribe
     protected final void onGroundObjectSpawned(GroundObjectSpawned event) {
         if (!terminating()) {
             onGroundObjectSpawn(event);
@@ -682,6 +739,13 @@ public abstract class DataTracker {
     protected final void onGraphicChanged(GraphicChanged event) {
         if (!terminating()) {
             onGraphicChange(event);
+        }
+    }
+
+    @Subscribe
+    private void onGraphicsObjectCreated(GraphicsObjectCreated event) {
+        if (!terminating()) {
+            onGraphicsObjectCreation(event);
         }
     }
 

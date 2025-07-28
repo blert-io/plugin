@@ -41,6 +41,7 @@ enum Challenge {
   TOA = 3;
   COLOSSEUM = 4;
   INFERNO = 5;
+  MOKHAIOTL = 6;
 }
 
 enum Stage {
@@ -77,6 +78,16 @@ enum Stage {
   TOA_ZEBAK = 47;
   TOA_WARDENS = 48;
 
+  MOKHAIOTL_DELVE_1 = 50;
+  MOKHAIOTL_DELVE_2 = 51;
+  MOKHAIOTL_DELVE_3 = 52;
+  MOKHAIOTL_DELVE_4 = 53;
+  MOKHAIOTL_DELVE_5 = 54;
+  MOKHAIOTL_DELVE_6 = 55;
+  MOKHAIOTL_DELVE_7 = 56;
+  MOKHAIOTL_DELVE_8 = 57;
+  MOKHAIOTL_DELVE_8PLUS = 58;
+
   COLOSSEUM_WAVE_1 = 100;
   COLOSSEUM_WAVE_2 = 101;
   COLOSSEUM_WAVE_3 = 102;
@@ -89,6 +100,8 @@ enum Stage {
   COLOSSEUM_WAVE_10 = 109;
   COLOSSEUM_WAVE_11 = 110;
   COLOSSEUM_WAVE_12 = 111;
+
+  INFERNO_WAVE_1 = 200;
 }
 
 enum ChallengeMode {
@@ -247,6 +260,20 @@ enum NpcAttack {
   TOB_VERZIK_P3_YELLOWS = 23;
   TOB_VERZIK_P3_BALL = 24;
 
+  MOKHAIOTL_AUTO = 50;
+  MOKHAIOTL_RANGED_AUTO = 51;
+  MOKHAIOTL_MAGE_AUTO = 52;
+  MOKHAIOTL_MELEE_AUTO = 53;
+  MOKHAIOTL_BALL = 54;
+  MOKHAIOTL_MAGE_BALL = 55;
+  MOKHAIOTL_RANGED_BALL = 56;
+  MOKHAIOTL_CHARGE = 57;
+  MOKHAIOTL_BLAST = 58;
+  MOKHAIOTL_RACECAR = 59;
+  MOKHAIOTL_SLAM = 60;
+  MOKHAIOTL_SHOCKWAVE = 61;
+  MOKHAIOTL_MELEE = 62;
+
   COLOSSEUM_BERSERKER_AUTO = 100;
   COLOSSEUM_SEER_AUTO = 101;
   COLOSSEUM_ARCHER_AUTO = 102;
@@ -306,6 +333,12 @@ message Event {
     TOB_VERZIK_DAWN = 156;
 
     COLOSSEUM_HANDICAP_CHOICE = 200;
+
+    MOKHAIOTL_ATTACK_STYLE = 250;
+    MOKHAIOTL_ORB = 251;
+    MOKHAIOTL_OBJECTS = 252;
+    MOKHAIOTL_LARVA_LEAK = 253;
+    MOKHAIOTL_SHOCKWAVE = 254;
   }
 
   // Deprecated: This information is now handled through server messages instead of challenge events.
@@ -451,9 +484,10 @@ message Event {
     uint32 id = 1;
     fixed64 room_id = 2;
     fixed32 hitpoints = 3;
+    fixed64 active_prayers = 4;
 
     // Reserved for additional general NPC fields.
-    reserved 4 to 63;
+    reserved 5 to 63;
 
     oneof type {
       google.protobuf.Empty basic = 64;
@@ -534,7 +568,7 @@ message Event {
     VERZIK_P3 = 3;
   }
 
-  message VerzikAttackStyle {
+  message AttackStyle {
     enum Style {
       MELEE = 0;
       RANGE = 1;
@@ -580,6 +614,36 @@ message Event {
     RED_FLAG = 13;
   }
 
+  message MokhaiotlOrb {
+    enum Source {
+      UNKNOWN = 0;
+      MOKHAIOTL = 1;
+      BALL = 2;
+    }
+
+    Source source = 1;
+    Coords source_point = 2;
+    AttackStyle.Style style = 3;
+    uint32 start_tick = 4;
+    uint32 end_tick = 5;
+  }
+
+  message MokhaiotlObjects {
+    repeated Coords rocks_spawned = 1;
+    repeated Coords rocks_despawned = 2;
+    repeated Coords splats_spawned = 3;
+    repeated Coords splats_despawned = 4;
+  }
+
+  message MokhaiotlLarvaLeak {
+    fixed64 room_id = 1;
+    uint32 heal_amount = 2;
+  }
+
+  message MokhaiotlShockwave {
+    repeated Coords tiles = 1;
+  }
+
   // General fields shared by all events.
   Type type = 1;
   string challenge_id = 2;
@@ -609,7 +673,7 @@ message Event {
   optional XarpusExhumed xarpus_exhumed = 71;
   optional XarpusSplat xarpus_splat = 72;
   optional VerzikPhase verzik_phase = 69;
-  optional VerzikAttackStyle verzik_attack_style = 70;
+  optional AttackStyle verzik_attack_style = 70;
   repeated Coords verzik_yellows = 73;
   optional VerzikBounce verzik_bounce = 75;
   optional VerzikHeal verzik_heal = 76;
@@ -620,4 +684,13 @@ message Event {
   // Colosseum event-specific fields.
   optional ColosseumHandicap handicap = 100;
   repeated ColosseumHandicap handicap_options = 101;
+
+  reserved 102 to 119;
+
+  // Mokhaiotl event-specific fields.
+  optional AttackStyle mokhaiotl_attack_style = 120;
+  optional MokhaiotlOrb mokhaiotl_orb = 121;
+  optional MokhaiotlObjects mokhaiotl_objects = 122;
+  optional MokhaiotlLarvaLeak mokhaiotl_larva_leak = 123;
+  optional MokhaiotlShockwave mokhaiotl_shockwave = 124;
 }

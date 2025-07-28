@@ -429,6 +429,33 @@ public class BlertPluginPanel extends PluginPanel {
             case COLOSSEUM_WAVE_12:
                 boss = "Sol Heredit";
                 break;
+            case MOKHAIOTL_DELVE_1:
+                boss = "Delve 1";
+                break;
+            case MOKHAIOTL_DELVE_2:
+                boss = "Delve 2";
+                break;
+            case MOKHAIOTL_DELVE_3:
+                boss = "Delve 3";
+                break;
+            case MOKHAIOTL_DELVE_4:
+                boss = "Delve 4";
+                break;
+            case MOKHAIOTL_DELVE_5:
+                boss = "Delve 5";
+                break;
+            case MOKHAIOTL_DELVE_6:
+                boss = "Delve 6";
+                break;
+            case MOKHAIOTL_DELVE_7:
+                boss = "Delve 7";
+                break;
+            case MOKHAIOTL_DELVE_8:
+                boss = "Delve 8";
+                break;
+            case MOKHAIOTL_DELVE_8PLUS:
+                boss = "Delve 8+";
+                break;
         }
 
         if (status == ServerMessage.PastChallenge.Status.WIPED) {
@@ -443,6 +470,9 @@ public class BlertPluginPanel extends PluginPanel {
         }
         if (challenge == Challenge.INFERNO) {
             return "Inferno";
+        }
+        if (challenge == Challenge.MOKHAIOTL) {
+            return "Mokhaiotl";
         }
 
         switch (mode) {

@@ -21,44 +21,35 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.mokhaiotl;
+package io.blert.events.mokhaiotl;
 
+import io.blert.challenges.mokhaiotl.Orb;
+import io.blert.core.Stage;
+import io.blert.events.Event;
+import io.blert.events.EventType;
 import lombok.Getter;
-
-import java.util.Optional;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
-public enum MokhaiotlNpc {
-    MOKHAIOTL(14707),
-    MOKHAIOTL_SHIELDED(14708),
-    MOKHAIOTL_BURROWED(14709),
-    DEMONIC_LARVA(14710),
-    DEMONIC_RANGE_LARVA(14711),
-    DEMONIC_MAGIC_LARVA(14712),
-    DEMONIC_MELEE_LARVA(14713),
-    VOLATILE_EARTH(14714),
-    EARTHEN_SHIELD(14715);
+public class MokhaiotlOrbEvent extends Event {
+    private final Orb.Source source;
+    private final WorldPoint sourcePoint;
+    private final io.blert.proto.Event.AttackStyle.Style style;
+    private final int startTick;
+    private final int endTick;
 
-    private final int id;
-
-    public static Optional<MokhaiotlNpc> withId(int id) {
-        for (MokhaiotlNpc npc : values()) {
-            if (npc.id == id) {
-                return Optional.of(npc);
-            }
-        }
-        return Optional.empty();
+    public MokhaiotlOrbEvent(Stage stage, int tick, Orb orb, WorldPoint sourcePoint) {
+        super(EventType.MOKHAIOTL_ORB, stage, tick, null);
+        this.source = orb.getSource();
+        this.sourcePoint = sourcePoint;
+        this.style = orb.getStyle();
+        this.startTick = orb.getSpawnTick();
+        this.endTick = tick;
     }
 
-    public boolean isMokhaiotl() {
-        return this == MOKHAIOTL || this == MOKHAIOTL_SHIELDED || this == MOKHAIOTL_BURROWED;
-    }
-
-    public boolean isLarva() {
-        return this == DEMONIC_LARVA || this == DEMONIC_RANGE_LARVA || this == DEMONIC_MAGIC_LARVA || this == DEMONIC_MELEE_LARVA;
-    }
-
-    MokhaiotlNpc(int id) {
-        this.id = id;
+    @Override
+    protected String eventDataString() {
+        return String.format("source=%s, sourcePoint=%s, style=%s, startTick=%d, endTick=%d",
+                source, sourcePoint, style, startTick, endTick);
     }
 }
