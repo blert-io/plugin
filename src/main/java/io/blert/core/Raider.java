@@ -184,7 +184,7 @@ public class Raider {
             // determine when a player stops attacking. When a blowpiping player
             // comes off cooldown, infer whether they are continuing to attack or
             // have stopped.
-            boolean hasTarget = getTarget().map(npc -> !npc.isDead()).orElse(false);
+            boolean hasTarget = getTarget().isPresent();
             int newWeaponId = newWeapon != null ? newWeapon.getId() : -1;
 
             if (newWeaponId == oldWeaponId && hasTarget) {
