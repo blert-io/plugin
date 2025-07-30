@@ -378,7 +378,15 @@ public class WebsocketEventHandler implements EventHandler {
                     return;
                 }
                 resetChallenge();
-                sendRaidHistoryRequest();
+                // TODO Make proper fix https://github.com/blert-io/plugin/issues/9
+                // delaying raid history request to allow backend update last challenge
+                requestTimeout.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        sendRaidHistoryRequest();
+                    }
+                }, DEFAULT_REQUEST_TIMEOUT_MS);
+
                 break;
 
             case SERVER_STATUS: {
