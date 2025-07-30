@@ -105,7 +105,7 @@ public class DelveDataTracker extends DataTracker {
         super(challenge, client, delveToStage(delve));
         this.delve = delve;
         if (delve > 8) {
-            this.delveEndRegex = Pattern.compile("Delve level: 8\\+ (" + delve + ") duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
+            this.delveEndRegex = Pattern.compile("Delve level: 8\\+ \\(" + delve + "\\) duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
         } else {
             this.delveEndRegex = Pattern.compile("Delve level: " + delve + " duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
         }
