@@ -569,6 +569,8 @@ public class BlertPluginPanel extends PluginPanel {
                 return String.format("%s/challenges/colosseum/%s/overview", hostname, challengeId);
             case INFERNO:
                 return String.format("%s/challenges/inferno/%s/overview", hostname, challengeId);
+            case MOKHAIOTL:
+                return String.format("%s/challenges/mokhaiotl/%s/overview", hostname, challengeId);
             case UNRECOGNIZED:
             case UNKNOWN_CHALLENGE:
                 return hostname;
