@@ -92,19 +92,23 @@ public class SotetsegDataTracker extends RoomDataTracker {
         super.onTick();
         final int tick = getTick();
 
-        if (deathBallSpawnTick != -1 && tick == deathBallSpawnTick + 20) {
-            // The ball takes 15 ticks to land, but add in a safety buffer.
-            deathBallSpawnTick = -1;
-        }
+        Player deathBallTarget = checkForDeathBall();
 
         if (attackThisTick != null && sotetseg != null) {
+            WorldPoint point = getWorldLocation(sotetseg);
             if (deathBallSpawnTick == tick) {
                 // A regular attack animation may have occurred at the same time as the death ball; the death ball
                 // should take priority.
-                attackThisTick = NpcAttack.TOB_SOTE_DEATH_BALL;
+                String target = deathBallTarget != null
+                        ? deathBallTarget.getName()
+                        : null;
+                dispatchEvent(new NpcAttackEvent(getStage(), tick, point,
+                        NpcAttack.TOB_SOTE_DEATH_BALL, sotetseg, target));
+            } else {
+                dispatchEvent(new NpcAttackEvent(getStage(), tick, point,
+                        attackThisTick, sotetseg));
             }
             lastAttackTick = tick;
-            dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(sotetseg), attackThisTick, sotetseg));
             attackThisTick = null;
         }
 
@@ -199,12 +203,27 @@ public class SotetsegDataTracker extends RoomDataTracker {
         }
     }
 
-    @Override
-    protected void onProjectile(ProjectileMoved event) {
-        if (event.getProjectile().getId() == SOTE_DEATH_BALL_PROJECTILE && deathBallSpawnTick == -1) {
-            deathBallSpawnTick = getTick();
-            attackThisTick = NpcAttack.TOB_SOTE_DEATH_BALL;
+    private Player checkForDeathBall() {
+        final int tick = getTick();
+        if (deathBallSpawnTick != -1) {
+            if (tick >= deathBallSpawnTick + 20) {
+                // The ball takes 15 ticks to land, but add in a safety buffer.
+                deathBallSpawnTick = -1;
+            } else {
+                return null;
+            }
         }
+
+        for (Projectile projectile : client.getProjectiles()) {
+            if (projectile.getId() == SOTE_DEATH_BALL_PROJECTILE) {
+                deathBallSpawnTick = tick;
+                attackThisTick = NpcAttack.TOB_SOTE_DEATH_BALL;
+                Actor target = projectile.getTargetActor();
+                return target instanceof Player ? (Player) target : null;
+            }
+        }
+
+        return null;
     }
 
     @Override
