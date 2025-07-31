@@ -179,6 +179,18 @@ public enum PlayerAttack {
             4,
             io.blert.proto.PlayerAttack.DRAGON_HUNTER_LANCE
     ),
+    DRAGON_KNIFE_AUTO(
+            new int[]{ItemID.DRAGON_KNIFE, ItemID.DRAGON_KNIFEP, ItemID.DRAGON_KNIFEP_22808, ItemID.DRAGON_KNIFEP_22810},
+            new int[]{8194},
+            2,
+            io.blert.proto.PlayerAttack.DRAGON_KNIFE_AUTO
+    ),
+    DRAGON_KNIFE_SPEC(
+            new int[]{ItemID.DRAGON_KNIFE, ItemID.DRAGON_KNIFEP, ItemID.DRAGON_KNIFEP_22808, ItemID.DRAGON_KNIFEP_22810},
+            new int[]{8291},
+            2,
+            io.blert.proto.PlayerAttack.DRAGON_KNIFE_SPEC
+    ),
     DRAGON_SCIMITAR(ItemID.DRAGON_SCIMITAR, new int[]{386, 390}, 4, io.blert.proto.PlayerAttack.DRAGON_SCIMITAR),
     DUAL_MACUAHUITL(ItemID.DUAL_MACUAHUITL, 10989, 4, io.blert.proto.PlayerAttack.DUAL_MACUAHUITL),
     EARTHBOUND_TECPATL(

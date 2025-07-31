@@ -232,6 +232,8 @@ enum PlayerAttack {
   DARK_DEMONBANE = 112;
   DARKLIGHT_AUTO = 113;
   DARKLIGHT_SPEC = 114;
+  DRAGON_KNIFE_AUTO = 115;
+  DRAGON_KNIFE_SPEC = 116;
 }
 
 enum NpcAttack {
