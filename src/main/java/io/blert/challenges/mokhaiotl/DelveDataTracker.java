@@ -437,7 +437,9 @@ public class DelveDataTracker extends DataTracker {
 
     @Override
     protected boolean npcIgnoresCooldown(int npcId) {
-        return MokhaiotlNpc.withId(npcId).map(MokhaiotlNpc::isLarva).orElse(false);
+        return MokhaiotlNpc.withId(npcId)
+                .map(m -> m.isLarva() || m == MokhaiotlNpc.VOLATILE_EARTH)
+                .orElse(false);
     }
 
     void checkForNewOrbs(int tick) {
