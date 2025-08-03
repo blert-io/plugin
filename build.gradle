@@ -45,7 +45,7 @@ protobuf {
 }
 
 group = 'io.blert'
-version = '0.5.2'
+version = '0.5.3'
 
 def getGitHash = { ->
     def stdout = new ByteArrayOutputStream()
@@ -57,12 +57,17 @@ def getGitHash = { ->
 }
 
 tasks.register('checkForLocalChanges', Exec) {
+    def outputStream = new ByteArrayOutputStream()
     commandLine 'git', 'status', '--porcelain'
-    standardOutput = new ByteArrayOutputStream()
+    standardOutput = outputStream
     ignoreExitValue = true
 
     doLast {
-        ext.isClean = standardOutput.toString().trim().isEmpty()
+        def statusOutput = outputStream.toString().trim()
+        def modifiedLines = statusOutput.readLines().findAll { line ->
+            !line.startsWith('??')  // Ignore untracked files.
+        }
+        ext.isClean = modifiedLines.isEmpty()
     }
 }
 

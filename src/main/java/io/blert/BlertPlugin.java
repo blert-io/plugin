@@ -142,6 +142,9 @@ public class BlertPlugin extends Plugin {
 
     @Override
     protected void shutDown() throws Exception {
+        websocketManager.close();
+        eventBus.unregister(websocketManager);
+
         clientToolbar.removeNavigation(sidePanelButton);
         sidePanel.stopPanel();
         sidePanel = null;
@@ -151,9 +154,6 @@ public class BlertPlugin extends Plugin {
         }
 
         challenges.clear();
-
-        websocketManager.close();
-        eventBus.unregister(websocketManager);
     }
 
     @Subscribe(priority = 10)
