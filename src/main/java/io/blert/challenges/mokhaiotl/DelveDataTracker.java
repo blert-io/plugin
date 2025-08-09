@@ -236,19 +236,7 @@ public class DelveDataTracker extends DataTracker {
             return Optional.of(mokhaiotl);
         }
 
-        if (mokhaiotlNpc.isLarva()) {
-            return Optional.of(new BasicTrackedNpc(npc, generateRoomId(npc), new Hitpoints(2)));
-        }
-
-        if (mokhaiotlNpc == MokhaiotlNpc.VOLATILE_EARTH) {
-            return Optional.of(new BasicTrackedNpc(npc, generateRoomId(npc), new Hitpoints(1)));
-        }
-
-        if (mokhaiotlNpc == MokhaiotlNpc.EARTHEN_SHIELD) {
-            return Optional.of(new BasicTrackedNpc(npc, generateRoomId(npc), new Hitpoints(0)));
-        }
-
-        return Optional.empty();
+        return Optional.of(new BasicTrackedNpc(npc, generateRoomId(npc), new Hitpoints(mokhaiotlNpc.getHitpoints())));
     }
 
     @Override
@@ -263,7 +251,7 @@ public class DelveDataTracker extends DataTracker {
         }
 
         MokhaiotlNpc mokhaiotlNpc = maybeNpc.get();
-        if (mokhaiotlNpc.isLarva()) {
+        if (mokhaiotlNpc.isLarva() && mokhaiotl != null) {
             NPC larva = trackedNpc.getNpc();
             WorldPoint mokhaiotlSouthwest = getWorldLocation(mokhaiotl);
             int mokhaiotlSize = mokhaiotl.getNpc().getComposition().getSize();
@@ -436,9 +424,20 @@ public class DelveDataTracker extends DataTracker {
     }
 
     @Override
-    protected boolean npcIgnoresCooldown(int npcId) {
-        return MokhaiotlNpc.withId(npcId)
-                .map(m -> m.isLarva() || m == MokhaiotlNpc.VOLATILE_EARTH)
+    protected boolean npcIgnoresCooldown(NPC npc) {
+        return MokhaiotlNpc.withId(npc.getId())
+                .map(m -> {
+                    if (m.isLarva() || m == MokhaiotlNpc.VOLATILE_EARTH) {
+                        return true;
+                    }
+
+                    if (m == MokhaiotlNpc.MOKHAIOTL && mokhaiotl != null && mokhaiotl.getNpc() == npc) {
+                        // Charging regular (non-shielded) Mokhaiotl can be interrupted off cooldown.
+                        return npc.getAnimation() == MOKHAIOTL_CHARGE_ANIMATION_ID;
+                    }
+
+                    return false;
+                })
                 .orElse(false);
     }
 

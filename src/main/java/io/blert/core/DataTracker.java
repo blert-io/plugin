@@ -295,7 +295,7 @@ public abstract class DataTracker {
      * @param npcId The NPC ID.
      * @return {@code true} if the NPC ignores cooldown, {@code false} otherwise.
      */
-    protected boolean npcIgnoresCooldown(int npcId) {
+    protected boolean npcIgnoresCooldown(NPC npc) {
         return false;
     }
 
@@ -462,7 +462,7 @@ public abstract class DataTracker {
         Optional<NPC> target = raider.getTarget();
 
         boolean ignoreCooldown =
-                target.map(npc -> npcIgnoresCooldown(npc.getId())).orElse(false);
+                target.map(this::npcIgnoresCooldown).orElse(false);
 
         boolean mayHaveAttacked =
                 (ignoreCooldown || raider.isOffCooldownOn(tick)) &&
