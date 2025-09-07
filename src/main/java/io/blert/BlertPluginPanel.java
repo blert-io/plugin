@@ -429,6 +429,7 @@ public class BlertPluginPanel extends PluginPanel {
             case COLOSSEUM_WAVE_12:
                 boss = "Sol Heredit";
                 break;
+
             case MOKHAIOTL_DELVE_1:
                 boss = "Delve 1";
                 break;
@@ -456,6 +457,12 @@ public class BlertPluginPanel extends PluginPanel {
             case MOKHAIOTL_DELVE_8PLUS:
                 boss = "Delve 8+";
                 break;
+        }
+
+        if (stage.ordinal() >= Stage.INFERNO_WAVE_1.ordinal() &&
+                stage.ordinal() <= Stage.INFERNO_WAVE_69.ordinal()) {
+            int wave = stage.ordinal() - Stage.INFERNO_WAVE_1.ordinal() + 1;
+            boss = "Wave " + wave;
         }
 
         if (status == ServerMessage.PastChallenge.Status.WIPED) {

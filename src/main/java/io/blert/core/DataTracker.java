@@ -583,7 +583,7 @@ public abstract class DataTracker {
         trackedNpc.setUpdatedProperties(false);
     }
 
-    protected void addTrackedNpc(TrackedNpc trackedNpc) {
+    public void addTrackedNpc(TrackedNpc trackedNpc) {
         boolean existing = trackedNpcs.remove(trackedNpc);
         if (!existing) {
             trackedNpc.setSpawnTick(getTick());

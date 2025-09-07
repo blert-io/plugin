@@ -25,6 +25,7 @@ package io.blert;
 
 import com.google.inject.Provides;
 import io.blert.challenges.colosseum.ColosseumChallenge;
+import io.blert.challenges.inferno.InfernoChallenge;
 import io.blert.challenges.mokhaiotl.MokhaiotlChallenge;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.client.WebsocketManager;
@@ -132,6 +133,7 @@ public class BlertPlugin extends Plugin {
 
         challenges.add(new TheatreChallenge(client, eventBus, clientThread));
         challenges.add(new ColosseumChallenge(client, eventBus, clientThread));
+        challenges.add(new InfernoChallenge(client, eventBus, clientThread));
         challenges.add(new MokhaiotlChallenge(client, eventBus, clientThread));
 
         previousGameState = client.getGameState();
