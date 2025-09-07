@@ -33,6 +33,7 @@ import io.blert.core.*;
 import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
+import io.blert.events.inferno.InfernoWaveStartEvent;
 import io.blert.events.mokhaiotl.*;
 import io.blert.events.tob.*;
 import lombok.extern.slf4j.Slf4j;
@@ -355,6 +356,14 @@ public class EventTranslator {
                 Event.MokhaiotlShockwave.Builder builder = Event.MokhaiotlShockwave.newBuilder();
                 mokhaiotlShockwaveEvent.getShockwaveTiles().forEach(wp -> builder.addTiles(worldPointToCoords(wp)));
                 eventBuilder.setMokhaiotlShockwave(builder);
+                break;
+            }
+
+            case INFERNO_WAVE_START: {
+                InfernoWaveStartEvent infernoWaveStartEvent = (InfernoWaveStartEvent) event;
+                eventBuilder.setInfernoWaveStart(Event.InfernoWaveStart.newBuilder()
+                        .setWave(infernoWaveStartEvent.getWave())
+                        .setOverallTicks(infernoWaveStartEvent.getStartTick()));
                 break;
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Alexei Frolov
+ * Copyright (c) 2025 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the “Software”), to deal in
@@ -21,41 +21,26 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.events;
+package io.blert.events.inferno;
 
-import io.blert.core.NpcAttack;
 import io.blert.core.Stage;
-import io.blert.core.TrackedNpc;
+import io.blert.events.Event;
+import io.blert.events.EventType;
 import lombok.Getter;
-import net.runelite.api.Player;
-import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
 
 @Getter
-public class NpcAttackEvent extends Event {
-    private final NpcAttack attack;
-    private final int npcId;
-    private final long roomId;
-    private final @Nullable String target;
+public class InfernoWaveStartEvent extends Event {
+    private final int wave;
+    private final int startTick;
 
-    public NpcAttackEvent(Stage stage, int tick, @Nullable WorldPoint point,
-                          NpcAttack attack, TrackedNpc npc, @Nullable String target) {
-        super(EventType.NPC_ATTACK, stage, tick, point);
-        this.attack = attack;
-        this.npcId = npc.getNpcId();
-        this.roomId = npc.getRoomId();
-        this.target = target;
-    }
-
-    public NpcAttackEvent(Stage stage, int tick, @Nullable WorldPoint point, NpcAttack attack, TrackedNpc npc) {
-        this(stage, tick, point, attack, npc,
-                npc.getNpc().getInteracting() instanceof Player ?
-                        npc.getNpc().getInteracting().getName() : null);
+    public InfernoWaveStartEvent(Stage stage, int wave, int startTick) {
+        super(EventType.INFERNO_WAVE_START, stage, 0, null);
+        this.wave = wave;
+        this.startTick = startTick;
     }
 
     @Override
     protected String eventDataString() {
-        return "npc_attack=(attack=" + attack + ", target=" + (target != null ? target : "none") + ")";
+        return String.format("wave=%d, startTick=%d", wave, startTick);
     }
 }

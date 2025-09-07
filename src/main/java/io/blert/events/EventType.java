@@ -75,6 +75,8 @@ public enum EventType {
     MOKHAIOTL_OBJECTS(Event.Type.MOKHAIOTL_OBJECTS),
     MOKHAIOTL_LARVA_LEAK(Event.Type.MOKHAIOTL_LARVA_LEAK),
     MOKHAIOTL_SHOCKWAVE(Event.Type.MOKHAIOTL_SHOCKWAVE),
+
+    INFERNO_WAVE_START(Event.Type.INFERNO_WAVE_START),
     ;
 
     private final Event.Type protoValue;
