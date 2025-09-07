@@ -78,6 +78,7 @@ public enum EventType {
     MOKHAIOTL_LARVA_LEAK(253),
     MOKHAIOTL_SHOCKWAVE(254),
 
+    INFERNO_WAVE_START(300),
     ;
 
     @Getter

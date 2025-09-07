@@ -71,6 +71,9 @@ public class Event {
     public MokhaiotlLarvaLeak mokhaiotlLarvaLeak;
     public MokhaiotlShockwave mokhaiotlShockwave;
 
+    // Inferno event-specific fields
+    public InfernoWaveStart infernoWaveStart;
+
     public static class Player {
         public static final int DATA_SOURCE_PRIMARY = 0;
         public static final int DATA_SOURCE_SECONDARY = 1;
@@ -99,6 +102,7 @@ public class Event {
         public int id;
         public long roomId;
         public Integer hitpoints;
+        public Long activePrayers;
 
         public MaidenCrab maidenCrab;
         public Nylo nylo;
@@ -232,5 +236,10 @@ public class Event {
 
     public static class MokhaiotlShockwave {
         public List<Coords> tiles;
+    }
+
+    public static class InfernoWaveStart {
+        public int wave;
+        public int overallTicks;
     }
 }

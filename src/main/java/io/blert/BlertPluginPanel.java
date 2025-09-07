@@ -639,6 +639,11 @@ public class BlertPluginPanel extends PluginPanel {
             }
         }
 
+        if (stageId >= Stage.INFERNO_WAVE_1.getId() && stageId <= Stage.INFERNO_WAVE_69.getId()) {
+            int wave = stageId - Stage.INFERNO_WAVE_1.getId() + 1;
+            boss = "Wave " + wave;
+        }
+
         if (status == PastChallenge.STATUS_WIPED) {
             return Pair.of(boss + " Wipe", Color.RED);
         }

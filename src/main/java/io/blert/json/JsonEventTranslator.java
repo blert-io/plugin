@@ -34,6 +34,7 @@ import io.blert.core.Stage;
 import io.blert.core.TrackedNpc;
 import io.blert.events.*;
 import io.blert.events.colosseum.HandicapChoiceEvent;
+import io.blert.events.inferno.InfernoWaveStartEvent;
 import io.blert.events.mokhaiotl.*;
 import io.blert.events.tob.*;
 import lombok.extern.slf4j.Slf4j;
@@ -159,6 +160,7 @@ public class JsonEventTranslator {
                 npc.id = npcEvent.getNpcId();
                 npc.roomId = npcEvent.getRoomId();
                 npc.hitpoints = npcEvent.getHitpoints().getValue();
+                npc.activePrayers = npcEvent.getPrayers();
 
                 if (npcEvent.propertiesChanged()) {
                     addTranslatedNpcProperties(npc, npcEvent);
@@ -383,6 +385,14 @@ public class JsonEventTranslator {
                 json.mokhaiotlShockwave = new Event.MokhaiotlShockwave();
                 json.mokhaiotlShockwave.tiles =
                         toCoordsList(mokhaiotlShockwaveEvent.getShockwaveTiles());
+                break;
+            }
+
+            case INFERNO_WAVE_START: {
+                InfernoWaveStartEvent infernoWaveStartEvent = (InfernoWaveStartEvent) event;
+                json.infernoWaveStart = new Event.InfernoWaveStart();
+                json.infernoWaveStart.wave = infernoWaveStartEvent.getWave();
+                json.infernoWaveStart.overallTicks = infernoWaveStartEvent.getStartTick();
                 break;
             }
 

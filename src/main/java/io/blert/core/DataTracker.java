@@ -675,7 +675,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
         trackedNpc.setUpdatedProperties(false);
     }
 
-    protected void addTrackedNpc(TrackedNpc trackedNpc) {
+    public void addTrackedNpc(TrackedNpc trackedNpc) {
         boolean existing = trackedNpcs.remove(trackedNpc);
         if (!existing) {
             trackedNpc.setSpawnTick(getTick());
