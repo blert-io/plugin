@@ -45,7 +45,7 @@ protobuf {
 }
 
 group = 'io.blert'
-version = '0.5.4'
+version = '0.6.0'
 
 def getGitHash = { ->
     def stdout = new ByteArrayOutputStream()
