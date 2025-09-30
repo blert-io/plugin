@@ -251,7 +251,7 @@ public class DelveDataTracker extends DataTracker {
         }
 
         MokhaiotlNpc mokhaiotlNpc = maybeNpc.get();
-        if (mokhaiotlNpc.isLarva() && mokhaiotl != null) {
+        if (mokhaiotlNpc.isLarva() && mokhaiotl != null && mokhaiotl.getNpc() != null) {
             NPC larva = trackedNpc.getNpc();
             WorldPoint mokhaiotlSouthwest = getWorldLocation(mokhaiotl);
             int mokhaiotlSize = mokhaiotl.getNpc().getComposition().getSize();

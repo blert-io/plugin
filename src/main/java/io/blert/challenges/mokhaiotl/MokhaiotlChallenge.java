@@ -32,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -93,6 +92,10 @@ public class MokhaiotlChallenge extends RecordableChallenge {
 
         if (delveDataTracker != null) {
             delveDataTracker.tick();
+
+            if (delveDataTracker.completed()) {
+                prepareNextDelve();
+            }
         }
     }
 
@@ -100,17 +103,6 @@ public class MokhaiotlChallenge extends RecordableChallenge {
     @Override
     protected Stage getStage() {
         return delveDataTracker != null ? delveDataTracker.getStage() : null;
-    }
-
-    @Subscribe
-    protected final void onGameObjectSpawned(GameObjectSpawned event) {
-        if (getState().isInactive()) {
-            return;
-        }
-
-        if (event.getGameObject().getId() == MOKHAIOTL_BURROW_OBJECT_ID) {
-            prepareNextDelve();
-        }
     }
 
     @Subscribe
