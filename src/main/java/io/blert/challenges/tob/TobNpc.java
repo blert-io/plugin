@@ -26,7 +26,9 @@ package io.blert.challenges.tob;
 import com.google.common.collect.ImmutableMap;
 import io.blert.core.ChallengeMode;
 import lombok.Getter;
+import net.runelite.api.gameval.NpcID;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 /**
@@ -135,31 +137,33 @@ public enum TobNpc {
     XARPUS_HARD(10772, 1, ChallengeMode.TOB_HARD, new int[]{4500, 5250, 6000}),
 
     // Verzik sitting at her throne prior to combat.
-    VERZIK_IDLE_ENTRY(10830, 1, ChallengeMode.TOB_ENTRY, 240),
-    VERZIK_IDLE_REGULAR(8369, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
-    VERZIK_IDLE_HARD(10847, 1, ChallengeMode.TOB_HARD, new int[]{1500, 1750, 2000}),
+    VERZIK_IDLE_ENTRY(NpcID.VERZIK_INITIAL_STORY, 1, ChallengeMode.TOB_ENTRY, 240),
+    VERZIK_IDLE_REGULAR(NpcID.VERZIK_INITIAL, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
+    VERZIK_IDLE_REGULAR_QS(NpcID.VERZIK_INITIAL_QUICKSTART, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
+    VERZIK_IDLE_HARD(NpcID.VERZIK_INITIAL_HARD, 1, ChallengeMode.TOB_HARD, new int[]{1500, 1750, 2000}),
+    VERZIK_IDLE_HARD_QS(NpcID.VERZIK_INITIAL_HARD_QUICKSTART, 1, ChallengeMode.TOB_HARD, new int[]{1500, 1750, 2000}),
 
     // Verzik P1.
-    VERZIK_P1_ENTRY(10831, 1, ChallengeMode.TOB_ENTRY, 240),
-    VERZIK_P1_REGULAR(8370, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
-    VERZIK_P1_HARD(10848, 1, ChallengeMode.TOB_HARD, new int[]{1500, 1750, 2000}),
+    VERZIK_P1_ENTRY(NpcID.VERZIK_PHASE1_STORY, 1, ChallengeMode.TOB_ENTRY, 240),
+    VERZIK_P1_REGULAR(NpcID.VERZIK_PHASE1, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
+    VERZIK_P1_HARD(NpcID.VERZIK_PHASE1_HARD, 1, ChallengeMode.TOB_HARD, new int[]{1500, 1750, 2000}),
 
-    VERZIK_P1_TRANSITION_ENTRY(10832, 1, ChallengeMode.TOB_ENTRY, 0),
-    VERZIK_P1_TRANSITION_REGULAR(8371, 1, ChallengeMode.TOB_REGULAR, 0),
-    VERZIK_P1_TRANSITION_HARD(10849, 1, ChallengeMode.TOB_HARD, 0),
+    VERZIK_P1_TRANSITION_ENTRY(NpcID.VERZIK_PHASE1_TO2_TRANSITION_STORY, 1, ChallengeMode.TOB_ENTRY, 0),
+    VERZIK_P1_TRANSITION_REGULAR(NpcID.VERZIK_PHASE1_TO2_TRANSITION, 1, ChallengeMode.TOB_REGULAR, 0),
+    VERZIK_P1_TRANSITION_HARD(NpcID.VERZIK_PHASE1_TO2_TRANSITION_HARD, 1, ChallengeMode.TOB_HARD, 0),
 
     // Verzik P2, including the transition to P3.
-    VERZIK_P2_ENTRY(10833, 2, ChallengeMode.TOB_ENTRY, 320),
-    VERZIK_P2_REGULAR(8372, 2, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
-    VERZIK_P2_HARD(10850, 2, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
+    VERZIK_P2_ENTRY(NpcID.VERZIK_PHASE2_STORY, 2, ChallengeMode.TOB_ENTRY, 320),
+    VERZIK_P2_REGULAR(NpcID.VERZIK_PHASE2, 2, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
+    VERZIK_P2_HARD(NpcID.VERZIK_PHASE2_HARD, 2, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
 
     // Verzik P3, including death animation.
-    VERZIK_P3_ENTRY(10835, 2, ChallengeMode.TOB_ENTRY, 320),
-    VERZIK_P3_REGULAR(8374, 2, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
-    VERZIK_P3_HARD(10852, 2, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
+    VERZIK_P3_ENTRY(NpcID.VERZIK_PHASE3_STORY, 2, ChallengeMode.TOB_ENTRY, 320),
+    VERZIK_P3_REGULAR(NpcID.VERZIK_PHASE3, 2, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
+    VERZIK_P3_HARD(NpcID.VERZIK_PHASE3_HARD, 2, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
 
     // Pillars at Verzik.
-    VERZIK_PILLAR(8379, 1, ChallengeMode.NO_MODE, 0),
+    VERZIK_PILLAR(NpcID.VERZIK_PILLAR_NPC, 1, ChallengeMode.NO_MODE, 0),
 
     // Nylos at Verzik.
     // TODO(frolv): Correct HP values.
@@ -237,8 +241,8 @@ public enum TobNpc {
         return id >= this.id && id < this.id + this.idRange;
     }
 
-    private static boolean idMatches(int id, TobNpc entry, TobNpc regular, TobNpc hard) {
-        return entry.hasId(id) || regular.hasId(id) || hard.hasId(id);
+    private static boolean idMatches(int id, TobNpc... npcs) {
+        return Arrays.stream(npcs).anyMatch(npc -> npc.hasId(id));
     }
 
     public static boolean isMaiden(int id) {
@@ -363,7 +367,7 @@ public enum TobNpc {
     }
 
     public static boolean isVerzikIdle(int id) {
-        return idMatches(id, VERZIK_IDLE_ENTRY, VERZIK_IDLE_REGULAR, VERZIK_IDLE_HARD);
+        return idMatches(id, VERZIK_IDLE_ENTRY, VERZIK_IDLE_REGULAR, VERZIK_IDLE_REGULAR_QS, VERZIK_IDLE_HARD, VERZIK_IDLE_HARD_QS);
     }
 
     public boolean isVerzikIdle() {
