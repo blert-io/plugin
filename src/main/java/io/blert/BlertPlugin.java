@@ -28,7 +28,7 @@ import io.blert.challenges.colosseum.ColosseumChallenge;
 import io.blert.challenges.inferno.InfernoChallenge;
 import io.blert.challenges.mokhaiotl.MokhaiotlChallenge;
 import io.blert.challenges.tob.TheatreChallenge;
-import io.blert.client.WebsocketManager;
+import io.blert.client.WebSocketManager;
 import io.blert.core.RecordableChallenge;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
@@ -55,7 +55,6 @@ import javax.inject.Inject;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @Slf4j
 @PluginDescriptor(
@@ -78,7 +77,7 @@ public class BlertPlugin extends Plugin {
     private BlertConfig config;
 
     @Inject
-    private WebsocketManager websocketManager;
+    private WebSocketManager websocketManager;
 
     @Getter
     private BlertPluginPanel sidePanel;
@@ -190,12 +189,8 @@ public class BlertPlugin extends Plugin {
         }
 
         if (gameState == GameState.LOGGED_IN) {
-            if (config.apiKey() != null && !websocketManager.isOpen()) {
-                try {
-                    websocketManager.open().get();
-                } catch (InterruptedException | ExecutionException e) {
-                    // Pass.
-                }
+            if (config.apiKey() != null && websocketManager.shouldTryToConnect()) {
+                websocketManager.open();
             }
 
             checkWorldType();

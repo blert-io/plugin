@@ -29,8 +29,8 @@ import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
 import io.blert.core.RecordableChallenge;
 import io.blert.core.Stage;
-import io.blert.events.Event;
 import io.blert.events.*;
+import io.blert.events.Event;
 import io.blert.proto.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -45,8 +45,11 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+/**
+ * An {@code EventHandler} implementation that transmits received events to a Blert server through a websocket.
+ */
 @Slf4j
-public class WebsocketEventHandler implements EventHandler {
+public class WebSocketEventHandler implements EventHandler {
     public enum Status {
         IDLE,
         CHALLENGE_STARTING,
@@ -75,11 +78,11 @@ public class WebsocketEventHandler implements EventHandler {
     private int currentTick = 0;
 
     /**
-     * An `EventHandler` implementation that transmits received events to a blert server through a websocket.
+     * Constructs an event handler which will send and receive events over the provided websocket client.
      *
-     * @param webSocketClient Websocket client connected and authenticated to the blert server.
+     * @param webSocketClient Websocket client connected and authenticated to the Blert server.
      */
-    public WebsocketEventHandler(BlertPlugin plugin, WebSocketClient webSocketClient,
+    public WebSocketEventHandler(BlertPlugin plugin, WebSocketClient webSocketClient,
                                  Client client, ClientThread runeliteThread) {
         this.plugin = plugin;
         this.webSocketClient = webSocketClient;
@@ -628,7 +631,7 @@ public class WebsocketEventHandler implements EventHandler {
             return;
         }
 
-        final WebsocketEventHandler self = this;
+        final WebSocketEventHandler self = this;
 
         // Getting the challenge status is a blocking operation, so run it in a separate thread.
         new Thread(() -> {
