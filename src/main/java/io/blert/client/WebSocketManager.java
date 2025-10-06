@@ -27,6 +27,7 @@ import io.blert.BlertConfig;
 import io.blert.BlertPlugin;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.callback.ClientThread;
@@ -39,7 +40,8 @@ import javax.inject.Named;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
-public class WebsocketManager {
+@Slf4j
+public class WebSocketManager {
     public static final String DEFAULT_BLERT_HOST = "https://blert.io";
     public static final String DEFAULT_SERVER_HOST = "wss://wave32.blert.io";
 
@@ -65,7 +67,7 @@ public class WebsocketManager {
     @Getter(AccessLevel.MODULE)
     private WebSocketClient wsClient;
     @Getter
-    private WebsocketEventHandler eventHandler;
+    private WebSocketEventHandler eventHandler;
 
     public Future<Boolean> open() {
         if (config.apiKey() == null) {
@@ -76,8 +78,12 @@ public class WebsocketManager {
         return wsClient.open();
     }
 
-    public boolean isOpen() {
-        return wsClient != null && wsClient.isOpen();
+    public boolean shouldTryToConnect() {
+        if (wsClient == null) {
+            return true;
+        }
+
+        return wsClient.getState() == WebSocketClient.State.CLOSED;
     }
 
     public Future<Void> close() {
@@ -97,12 +103,10 @@ public class WebsocketManager {
             }
 
             if (wsClient.isOpen()) {
-                try {
-                    wsClient.close().get();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                wsClient.close();
             }
+
+            wsClient = null;
         }
 
         if (config.apiKey() == null) {
@@ -112,7 +116,7 @@ public class WebsocketManager {
         String runeliteVersion = String.format(
                 "runelite-%s%s", RuneLiteProperties.getVersion(), developerMode ? "-dev" : "");
         wsClient = new WebSocketClient(DEFAULT_SERVER_HOST, config.apiKey(), runeliteVersion, httpClient);
-        eventHandler = new WebsocketEventHandler(plugin, wsClient, runeliteClient, runeLiteClientThread);
+        eventHandler = new WebSocketEventHandler(plugin, wsClient, runeliteClient, runeLiteClientThread);
 
         if (plugin.getActiveChallenge() != null) {
             plugin.getActiveChallenge().setEventHandler(eventHandler);
@@ -121,9 +125,20 @@ public class WebsocketManager {
 
     @Subscribe
     private void onConfigChanged(ConfigChanged changed) {
+        if (!changed.getGroup().equals("blert")) {
+            return;
+        }
+
         String key = changed.getKey();
         if (key.equals("apiKey")) {
-            new Thread(this::initializeWebSocketClient).start();
+            new Thread(() -> {
+                plugin.getSidePanel().setUnsupportedVersion(false);
+                try {
+                    open().get(10, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (Exception e) {
+                    log.error("Failed to open WebSocket connection after API key change", e);
+                }
+            }).start();
         }
     }
 }

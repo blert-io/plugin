@@ -41,11 +41,12 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class WebSocketClient extends WebSocketListener {
-    enum SocketState {
+    public enum State {
         CLOSED,
         OPEN,
-        OPENING,
+        CONNECTING,
         CLOSING,
+        REJECTED,
     }
 
     public enum DisconnectReason {
@@ -60,7 +61,7 @@ public class WebSocketClient extends WebSocketListener {
     private final String runeliteVersion;
     private final OkHttpClient client;
     private WebSocket socket;
-    private SocketState state = SocketState.CLOSED;
+    private State state = State.CLOSED;
 
     private final List<CompletableFuture<Boolean>> openFutures = new ArrayList<>();
     private final List<CompletableFuture<Void>> closeFutures = new ArrayList<>();
@@ -88,7 +89,16 @@ public class WebSocketClient extends WebSocketListener {
      * @return True if the websocket is connected and messages can be sent or received.
      */
     public synchronized boolean isOpen() {
-        return state == SocketState.OPEN;
+        return state == State.OPEN;
+    }
+
+    /**
+     * Gets the current state of the websocket connection.
+     *
+     * @return Connection state.
+     */
+    public synchronized State getState() {
+        return state;
     }
 
     /**
@@ -97,6 +107,13 @@ public class WebSocketClient extends WebSocketListener {
      * @return A future that resolves to true if the connection was successful, or false if not.
      */
     public Future<Boolean> open() {
+        if (state == State.REJECTED) {
+            // The WebSocketClient is tied to a client/API key configuration, so if the connection was rejected,
+            // all subsequent attempts will also be rejected.
+            log.warn("Ignoring websocket reconnection attempt after rejection");
+            return CompletableFuture.completedFuture(false);
+        }
+
         Request.Builder request = new Request.Builder()
                 .url(hostname)
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(apiKey))
@@ -116,7 +133,7 @@ public class WebSocketClient extends WebSocketListener {
         synchronized (this) {
             openFutures.add(future);
             socket = client.newWebSocket(request.build(), this);
-            state = SocketState.OPENING;
+            state = State.CONNECTING;
         }
 
         return future;
@@ -148,7 +165,7 @@ public class WebSocketClient extends WebSocketListener {
     @EverythingIsNonNull
     public synchronized void onOpen(WebSocket webSocket, Response response) {
         log.info("Blert websocket {} opened", webSocket);
-        state = SocketState.OPEN;
+        state = State.OPEN;
         openFutures.forEach(future -> future.complete(true));
         openFutures.clear();
     }
@@ -174,7 +191,7 @@ public class WebSocketClient extends WebSocketListener {
     @EverythingIsNonNull
     public synchronized void onClosed(WebSocket webSocket, int status, String reason) {
         log.info("Blert websocket {} closed: {} ({})", webSocket, status, reason);
-        state = SocketState.CLOSED;
+        state = State.CLOSED;
         socket = null;
         closeFutures.forEach(future -> future.complete(null));
         closeFutures.clear();
@@ -183,21 +200,36 @@ public class WebSocketClient extends WebSocketListener {
 
     @Override
     public synchronized void onFailure(@NonNull WebSocket webSocket, @NonNull Throwable t, Response response) {
-        if (state == SocketState.OPENING) {
+        if (state == State.CONNECTING) {
             openFutures.forEach(future -> future.complete(false));
             openFutures.clear();
         }
 
-        if (response != null && response.code() == 403) {
-            onDisconnect(DisconnectReason.UNSUPPORTED_VERSION);
+        state = State.CLOSED;
+        socket = null;
+
+        if (response != null) {
+            switch (response.code()) {
+                case 403:
+                    onDisconnect(DisconnectReason.UNSUPPORTED_VERSION);
+                    // Fallthrough.
+                case 401:
+                    state = State.REJECTED;
+                    log.warn("Blert websocket {} rejected with status {}", webSocket, response.code());
+                    break;
+                default:
+                    log.error("Blert websocket {} failed: {}", webSocket, response, t);
+                    if (isOpen()) {
+                        onDisconnect(DisconnectReason.ERROR);
+                    }
+                    break;
+            }
         } else {
-            log.warn("Blert websocket {} failed: {}", webSocket, response, t);
+            log.error("Blert websocket {} failed", webSocket, t);
             if (isOpen()) {
                 onDisconnect(DisconnectReason.ERROR);
             }
         }
-        state = SocketState.CLOSED;
-        socket = null;
     }
 
     public Future<Void> close() {
@@ -205,7 +237,7 @@ public class WebSocketClient extends WebSocketListener {
             CompletableFuture<Void> future = new CompletableFuture<>();
             closeFutures.add(future);
             socket.close(1000, null);
-            state = SocketState.CLOSING;
+            state = State.CLOSING;
             return future;
         }
 

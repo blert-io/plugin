@@ -23,8 +23,8 @@
 
 package io.blert;
 
-import io.blert.client.WebsocketEventHandler;
-import io.blert.client.WebsocketManager;
+import io.blert.client.WebSocketEventHandler;
+import io.blert.client.WebSocketManager;
 import io.blert.proto.Challenge;
 import io.blert.proto.ChallengeMode;
 import io.blert.proto.ServerMessage;
@@ -52,7 +52,7 @@ import java.util.List;
 @Slf4j
 public class BlertPluginPanel extends PluginPanel {
     private final BlertConfig config;
-    private final WebsocketManager websocketManager;
+    private final WebSocketManager websocketManager;
 
     private JPanel userPanel;
     private JPanel challengeStatusPanel;
@@ -66,11 +66,11 @@ public class BlertPluginPanel extends PluginPanel {
 
     private final List<ServerMessage.PastChallenge> recentRecordings = new ArrayList<>();
 
-    private WebsocketEventHandler.Status challengeStatus = WebsocketEventHandler.Status.IDLE;
+    private WebSocketEventHandler.Status challengeStatus = WebSocketEventHandler.Status.IDLE;
     private boolean unsupportedVersion = false;
     private Instant shutdownTime = null;
 
-    public BlertPluginPanel(BlertConfig config, WebsocketManager websocketManager) {
+    public BlertPluginPanel(BlertConfig config, WebSocketManager websocketManager) {
         this.config = config;
         this.websocketManager = websocketManager;
 
@@ -121,7 +121,7 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     public synchronized void updateChallengeStatus(
-            WebsocketEventHandler.Status status, Challenge challenge, @Nullable String challengeId) {
+            WebSocketEventHandler.Status status, Challenge challenge, @Nullable String challengeId) {
         this.challengeStatus = status;
         createChallengeStatusPanel(this, challenge, challengeId);
     }
@@ -136,7 +136,7 @@ public class BlertPluginPanel extends PluginPanel {
 
     public synchronized void setShutdownTime(@Nullable Instant shutdownTime) {
         this.shutdownTime = shutdownTime;
-        if (challengeStatus == WebsocketEventHandler.Status.IDLE) {
+        if (challengeStatus == WebSocketEventHandler.Status.IDLE) {
             setIdleActiveChallengeLabelText();
         }
     }
@@ -235,7 +235,7 @@ public class BlertPluginPanel extends PluginPanel {
 
         JPanel currentStatePanel = createCurrentChallengeStatePanel();
 
-        if (challengeStatus == WebsocketEventHandler.Status.CHALLENGE_ACTIVE) {
+        if (challengeStatus == WebSocketEventHandler.Status.CHALLENGE_ACTIVE) {
             JPanel actionsPanel = createChallengeActionsPanel(challenge, challengeId);
             challengeStatusPanel.add(actionsPanel, BorderLayout.SOUTH);
         }
@@ -526,7 +526,7 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     private String challengeUrl(Challenge challenge, String challengeId) {
-        String hostname = WebsocketManager.DEFAULT_BLERT_HOST;
+        String hostname = WebSocketManager.DEFAULT_BLERT_HOST;
 
         switch (challenge) {
             case TOB:
