@@ -189,7 +189,7 @@ public class Raider {
 
             if (newWeaponId == oldWeaponId && hasTarget) {
                 blowpiping = BlowpipeState.PIPING;
-            } else {
+            } else if (animationTick != tick) {
                 blowpiping = BlowpipeState.STOPPED_PIPING;
             }
         }

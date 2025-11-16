@@ -297,6 +297,7 @@ public enum PlayerAttack {
                     ItemID.VOLATILE_NIGHTMARE_STAFF_DEADMAN,
                     ItemID.HARMONISED_NIGHTMARE_STAFF,
                     ItemID.ELDRITCH_NIGHTMARE_STAFF,
+                    ItemID.EYE_OF_AYAK,
                     ItemID.ANCIENT_SCEPTRE,
                     ItemID.ANCIENT_SCEPTRE_L,
                     ItemID.SMOKE_ANCIENT_SCEPTRE,
