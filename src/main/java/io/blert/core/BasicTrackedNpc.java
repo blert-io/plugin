@@ -23,6 +23,7 @@
 
 package io.blert.core;
 
+import io.blert.challenges.chambers.CoxNpc;
 import io.blert.challenges.tob.TobNpc;
 import lombok.NonNull;
 import net.runelite.api.NPC;
@@ -40,6 +41,10 @@ public class BasicTrackedNpc extends TrackedNpc {
 
     public BasicTrackedNpc(@NonNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
+    }
+
+    public BasicTrackedNpc(@NonNull NPC npc, CoxNpc coxNpc, long roomId, Hitpoints hitpoints) {
+        super(npc, coxNpc, roomId, hitpoints);
     }
 
     @Override
