@@ -59,6 +59,9 @@ public enum CoxNpc {
             case TEKTON_ENRAGED:
                 // Base Tekton HP is ~550 for solo, scales up to ~800+ for max team
                 return 450;
+            case ICE_DEMON:
+                // Ice Demon base HP - needs verification
+                return 375;
             default:
                 return hitpoints > 0 ? hitpoints * scale : -1;
         }

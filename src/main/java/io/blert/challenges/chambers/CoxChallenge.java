@@ -1,6 +1,7 @@
 package io.blert.challenges.chambers;
 
 import io.blert.challenges.chambers.rooms.tekton.TektonDataTracker;
+import io.blert.challenges.chambers.rooms.icedemon.IceDemonDataTracker;
 import io.blert.core.*;
 import io.blert.events.ChallengeStartEvent;
 import io.blert.events.ChallengeEndEvent;
@@ -27,7 +28,6 @@ public class CoxChallenge extends RecordableChallenge {
     private static final Pattern ROOM_COMPLETE_REGEX =
             Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
 
-    private ChallengeState state = ChallengeState.INACTIVE;
     private List<Raider> party = new ArrayList<>();
     @Nullable
     private RoomDataTracker roomDataTracker = null;
@@ -60,15 +60,19 @@ public class CoxChallenge extends RecordableChallenge {
     protected void onInitialize() {
         reportedChallengeTime = -1;
         party.clear();
-        state = ChallengeState.INACTIVE;
     }
 
     @Override
     protected void onTerminate() {
-        roomDataTracker = null;
+        if (roomDataTracker != null) {
+            final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
+            tracker.terminate();
+            removeEventHandler(tracker);
+            getEventBus().unregister(tracker);
+            roomDataTracker = null;
+        }
         party.clear();
         reportedChallengeTime = -1;
-        state = ChallengeState.INACTIVE;
     }
 
     @Override
@@ -92,7 +96,7 @@ public class CoxChallenge extends RecordableChallenge {
 
         // Raid start
         Matcher entryMatcher = RAID_ENTRY_REGEX.matcher(stripped);
-        if (entryMatcher.matches() && state == ChallengeState.INACTIVE) {
+        if (entryMatcher.matches() && getState() == ChallengeState.INACTIVE) {
             log.info("Detected raid start from chat message.");
             startRaid();
             return;
@@ -100,7 +104,7 @@ public class CoxChallenge extends RecordableChallenge {
 
         // Raid end
         Matcher completionMatcher = RAID_COMPLETION_REGEX.matcher(stripped);
-        if (completionMatcher.matches() && state == ChallengeState.ACTIVE) {
+        if (completionMatcher.matches() && getState() == ChallengeState.ACTIVE) {
             endRaid();
             return;
         }
@@ -109,14 +113,18 @@ public class CoxChallenge extends RecordableChallenge {
         Matcher roomMatcher = ROOM_COMPLETE_REGEX.matcher(stripped);
         if (roomMatcher.find() && roomDataTracker != null) {
             int currentTick = getRelativeTick();
-            roomDataTracker.finishRoom(currentTick);
+            final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
+            tracker.finishRoom(currentTick);
 
             // Implicitly start tracking the next room
-            Stage nextStage = getNextStage(roomDataTracker.getStage());
+            Stage nextStage = getNextStage(tracker.getStage());
             if (nextStage != null) {
                 roomDataTracker = createRoomDataTracker(nextStage);
-                roomDataTracker.startRoom(currentTick);
-                log.info("Started tracking next room {} at tick {}", nextStage, currentTick);
+                final RoomDataTracker newTracker = roomDataTracker; // Capture new non-null value
+                if (newTracker != null) {
+                    newTracker.startRoom(currentTick);
+                    log.info("Started tracking next room {} at tick {}", nextStage, currentTick);
+                }
             }
         }
     }
@@ -132,18 +140,24 @@ public class CoxChallenge extends RecordableChallenge {
     }
 
     private void startRaid() {
-        state = ChallengeState.ACTIVE;
+        setState(ChallengeState.ACTIVE);
         raidStartTick = client.getTickCount();
         startTick = 0; // relative to raid start
-        // Initialize party, roomDataTracker, etc.
-        // Example: party = getPartyFromWidgetOrOrbs();
+        
+        // Add the local player to the party to ensure scale is at least 1
+        addRaider(new Raider(client.getLocalPlayer(), true));
+        
+        log.info("Starting COX raid with scale {} (party size: {})", getScale(), getParty().size());
 
         // Start the first room data tracker
         Stage firstStage = getNextStage(null); // Gets the first room in COX_ROOM_ORDER
         if (firstStage != null) {
             roomDataTracker = createRoomDataTracker(firstStage);
-            roomDataTracker.startRoom(0); // first room starts at tick 0
-            log.info("Started tracking first room {} at tick {}", firstStage, 0);
+            final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
+            if (tracker != null) {
+                tracker.startRoom(0); // first room starts at tick 0
+                log.info("Started tracking first room {} at tick {}", firstStage, 0);
+            }
         }
 
         dispatchEvent(new ChallengeStartEvent(getChallenge(), getChallengeMode(), getStage(), getPartyUsernames(), false));
@@ -151,7 +165,7 @@ public class CoxChallenge extends RecordableChallenge {
     }
 
     private void endRaid() {
-        state = ChallengeState.ENDING;
+        setState(ChallengeState.ENDING);
         endTick = getTick();
         dispatchEvent(new ChallengeEndEvent(reportedChallengeTime, endTick - startTick));
         log.info("Chambers of Xeric raid ended at tick {}", endTick);
@@ -181,10 +195,31 @@ public class CoxChallenge extends RecordableChallenge {
         switch (stage) {
             case COX_TEKTON:
                 log.info("Creating TektonDataTracker for stage {}", stage);
-                return new TektonDataTracker(this, stage, client);
+                RoomDataTracker tracker = new TektonDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(tracker);
+                addEventHandler(tracker);
+                
+                return tracker;
+            case COX_ICE_DEMON:
+                log.info("Creating IceDemonDataTracker for stage {}", stage);
+                RoomDataTracker iceDemonTracker = new IceDemonDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(iceDemonTracker);
+                addEventHandler(iceDemonTracker);
+                
+                return iceDemonTracker;
             default:
                 log.info("Creating generic CoxRoomDataTracker for stage {}", stage);
-                return new CoxRoomDataTracker(this, stage, client);
+                RoomDataTracker genericTracker = new CoxRoomDataTracker(this, stage, client);
+                
+                // Register with event bus
+                getEventBus().register(genericTracker);
+                addEventHandler(genericTracker);
+                
+                return genericTracker;
         }
     }
 

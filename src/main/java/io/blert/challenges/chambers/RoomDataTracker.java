@@ -33,6 +33,10 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     private boolean started = false;
     private int startTick = 0;
     private int endTick = 0;
+    
+    // HP tracking fields
+    private boolean shouldUpdateHitpoints = false;
+    private int healTick = -1;
 
     public RoomDataTracker(RecordableChallenge challenge, Stage stage, Client client) {
         super(challenge, client, stage);
@@ -47,6 +51,10 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         if (started) return;
         started = true;
         startTick = currentTick;
+        
+        // Start the underlying DataTracker to enable event processing
+        start(0);
+        
         log.info("Started tracking room {} at tick {}", stage, startTick);
     }
 
@@ -65,6 +73,35 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     @Override
     protected void onTick() {
         // Room tick logic if needed
+    }
+    
+    /**
+     * Sets flag to update hitpoints from varbit on next tick.
+     * Called by subclass varbit handlers.
+     */
+    protected void setShouldUpdateHitpoints(boolean shouldUpdate) {
+        this.shouldUpdateHitpoints = shouldUpdate;
+    }
+    
+    /**
+     * Gets whether hitpoints should be updated from varbit.
+     */
+    protected boolean getShouldUpdateHitpoints() {
+        return shouldUpdateHitpoints;
+    }
+    
+    /**
+     * Sets the heal tick for HP update timing.
+     */
+    protected void setHealTick(int tick) {
+        this.healTick = tick;
+    }
+    
+    /**
+     * Gets the heal tick for HP update timing.
+     */
+    protected int getHealTick() {
+        return healTick;
     }
 
     @Override

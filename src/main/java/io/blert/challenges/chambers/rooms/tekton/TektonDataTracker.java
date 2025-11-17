@@ -47,17 +47,26 @@ public class TektonDataTracker extends RoomDataTracker
 
     // TODO: update when you finalize Tekton animations from logging
     private static final int TEKTON_ANVIL_ANIMATION = 7475;
-    // private static final int TEKTON_STOMP_ANIMATION = 7491;
-    // private static final int TEKTON_AUTO_ANIMATION = 7492;
+    private static final int TEKTON_STOMP_ANIMATION = 7491;
+    private static final int TEKTON_AUTO_ANIMATION = 7492;
+    // Additional discovered animations
+    private static final int TEKTON_UNKNOWN_7483 = 7483;
+    private static final int TEKTON_UNKNOWN_7487 = 7487;
+    private static final int TEKTON_UNKNOWN_7488 = 7488;
+    private static final int TEKTON_UNKNOWN_7493 = 7493;
+    private static final int TEKTON_UNKNOWN_7494 = 7494;
+    private static final int TEKTON_UNKNOWN_7481 = 7481;
+    private static final int TEKTON_UNKNOWN_7482 = 7482;
+    private static final int TEKTON_UNKNOWN_7484 = 7484;
 
     private @Nullable HpVarbitTrackedNpc tekton;
     private @Nullable NpcAttack attackThisTick = null;
-    private boolean shouldUpdateHitpoints;
-    private int healTick = -1;
+    private boolean tektonAtAnvil = false; // Track when Tekton is at anvil (ID 7545)
 
     public TektonDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
         super(challenge, stage, client);
+        log.info("[TektonDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
     }
 
     @Override
@@ -66,11 +75,30 @@ public class TektonDataTracker extends RoomDataTracker
         super.onTick();
 
         final int tick = getTick();
+        final var currentTekton = tekton; // Capture for null safety
+        
+        // Check if Tekton's state changed (particularly if it's now at anvil)
+        if (currentTekton != null)
+        {
+            int currentId = currentTekton.getNpc().getId();
+            boolean wasAtAnvil = tektonAtAnvil;
+            tektonAtAnvil = (currentId == 7545); // Tekton at anvil
+            
+            // Log state changes
+            if (!wasAtAnvil && tektonAtAnvil)
+            {
+                log.info("[Tekton] Moved to anvil (ID: 7545) - will heal");
+                setHealTick(tick); // Set heal tick when arriving at anvil
+            }
+            else if (wasAtAnvil && !tektonAtAnvil)
+            {
+                log.info("[Tekton] Left anvil (ID: {}) - healing stopped", currentId);
+            }
+        }
 
         // The hitpoints varbit is delayed by up to 3 ticks, so don't update immediately following a heal
-        if (shouldUpdateHitpoints && (healTick == -1 || tick - healTick > 3))
+        if (getShouldUpdateHitpoints() && (getHealTick() == -1 || tick - getHealTick() > 3))
         {
-            final var currentTekton = tekton; // Capture for null safety
             if (currentTekton != null)
             {
                 int varbitValue = client.getVarbitValue(TEKTON_HP_VARBIT);
@@ -82,7 +110,7 @@ public class TektonDataTracker extends RoomDataTracker
                 );
 
                 currentTekton.updateHitpointsFromVarbit(varbitValue);
-                shouldUpdateHitpoints = false;
+                setShouldUpdateHitpoints(false);
             }
             else
             {
@@ -95,7 +123,6 @@ public class TektonDataTracker extends RoomDataTracker
 
         if (attackThisTick != null)
         {
-            final var currentTekton = tekton; // Capture for null safety
             if (currentTekton != null)
             {
                 dispatchEvent(new NpcAttackEvent(
@@ -115,6 +142,7 @@ public class TektonDataTracker extends RoomDataTracker
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned spawned)
     {
         NPC npc = spawned.getNpc();
+        
         return CoxNpc.withId(npc.getId()).flatMap(coxNpc ->
         {
             // Only match Tekton or Tekton Enraged
@@ -124,17 +152,24 @@ public class TektonDataTracker extends RoomDataTracker
 
                 if (tekton == null)
                 {
-                    tekton = new HpVarbitTrackedNpc(
+                    HpVarbitTrackedNpc newTekton = new HpVarbitTrackedNpc(
                         npc,
                         coxNpc,
                         generateRoomId(npc),
                         new Hitpoints(coxNpc.getBaseHitpoints(getChallenge().getScale()))
                     );
+                    
+                    tekton = newTekton;
+                    
+                    // Initialize anvil state based on spawn ID
+                    tektonAtAnvil = (npc.getId() == 7545);
+                    String anvilStatus = tektonAtAnvil ? " (at anvil)" : " (not at anvil)";
 
                     log.info(
-                        "Tekton tracked instance created with base HP {} (scale={})",
-                        tekton.getHitpoints().getBase(),
-                        getChallenge().getScale()
+                        "Tekton tracked instance created with base HP {} (scale={}){}", 
+                        newTekton.getHitpoints().getBase(),
+                        getChallenge().getScale(),
+                        anvilStatus
                     );
                 }
 
@@ -163,39 +198,83 @@ public class TektonDataTracker extends RoomDataTracker
     protected void onAnimation(AnimationChanged event)
     {
         Actor actor = event.getActor();
+        int animation = actor.getAnimation();
+        
+        // Log all animations for Tekton for debugging
         final var currentTekton = tekton; // Capture for null safety
-        if (currentTekton == null || actor != currentTekton.getNpc())
+        if (currentTekton != null && actor == currentTekton.getNpc())
         {
-            return;
+            log.debug("[Tekton Animation] Animation: {} at tick {}", animation, getTick());
+            
+            switch (animation)
+            {
+                case TEKTON_ANVIL_ANIMATION:
+                    attackThisTick = NpcAttack.COX_TEKTON_ANVIL;
+                    log.info("[Tekton] Anvil animation detected");
+                    // Note: Healing is now detected by NPC ID 7545, not animation
+                    break;
+                case TEKTON_STOMP_ANIMATION:
+                    attackThisTick = NpcAttack.COX_TEKTON_STOMP;
+                    log.info("[Tekton] Stomp animation detected");
+                    break;
+                case TEKTON_AUTO_ANIMATION:
+                    attackThisTick = NpcAttack.COX_TEKTON_AUTO;
+                    log.info("[Tekton] Auto attack animation detected");
+                    break;
+                // Discovered animations - TODO: determine which attacks these represent
+                case TEKTON_UNKNOWN_7483:
+                case TEKTON_UNKNOWN_7487:
+                case TEKTON_UNKNOWN_7488:
+                case TEKTON_UNKNOWN_7493:
+                case TEKTON_UNKNOWN_7494:
+                case TEKTON_UNKNOWN_7481:
+                case TEKTON_UNKNOWN_7482:
+                case TEKTON_UNKNOWN_7484:
+                    log.debug("[Tekton] Known animation: {} at tick {}", animation, getTick());
+                    // For now, treat as auto attacks until we identify specific attacks
+                    attackThisTick = NpcAttack.COX_TEKTON_AUTO;
+                    break;
+                default:
+                    // Only log truly unknown animations
+                    if (animation != -1 && animation != 0)
+                    {
+                        log.info("[Tekton] Unknown animation: {} at tick {}", animation, getTick());
+                    }
+                    break;
+            }
         }
-
-        switch (actor.getAnimation())
+        
+        // Also log animations for any NPCs with "anvil" in the name
+        if (actor instanceof NPC)
         {
-            case TEKTON_ANVIL_ANIMATION:
-                attackThisTick = NpcAttack.COX_TEKTON_ANVIL;
-                break;
-            // case TEKTON_STOMP_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_TEKTON_STOMP;
-            //     break;
-            // case TEKTON_AUTO_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_TEKTON_AUTO;
-            //     break;
-            default:
-                break;
+            NPC npc = (NPC) actor;
+            if (npc.getName() != null && npc.getName().toLowerCase().contains("anvil"))
+            {
+                log.info("[Anvil Animation] NPC: {}, Animation: {} at tick {}", npc.getName(), animation, getTick());
+            }
         }
     }
 
     @Override
     protected void onHitsplat(HitsplatApplied event)
     {
-        if (event.getActor() instanceof NPC &&
-            event.getHitsplat().getHitsplatType() == HitsplatID.HEAL)
+        final var currentTekton = tekton; // Capture for null safety
+        if (currentTekton != null && event.getActor() == currentTekton.getNpc())
         {
-            final var currentTekton = tekton; // Capture for null safety
-            if (currentTekton != null && event.getActor() == currentTekton.getNpc())
+            Hitsplat hitsplat = event.getHitsplat();
+            int hitsplatType = hitsplat.getHitsplatType();
+            int amount = hitsplat.getAmount();
+            
+            // Log all hitsplats on Tekton for debugging
+            log.debug("[Tekton Hitsplat] Type: {}, Amount: {}, at tick {}", hitsplatType, amount, getTick());
+            
+            // Type 6 is the confirmed heal hitsplat type for Tekton
+            if (hitsplatType == 6)
             {
-                healTick = getTick();
-                log.info("[Tekton HP] Heal hitsplat detected at tick {}", healTick);
+                setHealTick(getTick());
+                String context = tektonAtAnvil ? " (at anvil)" : " (not at anvil)";
+                log.info("[Tekton HP] Heal hitsplat detected: type={}, amount={}{} at tick {}", 
+                         hitsplatType, amount, context, getHealTick());
             }
         }
     }
@@ -205,14 +284,16 @@ public class TektonDataTracker extends RoomDataTracker
     {
         if (event.getVarbitId() == TEKTON_HP_VARBIT)
         {
+            int newValue = event.getValue();
+            
             // Use event.getValue() instead of another client call
-            log.info(
+            log.debug(
                 "[Tekton HP] Varbit {} changed to {} at tick {}",
                 event.getVarbitId(),
-                event.getValue(),
+                newValue,
                 getTick()
             );
-            shouldUpdateHitpoints = true;
+            setShouldUpdateHitpoints(true);
         }
     }
 }
