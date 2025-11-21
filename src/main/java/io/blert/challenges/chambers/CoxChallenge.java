@@ -21,6 +21,9 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class CoxChallenge extends RecordableChallenge {
+
+    // Tracks if the player is currently in a raid instance (like CoxTimersPlugin)
+    private boolean inRaid = false;
     private static final Pattern RAID_ENTRY_REGEX =
             Pattern.compile("The raid has begun!.*");
     private static final Pattern RAID_COMPLETION_REGEX =
@@ -37,9 +40,10 @@ public class CoxChallenge extends RecordableChallenge {
     private int raidStartTick = -1;
 
     private static final List<Stage> COX_ROOM_ORDER = List.of(
+        Stage.COX_ICE_DEMON,
         Stage.COX_TEKTON,
         Stage.COX_CRABS,
-        Stage.COX_ICE_DEMON,
+
         Stage.COX_SHAMANS,
         Stage.COX_VANGUARDS,
         Stage.COX_THIEVING,
@@ -73,10 +77,28 @@ public class CoxChallenge extends RecordableChallenge {
         }
         party.clear();
         reportedChallengeTime = -1;
+        startTick = -1;
+        endTick = -1;
+        raidStartTick = -1;
+        inRaid = false;
+        setState(ChallengeState.INACTIVE);
     }
 
     @Override
     protected void onTick() {
+        // Only use instance check for inRaid logic (like CoxTimersPlugin)
+        boolean inInstance = client.getTopLevelWorldView() != null && client.getTopLevelWorldView().isInstance();
+
+        if (inRaid && !inInstance) {
+            log.info("Detected raid exit: inInstance={}", inInstance);
+            endRaid();
+            inRaid = false;
+        } else if (!inRaid && inInstance) {
+            log.info("Detected raid entry: inInstance={}", inInstance);
+            inRaid = true;
+            // Optionally: could auto-start raid here if desired
+        }
+
         // Room tracking logic, e.g. check for entry, tick roomDataTracker, etc.
         if (roomDataTracker != null) {
             roomDataTracker.tick();
@@ -140,6 +162,7 @@ public class CoxChallenge extends RecordableChallenge {
     }
 
     private void startRaid() {
+        inRaid = true;
         setState(ChallengeState.ACTIVE);
         raidStartTick = client.getTickCount();
         startTick = 0; // relative to raid start
@@ -165,11 +188,13 @@ public class CoxChallenge extends RecordableChallenge {
     }
 
     private void endRaid() {
+        inRaid = false;
         setState(ChallengeState.ENDING);
         endTick = getTick();
         dispatchEvent(new ChallengeEndEvent(reportedChallengeTime, endTick - startTick));
-        log.info("Chambers of Xeric raid ended at tick {}", endTick);
+        log.info("Chambers of Xeric raid ended at tick {}", endTick - startTick);
         onTerminate();
+        // State is reset to INACTIVE in onTerminate()
     }
 
     private List<String> getPartyUsernames() {
@@ -193,6 +218,15 @@ public class CoxChallenge extends RecordableChallenge {
 
     private RoomDataTracker createRoomDataTracker(Stage stage) {
         switch (stage) {
+            case COX_SHAMANS:
+                log.info("Creating ShamansDataTracker for stage {}", stage);
+                RoomDataTracker shamansTracker = new io.blert.challenges.chambers.rooms.shamans.ShamansDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(shamansTracker);
+                addEventHandler(shamansTracker);
+                
+                return shamansTracker;
             case COX_TEKTON:
                 log.info("Creating TektonDataTracker for stage {}", stage);
                 RoomDataTracker tracker = new TektonDataTracker(this, stage, client);
