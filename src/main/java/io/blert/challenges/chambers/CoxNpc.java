@@ -9,7 +9,9 @@ public enum CoxNpc {
     TEKTON(new int[]{7540, 7541, 7542, 7545}),
     TEKTON_ENRAGED(new int[]{7543, 7544}),
     ICE_DEMON(7585),
-    LIZARDMAN_SHAMAN(7573),
+    // LIZARDMAN_SHAMAN(new int[]{7573, 7574}),
+    LIZARDMAN_SHAMAN_1(7573),
+    LIZARDMAN_SHAMAN_2(7574),
     VANGUARD_MELEE(7527),
     VANGUARD_RANGED(7528),
     VANGUARD_MAGIC(7529),
@@ -62,6 +64,12 @@ public enum CoxNpc {
             case ICE_DEMON:
                 // Ice Demon base HP - needs verification
                 return 375;
+            // case LIZARDMAN_SHAMAN:
+            //     return 250;
+            case LIZARDMAN_SHAMAN_1:
+                return 250;
+            case LIZARDMAN_SHAMAN_2:
+                return 250;
             default:
                 return hitpoints > 0 ? hitpoints * scale : -1;
         }
