@@ -2,6 +2,13 @@ package io.blert.challenges.chambers;
 
 import io.blert.challenges.chambers.rooms.tekton.TektonDataTracker;
 import io.blert.challenges.chambers.rooms.icedemon.IceDemonDataTracker;
+import io.blert.challenges.chambers.rooms.guardians.GuardiansDataTracker;
+import io.blert.challenges.chambers.rooms.mystics.MysticsDataTracker;
+import io.blert.challenges.chambers.rooms.shamans.ShamansDataTracker;
+import io.blert.challenges.chambers.rooms.vanguards.VanguardsDataTracker;
+import io.blert.challenges.chambers.rooms.muttadiles.MuttadilesDataTracker;
+import io.blert.challenges.chambers.rooms.vespula.VespulaDataTracker;
+import io.blert.challenges.chambers.rooms.vasa.VasaDataTracker;
 import io.blert.core.*;
 import io.blert.events.ChallengeStartEvent;
 import io.blert.events.ChallengeEndEvent;
@@ -30,6 +37,8 @@ public class CoxChallenge extends RecordableChallenge {
             Pattern.compile("Congratulations - your raid is complete!.*");
     private static final Pattern ROOM_COMPLETE_REGEX =
             Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
+    private static final Pattern MAP_LAYOUT_REGEX =
+            Pattern.compile("Map Layout:.*");
 
     private List<Raider> party = new ArrayList<>();
     @Nullable
@@ -38,12 +47,18 @@ public class CoxChallenge extends RecordableChallenge {
     private int startTick = -1;
     private int endTick = -1;
     private int raidStartTick = -1;
+    private boolean isChallengeMode = false; // Track if this is a Challenge Mode raid
+    private boolean hitpointsScaled = false; // Track if we've already scaled the hitpoints
 
     private static final List<Stage> COX_ROOM_ORDER = List.of(
-        Stage.COX_ICE_DEMON,
+        // Stage.COX_VASA,
+        // Stage.COX_VESPULA,
+        // Stage.COX_MUTTADILE,
+        // Stage.COX_VANGUARDS,
+        // Stage.COX_MYSTICS,
         Stage.COX_TEKTON,
         Stage.COX_CRABS,
-
+        Stage.COX_ICE_DEMON,
         Stage.COX_SHAMANS,
         Stage.COX_VANGUARDS,
         Stage.COX_THIEVING,
@@ -64,6 +79,8 @@ public class CoxChallenge extends RecordableChallenge {
     protected void onInitialize() {
         reportedChallengeTime = -1;
         party.clear();
+        isChallengeMode = false;
+        hitpointsScaled = false;
     }
 
     @Override
@@ -81,6 +98,13 @@ public class CoxChallenge extends RecordableChallenge {
         endTick = -1;
         raidStartTick = -1;
         inRaid = false;
+        isChallengeMode = false;
+        hitpointsScaled = false;
+        
+        // Reset all NPC scaled hitpoints
+        for (CoxNpc npc : CoxNpc.values()) {
+            npc.resetScaledHitpoints();
+        }
         setState(ChallengeState.INACTIVE);
     }
 
@@ -123,6 +147,19 @@ public class CoxChallenge extends RecordableChallenge {
             startRaid();
             return;
         }
+        // Map Layout detection for Challenge Mode
+        Matcher mapLayoutMatcher = MAP_LAYOUT_REGEX.matcher(stripped);
+        if (mapLayoutMatcher.find()) {
+            boolean wasChallengeMode = isChallengeMode;
+            isChallengeMode = stripped.toLowerCase().contains("challenge mode");
+            if (isChallengeMode != wasChallengeMode) {
+                log.info("Detected raid mode: {} (from message: '{}')", isChallengeMode ? "Challenge Mode" : "Normal Mode", stripped);
+                // Scale hitpoints when challenge mode is detected (after team composition is known)
+                if (getState() == ChallengeState.ACTIVE) {
+                    scaleNpcHitpoints();
+                }
+            }
+        }
 
         // Raid end
         Matcher completionMatcher = RAID_COMPLETION_REGEX.matcher(stripped);
@@ -137,6 +174,11 @@ public class CoxChallenge extends RecordableChallenge {
             int currentTick = getRelativeTick();
             final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
             tracker.finishRoom(currentTick);
+
+            // Clean up the old tracker properly
+            getEventBus().unregister(tracker);
+            removeEventHandler(tracker);
+            roomDataTracker = null;
 
             // Implicitly start tracking the next room
             Stage nextStage = getNextStage(tracker.getStage());
@@ -205,6 +247,90 @@ public class CoxChallenge extends RecordableChallenge {
         return names;
     }
 
+    /**
+     * Returns whether this raid is Challenge Mode.
+     * This is determined by checking if the "Map Layout:" chat message contains "Challenge Mode".
+     * @return true if this is a Challenge Mode raid, false otherwise
+     */
+    public boolean isChallengeMode() {
+        return isChallengeMode;
+    }
+
+    /**
+     * Scales all COX NPC base hitpoints once based on team size and challenge mode.
+     * After calling this, getBaseHitpoints() will return the scaled values.
+     */
+    public void scaleNpcHitpoints() {
+        if (hitpointsScaled) {
+            return; // Already scaled
+        }
+        
+        int partySize = getScale(); // PS: Party size
+        boolean challengeMode = isChallengeMode(); // CM: Challenge mode
+        
+        // Get party stats - for now use local player stats until we implement proper party tracking
+        int maxCombatLevel = client.getLocalPlayer().getCombatLevel(); // CMB: Maximum player combat level in the party
+        int maxHpLevel = client.getRealSkillLevel(net.runelite.api.Skill.HITPOINTS);      // HP: Maximum player HP level in the party  
+        int avgMiningLevel = client.getRealSkillLevel(net.runelite.api.Skill.MINING);     // MIN: Average mining level of the party
+        
+        log.info("Scaling NPC hitpoints for PS:{} CMB:{} HP:{} MIN:{} CM:{}", 
+                 partySize, maxCombatLevel, maxHpLevel, avgMiningLevel, challengeMode);
+        
+        // Scale all NPCs that will be used in this raid
+        for (CoxNpc npc : CoxNpc.values()) {
+            if (npc.getOriginalBaseHitpoints() > 0) {
+                int scaledHp = calculateScaledHitpoints(npc, partySize, maxCombatLevel, maxHpLevel, avgMiningLevel, challengeMode);
+                npc.setScaledHitpoints(scaledHp);
+                log.debug("NPC {} scaled from {} to {} HP", npc, npc.getOriginalBaseHitpoints(), scaledHp);
+            }
+        }
+        
+        hitpointsScaled = true;
+        log.info("NPC hitpoint scaling complete");
+    }
+
+    /**
+     * Calculates scaled hitpoints for a COX NPC using the proper formulas:
+     * - All but Guardians and Olm: hp=base_hp*CMB/126*(PS/2+1)*(CM?3:2)/2
+     * - Guardians: hp=(151+MIN)*CMB/126*(PS/2+1)*(CM?3:2)/2
+     * - Olm: hp=300*(PS-PS/8*3+1) (ignored for now as requested)
+     */
+    private int calculateScaledHitpoints(CoxNpc npc, int partySize, int maxCombatLevel, int maxHpLevel, int avgMiningLevel, boolean challengeMode) {
+        int baseHp = npc.getOriginalBaseHitpoints();
+        // Skip NPCs without defined HP
+        if (baseHp <= 0) {
+            return baseHp;
+        }
+        // Skip Olm for now as requested
+        if (npc == CoxNpc.OLM_HEAD || npc == CoxNpc.OLM_MAGE_HAND || npc == CoxNpc.OLM_MELEE_HAND) {
+            return baseHp;
+        }
+        double scaledHp;
+        if (npc == CoxNpc.GUARDIAN_1 || npc == CoxNpc.GUARDIAN_2) {
+            // Guardians: hp=(151+MIN)*CMB/126*(PS/2+1)*(CM?3:2)/2
+            scaledHp = (151.0 + avgMiningLevel) * maxCombatLevel / 126.0 * (partySize / 2.0 + 1) * (challengeMode ? 3 : 2) / 2.0;
+        } else {
+            // All but Guardians and Olm: hp=base_hp*CMB/126*(PS/2+1)*(CM?3:2)/2
+            scaledHp = baseHp * maxCombatLevel / 126.0 * (partySize / 2.0 + 1) * (challengeMode ? 3 : 2) / 2.0;
+        }
+        return (int) Math.round(scaledHp);
+    }
+
+    /**
+     * Gets the scaled hitpoints for an NPC. After scaleNpcHitpoints() is called,
+     * this is equivalent to calling coxNpc.getBaseHitpoints().
+     * 
+     * @param coxNpc The NPC to get scaled hitpoints for
+     * @return The scaled hitpoints
+     */
+    public int getScaledHitpoints(CoxNpc coxNpc) {
+        if (!hitpointsScaled) {
+            log.warn("Hitpoints not yet scaled! Call scaleNpcHitpoints() first.");
+            return coxNpc.getOriginalBaseHitpoints();
+        }
+        return coxNpc.getBaseHitpoints();
+    }
+
     private Stage getNextStage(Stage currentStage) {
         if (currentStage == null) {
             return COX_ROOM_ORDER.get(0); // First room
@@ -218,9 +344,27 @@ public class CoxChallenge extends RecordableChallenge {
 
     private RoomDataTracker createRoomDataTracker(Stage stage) {
         switch (stage) {
+            case COX_MYSTICS:
+                log.info("Creating MysticsDataTracker for stage {}", stage);
+                RoomDataTracker mysticsTracker = new MysticsDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(mysticsTracker);
+                addEventHandler(mysticsTracker);
+                
+                return mysticsTracker;
+            case COX_GUARDIANS:
+                log.info("Creating GuardiansDataTracker for stage {}", stage);
+                RoomDataTracker guardiansTracker = new GuardiansDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(guardiansTracker);
+                addEventHandler(guardiansTracker);
+                
+                return guardiansTracker;
             case COX_SHAMANS:
                 log.info("Creating ShamansDataTracker for stage {}", stage);
-                RoomDataTracker shamansTracker = new io.blert.challenges.chambers.rooms.shamans.ShamansDataTracker(this, stage, client);
+                RoomDataTracker shamansTracker = new ShamansDataTracker(this, stage, client);
                 
                 // Register with event bus to receive NPC spawn/despawn events
                 getEventBus().register(shamansTracker);
@@ -245,6 +389,42 @@ public class CoxChallenge extends RecordableChallenge {
                 addEventHandler(iceDemonTracker);
                 
                 return iceDemonTracker;
+            case COX_VANGUARDS:
+                log.info("Creating VanguardsDataTracker for stage {}", stage);
+                RoomDataTracker vanguardsTracker = new VanguardsDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(vanguardsTracker);
+                addEventHandler(vanguardsTracker);
+                
+                return vanguardsTracker;
+            case COX_MUTTADILE:
+                log.info("Creating MuttadilesDataTracker for stage {}", stage);
+                RoomDataTracker muttadilesTracker = new MuttadilesDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(muttadilesTracker);
+                addEventHandler(muttadilesTracker);
+                
+                return muttadilesTracker;
+            case COX_VESPULA:
+                log.info("Creating VespulaDataTracker for stage {}", stage);
+                RoomDataTracker vespulaTracker = new VespulaDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(vespulaTracker);
+                addEventHandler(vespulaTracker);
+                
+                return vespulaTracker;
+            case COX_VASA:
+                log.info("Creating VasaDataTracker for stage {}", stage);
+                RoomDataTracker vasaTracker = new VasaDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(vasaTracker);
+                addEventHandler(vasaTracker);
+                
+                return vasaTracker;
             default:
                 log.info("Creating generic CoxRoomDataTracker for stage {}", stage);
                 RoomDataTracker genericTracker = new CoxRoomDataTracker(this, stage, client);

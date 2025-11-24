@@ -21,7 +21,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.chambers.rooms.tekton;
+package io.blert.challenges.chambers.rooms.vespula;
 
 import io.blert.challenges.chambers.CoxNpc;
 import io.blert.challenges.chambers.HpVarbitTrackedNpc;
@@ -40,36 +40,36 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 
 @Slf4j
-public class TektonDataTracker extends RoomDataTracker
+public class VespulaDataTracker extends RoomDataTracker
 {
-    // UPDATED: correct Tekton HP varbit based on dev-shell logging
-    private static final int TEKTON_HP_VARBIT = 6099;
+    // UPDATED: correct Vespula HP varbit based on dev-shell logging
+    private static final int VESPULA_HP_VARBIT = 6099;
 
-    // TODO: update when you finalize Tekton animations from logging
-    private static final int TEKTON_ANVIL_ANIMATION = 7475;
-    private static final int TEKTON_STOMP_ANIMATION = 7491;
-    private static final int TEKTON_AUTO_ANIMATION = 7492;
+    // TODO: update when you finalize Vespula animations from logging
+    private static final int VESPULA_ANVIL_ANIMATION = 7475;
+    private static final int VESPULA_STOMP_ANIMATION = 7491;
+    private static final int VESPULA_AUTO_ANIMATION = 7492;
     // Additional discovered animations
-    private static final int TEKTON_UNKNOWN_7483 = 7483;
-    private static final int TEKTON_UNKNOWN_7487 = 7487;
-    private static final int TEKTON_UNKNOWN_7488 = 7488;
-    private static final int TEKTON_UNKNOWN_7493 = 7493;
-    private static final int TEKTON_UNKNOWN_7494 = 7494;
-    private static final int TEKTON_UNKNOWN_7481 = 7481;
-    private static final int TEKTON_UNKNOWN_7482 = 7482;
-    private static final int TEKTON_UNKNOWN_7484 = 7484;
+    private static final int VESPULA_UNKNOWN_7483 = 7483;
+    private static final int VESPULA_UNKNOWN_7487 = 7487;
+    private static final int VESPULA_UNKNOWN_7488 = 7488;
+    private static final int VESPULA_UNKNOWN_7493 = 7493;
+    private static final int VESPULA_UNKNOWN_7494 = 7494;
+    private static final int VESPULA_UNKNOWN_7481 = 7481;
+    private static final int VESPULA_UNKNOWN_7482 = 7482;
+    private static final int VESPULA_UNKNOWN_7484 = 7484;
 
-    private @Nullable HpVarbitTrackedNpc tekton;
+    private @Nullable HpVarbitTrackedNpc vespula;
     private @Nullable NpcAttack attackThisTick = null;
-    private boolean tektonAtAnvil = false; // Track when Tekton is at anvil (ID 7545)
+    private boolean vespulaAtAnvil = false; // Track when Vespula is at anvil (ID 7545)
 
     // Track previous varbit value to detect heals
     private int previousVarbitValue = -1;
 
-    public TektonDataTracker(RecordableChallenge challenge, Stage stage, Client client)
+    public VespulaDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
         super(challenge, stage, client);
-        log.info("[TektonDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
+        log.info("[VespulaDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
     }
 
     @Override
@@ -78,53 +78,53 @@ public class TektonDataTracker extends RoomDataTracker
         super.onTick();
 
         final int tick = getTick();
-        final var currentTekton = tekton; // Capture for null safety
+        final var currentVespula = vespula; // Capture for null safety
         
-        // Check if Tekton's state changed (particularly if it's now at anvil)
-        if (currentTekton != null)
+        // Check if Vespula's state changed (particularly if it's now at anvil)
+        if (currentVespula != null)
         {
-            int currentId = currentTekton.getNpc().getId();
-            boolean wasAtAnvil = tektonAtAnvil;
-            tektonAtAnvil = (currentId == 7545); // Tekton at anvil
+            int currentId = currentVespula.getNpc().getId();
+            boolean wasAtAnvil = vespulaAtAnvil;
+            vespulaAtAnvil = (currentId == 7545); // Vespula at anvil
             
             // Log state changes
-            if (!wasAtAnvil && tektonAtAnvil)
+            if (!wasAtAnvil && vespulaAtAnvil)
             {
-                log.info("[Tekton] Moved to anvil (ID: 7545) - will heal");
+                log.info("[Vespula] Moved to anvil (ID: 7545) - will heal");
                 setHealTick(tick); // Set heal tick when arriving at anvil
             }
-            else if (wasAtAnvil && !tektonAtAnvil)
+            else if (wasAtAnvil && !vespulaAtAnvil)
             {
-                log.info("[Tekton] Left anvil (ID: {}) - healing stopped", currentId);
+                log.info("[Vespula] Left anvil (ID: {}) - healing stopped", currentId);
             }
         }
 
         // Poll the varbit every tick, only log and update if it changed
-        if (currentTekton != null)
+        if (currentVespula != null)
         {
-            int varbitValue = client.getVarbitValue(TEKTON_HP_VARBIT);
+            int varbitValue = client.getVarbitValue(VESPULA_HP_VARBIT);
             if (previousVarbitValue != -1 && varbitValue != previousVarbitValue) {
                 if (varbitValue > previousVarbitValue) {
-                    // log.info("[Tekton HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
+                    // log.info("[Vespula HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
                     // setHealTick(tick);
                 } else {
-                    log.info("[Tekton HP] Damaged: {} -> {} (-{}) at tick {}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick);
+                    log.info("[Vespula HP] Damaged: {} -> {} (-{}) at tick {}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick);
                 }
-                currentTekton.updateHitpointsFromVarbit(varbitValue);
+                currentVespula.updateHitpointsFromVarbit(varbitValue);
             }
             previousVarbitValue = varbitValue;
         }
 
         if (attackThisTick != null)
         {
-            if (currentTekton != null)
+            if (currentVespula != null)
             {
                 dispatchEvent(new NpcAttackEvent(
                     getStage(),
                     tick,
-                    getWorldLocation(currentTekton.getNpc()),
+                    getWorldLocation(currentVespula.getNpc()),
                     attackThisTick,
-                    currentTekton
+                    currentVespula
                 ));
             }
         }
@@ -139,40 +139,40 @@ public class TektonDataTracker extends RoomDataTracker
         
         return CoxNpc.withId(npc.getId()).flatMap(coxNpc ->
         {
-            // Only match Tekton or Tekton Enraged
-            if (coxNpc == CoxNpc.TEKTON || coxNpc == CoxNpc.TEKTON_ENRAGED)
+            // Only match Vespula or Vespula Enraged
+            if (coxNpc == CoxNpc.ABYSSAL_PORTAL )
             {
-                log.info("Detected Tekton NPC spawn: id={} (enum={})", npc.getId(), coxNpc);
+                log.info("Detected Vespula NPC spawn: id={} (enum={})", npc.getId(), coxNpc);
 
-                if (tekton == null)
+                if (vespula == null)
                 {
                     // Initialize previousVarbitValue on spawn
-                    previousVarbitValue = client.getVarbitValue(TEKTON_HP_VARBIT);
-                    HpVarbitTrackedNpc newTekton = new HpVarbitTrackedNpc(
+                    previousVarbitValue = client.getVarbitValue(VESPULA_HP_VARBIT);
+                    HpVarbitTrackedNpc newVespula = new HpVarbitTrackedNpc(
                         npc,
                         coxNpc,
                         generateRoomId(npc),
                         new Hitpoints(coxNpc.getBaseHitpoints())
                     );
                     
-                    tekton = newTekton;
+                    vespula = newVespula;
                     
                     // Initialize anvil state based on spawn ID
-                    tektonAtAnvil = (npc.getId() == 7545);
-                    String anvilStatus = tektonAtAnvil ? " (at anvil)" : " (not at anvil)";
+                    vespulaAtAnvil = (npc.getId() == 7545);
+                    String anvilStatus = vespulaAtAnvil ? " (at anvil)" : " (not at anvil)";
 
                     log.info(
-                        "Tekton tracked instance created with base HP {} (scale={}){}", 
-                        newTekton.getHitpoints().getBase(),
+                        "Vespula tracked instance created with base HP {} (scale={}){}", 
+                        newVespula.getHitpoints().getBase(),
                         getChallenge().getScale(),
                         anvilStatus
                     );
                 }
 
-                return Optional.of(tekton);
+                return Optional.of(vespula);
             }
 
-            // Handle other Tekton room NPCs (e.g., anvils) if needed
+            // Handle other Vespula room NPCs (e.g., anvils) if needed
             return Optional.empty();
         });
     }
@@ -182,18 +182,18 @@ public class TektonDataTracker extends RoomDataTracker
     {
         NPC npc = despawned.getNpc();
         
-        // Capture tekton reference for comparison
-        HpVarbitTrackedNpc currentTekton = tekton;
+        // Capture vespula reference for comparison
+        HpVarbitTrackedNpc currentVespula = vespula;
         // Only log and cleanup if matches the despawned NPC
-        if (npc == currentTekton.getNpc())
+        if (npc == currentVespula.getNpc())
         {
-            // Clear tekton immediately to prevent duplicate processing
-            tekton = null;
+            // Clear vespula immediately to prevent duplicate processing
+            vespula = null;
             previousVarbitValue = -1;
             
-            log.info("[Tekton] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
+            log.info("[Vespula] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
             int tick_cycle = (4 - (getTick() % 4)) % 4;
-            log.info("[Tekton] 4 tick cycle offset: {}, Anim Tick: {}, RoomEnd: {}", tick_cycle, getTick() + tick_cycle, getTick() + tick_cycle + 4);
+            log.info("[Vespula] 4 tick cycle offset: {}, RoomEnd: {}", tick_cycle, getTick() + tick_cycle);
             
             return true;
         }
@@ -206,45 +206,45 @@ public class TektonDataTracker extends RoomDataTracker
         Actor actor = event.getActor();
         int animation = actor.getAnimation();
         
-        // Log all animations for Tekton for debugging
-        final var currentTekton = tekton; // Capture for null safety
-        if (currentTekton != null && actor == currentTekton.getNpc())
+        // Log all animations for Vespula for debugging
+        final var currentVespula = vespula; // Capture for null safety
+        if (currentVespula != null && actor == currentVespula.getNpc())
         {
-            // log.debug("[Tekton Animation] Animation: {} at tick {}", animation, getTick());
+            // log.debug("[Vespula Animation] Animation: {} at tick {}", animation, getTick());
             
             switch (animation)
             {
-                case TEKTON_ANVIL_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_ANVIL;
-                    log.info("[Tekton] Anvil animation detected");
+                case VESPULA_ANVIL_ANIMATION:
+                    // attackThisTick = NpcAttack.COX_VESPULA_ANVIL;
+                    log.info("[Vespula] Anvil animation detected");
                     // Note: Healing is now detected by NPC ID 7545, not animation
                     break;
-                case TEKTON_STOMP_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_STOMP;
-                    // log.info("[Tekton] Stomp animation detected");
+                case VESPULA_STOMP_ANIMATION:
+                    // attackThisTick = NpcAttack.COX_VESPULA_STOMP;
+                    // log.info("[Vespula] Stomp animation detected");
                     break;
-                case TEKTON_AUTO_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_AUTO;
-                    // log.info("[Tekton] Auto attack animation detected");
+                case VESPULA_AUTO_ANIMATION:
+                    // attackThisTick = NpcAttack.COX_VESPULA_AUTO;
+                    // log.info("[Vespula] Auto attack animation detected");
                     break;
                 // Discovered animations - TODO: determine which attacks these represent
-                case TEKTON_UNKNOWN_7483:
-                case TEKTON_UNKNOWN_7487:
-                case TEKTON_UNKNOWN_7488:
-                case TEKTON_UNKNOWN_7493:
-                case TEKTON_UNKNOWN_7494:
-                case TEKTON_UNKNOWN_7481:
-                case TEKTON_UNKNOWN_7482:
-                case TEKTON_UNKNOWN_7484:
-                    // log.debug("[Tekton] Known animation: {} at tick {}", animation, getTick());
+                case VESPULA_UNKNOWN_7483:
+                case VESPULA_UNKNOWN_7487:
+                case VESPULA_UNKNOWN_7488:
+                case VESPULA_UNKNOWN_7493:
+                case VESPULA_UNKNOWN_7494:
+                case VESPULA_UNKNOWN_7481:
+                case VESPULA_UNKNOWN_7482:
+                case VESPULA_UNKNOWN_7484:
+                    // log.debug("[Vespula] Known animation: {} at tick {}", animation, getTick());
                     // For now, treat as auto attacks until we identify specific attacks
-                    attackThisTick = NpcAttack.COX_TEKTON_AUTO;
+                    // attackThisTick = NpcAttack.COX_VESPULA_AUTO;
                     break;
                 default:
                     // Only log truly unknown animations
                     if (animation != -1 && animation != 0)
                     {
-                        // log.info("[Tekton] Unknown animation: {} at tick {}", animation, getTick());
+                        // log.info("[Vespula] Unknown animation: {} at tick {}", animation, getTick());
                     }
                     break;
             }
@@ -264,19 +264,19 @@ public class TektonDataTracker extends RoomDataTracker
     @Override
     protected void onHitsplat(HitsplatApplied event)
     {
-        final var currentTekton = tekton; // Capture for null safety
-        if (currentTekton != null && event.getActor() == currentTekton.getNpc())
+        final var currentVespula = vespula; // Capture for null safety
+        if (currentVespula != null && event.getActor() == currentVespula.getNpc())
         {
             Hitsplat hitsplat = event.getHitsplat();
             int hitsplatType = hitsplat.getHitsplatType();
             int amount = hitsplat.getAmount();
 
-            // Type 6 is the confirmed heal hitsplat type for Tekton
+            // Type 6 is the confirmed heal hitsplat type for Vespula
             if (hitsplatType == 6)
             {
-                log.info("[Tekton HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, previousVarbitValue + amount, (amount), getTick());
+                log.info("[Vespula HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, previousVarbitValue + amount, (amount), getTick());
                 int newHp = previousVarbitValue + amount;
-                currentTekton.setHitpoints(currentTekton.getHitpoints().update(newHp));
+                currentVespula.setHitpoints(currentVespula.getHitpoints().update(newHp));
                 previousVarbitValue = newHp;
             }
         }
@@ -285,13 +285,13 @@ public class TektonDataTracker extends RoomDataTracker
     @Override
     protected void onVarbit(VarbitChanged event)
     {
-        if (event.getVarbitId() == TEKTON_HP_VARBIT)
+        if (event.getVarbitId() == VESPULA_HP_VARBIT)
         {
             int newValue = event.getValue();
             
             // Use event.getValue() instead of another client call
             log.debug(
-                "[Tekton HP] Varbit {} changed to {} at tick {}",
+                "[Vespula HP] Varbit {} changed to {} at tick {}",
                 event.getVarbitId(),
                 newValue,
                 getTick()

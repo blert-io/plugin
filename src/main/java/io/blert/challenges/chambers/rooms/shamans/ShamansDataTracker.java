@@ -24,6 +24,7 @@
 package io.blert.challenges.chambers.rooms.shamans;
 
 import io.blert.challenges.chambers.CoxNpc;
+import io.blert.challenges.chambers.CoxChallenge;
 import io.blert.challenges.chambers.RoomDataTracker;
 import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
@@ -169,15 +170,17 @@ public class ShamansDataTracker extends RoomDataTracker
                 
                 // Check if this specific NPC ID is already being tracked
                 if (!shamans.containsKey(npc.getId())) {
+                    CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
                     BasicTrackedNpc newShaman = new BasicTrackedNpc(
                         npc,
                         coxNpc,
                         generateRoomId(npc),
-                        new Hitpoints(coxNpc.getBaseHitpoints(getChallenge().getScale()))
+                        new Hitpoints(coxNpc.getBaseHitpoints())
                     );
                     shamans.put(npc.getId(), newShaman);
-                    log.info("✓ Shaman tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Shamans: {}", 
-                             npc.getId(), coxNpc, newShaman.getHitpoints().getBase(), getChallenge().getScale(), shamans.size());
+                    String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
+                    log.info("✓ Shaman tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Shamans: {}{}", 
+                             npc.getId(), coxNpc, newShaman.getHitpoints().getBase(), getChallenge().getScale(), shamans.size(), modeStatus);
                     return Optional.of(newShaman);
                 } else {
                     log.info("! Shaman NPC id={} already being tracked, ignoring duplicate spawn", npc.getId());
