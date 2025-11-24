@@ -56,7 +56,7 @@ public class HpVarbitTrackedNpc extends BasicTrackedNpc {
 
         // As bosses can have several thousands of hitpoints, the calculated value is not entirely precise.
         // If the current value is within a few hitpoints of the calculated value, assume that it is correct.
-        if (Math.abs(currentHitpoints - updatedHitpoints) > 5) {
+        if (Math.abs(currentHitpoints - updatedHitpoints) > 1) {
             Hitpoints newHitpoints = getHitpoints().update(updatedHitpoints);
             setHitpoints(newHitpoints);
         }

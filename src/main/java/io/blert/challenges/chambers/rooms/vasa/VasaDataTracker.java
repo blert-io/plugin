@@ -21,7 +21,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.chambers.rooms.tekton;
+package io.blert.challenges.chambers.rooms.vasa;
 
 import io.blert.challenges.chambers.CoxNpc;
 import io.blert.challenges.chambers.HpVarbitTrackedNpc;
@@ -40,36 +40,36 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 
 @Slf4j
-public class TektonDataTracker extends RoomDataTracker
+public class VasaDataTracker extends RoomDataTracker
 {
-    // UPDATED: correct Tekton HP varbit based on dev-shell logging
-    private static final int TEKTON_HP_VARBIT = 6099;
+    // UPDATED: correct Vasa HP varbit based on dev-shell logging
+    private static final int VASA_HP_VARBIT = 6099;
 
-    // TODO: update when you finalize Tekton animations from logging
-    private static final int TEKTON_ANVIL_ANIMATION = 7475;
-    private static final int TEKTON_STOMP_ANIMATION = 7491;
-    private static final int TEKTON_AUTO_ANIMATION = 7492;
+    // TODO: update when you finalize Vasa animations from logging
+    private static final int VASA_ANVIL_ANIMATION = 7475;
+    private static final int VASA_STOMP_ANIMATION = 7491;
+    private static final int VASA_AUTO_ANIMATION = 7492;
     // Additional discovered animations
-    private static final int TEKTON_UNKNOWN_7483 = 7483;
-    private static final int TEKTON_UNKNOWN_7487 = 7487;
-    private static final int TEKTON_UNKNOWN_7488 = 7488;
-    private static final int TEKTON_UNKNOWN_7493 = 7493;
-    private static final int TEKTON_UNKNOWN_7494 = 7494;
-    private static final int TEKTON_UNKNOWN_7481 = 7481;
-    private static final int TEKTON_UNKNOWN_7482 = 7482;
-    private static final int TEKTON_UNKNOWN_7484 = 7484;
+    private static final int VASA_UNKNOWN_7483 = 7483;
+    private static final int VASA_UNKNOWN_7487 = 7487;
+    private static final int VASA_UNKNOWN_7488 = 7488;
+    private static final int VASA_UNKNOWN_7493 = 7493;
+    private static final int VASA_UNKNOWN_7494 = 7494;
+    private static final int VASA_UNKNOWN_7481 = 7481;
+    private static final int VASA_UNKNOWN_7482 = 7482;
+    private static final int VASA_UNKNOWN_7484 = 7484;
 
-    private @Nullable HpVarbitTrackedNpc tekton;
+    private @Nullable HpVarbitTrackedNpc vasa;
     private @Nullable NpcAttack attackThisTick = null;
-    private boolean tektonAtAnvil = false; // Track when Tekton is at anvil (ID 7545)
+    private boolean vasaAtAnvil = false; // Track when Vasa is at anvil (ID 7545)
 
     // Track previous varbit value to detect heals
     private int previousVarbitValue = -1;
 
-    public TektonDataTracker(RecordableChallenge challenge, Stage stage, Client client)
+    public VasaDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
         super(challenge, stage, client);
-        log.info("[TektonDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
+        log.info("[VasaDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
     }
 
     @Override
@@ -78,53 +78,53 @@ public class TektonDataTracker extends RoomDataTracker
         super.onTick();
 
         final int tick = getTick();
-        final var currentTekton = tekton; // Capture for null safety
+        final var currentVasa = vasa; // Capture for null safety
         
-        // Check if Tekton's state changed (particularly if it's now at anvil)
-        if (currentTekton != null)
+        // Check if Vasa's state changed (particularly if it's now at anvil)
+        if (currentVasa != null)
         {
-            int currentId = currentTekton.getNpc().getId();
-            boolean wasAtAnvil = tektonAtAnvil;
-            tektonAtAnvil = (currentId == 7545); // Tekton at anvil
+            int currentId = currentVasa.getNpc().getId();
+            boolean wasAtAnvil = vasaAtAnvil;
+            vasaAtAnvil = (currentId == 7545); // Vasa at anvil
             
             // Log state changes
-            if (!wasAtAnvil && tektonAtAnvil)
+            if (!wasAtAnvil && vasaAtAnvil)
             {
-                log.info("[Tekton] Moved to anvil (ID: 7545) - will heal");
+                log.info("[Vasa] Moved to anvil (ID: 7545) - will heal");
                 setHealTick(tick); // Set heal tick when arriving at anvil
             }
-            else if (wasAtAnvil && !tektonAtAnvil)
+            else if (wasAtAnvil && !vasaAtAnvil)
             {
-                log.info("[Tekton] Left anvil (ID: {}) - healing stopped", currentId);
+                log.info("[Vasa] Left anvil (ID: {}) - healing stopped", currentId);
             }
         }
 
         // Poll the varbit every tick, only log and update if it changed
-        if (currentTekton != null)
+        if (currentVasa != null)
         {
-            int varbitValue = client.getVarbitValue(TEKTON_HP_VARBIT);
+            int varbitValue = client.getVarbitValue(VASA_HP_VARBIT);
             if (previousVarbitValue != -1 && varbitValue != previousVarbitValue) {
                 if (varbitValue > previousVarbitValue) {
-                    // log.info("[Tekton HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
+                    // log.info("[Vasa HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
                     // setHealTick(tick);
                 } else {
-                    log.info("[Tekton HP] Damaged: {} -> {} (-{}) at tick {}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick);
+                    log.info("[Vasa HP] Damaged: {} -> {} (-{}) at tick {}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick);
                 }
-                currentTekton.updateHitpointsFromVarbit(varbitValue);
+                currentVasa.updateHitpointsFromVarbit(varbitValue);
             }
             previousVarbitValue = varbitValue;
         }
 
         if (attackThisTick != null)
         {
-            if (currentTekton != null)
+            if (currentVasa != null)
             {
                 dispatchEvent(new NpcAttackEvent(
                     getStage(),
                     tick,
-                    getWorldLocation(currentTekton.getNpc()),
+                    getWorldLocation(currentVasa.getNpc()),
                     attackThisTick,
-                    currentTekton
+                    currentVasa
                 ));
             }
         }
@@ -139,40 +139,40 @@ public class TektonDataTracker extends RoomDataTracker
         
         return CoxNpc.withId(npc.getId()).flatMap(coxNpc ->
         {
-            // Only match Tekton or Tekton Enraged
-            if (coxNpc == CoxNpc.TEKTON || coxNpc == CoxNpc.TEKTON_ENRAGED)
+            // Only match Vasa or Vasa Enraged
+            if (coxNpc == CoxNpc.VASA_NISTIRIO)
             {
-                log.info("Detected Tekton NPC spawn: id={} (enum={})", npc.getId(), coxNpc);
+                log.info("Detected Vasa NPC spawn: id={} (enum={})", npc.getId(), coxNpc);
 
-                if (tekton == null)
+                if (vasa == null)
                 {
                     // Initialize previousVarbitValue on spawn
-                    previousVarbitValue = client.getVarbitValue(TEKTON_HP_VARBIT);
-                    HpVarbitTrackedNpc newTekton = new HpVarbitTrackedNpc(
+                    previousVarbitValue = client.getVarbitValue(VASA_HP_VARBIT);
+                    HpVarbitTrackedNpc newVasa = new HpVarbitTrackedNpc(
                         npc,
                         coxNpc,
                         generateRoomId(npc),
                         new Hitpoints(coxNpc.getBaseHitpoints())
                     );
                     
-                    tekton = newTekton;
+                    vasa = newVasa;
                     
                     // Initialize anvil state based on spawn ID
-                    tektonAtAnvil = (npc.getId() == 7545);
-                    String anvilStatus = tektonAtAnvil ? " (at anvil)" : " (not at anvil)";
+                    vasaAtAnvil = (npc.getId() == 7545);
+                    String anvilStatus = vasaAtAnvil ? " (at anvil)" : " (not at anvil)";
 
                     log.info(
-                        "Tekton tracked instance created with base HP {} (scale={}){}", 
-                        newTekton.getHitpoints().getBase(),
+                        "Vasa tracked instance created with base HP {} (scale={}){}", 
+                        newVasa.getHitpoints().getBase(),
                         getChallenge().getScale(),
                         anvilStatus
                     );
                 }
 
-                return Optional.of(tekton);
+                return Optional.of(vasa);
             }
 
-            // Handle other Tekton room NPCs (e.g., anvils) if needed
+            // Handle other Vasa room NPCs (e.g., anvils) if needed
             return Optional.empty();
         });
     }
@@ -182,18 +182,23 @@ public class TektonDataTracker extends RoomDataTracker
     {
         NPC npc = despawned.getNpc();
         
-        // Capture tekton reference for comparison
-        HpVarbitTrackedNpc currentTekton = tekton;
-        // Only log and cleanup if matches the despawned NPC
-        if (npc == currentTekton.getNpc())
+        // Capture vasa reference for comparison
+        HpVarbitTrackedNpc currentVasa = vasa;
+        if (currentVasa == null)
         {
-            // Clear tekton immediately to prevent duplicate processing
-            tekton = null;
+            log.debug("[Vasa] Vasa already null, ignoring despawn of NPC id={}", npc.getId());
+            return false;
+        }
+        
+        // Only log and cleanup if matches the despawned NPC
+        if (npc == currentVasa.getNpc())
+        {
+            // Clear vasa immediately to prevent duplicate processing
+            vasa = null;
             previousVarbitValue = -1;
             
-            log.info("[Tekton] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
-            int tick_cycle = (4 - (getTick() % 4)) % 4;
-            log.info("[Tekton] 4 tick cycle offset: {}, Anim Tick: {}, RoomEnd: {}", tick_cycle, getTick() + tick_cycle, getTick() + tick_cycle + 4);
+            log.info("[Vasa] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
+            log.info("[Vasa] RoomEnd: {}", getTick() + 5);
             
             return true;
         }
@@ -206,45 +211,45 @@ public class TektonDataTracker extends RoomDataTracker
         Actor actor = event.getActor();
         int animation = actor.getAnimation();
         
-        // Log all animations for Tekton for debugging
-        final var currentTekton = tekton; // Capture for null safety
-        if (currentTekton != null && actor == currentTekton.getNpc())
+        // Log all animations for Vasa for debugging
+        final var currentVasa = vasa; // Capture for null safety
+        if (currentVasa != null && actor == currentVasa.getNpc())
         {
-            // log.debug("[Tekton Animation] Animation: {} at tick {}", animation, getTick());
+            // log.debug("[Vasa Animation] Animation: {} at tick {}", animation, getTick());
             
             switch (animation)
             {
-                case TEKTON_ANVIL_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_ANVIL;
-                    log.info("[Tekton] Anvil animation detected");
+                case VASA_ANVIL_ANIMATION:
+                    // attackThisTick = NpcAttack.COX_VASA_ANVIL;
+                    log.info("[Vasa] Anvil animation detected");
                     // Note: Healing is now detected by NPC ID 7545, not animation
                     break;
-                case TEKTON_STOMP_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_STOMP;
-                    // log.info("[Tekton] Stomp animation detected");
+                case VASA_STOMP_ANIMATION:
+                    // attackThisTick = NpcAttack.COX_VASA_STOMP;
+                    // log.info("[Vasa] Stomp animation detected");
                     break;
-                case TEKTON_AUTO_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_AUTO;
-                    // log.info("[Tekton] Auto attack animation detected");
+                case VASA_AUTO_ANIMATION:
+                    // attackThisTick = NpcAttack.COX_VASA_AUTO;
+                    // log.info("[Vasa] Auto attack animation detected");
                     break;
                 // Discovered animations - TODO: determine which attacks these represent
-                case TEKTON_UNKNOWN_7483:
-                case TEKTON_UNKNOWN_7487:
-                case TEKTON_UNKNOWN_7488:
-                case TEKTON_UNKNOWN_7493:
-                case TEKTON_UNKNOWN_7494:
-                case TEKTON_UNKNOWN_7481:
-                case TEKTON_UNKNOWN_7482:
-                case TEKTON_UNKNOWN_7484:
-                    // log.debug("[Tekton] Known animation: {} at tick {}", animation, getTick());
+                case VASA_UNKNOWN_7483:
+                case VASA_UNKNOWN_7487:
+                case VASA_UNKNOWN_7488:
+                case VASA_UNKNOWN_7493:
+                case VASA_UNKNOWN_7494:
+                case VASA_UNKNOWN_7481:
+                case VASA_UNKNOWN_7482:
+                case VASA_UNKNOWN_7484:
+                    // log.debug("[Vasa] Known animation: {} at tick {}", animation, getTick());
                     // For now, treat as auto attacks until we identify specific attacks
-                    attackThisTick = NpcAttack.COX_TEKTON_AUTO;
+                    // attackThisTick = NpcAttack.COX_VASA_AUTO;
                     break;
                 default:
                     // Only log truly unknown animations
                     if (animation != -1 && animation != 0)
                     {
-                        // log.info("[Tekton] Unknown animation: {} at tick {}", animation, getTick());
+                        // log.info("[Vasa] Unknown animation: {} at tick {}", animation, getTick());
                     }
                     break;
             }
@@ -264,19 +269,19 @@ public class TektonDataTracker extends RoomDataTracker
     @Override
     protected void onHitsplat(HitsplatApplied event)
     {
-        final var currentTekton = tekton; // Capture for null safety
-        if (currentTekton != null && event.getActor() == currentTekton.getNpc())
+        final var currentVasa = vasa; // Capture for null safety
+        if (currentVasa != null && event.getActor() == currentVasa.getNpc())
         {
             Hitsplat hitsplat = event.getHitsplat();
             int hitsplatType = hitsplat.getHitsplatType();
             int amount = hitsplat.getAmount();
 
-            // Type 6 is the confirmed heal hitsplat type for Tekton
+            // Type 6 is the confirmed heal hitsplat type for Vasa
             if (hitsplatType == 6)
             {
-                log.info("[Tekton HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, previousVarbitValue + amount, (amount), getTick());
+                log.info("[Vasa HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, previousVarbitValue + amount, (amount), getTick());
                 int newHp = previousVarbitValue + amount;
-                currentTekton.setHitpoints(currentTekton.getHitpoints().update(newHp));
+                currentVasa.setHitpoints(currentVasa.getHitpoints().update(newHp));
                 previousVarbitValue = newHp;
             }
         }
@@ -285,13 +290,13 @@ public class TektonDataTracker extends RoomDataTracker
     @Override
     protected void onVarbit(VarbitChanged event)
     {
-        if (event.getVarbitId() == TEKTON_HP_VARBIT)
+        if (event.getVarbitId() == VASA_HP_VARBIT)
         {
             int newValue = event.getValue();
             
             // Use event.getValue() instead of another client call
             log.debug(
-                "[Tekton HP] Varbit {} changed to {} at tick {}",
+                "[Vasa HP] Varbit {} changed to {} at tick {}",
                 event.getVarbitId(),
                 newValue,
                 getTick()

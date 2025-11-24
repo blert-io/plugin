@@ -21,10 +21,9 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.chambers.rooms.icedemon;
+package io.blert.challenges.chambers.rooms.mystics;
 
 import io.blert.challenges.chambers.CoxNpc;
-import io.blert.challenges.chambers.CoxChallenge;
 import io.blert.challenges.chambers.RoomDataTracker;
 import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
@@ -38,30 +37,32 @@ import net.runelite.api.*;
 import net.runelite.api.events.*;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
- * Tracks Ice Demon room events, spawns, HP changes, and attacks with full lifecycle management.
+ * Tracks Lizardman Mystic room events, spawns, HP changes, and attacks with full lifecycle management.
  * Uses NPC health ratio/scale for HP tracking instead of varbits.
  * 
- * TODO: Add Ice Demon-specific attack animations when identified.
+ * TODO: Add Mystic-specific attack animations when identified.
  */
 @Slf4j
-public class IceDemonDataTracker extends RoomDataTracker
+public class MysticsDataTracker extends RoomDataTracker
 {
-    // private static final int ICE_DEMON_HP_VARBIT = 6100;
+
     // TODO: update when you finalize Ice Demon animations from logging
-    private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
+    // private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
     // private static final int ICE_DEMON_STOMP_ANIMATION = ?;
     // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
 
-    private @Nullable BasicTrackedNpc iceDemon;
+    private final Map<Integer, BasicTrackedNpc> Mystics = new HashMap<>(); // Track multiple Mystics by NPC ID
     private @Nullable NpcAttack attackThisTick = null;
 
-    public IceDemonDataTracker(RecordableChallenge challenge, Stage stage, Client client)
+    public MysticsDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
         super(challenge, stage, client);
-        log.info("[IceDemonDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
+        log.info("[MysticsDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
     }
 
     @Override
@@ -71,17 +72,17 @@ public class IceDemonDataTracker extends RoomDataTracker
 
         final int tick = getTick();
 
-        // Update HP using the direct NPC reference but log more details like the script
-        final var currentIceDemon = iceDemon; // Capture for null safety
-        if (currentIceDemon != null)
+        // Update HP for all tracked Mystics
+        for (Map.Entry<Integer, BasicTrackedNpc> entry : Mystics.entrySet())
         {
-            NPC npc = currentIceDemon.getNpc();
+            BasicTrackedNpc currentMystic = entry.getValue();
+            NPC npc = currentMystic.getNpc();
             int ratio = npc.getHealthRatio();
             int scale = npc.getHealthScale();
             
             // Always log health info to debug - copy script's exact logging approach
             log.info(
-                "[Ice Demon HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
+                "[Mystic HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
                 npc.getName(),
                 npc.getId(),
                 npc.getIndex(),
@@ -94,20 +95,20 @@ public class IceDemonDataTracker extends RoomDataTracker
             if (ratio > -1 && scale > 0)
             {
                 double hpPercent = (ratio * 100.0) / scale;
-                int updatedHitpoints = (int) (currentIceDemon.getHitpoints().getBase() * (ratio / (double) scale));
-                int currentHitpoints = currentIceDemon.getHitpoints().getCurrent();
+                int updatedHitpoints = (int) (currentMystic.getHitpoints().getBase() * (ratio / (double) scale));
+                int currentHitpoints = currentMystic.getHitpoints().getCurrent();
                 
-                log.info("[Ice Demon HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
-                         currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentIceDemon.getHitpoints().getBase());
+                log.info("[Mystic HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
+                         currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentMystic.getHitpoints().getBase());
                 
                 // Only update if there's a significant change (similar to varbit logic)
                 if (Math.abs(currentHitpoints - updatedHitpoints) > 5)
                 {
-                    Hitpoints newHitpoints = currentIceDemon.getHitpoints().update(updatedHitpoints);
-                    currentIceDemon.setHitpoints(newHitpoints);
+                    Hitpoints newHitpoints = currentMystic.getHitpoints().update(updatedHitpoints);
+                    currentMystic.setHitpoints(newHitpoints);
                     
                     log.info(
-                        "[Ice Demon HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
+                        "[Mystic HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
                         ratio,
                         scale,
                         hpPercent,
@@ -115,25 +116,29 @@ public class IceDemonDataTracker extends RoomDataTracker
                         tick
                     );
                 } else {
-                    log.info("[Ice Demon HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
+                    // No significant change in HP - skipping update
+                    // log.info("[Mystic HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
                 }
             } else {
                 // Log when health info is not available - match script behavior
-                log.warn("[Ice Demon HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
+                log.warn("[Mystic HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
 
         if (attackThisTick != null)
         {
-            if (currentIceDemon != null)
+            // Find which Mystic performed the attack (would need animation logic to determine this)
+            // For now, just dispatch for all Mystics as this needs attack animation detection
+            for (BasicTrackedNpc Mystic : Mystics.values())
             {
                 dispatchEvent(new NpcAttackEvent(
                     getStage(),
                     tick,
-                    getWorldLocation(currentIceDemon.getNpc()),
+                    getWorldLocation(Mystic.getNpc()),
                     attackThisTick,
-                    currentIceDemon
+                    Mystic
                 ));
+                break; // Only dispatch once until we can identify which specific Mystic attacked
             }
         }
 
@@ -145,60 +150,58 @@ public class IceDemonDataTracker extends RoomDataTracker
     {
         // Only track NPCs if this room tracker is still active - check this FIRST
         if (terminating()) {
-            log.debug("[Ice Demon] Ignoring NPC spawn {} - room tracker is terminating", spawned.getNpc().getId());
+            log.debug("[Mystics] Ignoring NPC spawn {} - room tracker is terminating", spawned.getNpc().getId());
             return Optional.empty();
         }
         
         NPC npc = spawned.getNpc();
-        
-        // Log all NPC spawns in Ice Demon room for debugging
-        // log.info("[Ice Demon Room] NPC spawned: id={}, name='{}'", npc.getId(), npc.getName());
-        
-        // Check if this NPC ID corresponds to Ice Demon
+        // Log all NPC spawns in Mystic room for debugging
+        // log.info("[Mystic Room] NPC spawned: id={}, name='{}'", npc.getId(), npc.getName());
+
+        // Check if this NPC ID corresponds to any Mystic variant
         Optional<CoxNpc> coxNpcOpt = CoxNpc.withId(npc.getId());
         if (coxNpcOpt.isPresent()) {
             CoxNpc coxNpc = coxNpcOpt.get();
-            log.info("[Ice Demon Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
+            log.info("[Mystic Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
             
-            if (coxNpc == CoxNpc.ICE_DEMON_FROZEN || coxNpc == CoxNpc.ICE_DEMON_THAWED) {
-                if (iceDemon == null) {
-                    CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-                    iceDemon = new BasicTrackedNpc(
+            // Check if it's any Mystic variant
+            if (coxNpc == CoxNpc.SKELETAL_MYSTIC_1 || 
+                coxNpc == CoxNpc.SKELETAL_MYSTIC_2 || 
+                coxNpc == CoxNpc.SKELETAL_MYSTIC_3) {
+                
+                // Check if this specific NPC ID is already being tracked
+                if (!Mystics.containsKey(npc.getId())) {
+                    BasicTrackedNpc newMystic = new BasicTrackedNpc(
                         npc,
                         coxNpc,
                         generateRoomId(npc),
                         new Hitpoints(coxNpc.getBaseHitpoints())
                     );
-                    String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
-                    log.info(
-                        "✓ Ice Demon tracked instance created: id={}, enum={}, base HP {} (scale={}){}",
-                        npc.getId(),
-                        coxNpc,
-                        iceDemon.getHitpoints().getBase(),
-                        getChallenge().getScale(),
-                        modeStatus
-                    );
-                    return Optional.of(iceDemon);
+                    Mystics.put(npc.getId(), newMystic);
+                    log.info("✓ Mystic tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Mystics: {}", 
+                             npc.getId(), coxNpc, newMystic.getHitpoints().getBase(), getChallenge().getScale(), Mystics.size());
+                    return Optional.of(newMystic);
                 } else {
-                    log.info("! Ice Demon already being tracked, ignoring additional spawn: id={}, enum={}", npc.getId(), coxNpc);
+                    log.info("! Mystic NPC id={} already being tracked, ignoring duplicate spawn", npc.getId());
                 }
             } else {
-                log.debug("[Ice Demon Room] Non-Ice Demon CoxNpc: {} for id {}", coxNpc, npc.getId());
+                log.debug("[Mystic Room] Non-Mystic CoxNpc: {} for id {}", coxNpc, npc.getId());
             }
         } else {
-            log.debug("[Ice Demon Room] NPC id {} not found in CoxNpc enum", npc.getId());
+            log.debug("[Mystic Room] NPC id {} not found in CoxNpc enum", npc.getId());
         }
         return Optional.empty();
     }
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
+    // TODO: Make sure this is also dependent on hp being 0 otherwise it can die off player screen and cause issues
     {
         NPC npc = despawned.getNpc();
-        if (iceDemon != null && npc == iceDemon.getNpc())
+        BasicTrackedNpc removedMystic = Mystics.remove(npc.getId());
+        if (removedMystic != null)
         {
-            log.info("[Ice Demon] Despawned NPC id={} – clearing tracked instance", npc.getId());
-            iceDemon = null;
+            log.info("[Mystic] Despawned NPC id={} – removed from tracking. Remaining Mystics: {}", npc.getId(), Mystics.size());
             return true;
         }
         return false;
@@ -208,17 +211,27 @@ public class IceDemonDataTracker extends RoomDataTracker
     protected void onAnimation(AnimationChanged event)
     {
         Actor actor = event.getActor();
-        final var currentIceDemon = iceDemon; // Capture for null safety
-        if (currentIceDemon == null || actor != currentIceDemon.getNpc())
+        // Check if the animation is from any of our tracked Mystics
+        boolean isTrackedMystic = false;
+        for (BasicTrackedNpc Mystic : Mystics.values())
+        {
+            if (actor == Mystic.getNpc())
+            {
+                isTrackedMystic = true;
+                break;
+            }
+        }
+        
+        if (!isTrackedMystic)
         {
             return;
         }
 
         switch (actor.getAnimation())
         {
-            case ICE_DEMON_FREEZE_ANIMATION:
-                attackThisTick = NpcAttack.COX_ICE_DEMON_FREEZE;
-                break;
+            // case ICE_DEMON_FREEZE_ANIMATION:
+            //     attackThisTick = NpcAttack.COX_ICE_DEMON_FREEZE;
+            //     break;
             // case ICE_DEMON_STOMP_ANIMATION:
             //     attackThisTick = NpcAttack.COX_ICE_DEMON_STOMP;
             //     break;
@@ -236,11 +249,15 @@ public class IceDemonDataTracker extends RoomDataTracker
         if (event.getActor() instanceof NPC &&
             event.getHitsplat().getHitsplatType() == HitsplatID.HEAL)
         {
-            final var currentIceDemon = iceDemon; // Capture for null safety
-            if (currentIceDemon != null && event.getActor() == currentIceDemon.getNpc())
+            // Check if heal is on any of our tracked Mystics
+            for (BasicTrackedNpc Mystic : Mystics.values())
             {
-                setHealTick(getTick());
-                log.info("[Ice Demon HP] Heal hitsplat detected at tick {}", getHealTick());
+                if (event.getActor() == Mystic.getNpc())
+                {
+                    setHealTick(getTick());
+                    log.info("[Mystic HP] Heal hitsplat detected on NPC id={} at tick {}", Mystic.getNpc().getId(), getHealTick());
+                    break;
+                }
             }
         }
     }
@@ -248,6 +265,6 @@ public class IceDemonDataTracker extends RoomDataTracker
     @Override
     protected void onVarbit(VarbitChanged event)
     {
-        // No longer using varbits for Ice Demon HP - using health ratio/scale instead
+        // No longer using varbits for Mystic HP - using health ratio/scale instead
     }
 }
