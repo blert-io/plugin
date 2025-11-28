@@ -115,37 +115,6 @@ public class VanguardsDataTracker extends RoomDataTracker
         }
         lastVarbitValue = currentVarbitValue;
 
-        // Fallback: Update HP for all vanguards using health ratio/scale if varbit attribution fails
-        for (BasicTrackedNpc vanguard : vanguards.values())
-        {
-            NPC npc = vanguard.getNpc();
-            int ratio = npc.getHealthRatio();
-            int scale = npc.getHealthScale();
-            
-            // Only use as fallback if we haven't updated via varbit recently
-            if (ratio > -1 && scale > 0 && (lastDamagedVanguard == null || vanguard != lastDamagedVanguard || (tick - lastHitsplatTick) > 10))
-            {
-                int updatedHitpoints = (int) (vanguard.getHitpoints().getBase() * (ratio / (double) scale));
-                int currentHitpoints = vanguard.getHitpoints().getCurrent();
-                
-                // Only update if there's a significant change
-                if (Math.abs(currentHitpoints - updatedHitpoints) > 10)
-                {
-                    Hitpoints newHitpoints = vanguard.getHitpoints().update(updatedHitpoints);
-                    vanguard.setHitpoints(newHitpoints);
-                    
-                    log.info(
-                        "[Vanguard {}] HP updated via ratio {}/{} = {} at tick {} (fallback)",
-                        npc.getId(),
-                        ratio,
-                        scale,
-                        updatedHitpoints,
-                        tick
-                    );
-                }
-            }
-        }
-
         // Process any attacks
         if (attackThisTick != null)
         {
@@ -171,57 +140,146 @@ public class VanguardsDataTracker extends RoomDataTracker
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned spawned)
     {
         NPC npc = spawned.getNpc();
+        String npcName = npc.getName();
         
-        return CoxNpc.withId(npc.getId()).flatMap(coxNpc ->
+        // Debug: Log all NPC spawns in this room to help identify Vanguards
+        log.info("[Vanguards] NPC spawned: id={}, name='{}'", npc.getId(), npcName);
+        
+        // First try to match by CoxNpc enum
+        Optional<CoxNpc> coxNpcOpt = CoxNpc.withId(npc.getId());
+        if (coxNpcOpt.isPresent())
         {
-            // Match any of the three Vanguard types
-            if (coxNpc == CoxNpc.VANGUARD_MELEE || coxNpc == CoxNpc.VANGUARD_RANGED || coxNpc == CoxNpc.VANGUARD_MAGIC)
+            CoxNpc coxNpc = coxNpcOpt.get();
+            // Match any of the Vanguard types (including initial spawn)
+            if (coxNpc == CoxNpc.VANGUARD_INITIAL || coxNpc == CoxNpc.VANGUARD_MELEE || 
+                coxNpc == CoxNpc.VANGUARD_RANGED || coxNpc == CoxNpc.VANGUARD_MAGIC)
             {
-                log.info("[Vanguards] Detected Vanguard NPC spawn: id={} (enum={})", npc.getId(), coxNpc);
-
-                // Check if we already have this specific NPC tracked
-                int npcHash = npc.hashCode();
-                if (!vanguards.containsKey(npcHash))
+                return createVanguardTracker(npc, coxNpc);
+            }
+        }
+        
+        // Fallback: Try to detect Vanguards by name if ID lookup failed
+        if (npcName != null && npcName.toLowerCase().contains("vanguard"))
+        {
+            log.warn("[Vanguards] Detected Vanguard by name: id={}, name='{}' (not in CoxNpc enum - please add this ID)", npc.getId(), npcName);
+            
+            // Determine type from name for fallback tracking
+            CoxNpc fallbackType = CoxNpc.VANGUARD_MELEE; // Default
+            if (npcName.toLowerCase().contains("ranged"))
+            {
+                fallbackType = CoxNpc.VANGUARD_RANGED;
+            }
+            else if (npcName.toLowerCase().contains("magic") || npcName.toLowerCase().contains("mage"))
+            {
+                fallbackType = CoxNpc.VANGUARD_MAGIC;
+            }
+            
+            return createVanguardTracker(npc, fallbackType);
+        }
+        
+        return Optional.empty();
+    }
+    
+    private Optional<BasicTrackedNpc> createVanguardTracker(NPC npc, CoxNpc coxNpc)
+    {
+        log.info("[Vanguards] Creating tracker for Vanguard: id={}, type={}", npc.getId(), coxNpc);
+        
+        // Check if we already have this specific NPC tracked
+        int npcHash = npc.hashCode();
+        
+        // Check if this might be an ID transition from an existing Vanguard
+        BasicTrackedNpc existingVanguard = findVanguardByTransition(npc, coxNpc);
+        if (existingVanguard != null)
+        {
+            log.info("[Vanguards] Detected ID transition: {} -> {} for existing Vanguard", 
+                     existingVanguard.getNpc().getId(), npc.getId());
+            
+            // Update the existing tracker with new NPC reference and type
+            vanguards.remove(existingVanguard.getNpc().hashCode());
+            
+            BasicTrackedNpc updatedVanguard = new BasicTrackedNpc(
+                npc,
+                coxNpc,
+                existingVanguard.getRoomId(), // Keep same room ID
+                existingVanguard.getHitpoints() // Keep current HP
+            );
+            
+            vanguards.put(npcHash, updatedVanguard);
+            
+            log.info("[Vanguards] Updated Vanguard tracker: old_id={}, new_id={}, type={}, hp={}",
+                     existingVanguard.getNpc().getId(), npc.getId(), coxNpc, 
+                     updatedVanguard.getHitpoints().getCurrent());
+            
+            return Optional.of(updatedVanguard);
+        }
+        
+        if (!vanguards.containsKey(npcHash))
+        {
+            CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
+            int scaledHp = coxChallenge.getScaledHitpoints(coxNpc);
+            
+            BasicTrackedNpc newVanguard = new BasicTrackedNpc(
+                npc,
+                coxNpc,
+                generateRoomId(npc),
+                new Hitpoints(scaledHp)
+            );
+            
+            vanguards.put(npcHash, newVanguard);
+            String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
+            
+            // Initialize varbit tracking on first vanguard spawn
+            if (vanguards.size() == 1)
+            {
+                lastVarbitValue = client.getVarbitValue(VANGUARD_HP_VARBIT);
+                log.info("[Vanguards] Initialized varbit tracking with value: {}", lastVarbitValue);
+            }
+            
+            log.info(
+                "✓ Vanguard {} tracked: id={}, base HP {} (scaled={}){} - Total Vanguards: {}",
+                coxNpc.name(),
+                npc.getId(),
+                coxNpc.getOriginalBaseHitpoints(),
+                scaledHp,
+                modeStatus,
+                vanguards.size()
+            );
+            
+            return Optional.of(newVanguard);
+        }
+        else
+        {
+            log.debug("[Vanguards] Vanguard {} already tracked", coxNpc.name());
+            return Optional.of(vanguards.get(npcHash));
+        }
+    }
+    
+    /**
+     * Find an existing Vanguard that might be transitioning to a new ID
+     */
+    private BasicTrackedNpc findVanguardByTransition(NPC newNpc, CoxNpc newType)
+    {
+        // If this is a transition from initial spawn (7525) to specific type
+        if (newType != CoxNpc.VANGUARD_INITIAL)
+        {
+            for (BasicTrackedNpc vanguard : vanguards.values())
+            {
+                // Look for an initial spawn (7525) that should transition
+                if (vanguard.getNpc().getId() == 7525)  // Check for initial spawn ID
                 {
-                    CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-                    BasicTrackedNpc newVanguard = new BasicTrackedNpc(
-                        npc,
-                        coxNpc,
-                        generateRoomId(npc),
-                        new Hitpoints(coxNpc.getBaseHitpoints())
-                    );
+                    // Check if NPCs are at similar positions (indicating same entity)
+                    var oldPos = vanguard.getNpc().getWorldLocation();
+                    var newPos = newNpc.getWorldLocation();
                     
-                    vanguards.put(npcHash, newVanguard);
-                    String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
-                    
-                    // Initialize varbit tracking on first vanguard spawn
-                    if (vanguards.size() == 1)
+                    if (oldPos != null && newPos != null && oldPos.distanceTo(newPos) <= 2)
                     {
-                        lastVarbitValue = client.getVarbitValue(VANGUARD_HP_VARBIT);
-                        log.info("[Vanguards] Initialized varbit tracking with value: {}", lastVarbitValue);
+                        return vanguard;
                     }
-                    
-                    log.info(
-                        "✓ Vanguard {} tracked: id={}, base HP {} (scale={}){} - Total Vanguards: {}",
-                        coxNpc.name(),
-                        npc.getId(),
-                        newVanguard.getHitpoints().getBase(),
-                        getChallenge().getScale(),
-                        modeStatus,
-                        vanguards.size()
-                    );
-                    
-                    return Optional.of(newVanguard);
-                }
-                else
-                {
-                    log.debug("[Vanguards] Vanguard {} already tracked", coxNpc.name());
-                    return Optional.of(vanguards.get(npcHash));
                 }
             }
-
-            return Optional.empty();
-        });
+        }
+        
+        return null;
     }
 
     @Override
@@ -239,7 +297,11 @@ public class VanguardsDataTracker extends RoomDataTracker
             
             log.info("[Vanguards] Despawned Vanguard NPC id={} at tick {} – Remaining Vanguards: {}", 
                      npc.getId(), getTick(), vanguards.size());
-            
+            if (vanguards.size() == 0)
+            {
+                int crystalAnimation = 4;
+                log.info("[Vanguards] All Vanguards despawned expected room end {} animation detected", crystalAnimation + getTick());
+            }
             return true;
         }
         

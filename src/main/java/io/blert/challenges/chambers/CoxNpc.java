@@ -12,12 +12,13 @@ public enum CoxNpc {
     ICE_DEMON_THAWED(7584, 140), // Ice Demon can spawn with different IDs
     LIZARDMAN_SHAMAN_1(7573, 190),
     LIZARDMAN_SHAMAN_2(7574, 190),
+    VANGUARD_INITIAL(7525, 180),  // Initial spawn ID before transformation
     VANGUARD_MELEE(7527, 180),
     VANGUARD_RANGED(7528, 180),
     VANGUARD_MAGIC(7529, 180),
     ABYSSAL_PORTAL(7533, 250),
-    GUARDIAN_1(7569, 250),
-    GUARDIAN_2(7570, 250),
+    GUARDIAN_1(new int[]{7569, 7571}, 250), // Guardian 1: live (7569) and dead (7571)
+    GUARDIAN_2(new int[]{7570, 7572}, 250), // Guardian 2: live (7570) and dead (7572)
     VASA_NISTIRIO(new int[]{7565, 7566, 7567}, 300),
     GLOWING_CRYSTAL(7568, 120),
     SKELETAL_MYSTIC_1(7604, 160),

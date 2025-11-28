@@ -9,6 +9,7 @@ import io.blert.challenges.chambers.rooms.vanguards.VanguardsDataTracker;
 import io.blert.challenges.chambers.rooms.muttadiles.MuttadilesDataTracker;
 import io.blert.challenges.chambers.rooms.vespula.VespulaDataTracker;
 import io.blert.challenges.chambers.rooms.vasa.VasaDataTracker;
+import io.blert.challenges.chambers.rooms.olm.OlmDataTracker;
 import io.blert.core.*;
 import io.blert.events.ChallengeStartEvent;
 import io.blert.events.ChallengeEndEvent;
@@ -51,6 +52,8 @@ public class CoxChallenge extends RecordableChallenge {
     private boolean hitpointsScaled = false; // Track if we've already scaled the hitpoints
 
     private static final List<Stage> COX_ROOM_ORDER = List.of(
+        Stage.COX_GUARDIANS,
+        // Stage.COX_ICE_DEMON,
         // Stage.COX_VASA,
         // Stage.COX_VESPULA,
         // Stage.COX_MUTTADILE,
@@ -425,6 +428,15 @@ public class CoxChallenge extends RecordableChallenge {
                 addEventHandler(vasaTracker);
                 
                 return vasaTracker;
+            case COX_OLM:
+                log.info("Creating OlmDataTracker for stage {}", stage);
+                RoomDataTracker olmTracker = new OlmDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(olmTracker);
+                addEventHandler(olmTracker);
+                
+                return olmTracker;
             default:
                 log.info("Creating generic CoxRoomDataTracker for stage {}", stage);
                 RoomDataTracker genericTracker = new CoxRoomDataTracker(this, stage, client);
