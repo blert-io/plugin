@@ -43,7 +43,14 @@ import java.util.Optional;
 
 /**
  * Tracks Lizardman Guardian room events, spawns, HP changes, and attacks with full lifecycle management.
- * Uses NPC health ratio/scale for HP tracking instead of varbits.
+ * Uses NPC health ratio/scale for HP tracking.
+ * 
+ * Guardians have multiple IDs representing different states:
+ * - Guardian 1: live (7569) and dead (7571)
+ * - Guardian 2: live (7570) and dead (7572)
+ * 
+ * Only live Guardian IDs are tracked during spawn. Dead Guardian IDs persist but are ignored for HP updates
+ * when they have HR=-1/-1 to prevent unnecessary processing.
  * 
  * TODO: Add Guardian-specific attack animations when identified.
  */
@@ -56,8 +63,9 @@ public class GuardiansDataTracker extends RoomDataTracker
     // private static final int ICE_DEMON_STOMP_ANIMATION = ?;
     // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
 
-    private final Map<Integer, BasicTrackedNpc> Guardians = new HashMap<>(); // Track multiple Guardians by NPC ID
+    private final Map<Integer, BasicTrackedNpc> guardians = new HashMap<>(); // Track Guardians by NPC ID (includes live and dead IDs)
     private @Nullable NpcAttack attackThisTick = null;
+    private int counter = 0; // Counter for room completion logging
 
     public GuardiansDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -72,24 +80,60 @@ public class GuardiansDataTracker extends RoomDataTracker
 
         final int tick = getTick();
 
+        // Check for dead Guardian NPCs in the world
+        boolean deadGuardian1Present = false;
+        boolean deadGuardian2Present = false;
+        for (NPC npc : client.getTopLevelWorldView().npcs()) {
+            if (npc.getId() == 7571) {
+                deadGuardian1Present = true;
+            }
+            if (npc.getId() == 7572) {
+                deadGuardian2Present = true;
+            }
+        }
+        
+        // Log when both dead Guardian IDs are present
+        if (deadGuardian1Present && deadGuardian2Present) {
+            int tick_cycle = (4 - (getTick() % 4)) % 4;
+            log.info("[Guardian Dead IDs] Both dead Guardian IDs (7571, 7572) are present! Current Tick: {}, 4 tick cycle offset: {}, RoomEnd: {}", getTick(), tick_cycle, getTick() + tick_cycle);
+        }
+
         // Update HP for all tracked Guardians
-        for (Map.Entry<Integer, BasicTrackedNpc> entry : Guardians.entrySet())
+        int deadGuardiansCount = 0;
+        int totalGuardiansCount = 0;
+        
+        for (Map.Entry<Integer, BasicTrackedNpc> entry : guardians.entrySet())
         {
             BasicTrackedNpc currentGuardian = entry.getValue();
             NPC npc = currentGuardian.getNpc();
             int ratio = npc.getHealthRatio();
             int scale = npc.getHealthScale();
             
+            // Count this guardian
+            totalGuardiansCount++;
+            
             // Always log health info to debug - copy script's exact logging approach
-            log.info(
-                "[Guardian HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
-                npc.getName(),
-                npc.getId(),
-                npc.getIndex(),
-                ratio,
-                scale,
-                tick
-            );
+            // log.info(
+            //     "[Guardian HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
+            //     npc.getName(),
+            //     npc.getId(),
+            //     npc.getIndex(),
+            //     ratio,
+            //     scale,
+            //     tick
+            // );
+            
+            // Check if this Guardian is dead (either dead ID with HR=-1/-1 or 0 HP)
+            if ((npc.getId() == 7571 || npc.getId() == 7572) && ratio == -1 && scale == -1)
+            {
+                // log.info("[Guardian HP] Dead Guardian id={} index={} - skipping HP update (HR=-1/-1)", npc.getId(), npc.getIndex());
+                deadGuardiansCount++;
+                continue;
+            }
+            else if (currentGuardian.getHitpoints().getCurrent() == 0)
+            {
+                deadGuardiansCount++;
+            }
             
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
@@ -98,29 +142,49 @@ public class GuardiansDataTracker extends RoomDataTracker
                 int updatedHitpoints = (int) (currentGuardian.getHitpoints().getBase() * (ratio / (double) scale));
                 int currentHitpoints = currentGuardian.getHitpoints().getCurrent();
                 
-                log.info("[Guardian HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
-                         currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentGuardian.getHitpoints().getBase());
+                // Check if this Guardian just died (HP reached 0)
+                if (updatedHitpoints == 0 && currentHitpoints > 0)
+                {
+                    deadGuardiansCount++;
+                }
+                
+                // log.info("[Guardian HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
+                //          currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentGuardian.getHitpoints().getBase());
                 
                 // Only update if there's a significant change (similar to varbit logic)
-                if (Math.abs(currentHitpoints - updatedHitpoints) > 5)
+                if (Math.abs(currentHitpoints - updatedHitpoints) > 0)
                 {
                     Hitpoints newHitpoints = currentGuardian.getHitpoints().update(updatedHitpoints);
                     currentGuardian.setHitpoints(newHitpoints);
                     
                     log.info(
-                        "[Guardian HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
+                        "[Guardian HP] ✓ UPDATED npc_id={} from hp ratio {}/{} (~{}% HP) = {} at tick {}",
+                        npc.getId(),
                         ratio,
                         scale,
-                        hpPercent,
+                        String.format("%.1f", hpPercent),
                         updatedHitpoints,
-                        tick
+                        getTick()
                     );
                 } else {
-                    log.info("[Guardian HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
+                    // log.info("[Guardian HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
                 }
             } else {
                 // Log when health info is not available - match script behavior
-                log.warn("[Guardian HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
+                // log.warn("[Guardian HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
+            }
+        }
+        
+        // Check if both Guardians are dead (we expect 2 Guardians total)
+        if (totalGuardiansCount >= 2 && deadGuardiansCount >= 2)
+        {
+            counter += 1;
+            int tick_cycle_temp = (4 - (getTick() % 4)) % 4;
+            log.info("[Guardian Debug] Guardians dead! Counter: {} Current Tick: {}, 4 tick cycle offset: {}, RoomEnd: {}", counter, getTick(), tick_cycle_temp, getTick() + tick_cycle_temp);
+            if (counter == 3) // Log only once when both die
+            {
+                int tick_cycle = (4 - (getTick() % 4)) % 4;
+                log.info("[Guardian] Guardians dead! Current Tick: {}, 4 tick cycle offset: {}, RoomEnd: {}", getTick(), tick_cycle, getTick() + tick_cycle);
             }
         }
 
@@ -128,7 +192,7 @@ public class GuardiansDataTracker extends RoomDataTracker
         {
             // Find which Guardian performed the attack (would need animation logic to determine this)
             // For now, just dispatch for all Guardians as this needs attack animation detection
-            for (BasicTrackedNpc Guardian : Guardians.values())
+            for (BasicTrackedNpc Guardian : guardians.values())
             {
                 dispatchEvent(new NpcAttackEvent(
                     getStage(),
@@ -164,23 +228,27 @@ public class GuardiansDataTracker extends RoomDataTracker
             log.info("[Guardian Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
             
             // Check if it's any Guardian variant
-            if (coxNpc == CoxNpc.GUARDIAN_1 || 
-                coxNpc == CoxNpc.GUARDIAN_2) {
+            if (coxNpc == CoxNpc.GUARDIAN_1 || coxNpc == CoxNpc.GUARDIAN_2) {
                 
-                // Check if this specific NPC ID is already being tracked
-                if (!Guardians.containsKey(npc.getId())) {
-                    BasicTrackedNpc newGuardian = new BasicTrackedNpc(
-                        npc,
-                        coxNpc,
-                        generateRoomId(npc),
-                        new Hitpoints(coxNpc.getBaseHitpoints())
-                    );
-                    Guardians.put(npc.getId(), newGuardian);
-                    log.info("✓ Guardian tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Guardians: {}", 
-                             npc.getId(), coxNpc, newGuardian.getHitpoints().getBase(), getChallenge().getScale(), Guardians.size());
-                    return Optional.of(newGuardian);
+                // Only track live Guardian IDs (7569, 7570), ignore dead IDs (7571, 7572)
+                if (npc.getId() == 7569 || npc.getId() == 7570) {
+                    // Check if this specific NPC ID is already being tracked
+                    if (!guardians.containsKey(npc.getId())) {
+                        BasicTrackedNpc newGuardian = new BasicTrackedNpc(
+                            npc,
+                            coxNpc,
+                            generateRoomId(npc),
+                            new Hitpoints(coxNpc.getBaseHitpoints())
+                        );
+                        guardians.put(npc.getId(), newGuardian);
+                        log.info("✓ Guardian tracked instance created: id={}, index={}, enum={}, base HP {} (scale={}) - Total Guardians: {}", 
+                                 npc.getId(), npc.getIndex(), coxNpc, newGuardian.getHitpoints().getBase(), getChallenge().getScale(), guardians.size());
+                        return Optional.of(newGuardian);
+                    } else {
+                        log.info("! Guardian NPC id={} already being tracked, ignoring duplicate spawn", npc.getId());
+                    }
                 } else {
-                    log.info("! Guardian NPC id={} already being tracked, ignoring duplicate spawn", npc.getId());
+                    log.debug("[Guardian Death ID] Ignoring dead Guardian ID {} (no spawn tracking for dead IDs)", npc.getId());
                 }
             } else {
                 log.debug("[Guardian Room] Non-Guardian CoxNpc: {} for id {}", coxNpc, npc.getId());
@@ -196,10 +264,15 @@ public class GuardiansDataTracker extends RoomDataTracker
     // TODO: Make sure this is also dependent on hp being 0 otherwise it can die off player screen and cause issues
     {
         NPC npc = despawned.getNpc();
-        BasicTrackedNpc removedGuardian = Guardians.remove(npc.getId());
+        BasicTrackedNpc removedGuardian = guardians.remove(npc.getId());
         if (removedGuardian != null)
         {
-            log.info("[Guardian] Despawned NPC id={} – removed from tracking. Remaining Guardians: {}", npc.getId(), Guardians.size());
+            log.info("[Guardian] Despawned NPC id={} index={} – removed from tracking. Remaining Guardians: {}", npc.getId(), npc.getIndex(), guardians.size());
+            if (guardians.size() == 0) {
+                log.info("[Guardian] All Guardians despawned at tick {} – clearing instance", getTick());
+                int tick_cycle = (4 - (getTick() % 4)) % 4;
+                log.info("[Guardian] 4 tick cycle offset: {}, RoomEnd: {}", tick_cycle, getTick() + tick_cycle);
+            }
             return true;
         }
         return false;
@@ -211,7 +284,7 @@ public class GuardiansDataTracker extends RoomDataTracker
         Actor actor = event.getActor();
         // Check if the animation is from any of our tracked Guardians
         boolean isTrackedGuardian = false;
-        for (BasicTrackedNpc Guardian : Guardians.values())
+        for (BasicTrackedNpc Guardian : guardians.values())
         {
             if (actor == Guardian.getNpc())
             {
@@ -248,12 +321,12 @@ public class GuardiansDataTracker extends RoomDataTracker
             event.getHitsplat().getHitsplatType() == HitsplatID.HEAL)
         {
             // Check if heal is on any of our tracked Guardians
-            for (BasicTrackedNpc Guardian : Guardians.values())
+            for (BasicTrackedNpc Guardian : guardians.values())
             {
                 if (event.getActor() == Guardian.getNpc())
                 {
                     setHealTick(getTick());
-                    log.info("[Guardian HP] Heal hitsplat detected on NPC id={} at tick {}", Guardian.getNpc().getId(), getHealTick());
+                    log.info("[Guardian HP] Heal hitsplat detected on NPC id={} index={} at tick {}", Guardian.getNpc().getId(), Guardian.getNpc().getIndex(), getHealTick());
                     break;
                 }
             }

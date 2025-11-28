@@ -93,29 +93,35 @@ public class IceDemonDataTracker extends RoomDataTracker
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
             {
-                double hpPercent = (ratio * 100.0) / scale;
+                // double hpPercent = (ratio * 100.0) / scale;
                 int updatedHitpoints = (int) (currentIceDemon.getHitpoints().getBase() * (ratio / (double) scale));
                 int currentHitpoints = currentIceDemon.getHitpoints().getCurrent();
                 
-                log.info("[Ice Demon HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
-                         currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentIceDemon.getHitpoints().getBase());
+                log.info(
+                    "[Ice Demon HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {} at tick {}", 
+                    currentHitpoints,
+                    updatedHitpoints, 
+                    Math.abs(currentHitpoints - updatedHitpoints), 
+                    currentIceDemon.getHitpoints().getBase(), 
+                    tick
+                );
                 
                 // Only update if there's a significant change (similar to varbit logic)
-                if (Math.abs(currentHitpoints - updatedHitpoints) > 5)
+                if (Math.abs(currentHitpoints - updatedHitpoints) > 0)
                 {
                     Hitpoints newHitpoints = currentIceDemon.getHitpoints().update(updatedHitpoints);
                     currentIceDemon.setHitpoints(newHitpoints);
                     
-                    log.info(
-                        "[Ice Demon HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
-                        ratio,
-                        scale,
-                        hpPercent,
-                        updatedHitpoints,
-                        tick
-                    );
+                    // log.info(
+                    //     "[Ice Demon HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
+                    //     ratio,
+                    //     scale,
+                    //     hpPercent,
+                    //     updatedHitpoints,
+                    //     tick
+                    // );
                 } else {
-                    log.info("[Ice Demon HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
+                    // log.info("[Ice Demon HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
                 }
             } else {
                 // Log when health info is not available - match script behavior
@@ -197,7 +203,7 @@ public class IceDemonDataTracker extends RoomDataTracker
         NPC npc = despawned.getNpc();
         if (iceDemon != null && npc == iceDemon.getNpc())
         {
-            log.info("[Ice Demon] Despawned NPC id={} – clearing tracked instance", npc.getId());
+            log.info("[Ice Demon] Despawned NPC id={} tick={}", npc.getId(), getTick());
             iceDemon = null;
             return true;
         }
