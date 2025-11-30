@@ -191,8 +191,8 @@ public class TektonDataTracker extends RoomDataTracker
             tekton = null;
             previousVarbitValue = -1;
             
-            log.info("[Tekton] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
-            int tick_cycle = (4 - (getTick() % 4)) % 4;
+            log.info("[Tekton] Despawned NPC id={}, at tick {}/{}", npc.getId(), getTick(), getStartTick() + getTick());
+            int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;
             log.info("[Tekton] 4 tick cycle offset: {}, Anim Tick: {}, RoomEnd: {}", tick_cycle, getTick() + tick_cycle, getTick() + tick_cycle + 4);
             
             return true;

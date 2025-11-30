@@ -196,7 +196,7 @@ public class VasaDataTracker extends RoomDataTracker
             // Clear vasa immediately to prevent duplicate processing
             vasa = null;
             previousVarbitValue = -1;
-            log.info("[Vasa] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
+            log.info("[Vasa] Despawned NPC id={}, at tick {}", npc.getId(), getTick());
             log.info("[Vasa] RoomEnd: {}", getTick() + 5);
             return true;
         }

@@ -299,8 +299,8 @@ public class OlmDataTracker extends RoomDataTracker
             // Remove the olm from our tracking
             olms.remove(npcHash);
             
-            log.info("[Olm] Despawned Olm NPC id={} at tick {} – Remaining Olm: {}", 
-                     npc.getId(), getTick(), olms.size());
+            log.info("[Olm] Despawned Olm NPC id={} at tick {}/{}. Remaining Olm: {}", 
+                     npc.getId(), getTick(), getStartTick() + getTick(), olms.size());
             if (olms.size() == 0)
             {
                 int crystalAnimation = 4;

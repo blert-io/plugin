@@ -80,39 +80,19 @@ public class ThievingDataTracker extends RoomDataTracker
             int ratio = npc.getHealthRatio();
             int scale = npc.getHealthScale();
             
-            // Always log health info to debug - copy script's exact logging approach
-            // log.info(
-            //     "[Corrupted Scavenger HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
-            //     npc.getName(),
-            //     npc.getId(),
-            //     npc.getIndex(),
-            //     ratio,
-            //     scale,
-            //     tick
-            // );
-            
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
             {
-                // double hpPercent = (ratio * 100.0) / scale;
                 int updatedHitpoints = (int) (currentThieving.getHitpoints().getBase() * (ratio / (double) scale));
                 int currentHitpoints = currentThieving.getHitpoints().getCurrent();
                 
-                log.info(
-                    "[Corrupted Scavenger HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {} at tick {}", 
-                    currentHitpoints,
-                    updatedHitpoints, 
-                    Math.abs(currentHitpoints - updatedHitpoints), 
-                    currentThieving.getHitpoints().getBase(), 
-                    tick
-                );
                 if (updatedHitpoints <= 0) {
                     corruptedScavenger = null; // Clear reference on death
                     if (!roomOver) {
-                        log.warn("[Thieving DataTracker] HP is {}, at tick {}", updatedHitpoints, tick);
+                        log.warn("[Thieving DataTracker] HP is {}, at tick {}/{}", updatedHitpoints, tick, getStartTick() + tick);
                         int postAnimationTick = tick + 1;
-                        int tick_cycle = (4 - (postAnimationTick % 4)) % 4;
-                        log.warn("[Thieving DataTracker] tick cycle: {}, room end: {}", tick_cycle, postAnimationTick + tick_cycle);
+                        int tick_cycle = (4 - ((postAnimationTick + getStartTick()) % 4)) % 4;
+                        log.warn("[Thieving DataTracker] tick cycle: {}, room end: {}/{}", tick_cycle, postAnimationTick + tick_cycle, getStartTick() + postAnimationTick + tick_cycle);
                         roomOver = true;
                     }
                 }
@@ -122,21 +102,18 @@ public class ThievingDataTracker extends RoomDataTracker
                 {
                     Hitpoints newHitpoints = currentThieving.getHitpoints().update(updatedHitpoints);
                     currentThieving.setHitpoints(newHitpoints);
-                    
-                    // log.info(
-                    //     "[Corrupted Scavenger HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
-                    //     ratio,
-                    //     scale,
-                    //     hpPercent,
-                    //     updatedHitpoints,
-                    //     tick
-                    // );
-                } else {
-                    // log.info("[Corrupted Scavenger HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
+                    log.info(
+                        "[Corrupted Scavenger HP] NPC ID: {}, Damaged: {} -> {} (-{}), ratio {}/{} at tick {}/{}",
+                        npc.getId(),
+                        currentHitpoints, 
+                        updatedHitpoints, 
+                        Math.abs(currentHitpoints - updatedHitpoints),
+                        ratio,
+                        scale,
+                        tick,
+                        getStartTick() + tick
+                    );
                 }
-            } else {
-                // Log when health info is not available - match script behavior
-                log.warn("[Corrupted Scavenger HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
 
@@ -177,33 +154,25 @@ public class ThievingDataTracker extends RoomDataTracker
             CoxNpc coxNpc = coxNpcOpt.get();
             log.info("[Corrupted Scavenger Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
             
-            if (coxNpc == CoxNpc.CORRUPTED_SCAVENGER) {
-                if (corruptedScavenger == null) {
-                    CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-                    corruptedScavenger = new BasicTrackedNpc(
-                        npc,
-                        coxNpc,
-                        generateRoomId(npc),
-                        new Hitpoints(coxNpc.getBaseHitpoints())
-                    );
-                    String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
-                    log.info(
-                        "✓ Corrupted Scavenger tracked instance created: id={}, enum={}, base HP {} (scale={}){}",
-                        npc.getId(),
-                        coxNpc,
-                        corruptedScavenger.getHitpoints().getBase(),
-                        getChallenge().getScale(),
-                        modeStatus
-                    );
-                    return Optional.of(corruptedScavenger);
-                } else {
-                    log.info("! Corrupted Scavenger already being tracked, ignoring additional spawn: id={}, enum={}", npc.getId(), coxNpc);
-                }
-            } else {
-                log.debug("[Corrupted Scavenger Room] Non-Corrupted Scavenger CoxNpc: {} for id {}", coxNpc, npc.getId());
+            if (coxNpc == CoxNpc.CORRUPTED_SCAVENGER && corruptedScavenger == null) {
+                CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
+                corruptedScavenger = new BasicTrackedNpc(
+                    npc,
+                    coxNpc,
+                    generateRoomId(npc),
+                    new Hitpoints(coxNpc.getBaseHitpoints())
+                );
+                String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
+                log.info(
+                    "✓ Corrupted Scavenger tracked instance created: id={}, enum={}, base HP {} (scale={}){}",
+                    npc.getId(),
+                    coxNpc,
+                    corruptedScavenger.getHitpoints().getBase(),
+                    getChallenge().getScale(),
+                    modeStatus
+                );
+                return Optional.of(corruptedScavenger);
             }
-        } else {
-            log.debug("[Corrupted Scavenger Room] NPC id {} not found in CoxNpc enum", npc.getId());
         }
         return Optional.empty();
     }
