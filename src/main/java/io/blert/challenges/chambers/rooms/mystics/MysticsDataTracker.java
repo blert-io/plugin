@@ -81,15 +81,15 @@ public class MysticsDataTracker extends RoomDataTracker
             int scale = npc.getHealthScale();
             
             // Always log health info to debug - copy script's exact logging approach
-            log.info(
-                "[Mystic HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
-                npc.getName(),
-                npc.getId(),
-                npc.getIndex(),
-                ratio,
-                scale,
-                tick
-            );
+            // log.info(
+            //     "[Mystic HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
+            //     npc.getName(),
+            //     npc.getId(),
+            //     npc.getIndex(),
+            //     ratio,
+            //     scale,
+            //     tick
+            // );
             
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
@@ -102,18 +102,19 @@ public class MysticsDataTracker extends RoomDataTracker
                          currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentMystic.getHitpoints().getBase());
                 
                 // Only update if there's a significant change (similar to varbit logic)
-                if (Math.abs(currentHitpoints - updatedHitpoints) > 5)
+                if (Math.abs(currentHitpoints - updatedHitpoints) > 0)
                 {
                     Hitpoints newHitpoints = currentMystic.getHitpoints().update(updatedHitpoints);
                     currentMystic.setHitpoints(newHitpoints);
                     
                     log.info(
-                        "[Mystic HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
+                        "[Mystic HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}/{}",
                         ratio,
                         scale,
                         hpPercent,
                         updatedHitpoints,
-                        tick
+                        tick,
+                        getStartTick() + tick
                     );
                 } else {
                     // No significant change in HP - skipping update
@@ -121,7 +122,7 @@ public class MysticsDataTracker extends RoomDataTracker
                 }
             } else {
                 // Log when health info is not available - match script behavior
-                log.warn("[Mystic HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
+                // log.warn("[Mystic HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
 
@@ -201,7 +202,12 @@ public class MysticsDataTracker extends RoomDataTracker
         BasicTrackedNpc removedMystic = Mystics.remove(npc.getId());
         if (removedMystic != null)
         {
-            log.info("[Mystic] Despawned NPC id={} – removed from tracking. Remaining Mystics: {}", npc.getId(), Mystics.size());
+            log.info("[Mystic] Despawned NPC id={}. Remaining Mystics: {}, at tick {}", npc.getId(), Mystics.size(), getTick());
+            if (Mystics.size() == 0) {
+                int tick_cycle = (4 - (getTick() % 4)) % 4;
+                log.info("[Mystic Room] tick cycle: {}, finishing room at tick {}", tick_cycle, getTick() + tick_cycle);
+                
+            }
             return true;
         }
         return false;

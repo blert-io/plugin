@@ -94,13 +94,14 @@ public class VanguardsDataTracker extends RoomDataTracker
                 lastDamagedVanguard.setHitpoints(lastDamagedVanguard.getHitpoints().update(currentVarbitValue));
                 
                 log.info(
-                    "[Vanguard {}] HP updated via varbit: {} -> {} ({}{}) at tick {}",
+                    "[Vanguard {}] HP updated via varbit: {} -> {} ({}{}) at tick {}/{}",
                     lastDamagedVanguard.getNpc().getId(),
                     lastVarbitValue,
                     currentVarbitValue,
                     currentVarbitValue > lastVarbitValue ? "+" : "",
                     currentVarbitValue - lastVarbitValue,
-                    tick
+                    tick,
+                    getStartTick() + tick
                 );
             }
             else

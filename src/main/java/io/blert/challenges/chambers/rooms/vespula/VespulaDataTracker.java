@@ -108,7 +108,7 @@ public class VespulaDataTracker extends RoomDataTracker
                     // log.info("[Vespula HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
                     // setHealTick(tick);
                 } else {
-                    log.info("[Vespula HP] Damaged: {} -> {} (-{}) at tick {}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick);
+                    log.info("[Vespula HP] Damaged: {} -> {} (-{}) at tick {}/{}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick, getStartTick() + tick);
                 }
                 currentVespula.updateHitpointsFromVarbit(varbitValue);
             }

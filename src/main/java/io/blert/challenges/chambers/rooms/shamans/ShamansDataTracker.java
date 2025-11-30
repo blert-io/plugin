@@ -82,15 +82,15 @@ public class ShamansDataTracker extends RoomDataTracker
             int scale = npc.getHealthScale();
             
             // Always log health info to debug - copy script's exact logging approach
-            log.info(
-                "[Shaman HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
-                npc.getName(),
-                npc.getId(),
-                npc.getIndex(),
-                ratio,
-                scale,
-                tick
-            );
+            // log.info(
+            //     "[Shaman HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
+            //     npc.getName(),
+            //     npc.getId(),
+            //     npc.getIndex(),
+            //     ratio,
+            //     scale,
+            //     tick
+            // );
             
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
@@ -109,19 +109,20 @@ public class ShamansDataTracker extends RoomDataTracker
                     currentShaman.setHitpoints(newHitpoints);
                     
                     log.info(
-                        "[Shaman HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
+                        "[Shaman HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}/{}",
                         ratio,
                         scale,
                         hpPercent,
                         updatedHitpoints,
-                        tick
+                        tick,
+                        getStartTick() + tick
                     );
                 } else {
-                    log.info("[Shaman HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
+                    // log.info("[Shaman HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
                 }
             } else {
                 // Log when health info is not available - match script behavior
-                log.warn("[Shaman HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
+                // log.warn("[Shaman HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
 

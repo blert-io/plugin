@@ -108,7 +108,7 @@ public class TektonDataTracker extends RoomDataTracker
                     // log.info("[Tekton HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
                     // setHealTick(tick);
                 } else {
-                    log.info("[Tekton HP] Damaged: {} -> {} (-{}) at tick {}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick);
+                    log.info("[Tekton HP] Damaged: {} -> {} (-{}) at tick {}/{}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick, getStartTick() + tick);
                 }
                 currentTekton.updateHitpointsFromVarbit(varbitValue);
             }

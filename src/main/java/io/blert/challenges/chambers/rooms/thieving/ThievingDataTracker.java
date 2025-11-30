@@ -21,7 +21,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.chambers.rooms.icedemon;
+package io.blert.challenges.chambers.rooms.thieving;
 
 import io.blert.challenges.chambers.CoxNpc;
 import io.blert.challenges.chambers.CoxChallenge;
@@ -41,27 +41,28 @@ import javax.annotation.Nullable;
 import java.util.Optional;
 
 /**
- * Tracks Ice Demon room events, spawns, HP changes, and attacks with full lifecycle management.
+ * Tracks Corrupted Scavenger room events, spawns, HP changes, and attacks with full lifecycle management.
  * Uses NPC health ratio/scale for HP tracking instead of varbits.
  * 
- * TODO: Add Ice Demon-specific attack animations when identified.
+ * TODO: Add Corrupted Scavenger-specific attack animations when identified.
  */
 @Slf4j
-public class IceDemonDataTracker extends RoomDataTracker
+public class ThievingDataTracker extends RoomDataTracker
 {
-    // private static final int ICE_DEMON_HP_VARBIT = 6100;
-    // TODO: update when you finalize Ice Demon animations from logging
-    private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
-    // private static final int ICE_DEMON_STOMP_ANIMATION = ?;
-    // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
+    // private static final int CORRUPTED_SCAVENGER_HP_VARBIT = 6100;
+    // TODO: update when you finalize Corrupted Scavenger animations from logging
+    private static final int CORRUPTED_SCAVENGER_EAT_ANIMATION = 7496; // placeholder - needs verification
+    // private static final int CORRUPTED_SCAVENGER_STOMP_ANIMATION = ?;
+    // private static final int CORRUPTED_SCAVENGER_AUTO_ANIMATION = ?;
 
-    private @Nullable BasicTrackedNpc iceDemon;
+    private @Nullable BasicTrackedNpc corruptedScavenger;
     private @Nullable NpcAttack attackThisTick = null;
+    private boolean roomOver = false;
 
-    public IceDemonDataTracker(RecordableChallenge challenge, Stage stage, Client client)
+    public ThievingDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
         super(challenge, stage, client);
-        log.info("[IceDemonDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
+        log.info("[ThievingDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
     }
 
     @Override
@@ -72,16 +73,16 @@ public class IceDemonDataTracker extends RoomDataTracker
         final int tick = getTick();
 
         // Update HP using the direct NPC reference but log more details like the script
-        final var currentIceDemon = iceDemon; // Capture for null safety
-        if (currentIceDemon != null)
+        final var currentThieving = corruptedScavenger; // Capture for null safety
+        if (currentThieving != null)
         {
-            NPC npc = currentIceDemon.getNpc();
+            NPC npc = currentThieving.getNpc();
             int ratio = npc.getHealthRatio();
             int scale = npc.getHealthScale();
             
             // Always log health info to debug - copy script's exact logging approach
             // log.info(
-            //     "[Ice Demon HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
+            //     "[Corrupted Scavenger HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
             //     npc.getName(),
             //     npc.getId(),
             //     npc.getIndex(),
@@ -94,25 +95,36 @@ public class IceDemonDataTracker extends RoomDataTracker
             if (ratio > -1 && scale > 0)
             {
                 // double hpPercent = (ratio * 100.0) / scale;
-                int updatedHitpoints = (int) (currentIceDemon.getHitpoints().getBase() * (ratio / (double) scale));
-                int currentHitpoints = currentIceDemon.getHitpoints().getCurrent();
+                int updatedHitpoints = (int) (currentThieving.getHitpoints().getBase() * (ratio / (double) scale));
+                int currentHitpoints = currentThieving.getHitpoints().getCurrent();
+                
                 log.info(
-                    "[Ice Demon HP] Damaged: {} -> {} (-{}) at tick {}/{}", 
+                    "[Corrupted Scavenger HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {} at tick {}", 
                     currentHitpoints,
                     updatedHitpoints, 
                     Math.abs(currentHitpoints - updatedHitpoints), 
-                    tick,
-                    getStartTick() + tick
+                    currentThieving.getHitpoints().getBase(), 
+                    tick
                 );
+                if (updatedHitpoints <= 0) {
+                    corruptedScavenger = null; // Clear reference on death
+                    if (!roomOver) {
+                        log.warn("[Thieving DataTracker] HP is {}, at tick {}", updatedHitpoints, tick);
+                        int postAnimationTick = tick + 1;
+                        int tick_cycle = (4 - (postAnimationTick % 4)) % 4;
+                        log.warn("[Thieving DataTracker] tick cycle: {}, room end: {}", tick_cycle, postAnimationTick + tick_cycle);
+                        roomOver = true;
+                    }
+                }
                 
                 // Only update if there's a significant change (similar to varbit logic)
                 if (Math.abs(currentHitpoints - updatedHitpoints) > 0)
                 {
-                    Hitpoints newHitpoints = currentIceDemon.getHitpoints().update(updatedHitpoints);
-                    currentIceDemon.setHitpoints(newHitpoints);
+                    Hitpoints newHitpoints = currentThieving.getHitpoints().update(updatedHitpoints);
+                    currentThieving.setHitpoints(newHitpoints);
                     
                     // log.info(
-                    //     "[Ice Demon HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
+                    //     "[Corrupted Scavenger HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
                     //     ratio,
                     //     scale,
                     //     hpPercent,
@@ -120,24 +132,24 @@ public class IceDemonDataTracker extends RoomDataTracker
                     //     tick
                     // );
                 } else {
-                    // log.info("[Ice Demon HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
+                    // log.info("[Corrupted Scavenger HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
                 }
             } else {
                 // Log when health info is not available - match script behavior
-                log.warn("[Ice Demon HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
+                log.warn("[Corrupted Scavenger HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
 
         if (attackThisTick != null)
         {
-            if (currentIceDemon != null)
+            if (currentThieving != null)
             {
                 dispatchEvent(new NpcAttackEvent(
                     getStage(),
                     tick,
-                    getWorldLocation(currentIceDemon.getNpc()),
+                    getWorldLocation(currentThieving.getNpc()),
                     attackThisTick,
-                    currentIceDemon
+                    currentThieving
                 ));
             }
         }
@@ -150,25 +162,25 @@ public class IceDemonDataTracker extends RoomDataTracker
     {
         // Only track NPCs if this room tracker is still active - check this FIRST
         if (terminating()) {
-            log.debug("[Ice Demon] Ignoring NPC spawn {} - room tracker is terminating", spawned.getNpc().getId());
+            log.debug("[Corrupted Scavenger] Ignoring NPC spawn {} - room tracker is terminating", spawned.getNpc().getId());
             return Optional.empty();
         }
         
         NPC npc = spawned.getNpc();
         
-        // Log all NPC spawns in Ice Demon room for debugging
-        // log.info("[Ice Demon Room] NPC spawned: id={}, name='{}'", npc.getId(), npc.getName());
+        // Log all NPC spawns in Corrupted Scavenger room for debugging
+        // log.info("[Corrupted Scavenger Room] NPC spawned: id={}, name='{}'", npc.getId(), npc.getName());
         
-        // Check if this NPC ID corresponds to Ice Demon
+        // Check if this NPC ID corresponds to Corrupted Scavenger
         Optional<CoxNpc> coxNpcOpt = CoxNpc.withId(npc.getId());
         if (coxNpcOpt.isPresent()) {
             CoxNpc coxNpc = coxNpcOpt.get();
-            log.info("[Ice Demon Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
+            log.info("[Corrupted Scavenger Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
             
-            if (coxNpc == CoxNpc.ICE_DEMON_FROZEN || coxNpc == CoxNpc.ICE_DEMON_THAWED) {
-                if (iceDemon == null) {
+            if (coxNpc == CoxNpc.CORRUPTED_SCAVENGER) {
+                if (corruptedScavenger == null) {
                     CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-                    iceDemon = new BasicTrackedNpc(
+                    corruptedScavenger = new BasicTrackedNpc(
                         npc,
                         coxNpc,
                         generateRoomId(npc),
@@ -176,22 +188,22 @@ public class IceDemonDataTracker extends RoomDataTracker
                     );
                     String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
                     log.info(
-                        "✓ Ice Demon tracked instance created: id={}, enum={}, base HP {} (scale={}){}",
+                        "✓ Corrupted Scavenger tracked instance created: id={}, enum={}, base HP {} (scale={}){}",
                         npc.getId(),
                         coxNpc,
-                        iceDemon.getHitpoints().getBase(),
+                        corruptedScavenger.getHitpoints().getBase(),
                         getChallenge().getScale(),
                         modeStatus
                     );
-                    return Optional.of(iceDemon);
+                    return Optional.of(corruptedScavenger);
                 } else {
-                    log.info("! Ice Demon already being tracked, ignoring additional spawn: id={}, enum={}", npc.getId(), coxNpc);
+                    log.info("! Corrupted Scavenger already being tracked, ignoring additional spawn: id={}, enum={}", npc.getId(), coxNpc);
                 }
             } else {
-                log.debug("[Ice Demon Room] Non-Ice Demon CoxNpc: {} for id {}", coxNpc, npc.getId());
+                log.debug("[Corrupted Scavenger Room] Non-Corrupted Scavenger CoxNpc: {} for id {}", coxNpc, npc.getId());
             }
         } else {
-            log.debug("[Ice Demon Room] NPC id {} not found in CoxNpc enum", npc.getId());
+            log.debug("[Corrupted Scavenger Room] NPC id {} not found in CoxNpc enum", npc.getId());
         }
         return Optional.empty();
     }
@@ -200,10 +212,10 @@ public class IceDemonDataTracker extends RoomDataTracker
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
     {
         NPC npc = despawned.getNpc();
-        if (iceDemon != null && npc == iceDemon.getNpc())
+        if (corruptedScavenger != null && npc == corruptedScavenger.getNpc())
         {
-            log.info("[Ice Demon] Despawned NPC id={} tick={}", npc.getId(), getTick());
-            iceDemon = null;
+            log.info("[Corrupted Scavenger] Despawned NPC id={} tick={}", npc.getId(), getTick());
+            corruptedScavenger = null;
             return true;
         }
         return false;
@@ -213,22 +225,23 @@ public class IceDemonDataTracker extends RoomDataTracker
     protected void onAnimation(AnimationChanged event)
     {
         Actor actor = event.getActor();
-        final var currentIceDemon = iceDemon; // Capture for null safety
-        if (currentIceDemon == null || actor != currentIceDemon.getNpc())
+        final var currentThieving = corruptedScavenger; // Capture for null safety
+        if (currentThieving == null || actor != currentThieving.getNpc())
         {
             return;
         }
 
         switch (actor.getAnimation())
         {
-            case ICE_DEMON_FREEZE_ANIMATION:
-                attackThisTick = NpcAttack.COX_ICE_DEMON_FREEZE;
+            case CORRUPTED_SCAVENGER_EAT_ANIMATION:
+                log.info("[Corrupted Scavenger] Eat animation detected at tick {}", getTick());
+                // attackThisTick = NpcAttack.COX_CORRUPTED_SCAVENGER_FREEZE;
                 break;
-            // case ICE_DEMON_STOMP_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_STOMP;
+            // case CORRUPTED_SCAVENGER_STOMP_ANIMATION:
+            //     attackThisTick = NpcAttack.COX_CORRUPTED_SCAVENGER_STOMP;
             //     break;
-            // case ICE_DEMON_AUTO_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_AUTO;
+            // case CORRUPTED_SCAVENGER_AUTO_ANIMATION:
+            //     attackThisTick = NpcAttack.COX_CORRUPTED_SCAVENGER_AUTO;
             //     break;
             default:
                 break;
@@ -241,11 +254,11 @@ public class IceDemonDataTracker extends RoomDataTracker
         if (event.getActor() instanceof NPC &&
             event.getHitsplat().getHitsplatType() == HitsplatID.HEAL)
         {
-            final var currentIceDemon = iceDemon; // Capture for null safety
-            if (currentIceDemon != null && event.getActor() == currentIceDemon.getNpc())
+            final var currentThieving = corruptedScavenger; // Capture for null safety
+            if (currentThieving != null && event.getActor() == currentThieving.getNpc())
             {
                 setHealTick(getTick());
-                log.info("[Ice Demon HP] Heal hitsplat detected at tick {}", getHealTick());
+                log.info("[Corrupted Scavenger HP] Heal hitsplat detected at tick {}", getHealTick());
             }
         }
     }
@@ -253,6 +266,6 @@ public class IceDemonDataTracker extends RoomDataTracker
     @Override
     protected void onVarbit(VarbitChanged event)
     {
-        // No longer using varbits for Ice Demon HP - using health ratio/scale instead
+        // No longer using varbits for Corrupted Scavenger HP - using health ratio/scale instead
     }
 }
