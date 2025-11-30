@@ -70,6 +70,7 @@ public class OlmDataTracker extends RoomDataTracker
     private @Nullable BasicTrackedNpc lastDamagedOlm = null;
     private int lastVarbitValue = -1;
     private int lastHitsplatTick = -1;
+    private boolean olmDeath = false;
 
     public OlmDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -103,6 +104,12 @@ public class OlmDataTracker extends RoomDataTracker
                     tick,
                     getStartTick() + tick
                 );
+                if (lastDamagedOlm.getNpc().getId() == 7554 && currentVarbitValue == 0 && !olmDeath)
+                {
+                    olmDeath = true;
+                    log.info("[Olm {}] Detected death at tick {}/{}, expected raid end {}", 
+                                lastDamagedOlm.getNpc().getId(), tick, tick + getStartTick(), getStartTick() + tick + 4);
+                }
             }
             else
             {
@@ -141,7 +148,7 @@ public class OlmDataTracker extends RoomDataTracker
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned spawned)
     {
         NPC npc = spawned.getNpc();
-        String npcName = npc.getName();
+        // String npcName = npc.getName();
         
         // Debug: Log all NPC spawns in this room to help identify Olm
         // log.info("[Olm] NPC spawned: id={}, name='{}'", npc.getId(), npcName);
@@ -161,25 +168,25 @@ public class OlmDataTracker extends RoomDataTracker
         }
         
         // Fallback: Try to detect Olm by name if ID lookup failed
-        if (npcName != null && (npcName.toLowerCase().contains("head") ||
-                                npcName.toLowerCase().contains("left") ||
-                                npcName.toLowerCase().contains("right")))
-        {
-            log.warn("[Olm] Detected Olm by name: id={}, name='{}' (not in CoxNpc enum - please add this ID)", npc.getId(), npcName);
+        // if (npcName != null && (npcName.toLowerCase().contains("head") ||
+        //                         npcName.toLowerCase().contains("left") ||
+        //                         npcName.toLowerCase().contains("right")))
+        // {
+        //     log.warn("[Olm] Detected Olm by name: id={}, name='{}' (not in CoxNpc enum - please add this ID)", npc.getId(), npcName);
             
-            // Determine type from name for fallback tracking
-            CoxNpc fallbackType = CoxNpc.OLM_HEAD; // Default
-            if (npcName.toLowerCase().contains("left"))
-            {
-                fallbackType = CoxNpc.OLM_MELEE_HAND;
-            }
-            else if (npcName.toLowerCase().contains("right"))
-            {
-                fallbackType = CoxNpc.OLM_MAGE_HAND;
-            }
+        //     // Determine type from name for fallback tracking
+        //     CoxNpc fallbackType = CoxNpc.OLM_HEAD; // Default
+        //     if (npcName.toLowerCase().contains("left"))
+        //     {
+        //         fallbackType = CoxNpc.OLM_MELEE_HAND;
+        //     }
+        //     else if (npcName.toLowerCase().contains("right"))
+        //     {
+        //         fallbackType = CoxNpc.OLM_MAGE_HAND;
+        //     }
             
-            return createOlmTracker(npc, fallbackType);
-        }
+        //     return createOlmTracker(npc, fallbackType);
+        // }
         
         return Optional.empty();
     }
@@ -196,7 +203,7 @@ public class OlmDataTracker extends RoomDataTracker
         if (existingOlm != null)
         {
             log.info("[Olm] Detected ID transition: {} -> {} for existing Olm", 
-                     existingOlm.getNpc().getId(), npc.getId());
+                        existingOlm.getNpc().getId(), npc.getId());
             
             // Update the existing tracker with new NPC reference and type
             olms.remove(existingOlm.getNpc().hashCode());
@@ -211,8 +218,8 @@ public class OlmDataTracker extends RoomDataTracker
             olms.put(npcHash, updatedOlm);
             
             log.info("[Olm] Updated Olm tracker: old_id={}, new_id={}, type={}, hp={}",
-                     existingOlm.getNpc().getId(), npc.getId(), coxNpc, 
-                     updatedOlm.getHitpoints().getCurrent());
+                        existingOlm.getNpc().getId(), npc.getId(), coxNpc, 
+                        updatedOlm.getHitpoints().getCurrent());
             
             return Optional.of(updatedOlm);
         }
@@ -291,6 +298,8 @@ public class OlmDataTracker extends RoomDataTracker
     {
         NPC npc = despawned.getNpc();
         int npcHash = npc.hashCode();
+        log.info("[Olm] Despawned Olm NPC id={} at tick {}/{}. Remaining Olm: {}", 
+                     npc.getId(), getTick(), getStartTick() + getTick(), olms.size());
         
         // Check if this NPC is one of our tracked olms
         BasicTrackedNpc olm = olms.get(npcHash);

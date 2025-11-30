@@ -39,8 +39,12 @@ public class CoxChallenge extends RecordableChallenge {
             Pattern.compile("The raid has begun!.*");
     private static final Pattern RAID_COMPLETION_REGEX =
             Pattern.compile("Congratulations - your raid is complete!.*");
+    // private static final Pattern RAID_COMPLETION_REGEX =
+    //     Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
     private static final Pattern ROOM_COMPLETE_REGEX =
             Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
+    // private static final Pattern ROOM_COMPLETE_REGEX =
+    //     Pattern.compile("Congratulations - your raid is complete!.*");
     private static final Pattern MAP_LAYOUT_REGEX =
             Pattern.compile("Map Layout:.*");
 
@@ -61,20 +65,26 @@ public class CoxChallenge extends RecordableChallenge {
         // Stage.COX_VASA,
         // Stage.COX_VESPULA,
         // Stage.COX_MUTTADILE,
-        // Stage.COX_VANGUARDS,
-        // Stage.COX_MYSTICS,
-        Stage.COX_TEKTON,
-        Stage.COX_CRABS,
-        Stage.COX_ICE_DEMON,
-        Stage.COX_SHAMANS,
         Stage.COX_VANGUARDS,
-        Stage.COX_THIEVING,
-        Stage.COX_VESPULA,
-        Stage.COX_TIGHTROPE,
-        Stage.COX_GUARDIANS,
-        Stage.COX_VASA,
-        Stage.COX_MYSTICS,
-        Stage.COX_MUTTADILE,
+        // Stage.COX_MYSTICS,
+
+        // Stage.COX_TEKTON,
+        // Stage.COX_CRABS,
+        // Stage.COX_ICE_DEMON,
+        // Stage.COX_SHAMANS,
+        // Stage.COX_VANGUARDS,
+        // Stage.COX_THIEVING,
+        // Stage.COX_VESPULA,
+        // Stage.COX_TIGHTROPE,
+        // Stage.COX_GUARDIANS,
+        // Stage.COX_VASA,
+        // Stage.COX_MYSTICS,
+        // Stage.COX_MUTTADILE,
+        Stage.COX_OLM,
+        Stage.COX_OLM,
+        Stage.COX_OLM,
+        Stage.COX_OLM,
+        Stage.COX_OLM,
         Stage.COX_OLM
     );
 
@@ -171,6 +181,16 @@ public class CoxChallenge extends RecordableChallenge {
         // Raid end
         Matcher completionMatcher = RAID_COMPLETION_REGEX.matcher(stripped);
         if (completionMatcher.matches() && getState() == ChallengeState.ACTIVE) {
+            int currentTick = getRelativeTick();
+            int currentTick2 = getTick();
+            final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
+            log.info("Last Room, currentTick(relative): {}, currentTick: {}, startTick: {}, endTick: {}", currentTick, currentTick2, startTick, endTick);
+            tracker.finishLastRoom(currentTick);
+
+            // Clean up the old tracker properly
+            getEventBus().unregister(tracker);
+            removeEventHandler(tracker);
+            roomDataTracker = null;
             endRaid();
             return;
         }
@@ -239,7 +259,7 @@ public class CoxChallenge extends RecordableChallenge {
     private void endRaid() {
         inRaid = false;
         setState(ChallengeState.ENDING);
-        endTick = getTick();
+        endTick = getRelativeTick();
         dispatchEvent(new ChallengeEndEvent(reportedChallengeTime, endTick - startTick));
         log.info("Chambers of Xeric raid ended at tick {}", endTick - startTick);
         onTerminate();
@@ -281,7 +301,7 @@ public class CoxChallenge extends RecordableChallenge {
         int avgMiningLevel = client.getRealSkillLevel(net.runelite.api.Skill.MINING);     // MIN: Average mining level of the party
         
         log.info("Scaling NPC hitpoints for PS:{} CMB:{} HP:{} MIN:{} CM:{}", 
-                 partySize, maxCombatLevel, maxHpLevel, avgMiningLevel, challengeMode);
+                    partySize, maxCombatLevel, maxHpLevel, avgMiningLevel, challengeMode);
         
         // Scale all NPCs that will be used in this raid
         for (CoxNpc npc : CoxNpc.values()) {

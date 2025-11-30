@@ -87,13 +87,13 @@ public class ThievingDataTracker extends RoomDataTracker
                 int currentHitpoints = currentThieving.getHitpoints().getCurrent();
                 
                 if (updatedHitpoints <= 0) {
-                    corruptedScavenger = null; // Clear reference on death
                     if (!roomOver) {
                         log.warn("[Thieving DataTracker] HP is {}, at tick {}/{}", updatedHitpoints, tick, getStartTick() + tick);
                         int postAnimationTick = tick + 1;
                         int tick_cycle = (4 - ((postAnimationTick + getStartTick()) % 4)) % 4;
                         log.warn("[Thieving DataTracker] tick cycle: {}, room end: {}/{}", tick_cycle, postAnimationTick + tick_cycle, getStartTick() + postAnimationTick + tick_cycle);
                         roomOver = true;
+                        corruptedScavenger = null; // Clear reference on death
                     }
                 }
                 

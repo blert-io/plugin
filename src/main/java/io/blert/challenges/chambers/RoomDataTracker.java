@@ -42,6 +42,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         super(challenge, client, stage);
         this.stage = stage;
         this.roomEndRegex = Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
+        // this.roomEndRegex = Pattern.compile("Congratulations - your raid is complete!.*");
     }
 
     /**
@@ -66,6 +67,15 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         endTick = currentTick;
         started = false;
         log.info("Finished room {} at tick {} with duration {}", stage, startTick + endTick, endTick);
+        // Dispatch event to Blert event handler
+        dispatchEvent(new CoxRoomCompleteEvent(stage, startTick, endTick));
+    }
+
+    public void finishLastRoom(int currentTick) {
+        if (!started) return;
+        endTick = currentTick;
+        started = false;
+        log.info("Finished Last room {} at tick {} with duration {}", stage, endTick, endTick - getStartTick());
         // Dispatch event to Blert event handler
         dispatchEvent(new CoxRoomCompleteEvent(stage, startTick, endTick));
     }

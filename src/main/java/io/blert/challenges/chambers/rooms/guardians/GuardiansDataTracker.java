@@ -80,24 +80,6 @@ public class GuardiansDataTracker extends RoomDataTracker
 
         final int tick = getTick();
 
-        // Check for dead Guardian NPCs in the world
-        boolean deadGuardian1Present = false;
-        boolean deadGuardian2Present = false;
-        for (NPC npc : client.getTopLevelWorldView().npcs()) {
-            if (npc.getId() == 7571) {
-                deadGuardian1Present = true;
-            }
-            if (npc.getId() == 7572) {
-                deadGuardian2Present = true;
-            }
-        }
-        
-        // Log when both dead Guardian IDs are present
-        if (deadGuardian1Present && deadGuardian2Present) {
-            int tick_cycle = (4 - (getTick() % 4)) % 4;
-            log.info("[Guardian Dead IDs] Both dead Guardian IDs (7571, 7572) are present! Current Tick: {}, 4 tick cycle offset: {}, RoomEnd: {}", getTick(), tick_cycle, getTick() + tick_cycle);
-        }
-
         // Update HP for all tracked Guardians
         int deadGuardiansCount = 0;
         int totalGuardiansCount = 0;
@@ -161,12 +143,12 @@ public class GuardiansDataTracker extends RoomDataTracker
         if (totalGuardiansCount >= 2 && deadGuardiansCount >= 2)
         {
             counter += 1;
-            int tick_cycle_temp = (4 - (getTick() % 4)) % 4;
-            log.info("[Guardian Debug] Guardians dead! Counter: {} Current Tick: {}, 4 tick cycle offset: {}, RoomEnd: {}", counter, getTick(), tick_cycle_temp, getTick() + tick_cycle_temp);
+            // int tick_cycle_temp = (4 - ((getTick() + getStartTick()) % 4)) % 4;
+            // log.info("[Guardian Debug] Guardians dead! Counter: {} Current Tick: {}, 4 tick cycle offset: {}, RoomEnd: {}", counter, getTick(), tick_cycle_temp, getTick() + tick_cycle_temp);
             if (counter == 3) // Log only once when both die
             {
-                int tick_cycle = (4 - (getTick() % 4)) % 4;
-                log.info("[Guardian] Guardians dead! Current Tick: {}, 4 tick cycle offset: {}, RoomEnd: {}", getTick(), tick_cycle, getTick() + tick_cycle);
+                int tick_cycle = (4 - ((getTick() + getStartTick()) % 4)) % 4;
+                log.info("[Guardian] Guardians dead! at tick: {}/{}, tick cycle offset: {}, RoomEnd: {}/{}", getTick(), getStartTick() + getTick(), tick_cycle, getTick() + tick_cycle, getStartTick() + getTick() + tick_cycle);
             }
         }
 

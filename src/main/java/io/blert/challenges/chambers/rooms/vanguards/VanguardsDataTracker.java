@@ -45,6 +45,10 @@ import java.util.Optional;
 @Slf4j
 public class VanguardsDataTracker extends RoomDataTracker
 {
+    // Map from initial spawn NPC hash to transformed NPC hash
+    private final Map<Integer, Integer> initialToTransformedHash = new HashMap<>();
+    // Map from NPC hash to their spawn tick
+    private final Map<Integer, Integer> npcSpawnTicks = new HashMap<>();
     // Vanguards share the same HP varbit, but we can track which one was last damaged
     private static final int VANGUARD_HP_VARBIT = 6099;
     
@@ -142,10 +146,13 @@ public class VanguardsDataTracker extends RoomDataTracker
     {
         NPC npc = spawned.getNpc();
         String npcName = npc.getName();
-        
+
+        // Track spawn tick for this NPC hash
+        npcSpawnTicks.put(npc.hashCode(), getTick());
+
         // Debug: Log all NPC spawns in this room to help identify Vanguards
-        log.info("[Vanguards] NPC spawned: id={}, name='{}'", npc.getId(), npcName);
-        
+        log.info("[Vanguards] NPC spawned: id={}, name='{}', tick={}", npc.getId(), npcName, getTick());
+
         // First try to match by CoxNpc enum
         Optional<CoxNpc> coxNpcOpt = CoxNpc.withId(npc.getId());
         if (coxNpcOpt.isPresent())
@@ -158,12 +165,12 @@ public class VanguardsDataTracker extends RoomDataTracker
                 return createVanguardTracker(npc, coxNpc);
             }
         }
-        
+
         // Fallback: Try to detect Vanguards by name if ID lookup failed
         if (npcName != null && npcName.toLowerCase().contains("vanguard"))
         {
             log.warn("[Vanguards] Detected Vanguard by name: id={}, name='{}' (not in CoxNpc enum - please add this ID)", npc.getId(), npcName);
-            
+
             // Determine type from name for fallback tracking
             CoxNpc fallbackType = CoxNpc.VANGUARD_MELEE; // Default
             if (npcName.toLowerCase().contains("ranged"))
@@ -174,10 +181,10 @@ public class VanguardsDataTracker extends RoomDataTracker
             {
                 fallbackType = CoxNpc.VANGUARD_MAGIC;
             }
-            
+
             return createVanguardTracker(npc, fallbackType);
         }
-        
+
         return Optional.empty();
     }
     
@@ -271,16 +278,34 @@ public class VanguardsDataTracker extends RoomDataTracker
                     // Check if NPCs are at similar positions (indicating same entity)
                     var oldPos = vanguard.getNpc().getWorldLocation();
                     var newPos = newNpc.getWorldLocation();
-                    
+
                     if (oldPos != null && newPos != null && oldPos.distanceTo(newPos) <= 2)
                     {
+                        // Map initial hash to transformed hash
+                        initialToTransformedHash.put(vanguard.getNpc().hashCode(), newNpc.hashCode());
+                        // Optionally, also map transformed hash to initial hash if needed
+                        // initialToTransformedHash.put(newNpc.hashCode(), vanguard.getNpc().hashCode());
                         return vanguard;
                     }
                 }
             }
         }
-        
+
         return null;
+    }
+
+    /**
+     * Get the spawn tick for a given NPC hash (initial or transformed)
+     */
+    public int getSpawnTickForNpcHash(int npcHash) {
+        return npcSpawnTicks.getOrDefault(npcHash, -1);
+    }
+
+    /**
+     * Get the transformed hash for an initial spawn hash
+     */
+    public Integer getTransformedHashForInitial(int initialHash) {
+        return initialToTransformedHash.get(initialHash);
     }
 
     @Override
@@ -295,13 +320,25 @@ public class VanguardsDataTracker extends RoomDataTracker
         {
             // Remove the vanguard from our tracking
             vanguards.remove(npcHash);
-            
+
             log.info("[Vanguards] Despawned Vanguard NPC id={} at tick {} – Remaining Vanguards: {}", 
                         npc.getId(), getTick(), vanguards.size());
             if (vanguards.size() == 0)
             {
                 int crystalAnimation = 4;
-                log.info("[Vanguards] All Vanguards despawned expected room end {} animation detected", crystalAnimation + getTick());
+                // Use the spawn tick of the last removed Vanguard for tick cycle calculation
+                int lastSpawnTick = getSpawnTickForNpcHash(npcHash);
+                int tick_cycle = (4 - ((lastSpawnTick + getStartTick()) % 4)) % 4;
+                int tick_cycle_room = (4 - (lastSpawnTick % 4)) % 4;
+                log.info("[Vanguards] Last despawned Vanguard id={} had spawn tick {}, tick cycle raid {}, tick cycle room {}", npc.getId(), lastSpawnTick, tick_cycle, tick_cycle_room);
+                if (crystalAnimation + getTick() + tick_cycle != crystalAnimation + getTick() + tick_cycle_room) {
+                    log.info("[Vanguards] One of the tick cycles are incorrect for Vanguard id={}", npc.getId());
+                }
+                log.info("[Vanguards] All Vanguards despawned room end {}/{} (using last spawn tick)", crystalAnimation + getTick() + tick_cycle, getTick() + getStartTick() + crystalAnimation + tick_cycle);
+
+                // Keep the original logs for reference
+                log.info("[Vanguards] All Vanguards despawned room end {}/{}", crystalAnimation + getTick(), getTick() + getStartTick() + crystalAnimation);
+                log.info("[Vanguards Test 4 tick cycle] All Vanguards despawned room end {}/{}", crystalAnimation + getTick() + tick_cycle, getTick() + getStartTick() + crystalAnimation + tick_cycle);
             }
             return true;
         }
