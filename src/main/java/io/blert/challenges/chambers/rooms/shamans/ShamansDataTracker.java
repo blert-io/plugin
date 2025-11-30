@@ -81,48 +81,32 @@ public class ShamansDataTracker extends RoomDataTracker
             int ratio = npc.getHealthRatio();
             int scale = npc.getHealthScale();
             
-            // Always log health info to debug - copy script's exact logging approach
-            // log.info(
-            //     "[Shaman HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
-            //     npc.getName(),
-            //     npc.getId(),
-            //     npc.getIndex(),
-            //     ratio,
-            //     scale,
-            //     tick
-            // );
-            
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
             {
-                double hpPercent = (ratio * 100.0) / scale;
                 int updatedHitpoints = (int) (currentShaman.getHitpoints().getBase() * (ratio / (double) scale));
                 int currentHitpoints = currentShaman.getHitpoints().getCurrent();
                 
-                log.info("[Shaman HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
-                         currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentShaman.getHitpoints().getBase());
+                // log.info("[Shaman HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
+                //             currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentShaman.getHitpoints().getBase());
                 
                 // Only update if there's a significant change (similar to varbit logic)
-                if (Math.abs(currentHitpoints - updatedHitpoints) > 5)
+                if (Math.abs(currentHitpoints - updatedHitpoints) > 0)
                 {
                     Hitpoints newHitpoints = currentShaman.getHitpoints().update(updatedHitpoints);
                     currentShaman.setHitpoints(newHitpoints);
-                    
                     log.info(
-                        "[Shaman HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}/{}",
+                        "[Shaman HP] NPC ID: {}, Damaged: {} -> {} (-{}), ratio {}/{} at tick {}/{}",
+                        npc.getId(),
+                        currentHitpoints, 
+                        updatedHitpoints, 
+                        Math.abs(currentHitpoints - updatedHitpoints),
                         ratio,
                         scale,
-                        hpPercent,
-                        updatedHitpoints,
                         tick,
                         getStartTick() + tick
                     );
-                } else {
-                    // log.info("[Shaman HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
                 }
-            } else {
-                // Log when health info is not available - match script behavior
-                // log.warn("[Shaman HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
 
@@ -166,28 +150,20 @@ public class ShamansDataTracker extends RoomDataTracker
             log.info("[Shaman Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
             
             // Check if it's any Shaman variant
-            if (coxNpc == CoxNpc.LIZARDMAN_SHAMAN_1 || 
-                coxNpc == CoxNpc.LIZARDMAN_SHAMAN_2) {
-                
-                // Check if this specific NPC ID is already being tracked
-                if (!shamans.containsKey(npc.getId())) {
-                    CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-                    BasicTrackedNpc newShaman = new BasicTrackedNpc(
-                        npc,
-                        coxNpc,
-                        generateRoomId(npc),
-                        new Hitpoints(coxNpc.getBaseHitpoints())
-                    );
-                    shamans.put(npc.getId(), newShaman);
-                    String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
-                    log.info("✓ Shaman tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Shamans: {}{}", 
-                             npc.getId(), coxNpc, newShaman.getHitpoints().getBase(), getChallenge().getScale(), shamans.size(), modeStatus);
-                    return Optional.of(newShaman);
-                } else {
-                    log.info("! Shaman NPC id={} already being tracked, ignoring duplicate spawn", npc.getId());
-                }
-            } else {
-                log.debug("[Shaman Room] Non-Shaman CoxNpc: {} for id {}", coxNpc, npc.getId());
+            if ((coxNpc == CoxNpc.LIZARDMAN_SHAMAN_1 || coxNpc == CoxNpc.LIZARDMAN_SHAMAN_2) 
+                    && !shamans.containsKey(npc.getId())) {
+                CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
+                BasicTrackedNpc newShaman = new BasicTrackedNpc(
+                    npc,
+                    coxNpc,
+                    generateRoomId(npc),
+                    new Hitpoints(coxNpc.getBaseHitpoints())
+                );
+                shamans.put(npc.getId(), newShaman);
+                String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
+                log.info("✓ Shaman tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Shamans: {}{}", 
+                            npc.getId(), coxNpc, newShaman.getHitpoints().getBase(), getChallenge().getScale(), shamans.size(), modeStatus);
+                return Optional.of(newShaman);
             }
         } else {
             log.debug("[Shaman Room] NPC id {} not found in CoxNpc enum", npc.getId());
@@ -203,7 +179,7 @@ public class ShamansDataTracker extends RoomDataTracker
         BasicTrackedNpc removedShaman = shamans.remove(npc.getId());
         if (removedShaman != null)
         {
-            log.info("[Shaman] Despawned NPC id={} – removed from tracking. Remaining Shamans: {}", npc.getId(), shamans.size());
+            log.info("[Shaman] Despawned NPC id={}. Remaining Shamans: {}", npc.getId(), shamans.size());
             return true;
         }
         return false;

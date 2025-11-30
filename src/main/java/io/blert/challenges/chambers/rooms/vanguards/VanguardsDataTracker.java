@@ -193,7 +193,7 @@ public class VanguardsDataTracker extends RoomDataTracker
         if (existingVanguard != null)
         {
             log.info("[Vanguards] Detected ID transition: {} -> {} for existing Vanguard", 
-                     existingVanguard.getNpc().getId(), npc.getId());
+                        existingVanguard.getNpc().getId(), npc.getId());
             
             // Update the existing tracker with new NPC reference and type
             vanguards.remove(existingVanguard.getNpc().hashCode());
@@ -208,8 +208,8 @@ public class VanguardsDataTracker extends RoomDataTracker
             vanguards.put(npcHash, updatedVanguard);
             
             log.info("[Vanguards] Updated Vanguard tracker: old_id={}, new_id={}, type={}, hp={}",
-                     existingVanguard.getNpc().getId(), npc.getId(), coxNpc, 
-                     updatedVanguard.getHitpoints().getCurrent());
+                        existingVanguard.getNpc().getId(), npc.getId(), coxNpc, 
+                        updatedVanguard.getHitpoints().getCurrent());
             
             return Optional.of(updatedVanguard);
         }
@@ -297,7 +297,7 @@ public class VanguardsDataTracker extends RoomDataTracker
             vanguards.remove(npcHash);
             
             log.info("[Vanguards] Despawned Vanguard NPC id={} at tick {} – Remaining Vanguards: {}", 
-                     npc.getId(), getTick(), vanguards.size());
+                        npc.getId(), getTick(), vanguards.size());
             if (vanguards.size() == 0)
             {
                 int crystalAnimation = 4;
@@ -389,7 +389,7 @@ public class VanguardsDataTracker extends RoomDataTracker
                     lastHitsplatTick = getTick();
                     
                     log.debug("[Vanguard {}] Damage hitsplat: {} (type {}) - marked for varbit attribution", 
-                              npc.getId(), hitsplat.getAmount(), hitsplatType);
+                                npc.getId(), hitsplat.getAmount(), hitsplatType);
                 }
             }
         }

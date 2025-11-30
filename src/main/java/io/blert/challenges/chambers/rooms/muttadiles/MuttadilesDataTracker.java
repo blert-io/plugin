@@ -253,7 +253,7 @@ public class MuttadilesDataTracker extends RoomDataTracker
         // Check if it's the small muttadile despawning
         if (smallMuttadile != null && npc == smallMuttadile.getNpc())
         {
-            log.info("[Small Muttadile] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
+            log.info("[Small Muttadile] Despawned NPC id={}, at tick {}", npc.getId(), getTick());
             smallMuttadile = null;
             
             // If this was the active varbit tracker, clear it so large muttadile can take over
@@ -263,8 +263,8 @@ public class MuttadilesDataTracker extends RoomDataTracker
                 log.info("[Muttadile] Small muttadile was varbit tracker - will switch to large if available");
             }
             
-            int tick_cycle_lake = (4 - (getTick() % 4)) % 4;
-            log.info("[Small Muttadile] 4 tick cycle offset: {}, Anim Tick: {}, MuttaLake: {}", tick_cycle_lake, getTick() + tick_cycle_lake, getTick() + tick_cycle_lake + 5);
+            int tick_cycle_lake = (4 - ((getStartTick() + getTick()) % 4)) % 4;
+            log.info("[Small Muttadile] 4 tick cycle offset: {}, Anim Tick: {}, MuttaLake: {}/{}", tick_cycle_lake, getTick() + tick_cycle_lake, getTick() + tick_cycle_lake + 5, getStartTick() + getTick() + tick_cycle_lake + 5);
             
             return true;
         }
@@ -272,7 +272,7 @@ public class MuttadilesDataTracker extends RoomDataTracker
         // Check if it's the large muttadile despawning
         if (largeMuttadile != null && npc == largeMuttadile.getNpc())
         {
-            log.info("[Large Muttadile] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
+            log.info("[Large Muttadile] Despawned NPC id={}, at tick {}/{}", npc.getId(), getTick(), getStartTick() + getTick());
             largeMuttadile = null;
             
             // If this was the active varbit tracker, clear it
@@ -282,8 +282,8 @@ public class MuttadilesDataTracker extends RoomDataTracker
                 previousVarbitValue = -1;
             }
             
-            int tick_cycle = (4 - (getTick() % 4)) % 4;
-            log.info("[Large Muttadile] 4 tick cycle offset: {}, Anim Tick: {}, RoomEnd: {}", tick_cycle, getTick() + tick_cycle, getTick() + tick_cycle + 4);
+            int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;
+            log.info("[Large Muttadile] 4 tick cycle offset: {}, Anim Tick: {}, RoomEnd: {}/{}", tick_cycle, getTick() + tick_cycle, getTick() + tick_cycle + 4, getStartTick() + getTick() + tick_cycle + 4);
             
             return true;
         }

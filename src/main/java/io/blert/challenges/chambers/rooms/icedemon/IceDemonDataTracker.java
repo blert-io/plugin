@@ -79,52 +79,27 @@ public class IceDemonDataTracker extends RoomDataTracker
             int ratio = npc.getHealthRatio();
             int scale = npc.getHealthScale();
             
-            // Always log health info to debug - copy script's exact logging approach
-            // log.info(
-            //     "[Ice Demon HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
-            //     npc.getName(),
-            //     npc.getId(),
-            //     npc.getIndex(),
-            //     ratio,
-            //     scale,
-            //     tick
-            // );
-            
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
             {
                 // double hpPercent = (ratio * 100.0) / scale;
                 int updatedHitpoints = (int) (currentIceDemon.getHitpoints().getBase() * (ratio / (double) scale));
                 int currentHitpoints = currentIceDemon.getHitpoints().getCurrent();
-                log.info(
-                    "[Ice Demon HP] Damaged: {} -> {} (-{}) at tick {}/{}", 
-                    currentHitpoints,
-                    updatedHitpoints, 
-                    Math.abs(currentHitpoints - updatedHitpoints), 
-                    tick,
-                    getStartTick() + tick
-                );
                 
                 // Only update if there's a significant change (similar to varbit logic)
                 if (Math.abs(currentHitpoints - updatedHitpoints) > 0)
                 {
                     Hitpoints newHitpoints = currentIceDemon.getHitpoints().update(updatedHitpoints);
                     currentIceDemon.setHitpoints(newHitpoints);
-                    
-                    // log.info(
-                    //     "[Ice Demon HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}",
-                    //     ratio,
-                    //     scale,
-                    //     hpPercent,
-                    //     updatedHitpoints,
-                    //     tick
-                    // );
-                } else {
-                    // log.info("[Ice Demon HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
+                    log.info(
+                        "[Ice Demon HP] Damaged: {} -> {} (-{}) at tick {}/{}", 
+                        currentHitpoints,
+                        updatedHitpoints, 
+                        Math.abs(currentHitpoints - updatedHitpoints), 
+                        tick,
+                        getStartTick() + tick
+                    );
                 }
-            } else {
-                // Log when health info is not available - match script behavior
-                log.warn("[Ice Demon HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
 
@@ -165,33 +140,25 @@ public class IceDemonDataTracker extends RoomDataTracker
             CoxNpc coxNpc = coxNpcOpt.get();
             log.info("[Ice Demon Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
             
-            if (coxNpc == CoxNpc.ICE_DEMON_FROZEN || coxNpc == CoxNpc.ICE_DEMON_THAWED) {
-                if (iceDemon == null) {
-                    CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-                    iceDemon = new BasicTrackedNpc(
-                        npc,
-                        coxNpc,
-                        generateRoomId(npc),
-                        new Hitpoints(coxNpc.getBaseHitpoints())
-                    );
-                    String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
-                    log.info(
-                        "✓ Ice Demon tracked instance created: id={}, enum={}, base HP {} (scale={}){}",
-                        npc.getId(),
-                        coxNpc,
-                        iceDemon.getHitpoints().getBase(),
-                        getChallenge().getScale(),
-                        modeStatus
-                    );
-                    return Optional.of(iceDemon);
-                } else {
-                    log.info("! Ice Demon already being tracked, ignoring additional spawn: id={}, enum={}", npc.getId(), coxNpc);
-                }
-            } else {
-                log.debug("[Ice Demon Room] Non-Ice Demon CoxNpc: {} for id {}", coxNpc, npc.getId());
+            if ((coxNpc == CoxNpc.ICE_DEMON_FROZEN || coxNpc == CoxNpc.ICE_DEMON_THAWED) && iceDemon == null) {
+                CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
+                iceDemon = new BasicTrackedNpc(
+                    npc,
+                    coxNpc,
+                    generateRoomId(npc),
+                    new Hitpoints(coxNpc.getBaseHitpoints())
+                );
+                String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
+                log.info(
+                    "✓ Ice Demon tracked instance created: id={}, enum={}, base HP {} (scale={}){}",
+                    npc.getId(),
+                    coxNpc,
+                    iceDemon.getHitpoints().getBase(),
+                    getChallenge().getScale(),
+                    modeStatus
+                );
+                return Optional.of(iceDemon);
             }
-        } else {
-            log.debug("[Ice Demon Room] NPC id {} not found in CoxNpc enum", npc.getId());
         }
         return Optional.empty();
     }

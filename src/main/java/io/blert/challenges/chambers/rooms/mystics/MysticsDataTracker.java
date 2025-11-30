@@ -80,49 +80,32 @@ public class MysticsDataTracker extends RoomDataTracker
             int ratio = npc.getHealthRatio();
             int scale = npc.getHealthScale();
             
-            // Always log health info to debug - copy script's exact logging approach
-            // log.info(
-            //     "[Mystic HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
-            //     npc.getName(),
-            //     npc.getId(),
-            //     npc.getIndex(),
-            //     ratio,
-            //     scale,
-            //     tick
-            // );
-            
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
             {
-                double hpPercent = (ratio * 100.0) / scale;
                 int updatedHitpoints = (int) (currentMystic.getHitpoints().getBase() * (ratio / (double) scale));
                 int currentHitpoints = currentMystic.getHitpoints().getCurrent();
                 
-                log.info("[Mystic HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
-                         currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentMystic.getHitpoints().getBase());
+                // log.info("[Mystic HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
+                //             currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentMystic.getHitpoints().getBase());
                 
                 // Only update if there's a significant change (similar to varbit logic)
                 if (Math.abs(currentHitpoints - updatedHitpoints) > 0)
                 {
                     Hitpoints newHitpoints = currentMystic.getHitpoints().update(updatedHitpoints);
                     currentMystic.setHitpoints(newHitpoints);
-                    
                     log.info(
-                        "[Mystic HP] ✓ UPDATED from health ratio {}/{} (~{:.1f}% HP) = {} at tick {}/{}",
+                        "[Mystic HP] NPC ID: {}, Damaged: {} -> {} (-{}), ratio {}/{} at tick {}/{}",
+                        npc.getId(),
+                        currentHitpoints, 
+                        updatedHitpoints, 
+                        Math.abs(currentHitpoints - updatedHitpoints),
                         ratio,
                         scale,
-                        hpPercent,
-                        updatedHitpoints,
                         tick,
                         getStartTick() + tick
                     );
-                } else {
-                    // No significant change in HP - skipping update
-                    // log.info("[Mystic HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
                 }
-            } else {
-                // Log when health info is not available - match script behavior
-                // log.warn("[Mystic HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
 
@@ -166,30 +149,23 @@ public class MysticsDataTracker extends RoomDataTracker
             log.info("[Mystic Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
             
             // Check if it's any Mystic variant
-            if (coxNpc == CoxNpc.SKELETAL_MYSTIC_1 || 
+            if ((coxNpc == CoxNpc.SKELETAL_MYSTIC_1 || 
                 coxNpc == CoxNpc.SKELETAL_MYSTIC_2 || 
-                coxNpc == CoxNpc.SKELETAL_MYSTIC_3) {
+                coxNpc == CoxNpc.SKELETAL_MYSTIC_3) 
+                && !Mystics.containsKey(npc.getId())) {
                 
                 // Check if this specific NPC ID is already being tracked
-                if (!Mystics.containsKey(npc.getId())) {
-                    BasicTrackedNpc newMystic = new BasicTrackedNpc(
-                        npc,
-                        coxNpc,
-                        generateRoomId(npc),
-                        new Hitpoints(coxNpc.getBaseHitpoints())
-                    );
-                    Mystics.put(npc.getId(), newMystic);
-                    log.info("✓ Mystic tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Mystics: {}", 
-                             npc.getId(), coxNpc, newMystic.getHitpoints().getBase(), getChallenge().getScale(), Mystics.size());
-                    return Optional.of(newMystic);
-                } else {
-                    log.info("! Mystic NPC id={} already being tracked, ignoring duplicate spawn", npc.getId());
-                }
-            } else {
-                log.debug("[Mystic Room] Non-Mystic CoxNpc: {} for id {}", coxNpc, npc.getId());
+                BasicTrackedNpc newMystic = new BasicTrackedNpc(
+                    npc,
+                    coxNpc,
+                    generateRoomId(npc),
+                    new Hitpoints(coxNpc.getBaseHitpoints())
+                );
+                Mystics.put(npc.getId(), newMystic);
+                log.info("✓ Mystic tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Mystics: {}", 
+                            npc.getId(), coxNpc, newMystic.getHitpoints().getBase(), getChallenge().getScale(), Mystics.size());
+                return Optional.of(newMystic);
             }
-        } else {
-            log.debug("[Mystic Room] NPC id {} not found in CoxNpc enum", npc.getId());
         }
         return Optional.empty();
     }
@@ -202,10 +178,10 @@ public class MysticsDataTracker extends RoomDataTracker
         BasicTrackedNpc removedMystic = Mystics.remove(npc.getId());
         if (removedMystic != null)
         {
-            log.info("[Mystic] Despawned NPC id={}. Remaining Mystics: {}, at tick {}", npc.getId(), Mystics.size(), getTick());
+            log.info("[Mystic] Despawned NPC id={}. Remaining Mystics: {}, at tick {}/{}", npc.getId(), Mystics.size(), getTick(), getStartTick() + getTick());
             if (Mystics.size() == 0) {
-                int tick_cycle = (4 - (getTick() % 4)) % 4;
-                log.info("[Mystic Room] tick cycle: {}, finishing room at tick {}", tick_cycle, getTick() + tick_cycle);
+                int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;
+                log.info("[Mystic Room] tick cycle: {}, finishing room at tick {}/{}", tick_cycle, getTick() + tick_cycle, getStartTick() + getTick() + tick_cycle);
                 
             }
             return true;

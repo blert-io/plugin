@@ -112,33 +112,19 @@ public class GuardiansDataTracker extends RoomDataTracker
             // Count this guardian
             totalGuardiansCount++;
             
-            // Always log health info to debug - copy script's exact logging approach
-            // log.info(
-            //     "[Guardian HP Debug] NPC \"{}\" (npcId={}, index={}) HR={}/{} at tick {}",
-            //     npc.getName(),
-            //     npc.getId(),
-            //     npc.getIndex(),
-            //     ratio,
-            //     scale,
-            //     tick
-            // );
-            
             // Check if this Guardian is dead (either dead ID with HR=-1/-1 or 0 HP)
             if ((npc.getId() == 7571 || npc.getId() == 7572) && ratio == -1 && scale == -1)
             {
                 // log.info("[Guardian HP] Dead Guardian id={} index={} - skipping HP update (HR=-1/-1)", npc.getId(), npc.getIndex());
                 deadGuardiansCount++;
                 continue;
-            }
-            else if (currentGuardian.getHitpoints().getCurrent() == 0)
-            {
+            } else if (currentGuardian.getHitpoints().getCurrent() == 0) {
                 deadGuardiansCount++;
             }
             
             // Use script's exact condition check
             if (ratio > -1 && scale > 0)
             {
-                double hpPercent = (ratio * 100.0) / scale;
                 int updatedHitpoints = (int) (currentGuardian.getHitpoints().getBase() * (ratio / (double) scale));
                 int currentHitpoints = currentGuardian.getHitpoints().getCurrent();
                 
@@ -156,23 +142,18 @@ public class GuardiansDataTracker extends RoomDataTracker
                 {
                     Hitpoints newHitpoints = currentGuardian.getHitpoints().update(updatedHitpoints);
                     currentGuardian.setHitpoints(newHitpoints);
-                    
                     log.info(
-                        "[Guardian HP] ✓ UPDATED npc_id={} from hp ratio {}/{} (~{}% HP) = {} at tick {}/{}",
+                        "[Guardian HP] NPC ID: {}, Damaged: {} -> {} (-{}), ratio {}/{} at tick {}/{}",
                         npc.getId(),
+                        currentHitpoints, 
+                        updatedHitpoints, 
+                        Math.abs(currentHitpoints - updatedHitpoints),
                         ratio,
                         scale,
-                        String.format("%.1f", hpPercent),
-                        updatedHitpoints,
-                        getTick(),
+                        tick,
                         getStartTick() + tick
                     );
-                } else {
-                    // log.info("[Guardian HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));
                 }
-            } else {
-                // Log when health info is not available - match script behavior
-                // log.warn("[Guardian HP] Health ratio/scale not exposed: ratio={}, scale={} at tick {}", ratio, scale, tick);
             }
         }
         
@@ -232,30 +213,22 @@ public class GuardiansDataTracker extends RoomDataTracker
             if (coxNpc == CoxNpc.GUARDIAN_1 || coxNpc == CoxNpc.GUARDIAN_2) {
                 
                 // Only track live Guardian IDs (7569, 7570), ignore dead IDs (7571, 7572)
-                if (npc.getId() == 7569 || npc.getId() == 7570) {
+                if ((npc.getId() == 7569 || npc.getId() == 7570) && !guardians.containsKey(npc.getId())) {
                     // Check if this specific NPC ID is already being tracked
-                    if (!guardians.containsKey(npc.getId())) {
-                        BasicTrackedNpc newGuardian = new BasicTrackedNpc(
-                            npc,
-                            coxNpc,
-                            generateRoomId(npc),
-                            new Hitpoints(coxNpc.getBaseHitpoints())
-                        );
-                        guardians.put(npc.getId(), newGuardian);
-                        log.info("✓ Guardian tracked instance created: id={}, index={}, enum={}, base HP {} (scale={}) - Total Guardians: {}", 
-                                 npc.getId(), npc.getIndex(), coxNpc, newGuardian.getHitpoints().getBase(), getChallenge().getScale(), guardians.size());
-                        return Optional.of(newGuardian);
-                    } else {
-                        log.info("! Guardian NPC id={} already being tracked, ignoring duplicate spawn", npc.getId());
-                    }
+                    BasicTrackedNpc newGuardian = new BasicTrackedNpc(
+                        npc,
+                        coxNpc,
+                        generateRoomId(npc),
+                        new Hitpoints(coxNpc.getBaseHitpoints())
+                    );
+                    guardians.put(npc.getId(), newGuardian);
+                    log.info("✓ Guardian tracked instance created: id={}, index={}, enum={}, base HP {} (scale={}) - Total Guardians: {}", 
+                                npc.getId(), npc.getIndex(), coxNpc, newGuardian.getHitpoints().getBase(), getChallenge().getScale(), guardians.size());
+                    return Optional.of(newGuardian);
                 } else {
                     log.debug("[Guardian Death ID] Ignoring dead Guardian ID {} (no spawn tracking for dead IDs)", npc.getId());
                 }
-            } else {
-                log.debug("[Guardian Room] Non-Guardian CoxNpc: {} for id {}", coxNpc, npc.getId());
             }
-        } else {
-            log.debug("[Guardian Room] NPC id {} not found in CoxNpc enum", npc.getId());
         }
         return Optional.empty();
     }
@@ -270,9 +243,9 @@ public class GuardiansDataTracker extends RoomDataTracker
         {
             log.info("[Guardian] Despawned NPC id={} index={} – removed from tracking. Remaining Guardians: {}", npc.getId(), npc.getIndex(), guardians.size());
             if (guardians.size() == 0) {
-                log.info("[Guardian] All Guardians despawned at tick {} – clearing instance", getTick());
-                int tick_cycle = (4 - (getTick() % 4)) % 4;
-                log.info("[Guardian] 4 tick cycle offset: {}, RoomEnd: {}", tick_cycle, getTick() + tick_cycle);
+                log.info("[Guardian] All Guardians despawned at tick {}/{}", getTick(), getStartTick() + getTick());
+                int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;
+                log.info("[Guardian] 4 tick cycle offset: {}, RoomEnd: {}/{}", tick_cycle, getTick() + tick_cycle, getTick() + tick_cycle + getStartTick());
             }
             return true;
         }

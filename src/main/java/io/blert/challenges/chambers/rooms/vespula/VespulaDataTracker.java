@@ -45,20 +45,6 @@ public class VespulaDataTracker extends RoomDataTracker
     // UPDATED: correct Vespula HP varbit based on dev-shell logging
     private static final int VESPULA_HP_VARBIT = 6099;
 
-    // TODO: update when you finalize Vespula animations from logging
-    private static final int VESPULA_ANVIL_ANIMATION = 7475;
-    private static final int VESPULA_STOMP_ANIMATION = 7491;
-    private static final int VESPULA_AUTO_ANIMATION = 7492;
-    // Additional discovered animations
-    private static final int VESPULA_UNKNOWN_7483 = 7483;
-    private static final int VESPULA_UNKNOWN_7487 = 7487;
-    private static final int VESPULA_UNKNOWN_7488 = 7488;
-    private static final int VESPULA_UNKNOWN_7493 = 7493;
-    private static final int VESPULA_UNKNOWN_7494 = 7494;
-    private static final int VESPULA_UNKNOWN_7481 = 7481;
-    private static final int VESPULA_UNKNOWN_7482 = 7482;
-    private static final int VESPULA_UNKNOWN_7484 = 7484;
-
     private @Nullable HpVarbitTrackedNpc vespula;
     private @Nullable NpcAttack attackThisTick = null;
     private boolean vespulaAtAnvil = false; // Track when Vespula is at anvil (ID 7545)
@@ -191,9 +177,9 @@ public class VespulaDataTracker extends RoomDataTracker
             vespula = null;
             previousVarbitValue = -1;
             
-            log.info("[Vespula] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
-            int tick_cycle = (4 - (getTick() % 4)) % 4;
-            log.info("[Vespula] 4 tick cycle offset: {}, RoomEnd: {}", tick_cycle, getTick() + tick_cycle);
+            log.info("[Vespula] Despawned NPC id={}, at tick {}/{}", npc.getId(), getTick(), getStartTick() + getTick());
+            int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;
+            log.info("[Vespula] 4 tick cycle offset: {}, RoomEnd: {}/{}", tick_cycle, getTick() + tick_cycle, getStartTick() + getTick() + tick_cycle);
             
             return true;
         }
@@ -203,62 +189,7 @@ public class VespulaDataTracker extends RoomDataTracker
     @Override
     protected void onAnimation(AnimationChanged event)
     {
-        Actor actor = event.getActor();
-        int animation = actor.getAnimation();
         
-        // Log all animations for Vespula for debugging
-        final var currentVespula = vespula; // Capture for null safety
-        if (currentVespula != null && actor == currentVespula.getNpc())
-        {
-            // log.debug("[Vespula Animation] Animation: {} at tick {}", animation, getTick());
-            
-            switch (animation)
-            {
-                case VESPULA_ANVIL_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_VESPULA_ANVIL;
-                    log.info("[Vespula] Anvil animation detected");
-                    // Note: Healing is now detected by NPC ID 7545, not animation
-                    break;
-                case VESPULA_STOMP_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_VESPULA_STOMP;
-                    // log.info("[Vespula] Stomp animation detected");
-                    break;
-                case VESPULA_AUTO_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_VESPULA_AUTO;
-                    // log.info("[Vespula] Auto attack animation detected");
-                    break;
-                // Discovered animations - TODO: determine which attacks these represent
-                case VESPULA_UNKNOWN_7483:
-                case VESPULA_UNKNOWN_7487:
-                case VESPULA_UNKNOWN_7488:
-                case VESPULA_UNKNOWN_7493:
-                case VESPULA_UNKNOWN_7494:
-                case VESPULA_UNKNOWN_7481:
-                case VESPULA_UNKNOWN_7482:
-                case VESPULA_UNKNOWN_7484:
-                    // log.debug("[Vespula] Known animation: {} at tick {}", animation, getTick());
-                    // For now, treat as auto attacks until we identify specific attacks
-                    // attackThisTick = NpcAttack.COX_VESPULA_AUTO;
-                    break;
-                default:
-                    // Only log truly unknown animations
-                    if (animation != -1 && animation != 0)
-                    {
-                        // log.info("[Vespula] Unknown animation: {} at tick {}", animation, getTick());
-                    }
-                    break;
-            }
-        }
-        
-        // Also log animations for any NPCs with "anvil" in the name
-        if (actor instanceof NPC)
-        {
-            NPC npc = (NPC) actor;
-            if (npc.getName() != null && npc.getName().toLowerCase().contains("anvil"))
-            {
-                log.info("[Anvil Animation] NPC: {}, Animation: {} at tick {}", npc.getName(), animation, getTick());
-            }
-        }
     }
 
     @Override
