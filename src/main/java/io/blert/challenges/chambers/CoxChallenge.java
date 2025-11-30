@@ -1,13 +1,16 @@
 package io.blert.challenges.chambers;
 
 import io.blert.challenges.chambers.rooms.tekton.TektonDataTracker;
+import io.blert.challenges.chambers.rooms.crabs.CrabsDataTracker;
 import io.blert.challenges.chambers.rooms.icedemon.IceDemonDataTracker;
 import io.blert.challenges.chambers.rooms.guardians.GuardiansDataTracker;
 import io.blert.challenges.chambers.rooms.mystics.MysticsDataTracker;
 import io.blert.challenges.chambers.rooms.shamans.ShamansDataTracker;
 import io.blert.challenges.chambers.rooms.vanguards.VanguardsDataTracker;
+import io.blert.challenges.chambers.rooms.thieving.ThievingDataTracker;
 import io.blert.challenges.chambers.rooms.muttadiles.MuttadilesDataTracker;
 import io.blert.challenges.chambers.rooms.vespula.VespulaDataTracker;
+import io.blert.challenges.chambers.rooms.tightrope.TightropeDataTracker;
 import io.blert.challenges.chambers.rooms.vasa.VasaDataTracker;
 import io.blert.challenges.chambers.rooms.olm.OlmDataTracker;
 import io.blert.core.*;
@@ -52,7 +55,8 @@ public class CoxChallenge extends RecordableChallenge {
     private boolean hitpointsScaled = false; // Track if we've already scaled the hitpoints
 
     private static final List<Stage> COX_ROOM_ORDER = List.of(
-        Stage.COX_GUARDIANS,
+        // Stage.COX_THIEVING,
+        // Stage.COX_GUARDIANS,
         // Stage.COX_ICE_DEMON,
         // Stage.COX_VASA,
         // Stage.COX_VESPULA,
@@ -347,33 +351,6 @@ public class CoxChallenge extends RecordableChallenge {
 
     private RoomDataTracker createRoomDataTracker(Stage stage) {
         switch (stage) {
-            case COX_MYSTICS:
-                log.info("Creating MysticsDataTracker for stage {}", stage);
-                RoomDataTracker mysticsTracker = new MysticsDataTracker(this, stage, client);
-                
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(mysticsTracker);
-                addEventHandler(mysticsTracker);
-                
-                return mysticsTracker;
-            case COX_GUARDIANS:
-                log.info("Creating GuardiansDataTracker for stage {}", stage);
-                RoomDataTracker guardiansTracker = new GuardiansDataTracker(this, stage, client);
-                
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(guardiansTracker);
-                addEventHandler(guardiansTracker);
-                
-                return guardiansTracker;
-            case COX_SHAMANS:
-                log.info("Creating ShamansDataTracker for stage {}", stage);
-                RoomDataTracker shamansTracker = new ShamansDataTracker(this, stage, client);
-                
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(shamansTracker);
-                addEventHandler(shamansTracker);
-                
-                return shamansTracker;
             case COX_TEKTON:
                 log.info("Creating TektonDataTracker for stage {}", stage);
                 RoomDataTracker tracker = new TektonDataTracker(this, stage, client);
@@ -383,6 +360,15 @@ public class CoxChallenge extends RecordableChallenge {
                 addEventHandler(tracker);
                 
                 return tracker;
+            case COX_CRABS:
+                log.info("Creating CrabsDataTracker for stage {}", stage);
+                RoomDataTracker crabsTracker = new CrabsDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(crabsTracker);
+                addEventHandler(crabsTracker);
+                
+                return crabsTracker;
             case COX_ICE_DEMON:
                 log.info("Creating IceDemonDataTracker for stage {}", stage);
                 RoomDataTracker iceDemonTracker = new IceDemonDataTracker(this, stage, client);
@@ -392,6 +378,15 @@ public class CoxChallenge extends RecordableChallenge {
                 addEventHandler(iceDemonTracker);
                 
                 return iceDemonTracker;
+            case COX_SHAMANS:
+                log.info("Creating ShamansDataTracker for stage {}", stage);
+                RoomDataTracker shamansTracker = new ShamansDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(shamansTracker);
+                addEventHandler(shamansTracker);
+                
+                return shamansTracker;
             case COX_VANGUARDS:
                 log.info("Creating VanguardsDataTracker for stage {}", stage);
                 RoomDataTracker vanguardsTracker = new VanguardsDataTracker(this, stage, client);
@@ -401,15 +396,15 @@ public class CoxChallenge extends RecordableChallenge {
                 addEventHandler(vanguardsTracker);
                 
                 return vanguardsTracker;
-            case COX_MUTTADILE:
-                log.info("Creating MuttadilesDataTracker for stage {}", stage);
-                RoomDataTracker muttadilesTracker = new MuttadilesDataTracker(this, stage, client);
+            case COX_THIEVING:
+                log.info("Creating ThievingDataTracker for stage {}", stage);
+                RoomDataTracker thievingTracker = new ThievingDataTracker(this, stage, client);
                 
                 // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(muttadilesTracker);
-                addEventHandler(muttadilesTracker);
+                getEventBus().register(thievingTracker);
+                addEventHandler(thievingTracker);
                 
-                return muttadilesTracker;
+                return thievingTracker;
             case COX_VESPULA:
                 log.info("Creating VespulaDataTracker for stage {}", stage);
                 RoomDataTracker vespulaTracker = new VespulaDataTracker(this, stage, client);
@@ -419,6 +414,24 @@ public class CoxChallenge extends RecordableChallenge {
                 addEventHandler(vespulaTracker);
                 
                 return vespulaTracker;
+            case COX_TIGHTROPE:
+                log.info("Creating TightropeDataTracker for stage {}", stage);
+                RoomDataTracker tightropeTracker = new TightropeDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(tightropeTracker);
+                addEventHandler(tightropeTracker);
+                
+                return tightropeTracker;
+            case COX_GUARDIANS:
+                log.info("Creating GuardiansDataTracker for stage {}", stage);
+                RoomDataTracker guardiansTracker = new GuardiansDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(guardiansTracker);
+                addEventHandler(guardiansTracker);
+                
+                return guardiansTracker;
             case COX_VASA:
                 log.info("Creating VasaDataTracker for stage {}", stage);
                 RoomDataTracker vasaTracker = new VasaDataTracker(this, stage, client);
@@ -428,6 +441,24 @@ public class CoxChallenge extends RecordableChallenge {
                 addEventHandler(vasaTracker);
                 
                 return vasaTracker;
+            case COX_MYSTICS:
+                log.info("Creating MysticsDataTracker for stage {}", stage);
+                RoomDataTracker mysticsTracker = new MysticsDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(mysticsTracker);
+                addEventHandler(mysticsTracker);
+                
+                return mysticsTracker;
+            case COX_MUTTADILE:
+                log.info("Creating MuttadilesDataTracker for stage {}", stage);
+                RoomDataTracker muttadilesTracker = new MuttadilesDataTracker(this, stage, client);
+                
+                // Register with event bus to receive NPC spawn/despawn events
+                getEventBus().register(muttadilesTracker);
+                addEventHandler(muttadilesTracker);
+                
+                return muttadilesTracker;
             case COX_OLM:
                 log.info("Creating OlmDataTracker for stage {}", stage);
                 RoomDataTracker olmTracker = new OlmDataTracker(this, stage, client);

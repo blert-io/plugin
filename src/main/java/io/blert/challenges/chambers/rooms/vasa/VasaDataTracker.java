@@ -108,7 +108,7 @@ public class VasaDataTracker extends RoomDataTracker
                     // log.info("[Vasa HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
                     // setHealTick(tick);
                 } else {
-                    log.info("[Vasa HP] Damaged: {} -> {} (-{}) at tick {}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick);
+                    log.info("[Vasa HP] Damaged: {} -> {} (-{}) at tick {}/{}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick, getStartTick() + tick);
                 }
                 currentVasa.updateHitpointsFromVarbit(varbitValue);
             }
@@ -196,10 +196,8 @@ public class VasaDataTracker extends RoomDataTracker
             // Clear vasa immediately to prevent duplicate processing
             vasa = null;
             previousVarbitValue = -1;
-            
             log.info("[Vasa] Despawned NPC id={}, at tick {} – clearing instance", npc.getId(), getTick());
             log.info("[Vasa] RoomEnd: {}", getTick() + 5);
-            
             return true;
         }
         return false;

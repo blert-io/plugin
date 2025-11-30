@@ -16,6 +16,7 @@ public enum CoxNpc {
     VANGUARD_MELEE(7527, 180),
     VANGUARD_RANGED(7528, 180),
     VANGUARD_MAGIC(7529, 180),
+    CORRUPTED_SCAVENGER(7602, 100),
     ABYSSAL_PORTAL(7533, 250),
     GUARDIAN_1(new int[]{7569, 7571}, 250), // Guardian 1: live (7569) and dead (7571)
     GUARDIAN_2(new int[]{7570, 7572}, 250), // Guardian 2: live (7570) and dead (7572)

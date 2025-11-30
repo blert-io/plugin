@@ -94,13 +94,14 @@ public class OlmDataTracker extends RoomDataTracker
                 lastDamagedOlm.setHitpoints(lastDamagedOlm.getHitpoints().update(currentVarbitValue));
                 
                 log.info(
-                    "[Olm {}] HP updated via varbit: {} -> {} ({}{}) at tick {}",
+                    "[Olm {}] HP updated via varbit: {} -> {} ({}{}) at tick {}/{}",
                     lastDamagedOlm.getNpc().getId(),
                     lastVarbitValue,
                     currentVarbitValue,
                     currentVarbitValue > lastVarbitValue ? "+" : "",
                     currentVarbitValue - lastVarbitValue,
-                    tick
+                    tick,
+                    getStartTick() + tick
                 );
             }
             else
@@ -143,7 +144,7 @@ public class OlmDataTracker extends RoomDataTracker
         String npcName = npc.getName();
         
         // Debug: Log all NPC spawns in this room to help identify Olm
-        log.info("[Olm] NPC spawned: id={}, name='{}'", npc.getId(), npcName);
+        // log.info("[Olm] NPC spawned: id={}, name='{}'", npc.getId(), npcName);
         
         // First try to match by CoxNpc enum
         Optional<CoxNpc> coxNpcOpt = CoxNpc.withId(npc.getId());
@@ -154,22 +155,25 @@ public class OlmDataTracker extends RoomDataTracker
             if (coxNpc == CoxNpc.OLM_MELEE_HAND || 
                 coxNpc == CoxNpc.OLM_MAGE_HAND || coxNpc == CoxNpc.OLM_HEAD)
             {
+                log.info("[Olm] Detected Olm spawn: id={}, type={}", npc.getId(), coxNpc);
                 return createOlmTracker(npc, coxNpc);
             }
         }
         
         // Fallback: Try to detect Olm by name if ID lookup failed
-        if (npcName != null && npcName.toLowerCase().contains("olm"))
+        if (npcName != null && (npcName.toLowerCase().contains("head") ||
+                                npcName.toLowerCase().contains("left") ||
+                                npcName.toLowerCase().contains("right")))
         {
             log.warn("[Olm] Detected Olm by name: id={}, name='{}' (not in CoxNpc enum - please add this ID)", npc.getId(), npcName);
             
             // Determine type from name for fallback tracking
-            CoxNpc fallbackType = CoxNpc.OLM_MELEE_HAND; // Default
-            if (npcName.toLowerCase().contains("ranged"))
+            CoxNpc fallbackType = CoxNpc.OLM_HEAD; // Default
+            if (npcName.toLowerCase().contains("left"))
             {
-                fallbackType = CoxNpc.OLM_HEAD;
+                fallbackType = CoxNpc.OLM_MELEE_HAND;
             }
-            else if (npcName.toLowerCase().contains("magic") || npcName.toLowerCase().contains("mage"))
+            else if (npcName.toLowerCase().contains("right"))
             {
                 fallbackType = CoxNpc.OLM_MAGE_HAND;
             }

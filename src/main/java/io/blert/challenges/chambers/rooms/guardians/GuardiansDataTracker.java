@@ -158,13 +158,14 @@ public class GuardiansDataTracker extends RoomDataTracker
                     currentGuardian.setHitpoints(newHitpoints);
                     
                     log.info(
-                        "[Guardian HP] ✓ UPDATED npc_id={} from hp ratio {}/{} (~{}% HP) = {} at tick {}",
+                        "[Guardian HP] ✓ UPDATED npc_id={} from hp ratio {}/{} (~{}% HP) = {} at tick {}/{}",
                         npc.getId(),
                         ratio,
                         scale,
                         String.format("%.1f", hpPercent),
                         updatedHitpoints,
-                        getTick()
+                        getTick(),
+                        getStartTick() + tick
                     );
                 } else {
                     // log.info("[Guardian HP] No significant change (diff={}) - skipping update", Math.abs(currentHitpoints - updatedHitpoints));

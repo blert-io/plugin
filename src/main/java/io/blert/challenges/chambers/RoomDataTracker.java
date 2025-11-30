@@ -65,7 +65,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         if (!started) return;
         endTick = currentTick;
         started = false;
-        log.info("Finished room {} at tick {} with duration {}", stage, endTick, endTick - startTick);
+        log.info("Finished room {} at tick {} with duration {}", stage, startTick + endTick, endTick);
         // Dispatch event to Blert event handler
         dispatchEvent(new CoxRoomCompleteEvent(stage, startTick, endTick));
     }
@@ -102,6 +102,9 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
      */
     protected int getHealTick() {
         return healTick;
+    }
+    protected int getStartTick() {
+        return startTick;
     }
 
     @Override

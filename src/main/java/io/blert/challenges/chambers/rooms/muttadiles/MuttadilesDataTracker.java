@@ -125,10 +125,10 @@ public class MuttadilesDataTracker extends RoomDataTracker
             if (previousVarbitValue != -1 && varbitValue != previousVarbitValue) {
                 String muttType = currentMuttadile == smallMuttadile ? "Small" : "Large";
                 if (varbitValue > previousVarbitValue) {
-                    log.info("[{} Muttadile HP] Healed: {} -> {} (+{}) at tick {}", muttType, previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
+                    log.info("[{} Muttadile HP] Healed: {} -> {} (+{}) at tick {}/{}", muttType, previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick, getStartTick() + tick);
                     // setHealTick(tick);
                 } else {
-                    log.info("[{} Muttadile HP] Damaged: {} -> {} (-{}) at tick {}", muttType, previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick);
+                    log.info("[{} Muttadile HP] Damaged: {} -> {} (-{}) at tick {}/{}", muttType, previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick, getStartTick() + tick);
                     currentMuttadile.updateHitpointsFromVarbit(varbitValue);
                 }
             }
