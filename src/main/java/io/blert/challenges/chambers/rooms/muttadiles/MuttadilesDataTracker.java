@@ -253,7 +253,7 @@ public class MuttadilesDataTracker extends RoomDataTracker
         // Check if it's the small muttadile despawning
         if (smallMuttadile != null && npc == smallMuttadile.getNpc())
         {
-            log.info("[Small Muttadile] Despawned NPC id={}, at tick {}", npc.getId(), getTick());
+            log.info("[Small Muttadile] Despawned NPC id={}, at tick {}/{}", npc.getId(), getTick(), getStartTick() + getTick());
             smallMuttadile = null;
             
             // If this was the active varbit tracker, clear it so large muttadile can take over

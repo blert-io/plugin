@@ -140,7 +140,8 @@ public class IceDemonDataTracker extends RoomDataTracker
             CoxNpc coxNpc = coxNpcOpt.get();
             log.info("[Ice Demon Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
             
-            if ((coxNpc == CoxNpc.ICE_DEMON_FROZEN || coxNpc == CoxNpc.ICE_DEMON_THAWED) && iceDemon == null) {
+            // if ((coxNpc == CoxNpc.ICE_DEMON_FROZEN || coxNpc == CoxNpc.ICE_DEMON_THAWED) && iceDemon == null) {
+            if ((coxNpc == CoxNpc.ICE_DEMON) && iceDemon == null) {
                 CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
                 iceDemon = new BasicTrackedNpc(
                     npc,

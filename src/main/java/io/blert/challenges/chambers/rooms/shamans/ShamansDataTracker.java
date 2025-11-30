@@ -178,8 +178,12 @@ public class ShamansDataTracker extends RoomDataTracker
         NPC npc = despawned.getNpc();
         BasicTrackedNpc removedShaman = shamans.remove(npc.getId());
         if (removedShaman != null)
-        {
-            log.info("[Shaman] Despawned NPC id={}. Remaining Shamans: {}", npc.getId(), shamans.size());
+        {   
+            log.info("[Shaman] Despawned NPC id={} at tick {}/{}. Remaining Shamans: {}", npc.getId(), getTick(), getTick() + getStartTick(), shamans.size());
+            if (shamans.size() == 0)
+            {
+                log.info("[Shamans] finishing room at tick {}/{}", getTick() + 6, getStartTick() + getTick() + 6);
+            }
             return true;
         }
         return false;

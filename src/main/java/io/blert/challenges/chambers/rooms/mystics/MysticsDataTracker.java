@@ -162,8 +162,8 @@ public class MysticsDataTracker extends RoomDataTracker
                     new Hitpoints(coxNpc.getBaseHitpoints())
                 );
                 Mystics.put(npc.getId(), newMystic);
-                log.info("✓ Mystic tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Mystics: {}", 
-                            npc.getId(), coxNpc, newMystic.getHitpoints().getBase(), getChallenge().getScale(), Mystics.size());
+                log.info("✓ Mystic instance created: id={}, enum={}, Total Mystics: {}", 
+                            npc.getId(), coxNpc, Mystics.size());
                 return Optional.of(newMystic);
             }
         }
