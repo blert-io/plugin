@@ -149,7 +149,9 @@ public class BlertPlugin extends Plugin {
         sidePanel = null;
 
         if (activeChallenge != null) {
+            eventBus.unregister(activeChallenge);
             activeChallenge.terminate();
+            activeChallenge = null;
         }
 
         challenges.clear();
