@@ -32,6 +32,7 @@ import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.Event;
 import io.blert.proto.*;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.client.callback.ClientThread;
@@ -57,6 +58,68 @@ public class WebSocketEventHandler implements EventHandler {
         CHALLENGE_ENDING,
     }
 
+    /**
+     * Tracks the state of a challenge start request, including any events that need to be queued
+     * until the server responds with a challenge ID.
+     */
+    @AllArgsConstructor(access = lombok.AccessLevel.PRIVATE)
+    private static class ChallengeStartAttempt {
+        private static final int INITIAL_RETRIES = 3;
+
+        final int currentRequestId;
+        final ChallengeStartRequest request;
+        final Challenge challenge;
+        final int remainingRetries;
+
+        // Queue of events received during CHALLENGE_STARTING, before the challenge ID is known.
+        final List<QueuedEvent> queuedEvents;
+
+        // If the challenge ends before the start response arrives, store the end event here.
+        @Nullable
+        ChallengeEndEvent pendingEndEvent;
+
+        ChallengeStartAttempt(int requestId, ChallengeStartRequest request, Challenge challenge) {
+            this(requestId, request, challenge, INITIAL_RETRIES, new ArrayList<>(), null);
+        }
+
+        /**
+         * Creates a new retry attempt with the same request and queued events but a new request ID
+         * and decremented retry count.
+         */
+        ChallengeStartAttempt retry(int newRequestId) {
+            return new ChallengeStartAttempt(
+                    newRequestId,
+                    request,
+                    challenge,
+                    remainingRetries - 1,
+                    queuedEvents,
+                    pendingEndEvent
+            );
+        }
+
+        boolean canRetry() {
+            return remainingRetries > 0;
+        }
+
+        /**
+         * Returns the timeout duration for this attempt, using linear backoff.
+         * Initial attempt: 5s, then 10s, 15s for subsequent retries.
+         */
+        int getTimeoutMs() {
+            return (INITIAL_RETRIES - remainingRetries + 1) * DEFAULT_REQUEST_TIMEOUT_MS;
+        }
+    }
+
+    /**
+     * An event that was received during CHALLENGE_STARTING and needs to be processed once the
+     * challenge ID is known.
+     */
+    @AllArgsConstructor
+    private static class QueuedEvent {
+        final int clientTick;
+        final Event event;
+    }
+
     private static final int DEFAULT_REQUEST_TIMEOUT_MS = 5000;
 
     private final BlertPlugin plugin;
@@ -72,6 +135,7 @@ public class WebSocketEventHandler implements EventHandler {
 
     private Challenge currentChallenge = null;
     private @Nullable String challengeId = null;
+    private @Nullable ChallengeStartAttempt currentStartAttempt = null;
     private Instant serverShutdownTime = null;
     private boolean apiKeyUsernameMismatch = false;
 
@@ -97,13 +161,25 @@ public class WebSocketEventHandler implements EventHandler {
     public void handleEvent(int clientTick, Event event) {
         switch (event.getType()) {
             case CHALLENGE_START:
-                // Starting a new raid. Discard any buffered events.
+                // Starting a new challenge. Discard any buffered events and abandon any
+                // pending start attempt.
                 protoEventHandler.flushEventsUpTo(clientTick);
+                if (currentStartAttempt != null) {
+                    log.warn("Abandoning previous challenge start attempt due to new challenge");
+                    abandonChallengeStart();
+                }
                 startChallenge((ChallengeStartEvent) event);
                 break;
 
             case CHALLENGE_END:
-                // Flush any pending events, then indicate that the raid has ended.
+                // If we're still waiting for a challenge start response, queue the end event.
+                if (currentStartAttempt != null) {
+                    log.debug("Queueing challenge end event until start response is received");
+                    currentStartAttempt.pendingEndEvent = (ChallengeEndEvent) event;
+                    break;
+                }
+
+                // Flush any pending events, then indicate that the challenge has ended.
                 if (protoEventHandler.hasEvents()) {
                     sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
                 }
@@ -111,10 +187,21 @@ public class WebSocketEventHandler implements EventHandler {
                 break;
 
             case CHALLENGE_UPDATE:
+                // Queue if waiting for challenge start response.
+                if (currentStartAttempt != null) {
+                    currentStartAttempt.queuedEvents.add(new QueuedEvent(clientTick, event));
+                    break;
+                }
                 updateChallenge((ChallengeUpdateEvent) event, null);
                 break;
 
             case STAGE_UPDATE:
+                // Queue if waiting for challenge start response.
+                if (currentStartAttempt != null) {
+                    currentStartAttempt.queuedEvents.add(new QueuedEvent(clientTick, event));
+                    break;
+                }
+
                 // Flush any pending events prior to updating the stage.
                 if (protoEventHandler.hasEvents()) {
                     sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
@@ -126,7 +213,9 @@ public class WebSocketEventHandler implements EventHandler {
                 // Forward other events to the protobuf handler to be serialized and sent to the server.
                 protoEventHandler.handleEvent(clientTick, event);
 
-                if (status == Status.CHALLENGE_ACTIVE) {
+                // Only send events if we have an active challenge ID.
+                // During CHALLENGE_STARTING, events are buffered until the ID is received.
+                if (status == Status.CHALLENGE_ACTIVE && currentStartAttempt == null) {
                     if (currentTick != clientTick) {
                         // Events are collected and sent in a single batch at the end of a tick.
                         sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
@@ -164,38 +253,75 @@ public class WebSocketEventHandler implements EventHandler {
             return;
         }
 
-        int requestId = getRequestId();
-
-        ChallengeStartRequest.Builder challengeStartRequest =
+        ChallengeStartRequest.Builder challengeStartRequestBuilder =
                 ChallengeStartRequest.newBuilder()
                         .setChallenge(event.getChallenge().toProto())
                         .setMode(event.getMode().toProto())
                         .addAllParty(event.getParty())
                         .setSpectator(event.isSpectator());
-        event.getStage().map(Stage::toProto).ifPresent(challengeStartRequest::setStage);
+        event.getStage().map(Stage::toProto).ifPresent(challengeStartRequestBuilder::setStage);
 
-        ServerMessage message = ServerMessage.newBuilder()
-                .setType(ServerMessage.Type.CHALLENGE_START_REQUEST)
-                .setRequestId(requestId)
-                .setChallengeStartRequest(challengeStartRequest)
-                .build();
+        ChallengeStartRequest challengeStartRequest = challengeStartRequestBuilder.build();
 
-        lastRequestId = requestId;
+        // Create a new attempt to track the challenge start request and queued events.
+        currentStartAttempt = new ChallengeStartAttempt(
+                getRequestId(), challengeStartRequest, event.getChallenge());
+        this.currentChallenge = event.getChallenge();
 
         setStatus(Status.CHALLENGE_STARTING);
+        sendChallengeStartRequest(currentStartAttempt);
+    }
 
+    /**
+     * Sends a challenge start request to the server and schedules a timeout for retry.
+     */
+    private void sendChallengeStartRequest(ChallengeStartAttempt attempt) {
+        ServerMessage message = ServerMessage.newBuilder()
+                .setType(ServerMessage.Type.CHALLENGE_START_REQUEST)
+                .setRequestId(attempt.currentRequestId)
+                .setChallengeStartRequest(attempt.request)
+                .build();
+
+        lastRequestId = attempt.currentRequestId;
+        webSocketClient.sendMessage(message.toByteArray());
+
+        // Schedule timeout with linear backoff.
         requestTimeout.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (status == Status.CHALLENGE_STARTING && lastRequestId == requestId) {
-                    log.warn("Challenge start request timed out");
-                    setStatus(Status.IDLE);
-                }
+                handleChallengeStartTimeout(attempt);
             }
-        }, DEFAULT_REQUEST_TIMEOUT_MS);
+        }, attempt.getTimeoutMs());
+    }
 
-        webSocketClient.sendMessage(message.toByteArray());
-        this.currentChallenge = event.getChallenge();
+    /**
+     * Handles a timeout for a challenge start request. Retries if possible, otherwise abandons.
+     */
+    private void handleChallengeStartTimeout(ChallengeStartAttempt attempt) {
+        // Verify this is still the current attempt and we're still waiting for a response.
+        if (currentStartAttempt != attempt || status != Status.CHALLENGE_STARTING) {
+            return;
+        }
+
+        if (attempt.canRetry()) {
+            ChallengeStartAttempt retryAttempt = attempt.retry(getRequestId());
+            currentStartAttempt = retryAttempt;
+            log.warn("Challenge start request timed out; retrying ({} retries remaining)",
+                    retryAttempt.remainingRetries);
+            sendChallengeStartRequest(retryAttempt);
+        } else {
+            log.error("Challenge start request failed after all retries");
+            abandonChallengeStart();
+        }
+    }
+
+    /**
+     * Abandons any pending challenge start attempt, clearing state and returning to IDLE.
+     */
+    private void abandonChallengeStart() {
+        currentStartAttempt = null;
+        currentChallenge = null;
+        setStatus(Status.IDLE);
     }
 
     void endChallenge(ChallengeEndEvent event) {
@@ -342,38 +468,9 @@ public class WebSocketEventHandler implements EventHandler {
                 plugin.getSidePanel().setRecentRecordings(serverMessage.getRecentRecordingsList());
                 break;
 
-            case CHALLENGE_START_RESPONSE: {
-                if (status != Status.CHALLENGE_STARTING || serverMessage.getRequestId() != lastRequestId) {
-                    log.warn("Received unexpected CHALLENGE_START_RESPONSE from server");
-                    return;
-                }
-
-                if (!serverMessage.hasActiveChallengeId()) {
-                    log.warn("Failed to start challenge");
-                    protoEventHandler.setChallengeId(null);
-                    currentChallenge = null;
-                    challengeId = null;
-                    setStatus(Status.IDLE);
-
-                    if (serverMessage.hasError()) {
-                        var error = serverMessage.getError();
-                        if (error.hasMessage()) {
-                            sendGameMessage(ChatMessageType.GAMEMESSAGE, "<col=ef1020>[Blert] " + error.getMessage() + "</col>");
-                        }
-                    }
-                    return;
-                }
-
-                challengeId = serverMessage.getActiveChallengeId();
-
-                protoEventHandler.setChallengeId(challengeId);
-                setStatus(Status.CHALLENGE_ACTIVE);
-
-                if (protoEventHandler.hasEvents()) {
-                    sendEvents(protoEventHandler.flushEventsUpTo(currentTick));
-                }
+            case CHALLENGE_START_RESPONSE:
+                handleChallengeStartResponse(serverMessage);
                 break;
-            }
 
             case CHALLENGE_END_RESPONSE:
                 if (status != Status.CHALLENGE_ENDING || serverMessage.getRequestId() != lastRequestId) {
@@ -475,6 +572,10 @@ public class WebSocketEventHandler implements EventHandler {
                         "<col=ef1020>This Blert API key is linked to the account " + error.getUsername() +
                                 ". If you changed your display name, please go update it on the Blert website.</col>");
                 apiKeyUsernameMismatch = true;
+                // Abandon any pending challenge start since this account can't record.
+                if (currentStartAttempt != null) {
+                    abandonChallengeStart();
+                }
                 break;
 
             case UNAUTHENTICATED:
@@ -497,6 +598,72 @@ public class WebSocketEventHandler implements EventHandler {
             case UNRECOGNIZED:
                 log.error("Received unrecognized server error {}", error.getTypeValue());
                 break;
+        }
+    }
+
+    private void handleChallengeStartResponse(ServerMessage serverMessage) {
+        if (status != Status.CHALLENGE_STARTING || serverMessage.getRequestId() != lastRequestId) {
+            log.warn("Received unexpected CHALLENGE_START_RESPONSE from server");
+            return;
+        }
+
+        if (!serverMessage.hasActiveChallengeId()) {
+            log.error("Failed to start challenge");
+            protoEventHandler.setChallengeId(null);
+            currentChallenge = null;
+            challengeId = null;
+            currentStartAttempt = null;
+            setStatus(Status.IDLE);
+
+            if (serverMessage.hasError()) {
+                var error = serverMessage.getError();
+                if (error.hasMessage()) {
+                    sendGameMessage(ChatMessageType.GAMEMESSAGE, "<col=ef1020>[Blert] " + error.getMessage() + "</col>");
+                }
+            }
+            return;
+        }
+
+        challengeId = serverMessage.getActiveChallengeId();
+
+        // Stamp all buffered proto events with the challenge ID.
+        protoEventHandler.setChallengeId(challengeId);
+
+        // Capture and clear the start attempt before processing queued events.
+        ChallengeStartAttempt attempt = currentStartAttempt;
+        currentStartAttempt = null;
+
+        setStatus(Status.CHALLENGE_ACTIVE);
+
+        // Flush any buffered proto events (now that they have the challenge ID).
+        if (protoEventHandler.hasEvents()) {
+            sendEvents(protoEventHandler.flushEventsUpTo(currentTick));
+        }
+
+        // Process any queued STAGE_UPDATE and CHALLENGE_UPDATE events.
+        if (attempt != null) {
+            for (QueuedEvent qe : attempt.queuedEvents) {
+                switch (qe.event.getType()) {
+                    case STAGE_UPDATE:
+                        updateChallenge(null, (StageUpdateEvent) qe.event);
+                        break;
+                    case CHALLENGE_UPDATE:
+                        updateChallenge((ChallengeUpdateEvent) qe.event, null);
+                        break;
+                    default:
+                        // Other event types were already buffered in protoEventHandler.
+                        break;
+                }
+            }
+
+            // If the challenge ended while waiting for the start response, process it now.
+            if (attempt.pendingEndEvent != null) {
+                log.debug("Processing queued challenge end event");
+                if (protoEventHandler.hasEvents()) {
+                    sendEvents(protoEventHandler.flushEventsUpTo(currentTick));
+                }
+                endChallenge(attempt.pendingEndEvent);
+            }
         }
     }
 
@@ -560,6 +727,7 @@ public class WebSocketEventHandler implements EventHandler {
     private void resetChallenge() {
         currentChallenge = null;
         challengeId = null;
+        currentStartAttempt = null;
         protoEventHandler.setChallengeId(null);
         setStatus(Status.IDLE);
     }
