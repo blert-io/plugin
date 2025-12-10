@@ -25,6 +25,7 @@ package io.blert.client;
 
 import io.blert.BlertConfig;
 import io.blert.BlertPlugin;
+import io.blert.BlertPluginPanel;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -99,7 +100,7 @@ public class WebSocketManager {
     private void initializeWebSocketClient() {
         if (wsClient != null) {
             if (plugin != null && plugin.getSidePanel() != null) {
-                plugin.getSidePanel().updateUser(null);
+                plugin.getSidePanel().updateConnectionState(BlertPluginPanel.ConnectionState.DISCONNECTED, null);
             }
 
             if (wsClient.isOpen()) {
@@ -136,7 +137,7 @@ public class WebSocketManager {
         String key = changed.getKey();
         if (key.equals("apiKey")) {
             new Thread(() -> {
-                plugin.getSidePanel().setUnsupportedVersion(false);
+                plugin.getSidePanel().updateConnectionState(BlertPluginPanel.ConnectionState.DISCONNECTED, null);
                 try {
                     open().get(10, java.util.concurrent.TimeUnit.SECONDS);
                 } catch (Exception e) {

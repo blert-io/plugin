@@ -200,6 +200,9 @@ public class WebSocketClient extends WebSocketListener {
 
     @Override
     public synchronized void onFailure(@NonNull WebSocket webSocket, @NonNull Throwable t, Response response) {
+        // Capture previous state before modifying to properly notify listeners.
+        State previousState = state;
+
         if (state == State.CONNECTING) {
             openFutures.forEach(future -> future.complete(false));
             openFutures.clear();
@@ -211,22 +214,25 @@ public class WebSocketClient extends WebSocketListener {
         if (response != null) {
             switch (response.code()) {
                 case 403:
+                    state = State.REJECTED;
+                    log.warn("Blert websocket {} rejected: unsupported version", webSocket);
                     onDisconnect(DisconnectReason.UNSUPPORTED_VERSION);
-                    // Fallthrough.
+                    break;
                 case 401:
                     state = State.REJECTED;
-                    log.warn("Blert websocket {} rejected with status {}", webSocket, response.code());
+                    log.warn("Blert websocket {} rejected: (unauthorized)", webSocket);
+                    onDisconnect(DisconnectReason.ERROR);
                     break;
                 default:
                     log.error("Blert websocket {} failed: {}", webSocket, response, t);
-                    if (isOpen()) {
+                    if (previousState == State.OPEN || previousState == State.CONNECTING) {
                         onDisconnect(DisconnectReason.ERROR);
                     }
                     break;
             }
         } else {
             log.error("Blert websocket {} failed", webSocket, t);
-            if (isOpen()) {
+            if (previousState == State.OPEN || previousState == State.CONNECTING) {
                 onDisconnect(DisconnectReason.ERROR);
             }
         }
