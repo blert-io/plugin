@@ -25,6 +25,7 @@ package io.blert.client;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.blert.BlertPlugin;
+import io.blert.BlertPluginPanel;
 import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
 import io.blert.core.RecordableChallenge;
@@ -453,7 +454,10 @@ public class WebSocketEventHandler implements EventHandler {
                 plugin.getSidePanel().setShutdownTime(null);
 
                 if (serverMessage.hasUser()) {
-                    plugin.getSidePanel().updateUser(serverMessage.getUser().getName());
+                    plugin.getSidePanel().updateConnectionState(
+                            BlertPluginPanel.ConnectionState.CONNECTED,
+                            serverMessage.getUser().getName()
+                    );
                     if (runeliteClient.getGameState() == GameState.LOGGED_IN) {
                         updateGameState(GameState.LOGGED_IN);
                     }
@@ -668,10 +672,28 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private void handleDisconnect(WebSocketClient.DisconnectReason reason) {
-        if (reason == WebSocketClient.DisconnectReason.UNSUPPORTED_VERSION) {
-            plugin.getSidePanel().setUnsupportedVersion(true);
+        resetChallenge();
+
+        BlertPluginPanel.ConnectionState connectionState;
+        switch (reason) {
+            case UNSUPPORTED_VERSION:
+                connectionState = BlertPluginPanel.ConnectionState.UNSUPPORTED_VERSION;
+                break;
+            case ERROR:
+                if (webSocketClient.getState() == WebSocketClient.State.REJECTED) {
+                    connectionState = BlertPluginPanel.ConnectionState.REJECTED;
+                } else {
+                    connectionState = BlertPluginPanel.ConnectionState.DISCONNECTED;
+                }
+                break;
+            case CLOSED_SUCCESSFULLY:
+            default:
+                connectionState = BlertPluginPanel.ConnectionState.DISCONNECTED;
+                break;
         }
-        reset();
+
+        plugin.getSidePanel().updateConnectionState(connectionState, null);
+        plugin.getSidePanel().setRecentRecordings(null);
     }
 
     private void sendEvents(List<io.blert.proto.Event> events) {
@@ -734,7 +756,7 @@ public class WebSocketEventHandler implements EventHandler {
 
     private void reset() {
         resetChallenge();
-        plugin.getSidePanel().updateUser(null);
+        plugin.getSidePanel().updateConnectionState(BlertPluginPanel.ConnectionState.DISCONNECTED, null);
         plugin.getSidePanel().setRecentRecordings(null);
     }
 
