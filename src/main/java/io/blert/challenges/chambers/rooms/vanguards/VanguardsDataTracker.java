@@ -53,6 +53,7 @@ public class VanguardsDataTracker extends RoomDataTracker
     private static final int VANGUARD_HP_VARBIT = 6099;
     
     // TODO: update when you finalize Vanguard animations from logging
+    private static final int VANGUARD_SPAWN_ANIMATION = 7428;
     private static final int VANGUARD_ANVIL_ANIMATION = 7475;
     private static final int VANGUARD_STOMP_ANIMATION = 7491;
     private static final int VANGUARD_AUTO_ANIMATION = 7492;
@@ -74,6 +75,8 @@ public class VanguardsDataTracker extends RoomDataTracker
     private @Nullable BasicTrackedNpc lastDamagedVanguard = null;
     private int lastVarbitValue = -1;
     private int lastHitsplatTick = -1;
+    // Add this field to your class
+    private final Map<Integer, Integer> vanguardSpawnAnimationTicks = new HashMap<>();
 
     public VanguardsDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -151,7 +154,7 @@ public class VanguardsDataTracker extends RoomDataTracker
         npcSpawnTicks.put(npc.hashCode(), getTick());
 
         // Debug: Log all NPC spawns in this room to help identify Vanguards
-        log.info("[Vanguards] NPC spawned: id={}, name='{}', tick={}", npc.getId(), npcName, getTick());
+        log.info("[Vanguards] NPC spawned: id={}, tick={}/{}", npc.getId(), getTick(), getStartTick() + getTick());
 
         // First try to match by CoxNpc enum
         Optional<CoxNpc> coxNpcOpt = CoxNpc.withId(npc.getId());
@@ -323,23 +326,26 @@ public class VanguardsDataTracker extends RoomDataTracker
 
             log.info("[Vanguards] Despawned Vanguard NPC id={} at tick {} – Remaining Vanguards: {}", 
                         npc.getId(), getTick(), vanguards.size());
-            if (vanguards.size() == 0)
-            {
-                int crystalAnimation = 4;
-                // Use the spawn tick of the last removed Vanguard for tick cycle calculation
-                int lastSpawnTick = getSpawnTickForNpcHash(npcHash);
-                int tick_cycle = (4 - ((lastSpawnTick + getStartTick()) % 4)) % 4;
-                int tick_cycle_room = (4 - (lastSpawnTick % 4)) % 4;
-                log.info("[Vanguards] Last despawned Vanguard id={} had spawn tick {}, tick cycle raid {}, tick cycle room {}", npc.getId(), lastSpawnTick, tick_cycle, tick_cycle_room);
-                if (crystalAnimation + getTick() + tick_cycle != crystalAnimation + getTick() + tick_cycle_room) {
-                    log.info("[Vanguards] One of the tick cycles are incorrect for Vanguard id={}", npc.getId());
-                }
-                log.info("[Vanguards] All Vanguards despawned room end {}/{} (using last spawn tick)", crystalAnimation + getTick() + tick_cycle, getTick() + getStartTick() + crystalAnimation + tick_cycle);
-
-                // Keep the original logs for reference
-                log.info("[Vanguards] All Vanguards despawned room end {}/{}", crystalAnimation + getTick(), getTick() + getStartTick() + crystalAnimation);
-                log.info("[Vanguards Test 4 tick cycle] All Vanguards despawned room end {}/{}", crystalAnimation + getTick() + tick_cycle, getTick() + getStartTick() + crystalAnimation + tick_cycle);
-            }
+            // if (vanguards.size() == 0)
+            // {
+            //     int crystalAnimation = 4;
+            //     // Use the spawn tick of the last removed Vanguard for tick cycle calculation
+            //     int lastSpawnTick = getSpawnTickForNpcHash(npcHash);
+            //     int tick_cycle = (4 - ((lastSpawnTick + getStartTick()) % 4)) % 4;
+            //     int tick_cycle_room = (4 - (lastSpawnTick % 4)) % 4;
+            //     log.info("[Vanguards] Last Vang id={} spawn {}, tick cycle raid {}, tick cycle room {}", npc.getId(), lastSpawnTick, tick_cycle, tick_cycle_room);
+            //     // if (crystalAnimation + getTick() + tick_cycle != crystalAnimation + getTick() + tick_cycle_room) {
+            //     //     log.info("[Vanguards] One of the tick cycles are incorrect for Vanguard id={}", npc.getId());
+            //     // }
+            //     log.info("[Vanguards] Room end {}/{} (spawn tick)", crystalAnimation + getTick() + tick_cycle, getTick() + getStartTick() + crystalAnimation + tick_cycle);
+            //     int spawnAnimTick = vanguardSpawnAnimationTicks.getOrDefault(npcHash, -1);
+            //     int tick_cycle_anim = (4 - ((spawnAnimTick + getStartTick()) % 4)) % 4;
+            //     int tick_cycle_room_anim = (4 - (spawnAnimTick % 4)) % 4;
+            //     log.info("[Vanguards] Vanguard id={} had spawn animation tick {}, tick cycle raid {}, tick cycle room {}", npc.getId(), spawnAnimTick, tick_cycle_anim, tick_cycle_room_anim);
+            //     // Keep the original logs for reference
+            //     log.info("[Vanguards No Cycle] Room end {}/{}", crystalAnimation + getTick(), getTick() + getStartTick() + crystalAnimation);
+            //     log.info("[Vanguards Test 4 tick cycle] Room end {}/{}", crystalAnimation + getTick() + tick_cycle, getTick() + getStartTick() + crystalAnimation + tick_cycle);
+            // }
             return true;
         }
         
@@ -364,9 +370,13 @@ public class VanguardsDataTracker extends RoomDataTracker
                 
                 switch (animation)
                 {
+                    case VANGUARD_SPAWN_ANIMATION:
+                        vanguardSpawnAnimationTicks.put(npc.hashCode(), getTick());
+                        log.info("[Vanguard {}] Spawn animation detected at tick {}/{}", npc.getId(), getTick(), getTick() + getStartTick());
+                        break;
                     case VANGUARD_ANVIL_ANIMATION:
                         // attackThisTick = NpcAttack.COX_VANGUARD_ANVIL;
-                        log.info("[Vanguard {}] Anvil animation detected", npc.getId());
+                        log.info("[Vanguard {}] Anvil animation detected at tick {}/{}", npc.getId(), getTick(), getTick() + getStartTick());
                         break;
                     case VANGUARD_STOMP_ANIMATION:
                         // attackThisTick = NpcAttack.COX_VANGUARD_STOMP;

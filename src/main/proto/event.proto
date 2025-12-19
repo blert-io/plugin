@@ -67,6 +67,9 @@ enum Stage {
   COX_MYSTICS = 30;
   COX_MUTTADILE = 31;
   COX_OLM = 32;
+  COX_FLOOR_1 = 33;
+  COX_FLOOR_2 = 34;
+  COX_FLOOR_3 = 35;
 
   TOA_APMEKEN = 40;
   TOA_BABA = 41;
