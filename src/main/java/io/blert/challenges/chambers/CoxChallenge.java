@@ -45,6 +45,8 @@ public class CoxChallenge extends RecordableChallenge {
             Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
     // private static final Pattern ROOM_COMPLETE_REGEX =
     //     Pattern.compile("Congratulations - your raid is complete!.*");
+    private static final Pattern FLOOR_COMPLETE_REGEX =
+            Pattern.compile(".* level complete! Duration: .*");
     private static final Pattern MAP_LAYOUT_REGEX =
             Pattern.compile("Map Layout:.*");
 
@@ -65,27 +67,30 @@ public class CoxChallenge extends RecordableChallenge {
         // Stage.COX_VASA,
         // Stage.COX_VESPULA,
         // Stage.COX_MUTTADILE,
-        Stage.COX_VANGUARDS,
+        // Stage.COX_VANGUARDS,
         // Stage.COX_MYSTICS,
 
-        // Stage.COX_TEKTON,
-        // Stage.COX_CRABS,
-        // Stage.COX_ICE_DEMON,
-        // Stage.COX_SHAMANS,
-        // Stage.COX_VANGUARDS,
-        // Stage.COX_THIEVING,
-        // Stage.COX_VESPULA,
-        // Stage.COX_TIGHTROPE,
-        // Stage.COX_GUARDIANS,
-        // Stage.COX_VASA,
-        // Stage.COX_MYSTICS,
-        // Stage.COX_MUTTADILE,
-        Stage.COX_OLM,
-        Stage.COX_OLM,
-        Stage.COX_OLM,
-        Stage.COX_OLM,
-        Stage.COX_OLM,
+        Stage.COX_TEKTON,
+        Stage.COX_CRABS,
+        Stage.COX_ICE_DEMON,
+        Stage.COX_SHAMANS,
+        Stage.COX_FLOOR_1,
+        Stage.COX_VANGUARDS,
+        Stage.COX_THIEVING,
+        Stage.COX_VESPULA,
+        Stage.COX_TIGHTROPE,
+        Stage.COX_FLOOR_2,
+        Stage.COX_GUARDIANS,
+        Stage.COX_VASA,
+        Stage.COX_MYSTICS,
+        Stage.COX_MUTTADILE,
+        Stage.COX_FLOOR_3,
         Stage.COX_OLM
+        // Stage.COX_OLM,
+        // Stage.COX_OLM,
+        // Stage.COX_OLM,
+        // Stage.COX_OLM,
+        // Stage.COX_OLM
     );
 
     public CoxChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
@@ -193,6 +198,28 @@ public class CoxChallenge extends RecordableChallenge {
             roomDataTracker = null;
             endRaid();
             return;
+        }
+
+        // Floor complete (dispatch floor event)
+        Matcher floorMatcher = FLOOR_COMPLETE_REGEX.matcher(stripped);
+        if (floorMatcher.find() && getState() == ChallengeState.ACTIVE) {
+            int currentTick = getRelativeTick();
+            final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
+            tracker.finishRoom(currentTick);
+            log.info("Finished floor at tick {}", currentTick);
+            getEventBus().unregister(tracker);
+            removeEventHandler(tracker);
+            roomDataTracker = null;
+            // Implicitly start tracking the next room
+            Stage nextStage = getNextStage(tracker.getStage());
+            if (nextStage != null) {
+                roomDataTracker = createRoomDataTracker(nextStage);
+                final RoomDataTracker newTracker = roomDataTracker; // Capture new non-null value
+                if (newTracker != null) {
+                    newTracker.startRoom(currentTick);
+                    log.info("Started tracking next room {} at tick {}", nextStage, currentTick);
+                }
+            }
         }
 
         // Room complete (dispatch room event)
