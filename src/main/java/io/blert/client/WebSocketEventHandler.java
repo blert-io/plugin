@@ -408,8 +408,14 @@ public class WebSocketEventHandler implements EventHandler {
         ServerMessage.GameState.Builder gameStateBuilder = ServerMessage.GameState.newBuilder().setState(state);
 
         if (gameState == GameState.LOGGED_IN) {
+            Player localPlayer = runeliteClient.getLocalPlayer();
+            if (localPlayer == null || localPlayer.getName() == null) {
+                return;
+            }
+
             ServerMessage.GameState.PlayerInfo.Builder playerInfoBuilder = ServerMessage.GameState.PlayerInfo.newBuilder()
-                    .setUsername(runeliteClient.getLocalPlayer().getName())
+                    .setUsername(localPlayer.getName())
+                    .setAccountHash(Long.toString(runeliteClient.getAccountHash()))
                     .setOverallExperience(runeliteClient.getOverallExperience())
                     .setAttackExperience(runeliteClient.getSkillExperience(Skill.ATTACK))
                     .setDefenceExperience(runeliteClient.getSkillExperience(Skill.DEFENCE))
@@ -458,9 +464,6 @@ public class WebSocketEventHandler implements EventHandler {
                             BlertPluginPanel.ConnectionState.CONNECTED,
                             serverMessage.getUser().getName()
                     );
-                    if (runeliteClient.getGameState() == GameState.LOGGED_IN) {
-                        updateGameState(GameState.LOGGED_IN);
-                    }
                     sendRaidHistoryRequest();
                 } else {
                     log.warn("Received invalid connection response from server");
@@ -541,6 +544,10 @@ public class WebSocketEventHandler implements EventHandler {
             case PLAYER_STATE:
                 break;
 
+            case GAME_STATE_REQUEST:
+                updateGameState(runeliteClient.getGameState());
+                break;
+
             case CHALLENGE_STATE_CONFIRMATION:
                 handleChallengeStateConfirmation(serverMessage);
                 break;
@@ -573,7 +580,7 @@ public class WebSocketEventHandler implements EventHandler {
             case USERNAME_MISMATCH:
                 sendGameMessage(
                         ChatMessageType.GAMEMESSAGE,
-                        "<col=ef1020>This Blert API key is linked to the account " + error.getUsername() +
+                        "<col=ef1020>This Blert API key is linked to the OSRS account " + error.getUsername() +
                                 ". If you changed your display name, please go update it on the Blert website.</col>");
                 apiKeyUsernameMismatch = true;
                 // Abandon any pending challenge start since this account can't record.
