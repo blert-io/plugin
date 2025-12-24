@@ -54,6 +54,10 @@ message ServerMessage {
     CHALLENGE_END_REQUEST = 15;
     CHALLENGE_END_RESPONSE = 16;
     CHALLENGE_UPDATE = 17;
+
+    // Sent by the server to request the client send its current game state.
+    // The client should respond with a GAME_STATE message.
+    GAME_STATE_REQUEST = 18;
   }
 
   message Error {
@@ -121,6 +125,7 @@ message ServerMessage {
       uint32 ranged_experience = 7;
       uint32 prayer_experience = 8;
       uint32 magic_experience = 9;
+      string account_hash = 10;
     }
 
     State state = 1;
