@@ -419,8 +419,10 @@ public abstract class DataTracker {
 
         WorldPoint point = getWorldLocation(player);
 
-        Optional<PlayerAttack> maybeAttack;
         Optional<NPC> target = raider.getTarget();
+
+        AttackRegistry registry = challenge.getAttackRegistry();
+        Optional<AttackDefinition> maybeAttack;
         Optional<Item> weapon = raider.getEquippedItem(EquipmentSlot.WEAPON);
         int weaponId = weapon.map(Item::getId).orElse(-1);
 
@@ -430,29 +432,26 @@ public abstract class DataTracker {
             // off cooldown. If the player is still using the same animation but
             // has just stopped blowpiping and targeted another NPC, assume that
             // they attacked it with the weapon they're holding.
-            if (!PlayerAttack.isSuppressingAnimation(animationId) || target.isEmpty()) {
+            if (!registry.isContinuousAnimation(animationId) || target.isEmpty()) {
                 return;
             }
-            maybeAttack = PlayerAttack.findSuppressedAttack(weaponId);
+            maybeAttack = registry.findSuppressedAttack(weaponId);
         } else {
-            maybeAttack = PlayerAttack.find(weaponId, animationId);
+            maybeAttack = registry.find(weaponId, animationId);
         }
 
         maybeAttack.ifPresent(attack -> {
             try {
-                if (attack == PlayerAttack.BLOWPIPE) {
-                    if (checkForBlowpipeSpecial(raider)) {
-                        attack = PlayerAttack.BLOWPIPE_SPEC;
-                    }
-                } else if (attack.hasProjectile()) {
-                    attack = adjustForProjectile(attack, raider);
+                AttackDefinition finalAttack = attack;
+                if (attack.hasProjectile()) {
+                    finalAttack = adjustForProjectile(registry, attack, player, weaponId);
                 }
 
-                raider.recordAttack(tick, attack);
+                raider.recordAttack(tick, finalAttack);
 
                 TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
                 int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);
-                dispatchEvent(new PlayerAttackEvent(getStage(), tick, point, attack, weapon.orElse(null),
+                dispatchEvent(new PlayerAttackEvent(getStage(), tick, point, finalAttack, weapon.orElse(null),
                         raider, roomTarget, distanceToNpc));
             } catch (Exception e) {
                 log.error("Error processing attack {} for {} on tick {}", attack, raider.getUsername(), tick, e);
@@ -460,13 +459,30 @@ public abstract class DataTracker {
         });
     }
 
-    private PlayerAttack adjustForProjectile(PlayerAttack attack, Raider raider) {
-        List<PlayerAttack.Projectile> possibleProjectiles = attack.projectilesForAnimation();
+    /**
+     * Adjusts the given attack definition based on any projectiles currently
+     * in-flight from the player.
+     *
+     * @param registry The attack registry.
+     * @param attack   Initial attack determined by weapon and animation.
+     * @param player   The player performing the attack.
+     * @param weaponId The ID of the weapon the player is holding.
+     * @return A modified attack definition if a distinguishing projectile is
+     * found, or the original attack definition otherwise.
+     */
+    private AttackDefinition adjustForProjectile(AttackRegistry registry,
+                                                 AttackDefinition attack,
+                                                 Player player,
+                                                 int weaponId) {
+        List<AttackDefinition> possibleAttacks =
+                registry.allWithAnimations(attack.getAnimationIds());
 
         for (Projectile p : client.getProjectiles()) {
-            for (PlayerAttack.Projectile projectile : possibleProjectiles) {
-                if (projectileMatches(p, projectile, raider.getPlayer())) {
-                    return projectile.getAttack();
+            for (AttackDefinition candidate : possibleAttacks) {
+                AttackDefinition.Projectile expectedProjectile = candidate.getProjectileForWeapon(weaponId);
+                if (expectedProjectile != null &&
+                        projectileMatches(p, expectedProjectile, player)) {
+                    return candidate;
                 }
             }
         }
@@ -474,34 +490,9 @@ public abstract class DataTracker {
         return attack;
     }
 
-    private boolean checkForBlowpipeSpecial(Raider raider) {
-        var weapon = raider.getEquippedItem(EquipmentSlot.WEAPON).orElse(null);
-        if (weapon == null) {
-            return false;
-        }
-
-        PlayerAttack.Projectile specProjectile;
-        switch (weapon.getId()) {
-            case ItemID.TOXIC_BLOWPIPE:
-                specProjectile = PlayerAttack.Projectile.BLOWPIPE_SPEC;
-                break;
-            case ItemID.BLAZING_BLOWPIPE:
-                specProjectile = PlayerAttack.Projectile.BLAZING_BLOWPIPE_SPEC;
-                break;
-            default:
-                return false;
-        }
-
-        for (Projectile projectile : client.getProjectiles()) {
-            if (projectileMatches(projectile, specProjectile, raider.getPlayer())) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean projectileMatches(Projectile p, PlayerAttack.Projectile projectile, Player player) {
+    private boolean projectileMatches(Projectile p,
+                                      AttackDefinition.Projectile projectile,
+                                      Player player) {
         if (p.getId() != projectile.getId()) {
             return false;
         }
@@ -608,7 +599,9 @@ public abstract class DataTracker {
         if (actor instanceof Player) {
             Raider raider = challenge.getRaider(actor.getName());
             if (raider != null) {
-                raider.setAnimation(getTick(), actor.getAnimation());
+                int animationId = actor.getAnimation();
+                boolean isContinuous = challenge.getAttackRegistry().isContinuousAnimation(animationId);
+                raider.setAnimation(getTick(), animationId, isContinuous);
             }
         }
 

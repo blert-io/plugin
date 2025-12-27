@@ -32,14 +32,14 @@ import java.util.Optional;
 
 @Getter
 public class PlayerAttackEvent extends Event {
-    private final PlayerAttack attack;
+    private final AttackDefinition attack;
     private final @Nullable Item weapon;
     private final String username;
     private final int targetNpcId;
     private final long targetRoomId;
     private final int distanceToTarget;
 
-    public PlayerAttackEvent(Stage stage, int tick, WorldPoint playerPoint, PlayerAttack attack,
+    public PlayerAttackEvent(Stage stage, int tick, WorldPoint playerPoint, AttackDefinition attack,
                              @Nullable Item weapon, Raider raider, @Nullable TrackedNpc trackedNpc, int distanceToNpc) {
         super(EventType.PLAYER_ATTACK, stage, tick, playerPoint);
         this.attack = attack;
@@ -62,9 +62,10 @@ public class PlayerAttackEvent extends Event {
 
     @Override
     protected String eventDataString() {
-        StringBuilder sb = new StringBuilder("type=" + attack);
+        StringBuilder sb = new StringBuilder("type=").append(attack.getName());
+        sb.append(", player=").append(username);
         if (attack.isUnknown()) {
-            sb.append("weapon=").append(attack.getWeaponId());
+            sb.append(", weapon=").append(weapon != null ? weapon.getId() : "null");
         }
         return sb.toString();
     }

@@ -93,9 +93,8 @@ public class EventTranslator {
 
             case PLAYER_ATTACK: {
                 PlayerAttackEvent playerAttackEvent = (PlayerAttackEvent) event;
-
                 Event.Attack.Builder builder = Event.Attack.newBuilder()
-                        .setType(playerAttackEvent.getAttack().toProto())
+                        .setTypeValue(playerAttackEvent.getAttack().getProtoId())
                         .setDistanceToTarget(playerAttackEvent.getDistanceToTarget());
                 playerAttackEvent.getWeapon().ifPresent(
                         item -> builder.setWeapon(translateEquippedItem(EquipmentSlot.WEAPON, item)));
