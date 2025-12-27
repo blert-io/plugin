@@ -58,6 +58,9 @@ public abstract class RecordableChallenge {
     @Getter
     private final ClientThread clientThread;
 
+    @Getter
+    private AttackRegistry attackRegistry;
+
     private final List<EventHandler> eventHandlers = new ArrayList<>();
     List<Event> pendingEvents = new ArrayList<>();
 
@@ -186,7 +189,8 @@ public abstract class RecordableChallenge {
         party.clear();
     }
 
-    public void initialize(EventHandler handler) {
+    public void initialize(EventHandler handler, AttackRegistry attackRegistry) {
+        this.attackRegistry = attackRegistry;
         onInitialize();
         addEventHandler(handler);
     }

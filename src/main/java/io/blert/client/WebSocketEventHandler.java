@@ -26,9 +26,10 @@ package io.blert.client;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.blert.BlertPlugin;
 import io.blert.BlertPluginPanel;
+import io.blert.core.*;
+import io.blert.core.AttackDefinition;
 import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
-import io.blert.core.RecordableChallenge;
 import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.Event;
@@ -36,6 +37,7 @@ import io.blert.proto.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.Skill;
 import net.runelite.client.callback.ClientThread;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.DurationFormatUtils;
@@ -546,6 +548,15 @@ public class WebSocketEventHandler implements EventHandler {
 
             case GAME_STATE_REQUEST:
                 updateGameState(runeliteClient.getGameState());
+                break;
+
+            case ATTACK_DEFINITIONS:
+                plugin.getAttackRegistry().updateFromServer(
+                        serverMessage.getAttackDefinitionsList()
+                                .stream()
+                                .map(AttackDefinition::fromProto)
+                                .collect(Collectors.toList())
+                );
                 break;
 
             case CHALLENGE_STATE_CONFIRMATION:

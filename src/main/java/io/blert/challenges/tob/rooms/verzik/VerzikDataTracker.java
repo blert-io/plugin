@@ -35,6 +35,7 @@ import io.blert.events.EventType;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.PlayerAttackEvent;
 import io.blert.events.tob.*;
+import io.blert.proto.PlayerAttack;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -229,7 +230,7 @@ public class VerzikDataTracker extends RoomDataTracker {
     protected void onBlertEvent(Event event) {
         if (phase == VerzikPhase.P1 && event.getType() == EventType.PLAYER_ATTACK) {
             PlayerAttackEvent attackEvent = (PlayerAttackEvent) event;
-            if (attackEvent.getAttack() == PlayerAttack.DAWN_SPEC) {
+            if (attackEvent.getAttack().is(PlayerAttack.DAWN_SPEC)) {
                 dawnSpecs.add(Pair.of(attackEvent.getTick(), attackEvent.getUsername()));
             }
         }

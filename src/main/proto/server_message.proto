@@ -58,6 +58,9 @@ message ServerMessage {
     // Sent by the server to request the client send its current game state.
     // The client should respond with a GAME_STATE message.
     GAME_STATE_REQUEST = 18;
+
+    // Server push of attack definitions to the plugin.
+    ATTACK_DEFINITIONS = 19;
   }
 
   message Error {
@@ -196,6 +199,9 @@ message ServerMessage {
   // In CHALLENGE_UPDATE messages, the new state of the challenge.
   optional ChallengeUpdate challenge_update = 13;
 
+  // In ATTACK_DEFINITIONS messages, the list of attack definitions.
+  repeated AttackDefinition attack_definitions = 14;
+
   // Set by the client to associate a request with a server response.
   uint32 request_id = 50;
 }
@@ -236,4 +242,46 @@ message ChallengeUpdate {
   ChallengeMode mode = 1;
   repeated string party = 2;
   optional StageUpdate stage_update = 3;
+}
+
+message AttackDefinition {
+  // The PlayerAttack proto enum value.
+  PlayerAttack id = 1;
+
+  // Human-readable name for logging/debugging.
+  string name = 2;
+
+  // Item IDs that can perform this attack.
+  repeated int32 weapon_ids = 3;
+
+  // Animation IDs that trigger this attack.
+  repeated int32 animation_ids = 4;
+
+  // Attack cooldown in game ticks.
+  int32 cooldown = 5;
+
+  message Projectile {
+    int32 id = 1;
+    int32 start_cycle_offset = 2;
+    // Optional weapon ID for weapon-specific projectiles.
+    // If not set, the projectile applies to all weapons for this attack.
+    optional int32 weapon_id = 3;
+  }
+
+  // Single projectile that applies to all weapons for this attack.
+  optional Projectile projectile = 6;
+
+  // Weapon-specific projectiles.
+  // Takes precedence over `projectile` when a matching weapon_id is found.
+  repeated Projectile weapon_projectiles = 9;
+
+  // Whether this attack has a continuous animation.
+  bool continuous_animation = 7;
+
+  enum Category {
+    MELEE = 0;
+    RANGED = 1;
+    MAGIC = 2;
+  }
+  Category category = 8;
 }

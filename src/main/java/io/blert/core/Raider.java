@@ -81,7 +81,7 @@ public class Raider {
     private int animationTick;
 
     @Getter
-    private @Nullable PlayerAttack lastAttack;
+    private @Nullable AttackDefinition lastAttack;
     @Getter
     private int offCooldownTick;
 
@@ -167,10 +167,6 @@ public class Raider {
 
         equipmentChangesThisTick.clear();
 
-        int oldWeaponId = equipment[EquipmentSlot.WEAPON.ordinal()] != null
-                ? equipment[EquipmentSlot.WEAPON.ordinal()].getId()
-                : -1;
-
         if (localPlayer) {
             updateEquipmentFromLocalPlayer(client);
         } else {
@@ -187,7 +183,9 @@ public class Raider {
             boolean hasTarget = getTarget().isPresent();
             int newWeaponId = newWeapon != null ? newWeapon.getId() : -1;
 
-            if (newWeaponId == oldWeaponId && hasTarget) {
+            boolean isContinuing = lastAttack != null && lastAttack.hasWeapon(newWeaponId) && hasTarget;
+
+            if (isContinuing) {
                 blowpiping = BlowpipeState.PIPING;
             } else if (animationTick != tick) {
                 blowpiping = BlowpipeState.STOPPED_PIPING;
@@ -195,7 +193,7 @@ public class Raider {
         }
     }
 
-    public void recordAttack(int tick, @NonNull PlayerAttack attack, boolean ignoreCooldown) {
+    public void recordAttack(int tick, @NonNull AttackDefinition attack, boolean ignoreCooldown) {
         lastAttack = attack;
         if (!ignoreCooldown) {
             offCooldownTick = tick + attack.getCooldown();
@@ -208,11 +206,11 @@ public class Raider {
         }
     }
 
-    public void setAnimation(int tick, int animationId) {
+    public void setAnimation(int tick, int animationId, boolean isContinuousAnimation) {
         animationTick = tick;
         this.animationId = animationId;
 
-        if (PlayerAttack.firstWithAnimation(animationId).map(PlayerAttack::isContinuousAnimation).orElse(false)) {
+        if (isContinuousAnimation) {
             blowpiping = BlowpipeState.PIPING;
         } else {
             blowpiping = BlowpipeState.NOT_PIPING;
