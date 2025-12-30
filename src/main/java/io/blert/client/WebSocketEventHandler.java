@@ -30,6 +30,7 @@ import io.blert.core.*;
 import io.blert.core.AttackDefinition;
 import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
+import io.blert.core.SpellDefinition;
 import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.Event;
@@ -555,6 +556,15 @@ public class WebSocketEventHandler implements EventHandler {
                         serverMessage.getAttackDefinitionsList()
                                 .stream()
                                 .map(AttackDefinition::fromProto)
+                                .collect(Collectors.toList())
+                );
+                break;
+
+            case SPELL_DEFINITIONS:
+                plugin.getSpellRegistry().updateFromServer(
+                        serverMessage.getSpellDefinitionsList()
+                                .stream()
+                                .map(SpellDefinition::fromProto)
                                 .collect(Collectors.toList())
                 );
                 break;
