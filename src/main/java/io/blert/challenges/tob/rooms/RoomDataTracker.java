@@ -221,9 +221,10 @@ public abstract class RoomDataTracker extends DataTracker {
             Raider raider = theatreChallenge.getRaider(localPlayer.getName());
             if (raider != null && raider.isAlive()) {
                 // Logging out during a ToB room is considered a death.
-                raider.setDead(true);
+                int tick = getTick();
+                raider.setDead(tick);
                 WorldPoint deathPoint = getWorldLocation(localPlayer);
-                dispatchEvent(new PlayerDeathEvent(getStage(), getTick(), deathPoint, raider.getUsername()));
+                dispatchEvent(new PlayerDeathEvent(getStage(), tick, deathPoint, raider.getUsername()));
             }
         }
     }
@@ -266,12 +267,14 @@ public abstract class RoomDataTracker extends DataTracker {
     }
 
     private void checkForDeaths() {
+        final int tick = getTick();
+
         getChallenge().getParty().forEach(raider -> {
             if (!raider.isActive() && raider.isAlive()) {
                 // Disconnecting during a ToB room is considered a death.
-                raider.setDead(true);
+                raider.setDead(tick);
                 WorldPoint deathPoint = raider.getPlayer() != null ? getWorldLocation(raider.getPlayer()) : null;
-                dispatchEvent(new PlayerDeathEvent(getStage(), getTick(), deathPoint, raider.getUsername()));
+                dispatchEvent(new PlayerDeathEvent(getStage(), tick, deathPoint, raider.getUsername()));
             }
         });
 
@@ -291,9 +294,9 @@ public abstract class RoomDataTracker extends DataTracker {
                     return;
                 }
 
-                raider.setDead(true);
+                raider.setDead(tick);
                 if (raider.getPlayer() != null) {
-                    dispatchEvent(new PlayerDeathEvent(getStage(), getTick(), null, raider.getUsername()));
+                    dispatchEvent(new PlayerDeathEvent(getStage(), tick, null, raider.getUsername()));
                 }
             }
         });

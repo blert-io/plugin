@@ -116,7 +116,7 @@ public abstract class DataTracker {
         updatePlayers();
         specialAttackTracker.processPendingSpecial();
 
-        challenge.getParty().forEach(this::checkForPlayerAttack);
+        challenge.getParty().forEach(this::checkForPlayerActions);
 
         // Run implementation-specific behavior.
         try {
@@ -398,7 +398,110 @@ public abstract class DataTracker {
         });
     }
 
-    private void checkForPlayerAttack(@NonNull Raider raider) {
+    private void checkForPlayerActions(@NonNull Raider raider) {
+        if (raider.isDead() && raider.getDeathTick() != getTick()) {
+            return;
+        }
+
+        Player player = raider.getPlayer();
+        if (player == null) {
+            return;
+        }
+
+        checkForPlayerAttack(raider, player);
+        checkForPlayerSpell(raider, player);
+    }
+
+    private void checkForPlayerSpell(@NonNull Raider raider, @NonNull Player player) {
+        final int tick = getTick();
+        SpellRegistry spellRegistry = challenge.getSpellRegistry();
+        SpellDefinition spell = null;
+
+        if (raider.getAnimationId() != -1) {
+            SpellDefinition candidate = spellRegistry.findByAnimation(raider.getAnimationId());
+            if (candidate != null) {
+                spell = raider.tryRecordSpell(tick, candidate, null);
+            } else {
+                spell = checkForTargetedPlayerSpell(spellRegistry, raider, player);
+            }
+        }
+
+        // If no animation match, try to match a non-targeted spell by graphic on the caster.
+        // Targeted spells generally apply their graphics on the target.
+        if (spell == null) {
+            for (int graphicId : raider.getGraphicIds()) {
+                SpellDefinition candidate = spellRegistry.findByGraphic(graphicId);
+                if (candidate != null && !candidate.isTargeted()) {
+                    spell = raider.tryRecordSpell(tick, candidate, graphicId);
+                    if (spell != null) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (spell == null) {
+            return;
+        }
+
+        if (spell.isTargeted()) {
+            Actor interacting = player.getInteracting();
+            if (interacting == null) {
+                dispatchEvent(PlayerSpellEvent.withNoTarget(getStage(), tick, getWorldLocation(player), spell, raider));
+                return;
+            }
+
+            if (interacting instanceof Player) {
+                Player targetPlayer = (Player) interacting;
+                dispatchEvent(PlayerSpellEvent.withPlayerTarget(
+                        getStage(), tick, getWorldLocation(player), spell, raider, targetPlayer.getName()));
+            } else if (interacting instanceof NPC) {
+                NPC targetNpc = (NPC) interacting;
+                SpellDefinition finalSpell = spell;
+                trackedNpcs
+                        .getByNpc(targetNpc)
+                        .ifPresent(trackedNpc -> dispatchEvent(PlayerSpellEvent.withNpcTarget(
+                                getStage(), tick, getWorldLocation(player), finalSpell, raider, trackedNpc)));
+            } else {
+                dispatchEvent(PlayerSpellEvent.withNoTarget(getStage(), tick, getWorldLocation(player), spell, raider));
+            }
+        } else {
+            dispatchEvent(PlayerSpellEvent.withNoTarget(getStage(), tick, getWorldLocation(player), spell, raider));
+        }
+    }
+
+    private SpellDefinition checkForTargetedPlayerSpell(
+            SpellRegistry spellRegistry, @NonNull Raider raider, @NonNull Player player) {
+        Actor interacting = player.getInteracting();
+        if (interacting == null) {
+            return null;
+        }
+
+        List<SpellDefinition> candidates = spellRegistry.getTargetedSpellsByAnimation(raider.getAnimationId());
+        for (SpellDefinition targetedCandidate : candidates) {
+            boolean interactingHasGraphic = targetedCandidate
+                    .getTargetGraphics()
+                    .stream()
+                    .anyMatch(g -> {
+                        for (var spotAnim : interacting.getSpotAnims()) {
+                            if (spotAnim.getId() == g.getId() && spotAnim.getFrame() <= g.getMaxFrame()) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+            if (interactingHasGraphic) {
+                SpellDefinition spell = raider.tryRecordSpell(getTick(), targetedCandidate, null);
+                if (spell != null) {
+                    return spell;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private void checkForPlayerAttack(@NonNull Raider raider, @NonNull Player player) {
         int animationId = raider.getAnimationId();
         if (animationId == -1) {
             return;
@@ -406,14 +509,9 @@ public abstract class DataTracker {
 
         final int tick = getTick();
 
-        boolean mayHaveAttacked = raider.isOffCooldownOn(tick)
-                && (raider.getAnimationTick() == tick || raider.isBlowpiping() || raider.stoppedBlowpiping());
+        boolean mayHaveAttacked = raider.isOffCooldownOn(tick) &&
+                (raider.getAnimationTick() == tick || raider.isBlowpiping() || raider.stoppedBlowpiping());
         if (!mayHaveAttacked) {
-            return;
-        }
-
-        Player player = raider.getPlayer();
-        if (player == null) {
             return;
         }
 
@@ -670,9 +768,10 @@ public abstract class DataTracker {
         if (event.getActor() instanceof Player) {
             Raider raider = challenge.getRaider(event.getActor().getName());
             if (raider != null) {
-                raider.setDead(true);
+                int tick = getTick();
+                raider.setDead(tick);
                 dispatchEvent(new PlayerDeathEvent(
-                        getStage(), getTick(), getWorldLocation(event.getActor()), raider.getUsername()));
+                        getStage(), tick, getWorldLocation(event.getActor()), raider.getUsername()));
             }
         }
 

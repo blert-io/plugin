@@ -61,6 +61,9 @@ public abstract class RecordableChallenge {
     @Getter
     private AttackRegistry attackRegistry;
 
+    @Getter
+    private SpellRegistry spellRegistry;
+
     List<Event> pendingEvents = new ArrayList<>();
 
     @Getter(AccessLevel.PROTECTED)
@@ -184,8 +187,9 @@ public abstract class RecordableChallenge {
         party.clear();
     }
 
-    public void initialize(EventHandler handler, AttackRegistry attackRegistry) {
+    public void initialize(EventHandler handler, AttackRegistry attackRegistry, SpellRegistry spellRegistry) {
         this.attackRegistry = attackRegistry;
+        this.spellRegistry = spellRegistry;
         onInitialize();
         this.eventHandler = handler;
     }

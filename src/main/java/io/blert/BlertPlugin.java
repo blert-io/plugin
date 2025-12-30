@@ -29,6 +29,7 @@ import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.client.WebSocketManager;
 import io.blert.core.AttackRegistry;
 import io.blert.core.RecordableChallenge;
+import io.blert.core.SpellRegistry;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
 import lombok.Getter;
@@ -85,6 +86,9 @@ public class BlertPlugin extends Plugin {
     @Getter
     private final AttackRegistry attackRegistry = new AttackRegistry();
 
+    @Getter
+    private final SpellRegistry spellRegistry = new SpellRegistry();
+
     private final List<RecordableChallenge> challenges = new ArrayList<>();
     @Getter
     private @Nullable RecordableChallenge activeChallenge = null;
@@ -124,6 +128,7 @@ public class BlertPlugin extends Plugin {
     @Override
     protected void startUp() throws Exception {
         attackRegistry.loadDefaults();
+        spellRegistry.loadDefaults();
 
         eventBus.register(websocketManager);
         websocketManager.open();
@@ -249,7 +254,7 @@ public class BlertPlugin extends Plugin {
 
             activeChallenge = challenge;
             eventBus.register(activeChallenge);
-            activeChallenge.initialize(websocketManager.getEventHandler(), attackRegistry);
+            activeChallenge.initialize(websocketManager.getEventHandler(), attackRegistry, spellRegistry);
 
             log.info("Entered challenge \"{}\"", activeChallenge.getName());
         } else if (activeChallenge != null) {
