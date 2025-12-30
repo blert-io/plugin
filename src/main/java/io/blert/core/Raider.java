@@ -30,6 +30,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.client.game.ItemVariationMapping;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -66,8 +67,9 @@ public class Raider {
     private boolean active;
 
     @Getter
-    @Setter
     private boolean dead;
+    @Getter
+    private int deathTick;
 
     private BlowpipeState blowpiping;
 
@@ -80,10 +82,20 @@ public class Raider {
     @Getter
     private int animationTick;
 
+    private final Map<Integer, ActorSpotAnim> graphicsIds = new HashMap<>();
+
     @Getter
     private @Nullable AttackDefinition lastAttack;
     @Getter
     private int offCooldownTick;
+
+    /**
+     * Map of spell ID to the "off cooldown" tick for that spell.
+     * Unlike attacks, these are not real cooldowns, just a minimum interval to
+     * distinguish a repeated use.
+     */
+    private final Map<Integer, Integer> activeSpells = new HashMap<>();
+    private @Nullable Pair<Integer, SpellDefinition> activeStall;
 
     @Getter
     private @Nullable Prayer overheadPrayer;
@@ -104,6 +116,11 @@ public class Raider {
         return !dead;
     }
 
+    public void setDead(int tick) {
+        this.dead = true;
+        this.deathTick = tick;
+    }
+
     public boolean isOffCooldownOn(int tick) {
         return offCooldownTick <= tick;
     }
@@ -113,13 +130,17 @@ public class Raider {
      */
     public void resetForNewRoom() {
         dead = false;
+        deathTick = -1;
         blowpiping = BlowpipeState.NOT_PIPING;
         equipment = new Item[EquipmentSlot.values().length];
         equipmentChangesThisTick.clear();
         animationId = -1;
         animationTick = 0;
+        graphicsIds.clear();
         lastAttack = null;
         offCooldownTick = 0;
+        activeSpells.clear();
+        activeStall = null;
         overheadPrayer = null;
     }
 
@@ -139,6 +160,14 @@ public class Raider {
 
     public Optional<io.blert.core.Item> getEquippedItem(EquipmentSlot slot) {
         return Optional.ofNullable(equipment[slot.ordinal()]);
+    }
+
+    public boolean hasGraphic(int graphicId) {
+        return graphicsIds.containsKey(graphicId);
+    }
+
+    public Set<Integer> getGraphicIds() {
+        return graphicsIds.keySet();
     }
 
     /**
@@ -164,6 +193,11 @@ public class Raider {
         }
 
         updateOverheadPrayer();
+
+        graphicsIds.clear();
+        for (var spotAnim : player.getSpotAnims()) {
+            graphicsIds.put(spotAnim.getId(), spotAnim);
+        }
 
         equipmentChangesThisTick.clear();
 
@@ -204,6 +238,54 @@ public class Raider {
         } else {
             blowpiping = BlowpipeState.NOT_PIPING;
         }
+
+        // A player performing an attack indicates they are no longer stalled.
+        if (activeStall != null && activeStall.getLeft() != tick) {
+            clearActiveStall();
+        }
+    }
+
+    /**
+     * Attempts to record a spell cast by this player.
+     *
+     * @param tick             The current tick.
+     * @param spell            The spell that was potentially cast.
+     * @param matchedGraphicId The graphic ID that matched, or null if matched via animation.
+     * @return The spell if it was recorded, or null if it was filtered out (e.g., stale graphic).
+     */
+    public @Nullable SpellDefinition tryRecordSpell(int tick, @NonNull SpellDefinition spell,
+                                                    @Nullable Integer matchedGraphicId) {
+        boolean viaAnimation = matchedGraphicId == null && spell.hasAnimation(animationId) && animationTick == tick;
+
+        // A new animation is a reliable indicator for a new spell, so ignore the graphic cooldown.
+        if (!viaAnimation) {
+            if (matchedGraphicId == null) {
+                return null;
+            }
+
+            Integer spellOffCooldownTick = activeSpells.get(spell.getId());
+            if (spellOffCooldownTick != null && spellOffCooldownTick > tick) {
+                return null;
+            }
+
+            SpellDefinition.Graphic graphic = spell.getGraphic(matchedGraphicId);
+            if (graphic != null) {
+                ActorSpotAnim spotAnim = graphicsIds.get(matchedGraphicId);
+                if (spotAnim != null && spotAnim.getFrame() > graphic.getMaxFrame()) {
+                    return null;
+                }
+            }
+        }
+
+        clearActiveStall();
+
+        if (spell.isStall()) {
+            activeStall = Pair.of(tick, spell);
+        }
+
+        activeSpells.put(spell.getId(), tick + spell.getCooldown(matchedGraphicId));
+
+        return spell;
     }
 
     public void setAnimation(int tick, int animationId, boolean isContinuousAnimation) {
@@ -277,6 +359,13 @@ public class Raider {
                 equipment[slot.ordinal()] = null;
             }
         });
+    }
+
+    private void clearActiveStall() {
+        if (activeStall != null) {
+            activeSpells.remove(activeStall.getRight().getId());
+            activeStall = null;
+        }
     }
 
     private void updateOverheadPrayer() {

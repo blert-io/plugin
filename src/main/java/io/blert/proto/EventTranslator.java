@@ -112,6 +112,24 @@ public class EventTranslator {
                 break;
             }
 
+            case PLAYER_SPELL: {
+                PlayerSpellEvent playerSpellEvent = (PlayerSpellEvent) event;
+                Event.Spell.Builder builder = Event.Spell.newBuilder()
+                        .setTypeValue(playerSpellEvent.getSpell().getId());
+                if (playerSpellEvent.getTargetPlayer() != null) {
+                    builder.setTargetPlayer(playerSpellEvent.getTargetPlayer());
+                } else if (playerSpellEvent.hasNpcTarget()) {
+                    builder.setTargetNpc(Event.Npc.newBuilder()
+                            .setId(playerSpellEvent.getTargetNpcId())
+                            .setRoomId(playerSpellEvent.getTargetNpcRoomId()));
+                } else {
+                    builder.setNoTarget(Empty.newBuilder().build());
+                }
+                eventBuilder.setPlayerSpell(builder);
+                eventBuilder.setPlayer(Event.Player.newBuilder().setName(playerSpellEvent.getUsername()));
+                break;
+            }
+
             case PLAYER_DEATH: {
                 PlayerDeathEvent playerDeathEvent = (PlayerDeathEvent) event;
                 eventBuilder.setPlayer(Event.Player.newBuilder().setName(playerDeathEvent.getUsername()));

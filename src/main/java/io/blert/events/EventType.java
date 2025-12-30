@@ -38,6 +38,7 @@ public enum EventType {
     NPC_UPDATE(Event.Type.NPC_UPDATE),
     NPC_DEATH(Event.Type.NPC_DEATH),
     NPC_ATTACK(Event.Type.NPC_ATTACK),
+    PLAYER_SPELL(Event.Type.PLAYER_SPELL),
 
     MAIDEN_CRAB_LEAK(Event.Type.TOB_MAIDEN_CRAB_LEAK),
     MAIDEN_BLOOD_SPLATS(Event.Type.TOB_MAIDEN_BLOOD_SPLATS),

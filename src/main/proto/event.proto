@@ -304,6 +304,27 @@ enum PlayerAttack {
   DRAGON_KNIFE_SPEC = 116;
 }
 
+enum PlayerSpell {
+  UNKNOWN_SPELL = 0;
+  SPELLBOOK_SWAP = 1;
+  HUMIDIFY = 2;
+  HUNTER_KIT = 3;
+  NPC_CONTACT = 4;
+  VENGEANCE = 5;
+  VENGEANCE_OTHER = 6;
+  HEAL_OTHER = 7;
+  DEATH_CHARGE = 8;
+  LESSER_CORRUPTION = 9;
+  GREATER_CORRUPTION = 10;
+  SHADOW_VEIL = 11;
+  VILE_VIGOUR = 12;
+  WARD_OF_ARCEUUS = 13;
+  MARK_OF_DARKNESS = 14;
+  RESURRECT_GREATER_GHOST = 15;
+  RESURRECT_GREATER_SKELETON = 16;
+  RESURRECT_GREATER_ZOMBIE = 17;
+}
+
 enum NpcAttack {
   UNKNOWN_NPC_ATTACK = 0;
 
@@ -399,6 +420,7 @@ message Event {
     NPC_UPDATE = 8;
     NPC_DEATH = 9;
     NPC_ATTACK = 10;
+    PLAYER_SPELL = 11;
 
     TOB_MAIDEN_CRAB_LEAK = 100;
     TOB_MAIDEN_BLOOD_SPLATS = 101;
@@ -598,6 +620,16 @@ message Event {
     int32 distance_to_target = 4;
   }
 
+  message Spell {
+    PlayerSpell type = 1;
+
+    oneof target {
+      google.protobuf.Empty no_target = 2;
+      string target_player = 3;
+      Npc target_npc = 4;
+    }
+  }
+
   message NpcAttacked {
     NpcAttack attack = 1;
     optional string target = 2;
@@ -759,8 +791,9 @@ message Event {
   optional Attack player_attack = 11;
   optional Npc npc = 12;
   optional NpcAttacked npc_attack = 13;
+  optional Spell player_spell = 14;
 
-  reserved 14 to 63;
+  reserved 15 to 63;
 
   // ToB event-specific fields.
   repeated Coords maiden_blood_splats = 64;
