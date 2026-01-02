@@ -23,7 +23,6 @@
 
 package io.blert.challenges.mokhaiotl;
 
-import io.blert.proto.Event;
 import lombok.Getter;
 import net.runelite.api.Projectile;
 
@@ -40,18 +39,27 @@ public class Orb {
     }
 
     public enum Source {
-        MOKHAIOTL,
-        BALL;
+        MOKHAIOTL(1),
+        BALL(2);
 
-        public Event.MokhaiotlOrb.Source toProto() {
-            switch (this) {
-                case MOKHAIOTL:
-                    return Event.MokhaiotlOrb.Source.MOKHAIOTL;
-                case BALL:
-                    return Event.MokhaiotlOrb.Source.BALL;
-                default:
-                    return Event.MokhaiotlOrb.Source.UNKNOWN;
-            }
+        @Getter
+        private final int id;
+
+        Source(int id) {
+            this.id = id;
+        }
+    }
+
+    public enum Style {
+        MELEE(0),
+        RANGE(1),
+        MAGE(2);
+
+        @Getter
+        private final int id;
+
+        Style(int id) {
+            this.id = id;
         }
     }
 
@@ -80,14 +88,14 @@ public class Orb {
         }
     }
 
-    public Event.AttackStyle.Style getStyle() {
+    public Style getStyle() {
         switch (projectile.getId()) {
             case MELEE_PROJECTILE_ID:
-                return Event.AttackStyle.Style.MELEE;
+                return Style.MELEE;
             case RANGED_PROJECTILE_ID:
-                return Event.AttackStyle.Style.RANGE;
+                return Style.RANGE;
             case MAGE_PROJECTILE_ID:
-                return Event.AttackStyle.Style.MAGE;
+                return Style.MAGE;
             default:
                 throw new IllegalArgumentException("Unknown projectile ID: " + projectile.getId());
         }

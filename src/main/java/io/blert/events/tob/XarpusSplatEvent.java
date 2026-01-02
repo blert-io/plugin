@@ -2,7 +2,6 @@ package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.events.EventType;
-import io.blert.proto.Event;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
@@ -11,18 +10,15 @@ import javax.annotation.Nullable;
 @Getter
 public class XarpusSplatEvent extends TobEvent {
     public enum Source {
-        UNKNOWN(Event.XarpusSplat.Source.UNKNOWN),
-        XARPUS(Event.XarpusSplat.Source.XARPUS),
-        BOUNCE(Event.XarpusSplat.Source.BOUNCE);
+        UNKNOWN(0),
+        XARPUS(1),
+        BOUNCE(2);
 
-        private final Event.XarpusSplat.Source protoSource;
+        @Getter
+        private final int id;
 
-        public Event.XarpusSplat.Source toProto() {
-            return protoSource;
-        }
-
-        Source(Event.XarpusSplat.Source protoSource) {
-            this.protoSource = protoSource;
+        Source(int id) {
+            this.id = id;
         }
     }
 

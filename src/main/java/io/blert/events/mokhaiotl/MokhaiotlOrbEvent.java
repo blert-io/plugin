@@ -34,7 +34,7 @@ import net.runelite.api.coords.WorldPoint;
 public class MokhaiotlOrbEvent extends Event {
     private final Orb.Source source;
     private final WorldPoint sourcePoint;
-    private final io.blert.proto.Event.AttackStyle.Style style;
+    private final Orb.Style style;
     private final int startTick;
     private final int endTick;
 

@@ -117,6 +117,7 @@ public class WebSocketClient extends WebSocketListener {
         Request.Builder request = new Request.Builder()
                 .url(hostname)
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(apiKey))
+                .header("Sec-WebSocket-Protocol", "blert-json")
                 .header("Blert-Revision", BuildProperties.REVISION)
                 .header("Blert-Version", BuildProperties.VERSION)
                 .header("Blert-Runelite-Version", runeliteVersion);
