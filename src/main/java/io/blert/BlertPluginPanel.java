@@ -2,7 +2,7 @@
  * Copyright (c) 2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the “Software”), to deal in
+ * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to use,
  * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
  * Software, and to permit persons to whom the Software is furnished to do so,
@@ -11,7 +11,7 @@
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
@@ -25,10 +25,10 @@ package io.blert;
 
 import io.blert.client.WebSocketEventHandler;
 import io.blert.client.WebSocketManager;
-import io.blert.proto.Challenge;
-import io.blert.proto.ChallengeMode;
-import io.blert.proto.ServerMessage;
-import io.blert.proto.Stage;
+import io.blert.core.Challenge;
+import io.blert.core.ChallengeMode;
+import io.blert.core.Stage;
+import io.blert.json.PastChallenge;
 import joptsimple.internal.Strings;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -91,9 +91,9 @@ public class BlertPluginPanel extends PluginPanel {
     private final JLabel activeChallengeLabel = new JLabel();
     private final JLabel serverStatusLabel = new JLabel();
     private final JLabel connectionStatusLabel = new JLabel();
-    private Timer shutdownLabelTimer;
+    private final Timer shutdownLabelTimer;
 
-    private final List<ServerMessage.PastChallenge> recentRecordings = new ArrayList<>();
+    private final List<PastChallenge> recentRecordings = new ArrayList<>();
 
     private WebSocketEventHandler.Status challengeStatus = WebSocketEventHandler.Status.IDLE;
     private ConnectionState connectionState = ConnectionState.DISCONNECTED;
@@ -135,7 +135,7 @@ public class BlertPluginPanel extends PluginPanel {
         setFocusable(false);
 
         rebuildUserPanel();
-        createChallengeStatusPanel(this, Challenge.UNKNOWN_CHALLENGE, null);
+        createChallengeStatusPanel(this, null, null);
         createRecentRecordingsPanel(this);
         populateRecentRecordingsPanel();
 
@@ -165,7 +165,10 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     public void updateChallengeStatus(
-            WebSocketEventHandler.Status status, Challenge challenge, @Nullable String challengeId) {
+            WebSocketEventHandler.Status status,
+            @Nullable Challenge challenge,
+            @Nullable String challengeId
+    ) {
         SwingUtilities.invokeLater(() -> {
             synchronized (this) {
                 this.challengeStatus = status;
@@ -176,7 +179,7 @@ public class BlertPluginPanel extends PluginPanel {
         });
     }
 
-    public void setRecentRecordings(@Nullable List<ServerMessage.PastChallenge> recentRecordings) {
+    public void setRecentRecordings(@Nullable List<PastChallenge> recentRecordings) {
         SwingUtilities.invokeLater(() -> {
             synchronized (this) {
                 this.recentRecordings.clear();
@@ -309,7 +312,11 @@ public class BlertPluginPanel extends PluginPanel {
         return connectButtonPanel;
     }
 
-    private void createChallengeStatusPanel(JPanel parent, Challenge challenge, @Nullable String challengeId) {
+    private void createChallengeStatusPanel(
+            JPanel parent,
+            @Nullable Challenge challenge,
+            @Nullable String challengeId
+    ) {
         if (challengeStatusPanel != null) {
             parent.remove(challengeStatusPanel);
         }
@@ -320,7 +327,7 @@ public class BlertPluginPanel extends PluginPanel {
 
         JPanel currentStatePanel = createCurrentChallengeStatePanel();
 
-        if (challengeStatus == WebSocketEventHandler.Status.CHALLENGE_ACTIVE) {
+        if (challengeStatus == WebSocketEventHandler.Status.CHALLENGE_ACTIVE && challenge != null) {
             JPanel actionsPanel = createChallengeActionsPanel(challenge, challengeId);
             challengeStatusPanel.add(actionsPanel, BorderLayout.SOUTH);
         }
@@ -373,7 +380,7 @@ public class BlertPluginPanel extends PluginPanel {
             recentRecordingsList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
             int index = 0;
-            for (ServerMessage.PastChallenge challenge : recentRecordings) {
+            for (PastChallenge challenge : recentRecordings) {
                 GridBagConstraints constraints = new GridBagConstraints();
                 constraints.anchor = GridBagConstraints.FIRST_LINE_START;
                 constraints.gridy = index;
@@ -454,152 +461,160 @@ public class BlertPluginPanel extends PluginPanel {
         return headingPanel;
     }
 
-    private Pair<String, Color> getChallengeStatusInfo(ServerMessage.PastChallenge.Status status, Stage stage) {
-        if (status == ServerMessage.PastChallenge.Status.IN_PROGRESS) {
+    private Pair<String, Color> getChallengeStatusInfo(int status, int stageId) {
+        if (status == PastChallenge.STATUS_IN_PROGRESS) {
             return Pair.of("In Progress", Color.WHITE);
         }
-        if (status == ServerMessage.PastChallenge.Status.COMPLETED) {
+        if (status == PastChallenge.STATUS_COMPLETED) {
             return Pair.of("Completed", Color.GREEN);
         }
-        if (status == ServerMessage.PastChallenge.Status.ABANDONED) {
+        if (status == PastChallenge.STATUS_ABANDONED) {
             return Pair.of("Abandoned", Color.GRAY);
         }
 
         String boss = "Unknown";
-        switch (stage) {
-            case TOB_MAIDEN:
-                boss = "Maiden";
-                break;
-            case TOB_BLOAT:
-                boss = "Bloat";
-                break;
-            case TOB_NYLOCAS:
-                boss = "Nylocas";
-                break;
-            case TOB_SOTETSEG:
-                boss = "Sotetseg";
-                break;
-            case TOB_XARPUS:
-                boss = "Xarpus";
-                break;
-            case TOB_VERZIK:
-                boss = "Verzik";
-                break;
+        Stage stage = Stage.fromId(stageId);
+        if (stage != null) {
+            switch (stage) {
+                case TOB_MAIDEN:
+                    boss = "Maiden";
+                    break;
+                case TOB_BLOAT:
+                    boss = "Bloat";
+                    break;
+                case TOB_NYLOCAS:
+                    boss = "Nylocas";
+                    break;
+                case TOB_SOTETSEG:
+                    boss = "Sotetseg";
+                    break;
+                case TOB_XARPUS:
+                    boss = "Xarpus";
+                    break;
+                case TOB_VERZIK:
+                    boss = "Verzik";
+                    break;
 
-            case COLOSSEUM_WAVE_1:
-                boss = "Wave 1";
-                break;
-            case COLOSSEUM_WAVE_2:
-                boss = "Wave 2";
-                break;
-            case COLOSSEUM_WAVE_3:
-                boss = "Wave 3";
-                break;
-            case COLOSSEUM_WAVE_4:
-                boss = "Wave 4";
-                break;
-            case COLOSSEUM_WAVE_5:
-                boss = "Wave 5";
-                break;
-            case COLOSSEUM_WAVE_6:
-                boss = "Wave 6";
-                break;
-            case COLOSSEUM_WAVE_7:
-                boss = "Wave 7";
-                break;
-            case COLOSSEUM_WAVE_8:
-                boss = "Wave 8";
-                break;
-            case COLOSSEUM_WAVE_9:
-                boss = "Wave 9";
-                break;
-            case COLOSSEUM_WAVE_10:
-                boss = "Wave 10";
-                break;
-            case COLOSSEUM_WAVE_11:
-                boss = "Wave 11";
-                break;
-            case COLOSSEUM_WAVE_12:
-                boss = "Sol Heredit";
-                break;
+                case COLOSSEUM_WAVE_1:
+                    boss = "Wave 1";
+                    break;
+                case COLOSSEUM_WAVE_2:
+                    boss = "Wave 2";
+                    break;
+                case COLOSSEUM_WAVE_3:
+                    boss = "Wave 3";
+                    break;
+                case COLOSSEUM_WAVE_4:
+                    boss = "Wave 4";
+                    break;
+                case COLOSSEUM_WAVE_5:
+                    boss = "Wave 5";
+                    break;
+                case COLOSSEUM_WAVE_6:
+                    boss = "Wave 6";
+                    break;
+                case COLOSSEUM_WAVE_7:
+                    boss = "Wave 7";
+                    break;
+                case COLOSSEUM_WAVE_8:
+                    boss = "Wave 8";
+                    break;
+                case COLOSSEUM_WAVE_9:
+                    boss = "Wave 9";
+                    break;
+                case COLOSSEUM_WAVE_10:
+                    boss = "Wave 10";
+                    break;
+                case COLOSSEUM_WAVE_11:
+                    boss = "Wave 11";
+                    break;
+                case COLOSSEUM_WAVE_12:
+                    boss = "Sol Heredit";
+                    break;
 
-            case MOKHAIOTL_DELVE_1:
-                boss = "Delve 1";
-                break;
-            case MOKHAIOTL_DELVE_2:
-                boss = "Delve 2";
-                break;
-            case MOKHAIOTL_DELVE_3:
-                boss = "Delve 3";
-                break;
-            case MOKHAIOTL_DELVE_4:
-                boss = "Delve 4";
-                break;
-            case MOKHAIOTL_DELVE_5:
-                boss = "Delve 5";
-                break;
-            case MOKHAIOTL_DELVE_6:
-                boss = "Delve 6";
-                break;
-            case MOKHAIOTL_DELVE_7:
-                boss = "Delve 7";
-                break;
-            case MOKHAIOTL_DELVE_8:
-                boss = "Delve 8";
-                break;
-            case MOKHAIOTL_DELVE_8PLUS:
-                boss = "Delve 8+";
-                break;
+                case MOKHAIOTL_DELVE_1:
+                    boss = "Delve 1";
+                    break;
+                case MOKHAIOTL_DELVE_2:
+                    boss = "Delve 2";
+                    break;
+                case MOKHAIOTL_DELVE_3:
+                    boss = "Delve 3";
+                    break;
+                case MOKHAIOTL_DELVE_4:
+                    boss = "Delve 4";
+                    break;
+                case MOKHAIOTL_DELVE_5:
+                    boss = "Delve 5";
+                    break;
+                case MOKHAIOTL_DELVE_6:
+                    boss = "Delve 6";
+                    break;
+                case MOKHAIOTL_DELVE_7:
+                    boss = "Delve 7";
+                    break;
+                case MOKHAIOTL_DELVE_8:
+                    boss = "Delve 8";
+                    break;
+                case MOKHAIOTL_DELVE_8PLUS:
+                    boss = "Delve 8+";
+                    break;
+            }
         }
 
-        if (stage.ordinal() >= Stage.INFERNO_WAVE_1.ordinal() &&
-                stage.ordinal() <= Stage.INFERNO_WAVE_69.ordinal()) {
-            int wave = stage.ordinal() - Stage.INFERNO_WAVE_1.ordinal() + 1;
+        if (stageId >= Stage.INFERNO_WAVE_1.getId() && stageId <= Stage.INFERNO_WAVE_69.getId()) {
+            int wave = stageId - Stage.INFERNO_WAVE_1.getId() + 1;
             boss = "Wave " + wave;
         }
 
-        if (status == ServerMessage.PastChallenge.Status.WIPED) {
+        if (status == PastChallenge.STATUS_WIPED) {
             return Pair.of(boss + " Wipe", Color.RED);
         }
         return Pair.of(boss + " Reset", Color.GRAY);
     }
 
-    private String challengeModeToString(Challenge challenge, ChallengeMode mode) {
-        if (challenge == Challenge.COLOSSEUM) {
+    private String challengeModeToString(int challengeId, int modeId) {
+        if (challengeId == Challenge.COLOSSEUM.getId()) {
             return "Colosseum";
         }
-        if (challenge == Challenge.INFERNO) {
+        if (challengeId == Challenge.INFERNO.getId()) {
             return "Inferno";
         }
-        if (challenge == Challenge.MOKHAIOTL) {
+        if (challengeId == Challenge.MOKHAIOTL.getId()) {
             return "Mokhaiotl";
         }
 
-        switch (mode) {
-            case TOB_ENTRY:
-                return "Entry Mode";
-            case TOB_REGULAR:
-                return "Regular Mode";
-            case TOB_HARD:
-                return "Hard Mode";
+        if (modeId == ChallengeMode.TOB_ENTRY.getId()) {
+            return "Entry Mode";
+        }
+        if (modeId == ChallengeMode.TOB_REGULAR.getId()) {
+            return "Regular Mode";
+        }
+        if (modeId == ChallengeMode.TOB_HARD.getId()) {
+            return "Hard Mode";
+        }
 
-            case COX_REGULAR:
-                return "Cox Regular";
-            case COX_CHALLENGE:
-                return "CoX CM";
+        if (modeId == ChallengeMode.COX_REGULAR.getId()) {
+            return "Cox Regular";
+        }
+        if (modeId == ChallengeMode.COX_CHALLENGE.getId()) {
+            return "CoX CM";
+        }
 
-            case TOA_ENTRY:
-                return "TOA Entry";
-            case TOA_NORMAL:
-                return "TOA Normal";
-            case TOA_EXPERT:
-                return "TOA Expert";
+        if (modeId == ChallengeMode.TOA_ENTRY.getId()) {
+            return "TOA Entry";
+        }
+        if (modeId == ChallengeMode.TOA_NORMAL.getId()) {
+            return "TOA Normal";
+        }
+        if (modeId == ChallengeMode.TOA_EXPERT.getId()) {
+            return "TOA Expert";
         }
 
         return "Unknown";
     }
 
-    private JPanel createPastChallengeEntry(ServerMessage.PastChallenge challenge, int index) {
+    private JPanel createPastChallengeEntry(PastChallenge challenge, int index) {
         JPanel challengePanel = new JPanel();
         challengePanel.setLayout(new BorderLayout());
         challengePanel.setBorder(new EmptyBorder(8, 8, 8, 8));
@@ -614,7 +629,7 @@ public class BlertPluginPanel extends PluginPanel {
         statusPanel.setLayout(new GridLayout(1, 0, 5, 0));
         statusPanel.setOpaque(false);
 
-        Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.getStatus(), challenge.getStage());
+        Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.status, challenge.stage);
         JLabel statusLabel = new JLabel();
         statusLabel.setForeground(statusInfo.getRight());
         statusLabel.setText(statusInfo.getLeft());
@@ -624,7 +639,7 @@ public class BlertPluginPanel extends PluginPanel {
         modeLabel.setForeground(Color.WHITE);
         modeLabel.setFont(modeLabel.getFont().deriveFont(Font.ITALIC));
         modeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        modeLabel.setText(challengeModeToString(challenge.getChallenge(), challenge.getMode()));
+        modeLabel.setText(challengeModeToString(challenge.challenge, challenge.mode));
         statusPanel.add(modeLabel);
 
         challengePanel.add(statusPanel, BorderLayout.NORTH);
@@ -633,19 +648,23 @@ public class BlertPluginPanel extends PluginPanel {
         partyPanel.setLayout(new BorderLayout());
         partyPanel.setBorder(new EmptyBorder(8, 0, 8, 0));
         partyPanel.setOpaque(false);
-        JLabel partyHeading = new JLabel("Party (" + challenge.getPartyCount() + "):");
+        int partyCount = challenge.party != null ? challenge.party.size() : 0;
+        JLabel partyHeading = new JLabel("Party (" + partyCount + "):");
         partyHeading.setFont(partyHeading.getFont().deriveFont(Font.BOLD));
         partyHeading.setForeground(Color.WHITE);
         partyPanel.add(partyHeading, BorderLayout.NORTH);
 
         JLabel partyLabel = new JLabel();
         partyLabel.setForeground(Color.WHITE);
-        String party = String.join(", ", challenge.getPartyList());
+        String party = challenge.party != null ? String.join(", ", challenge.party) : "";
         partyLabel.setText(wrapHtml("<p style=\"width: 150px\">" + party + "</p>"));
         partyPanel.add(partyLabel, BorderLayout.CENTER);
         challengePanel.add(partyPanel, BorderLayout.CENTER);
 
-        challengePanel.add(createChallengeActionsPanel(challenge.getChallenge(), challenge.getId()), BorderLayout.SOUTH);
+        Challenge c = Challenge.fromId(challenge.challenge);
+        if (c != null) {
+            challengePanel.add(createChallengeActionsPanel(c, challenge.id), BorderLayout.SOUTH);
+        }
 
         return challengePanel;
     }
@@ -678,9 +697,6 @@ public class BlertPluginPanel extends PluginPanel {
                 return String.format("%s/challenges/inferno/%s/overview", hostname, challengeId);
             case MOKHAIOTL:
                 return String.format("%s/challenges/mokhaiotl/%s/overview", hostname, challengeId);
-            case UNRECOGNIZED:
-            case UNKNOWN_CHALLENGE:
-                return hostname;
         }
 
         return hostname;

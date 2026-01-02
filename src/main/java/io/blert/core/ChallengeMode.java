@@ -23,32 +23,31 @@
 
 package io.blert.core;
 
+import lombok.Getter;
+
 import java.util.Optional;
 
 public enum ChallengeMode {
-    NO_MODE(io.blert.proto.ChallengeMode.NO_MODE),
+    NO_MODE(0),
 
-    TOB_ENTRY(io.blert.proto.ChallengeMode.TOB_ENTRY),
-    TOB_REGULAR(io.blert.proto.ChallengeMode.TOB_REGULAR),
-    TOB_HARD(io.blert.proto.ChallengeMode.TOB_HARD),
+    TOB_ENTRY(10),
+    TOB_REGULAR(11),
+    TOB_HARD(12),
 
-    COX_REGULAR(io.blert.proto.ChallengeMode.COX_REGULAR),
-    COX_CHALLENGE(io.blert.proto.ChallengeMode.COX_CHALLENGE),
+    COX_REGULAR(20),
+    COX_CHALLENGE(21),
 
-    TOA_ENTRY(io.blert.proto.ChallengeMode.TOA_ENTRY),
-    TOA_NORMAL(io.blert.proto.ChallengeMode.TOA_NORMAL),
-    TOA_EXPERT(io.blert.proto.ChallengeMode.TOA_EXPERT),
+    TOA_ENTRY(30),
+    TOA_NORMAL(31),
+    TOA_EXPERT(32),
 
     ;
 
-    private final io.blert.proto.ChallengeMode protoValue;
+    @Getter
+    private final int id;
 
-    ChallengeMode(io.blert.proto.ChallengeMode protoValue) {
-        this.protoValue = protoValue;
-    }
-
-    public io.blert.proto.ChallengeMode toProto() {
-        return protoValue;
+    ChallengeMode(int id) {
+        this.id = id;
     }
 
     public static Optional<ChallengeMode> parseTob(String string) {

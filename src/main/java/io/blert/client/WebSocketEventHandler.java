@@ -2,7 +2,7 @@
  * Copyright (c) 2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the “Software”), to deal in
+ * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to use,
  * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
  * Software, and to permit persons to whom the Software is furnished to do so,
@@ -11,7 +11,7 @@
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
@@ -23,21 +23,19 @@
 
 package io.blert.client;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.gson.Gson;
 import io.blert.BlertPlugin;
 import io.blert.BlertPluginPanel;
 import io.blert.core.*;
-import io.blert.core.AttackDefinition;
-import io.blert.core.Challenge;
-import io.blert.core.ChallengeMode;
-import io.blert.core.SpellDefinition;
-import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.Event;
-import io.blert.proto.*;
+import io.blert.json.*;
+import joptsimple.internal.Strings;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.GameState;
 import net.runelite.api.Skill;
 import net.runelite.client.callback.ClientThread;
 import org.apache.commons.lang3.NotImplementedException;
@@ -125,10 +123,11 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private static final int DEFAULT_REQUEST_TIMEOUT_MS = 5000;
+    private static final Gson gson = new Gson();
 
     private final BlertPlugin plugin;
     private final WebSocketClient webSocketClient;
-    private final ProtoEventHandler protoEventHandler;
+    private final EventBuffer eventBuffer;
     private final Client runeliteClient;
     private final ClientThread runeliteThread;
 
@@ -154,9 +153,9 @@ public class WebSocketEventHandler implements EventHandler {
                                  Client client, ClientThread runeliteThread) {
         this.plugin = plugin;
         this.webSocketClient = webSocketClient;
-        this.webSocketClient.setBinaryMessageCallback(this::handleProtoMessage);
+        this.webSocketClient.setTextMessageCallback(this::handleJsonMessage);
         this.webSocketClient.setDisconnectCallback(this::handleDisconnect);
-        this.protoEventHandler = new ProtoEventHandler();
+        this.eventBuffer = new EventBuffer();
         this.runeliteClient = client;
         this.runeliteThread = runeliteThread;
     }
@@ -167,7 +166,7 @@ public class WebSocketEventHandler implements EventHandler {
             case CHALLENGE_START:
                 // Starting a new challenge. Discard any buffered events and abandon any
                 // pending start attempt.
-                protoEventHandler.flushEventsUpTo(clientTick);
+                eventBuffer.flushEventsUpTo(clientTick);
                 if (currentStartAttempt != null) {
                     log.warn("Abandoning previous challenge start attempt due to new challenge");
                     abandonChallengeStart();
@@ -184,8 +183,8 @@ public class WebSocketEventHandler implements EventHandler {
                 }
 
                 // Flush any pending events, then indicate that the challenge has ended.
-                if (protoEventHandler.hasEvents()) {
-                    sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
+                if (eventBuffer.hasEvents()) {
+                    sendEvents(eventBuffer.flushEventsUpTo(clientTick));
                 }
                 endChallenge((ChallengeEndEvent) event);
                 break;
@@ -207,22 +206,22 @@ public class WebSocketEventHandler implements EventHandler {
                 }
 
                 // Flush any pending events prior to updating the stage.
-                if (protoEventHandler.hasEvents()) {
-                    sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
+                if (eventBuffer.hasEvents()) {
+                    sendEvents(eventBuffer.flushEventsUpTo(clientTick));
                 }
                 updateChallenge(null, (StageUpdateEvent) event);
                 break;
 
             default:
-                // Forward other events to the protobuf handler to be serialized and sent to the server.
-                protoEventHandler.handleEvent(clientTick, event);
+                // Forward other events to the event buffer to be serialized and sent to the server.
+                eventBuffer.handleEvent(clientTick, event);
 
                 // Only send events if we have an active challenge ID.
                 // During CHALLENGE_STARTING, events are buffered until the ID is received.
                 if (status == Status.CHALLENGE_ACTIVE && currentStartAttempt == null) {
                     if (currentTick != clientTick) {
                         // Events are collected and sent in a single batch at the end of a tick.
-                        sendEvents(protoEventHandler.flushEventsUpTo(clientTick));
+                        sendEvents(eventBuffer.flushEventsUpTo(clientTick));
                     }
                 }
 
@@ -257,15 +256,12 @@ public class WebSocketEventHandler implements EventHandler {
             return;
         }
 
-        ChallengeStartRequest.Builder challengeStartRequestBuilder =
-                ChallengeStartRequest.newBuilder()
-                        .setChallenge(event.getChallenge().toProto())
-                        .setMode(event.getMode().toProto())
-                        .addAllParty(event.getParty())
-                        .setSpectator(event.isSpectator());
-        event.getStage().map(Stage::toProto).ifPresent(challengeStartRequestBuilder::setStage);
-
-        ChallengeStartRequest challengeStartRequest = challengeStartRequestBuilder.build();
+        ChallengeStartRequest challengeStartRequest = new ChallengeStartRequest();
+        challengeStartRequest.challenge = event.getChallenge().getId();
+        challengeStartRequest.mode = event.getMode().getId();
+        challengeStartRequest.party = new ArrayList<>(event.getParty());
+        challengeStartRequest.spectator = event.isSpectator();
+        event.getStage().map(Stage::getId).ifPresent(s -> challengeStartRequest.stage = s);
 
         // Create a new attempt to track the challenge start request and queued events.
         currentStartAttempt = new ChallengeStartAttempt(
@@ -280,14 +276,13 @@ public class WebSocketEventHandler implements EventHandler {
      * Sends a challenge start request to the server and schedules a timeout for retry.
      */
     private void sendChallengeStartRequest(ChallengeStartAttempt attempt) {
-        ServerMessage message = ServerMessage.newBuilder()
-                .setType(ServerMessage.Type.CHALLENGE_START_REQUEST)
-                .setRequestId(attempt.currentRequestId)
-                .setChallengeStartRequest(attempt.request)
-                .build();
+        ServerMessage message = new ServerMessage();
+        message.type = ServerMessage.TYPE_CHALLENGE_START_REQUEST;
+        message.requestId = attempt.currentRequestId;
+        message.challengeStartRequest = attempt.request;
 
         lastRequestId = attempt.currentRequestId;
-        webSocketClient.sendMessage(message.toByteArray());
+        webSocketClient.sendTextMessage(gson.toJson(message));
 
         // Schedule timeout with linear backoff.
         requestTimeout.schedule(new TimerTask() {
@@ -336,19 +331,18 @@ public class WebSocketEventHandler implements EventHandler {
 
         int requestId = getRequestId();
 
-        ServerMessage message = ServerMessage.newBuilder()
-                .setType(ServerMessage.Type.CHALLENGE_END_REQUEST)
-                .setRequestId(requestId)
-                .setActiveChallengeId(challengeId)
-                .setChallengeEndRequest(ChallengeEndRequest.newBuilder()
-                        .setChallengeTimeTicks(event.getChallengeTime())
-                        .setOverallTimeTicks(event.getOverallTime()))
-                .build();
+        ServerMessage message = new ServerMessage();
+        message.type = ServerMessage.TYPE_CHALLENGE_END_REQUEST;
+        message.requestId = requestId;
+        message.activeChallengeId = challengeId;
+        message.challengeEndRequest = new io.blert.json.ChallengeEndRequest();
+        message.challengeEndRequest.challengeTimeTicks = event.getChallengeTime();
+        message.challengeEndRequest.overallTimeTicks = event.getOverallTime();
 
         lastRequestId = requestId;
 
         setStatus(Status.CHALLENGE_ENDING);
-        webSocketClient.sendMessage(message.toByteArray());
+        webSocketClient.sendTextMessage(gson.toJson(message));
 
         requestTimeout.schedule(new TimerTask() {
             @Override
@@ -366,10 +360,10 @@ public class WebSocketEventHandler implements EventHandler {
             return;
         }
 
-        ChallengeUpdate.Builder challengeUpdateBuilder = ChallengeUpdate.newBuilder();
+        ChallengeUpdate challengeUpdate = new ChallengeUpdate();
 
         if (challenge != null) {
-            challengeUpdateBuilder.setMode(challenge.getMode().toProto());
+            challengeUpdate.mode = challenge.getMode().getId();
         }
 
         if (stage != null) {
@@ -378,37 +372,36 @@ public class WebSocketEventHandler implements EventHandler {
                 return;
             }
 
-            var stageUpdate = ChallengeUpdate.StageUpdate.newBuilder()
-                    .setStage(stage.getStage().get().toProto())
-                    .setStatus(translateStageStatus(stage.getStatus()))
-                    .setAccurate(stage.isAccurate())
-                    .setRecordedTicks(stage.getTick())
-                    .setGameTicksPrecise(stage.isGameTicksPrecise());
-
-            stage.getInGameTicks().ifPresent(stageUpdate::setGameServerTicks);
-            challengeUpdateBuilder.setStageUpdate(stageUpdate);
+            ChallengeUpdate.StageUpdate stageUpdate = new ChallengeUpdate.StageUpdate();
+            stageUpdate.stage = stage.getStage().get().getId();
+            stageUpdate.status = translateStageStatus(stage.getStatus());
+            stageUpdate.accurate = stage.isAccurate();
+            stageUpdate.recordedTicks = stage.getTick();
+            stageUpdate.gameTicksPrecise = stage.isGameTicksPrecise();
+            stage.getInGameTicks().ifPresent(t -> stageUpdate.gameServerTicks = t);
+            challengeUpdate.stageUpdate = stageUpdate;
         }
 
-        ServerMessage message = ServerMessage.newBuilder()
-                .setActiveChallengeId(challengeId)
-                .setType(ServerMessage.Type.CHALLENGE_UPDATE)
-                .setChallengeUpdate(challengeUpdateBuilder)
-                .build();
+        ServerMessage message = new ServerMessage();
+        message.activeChallengeId = challengeId;
+        message.type = ServerMessage.TYPE_CHALLENGE_UPDATE;
+        message.challengeUpdate = challengeUpdate;
 
-        webSocketClient.sendMessage(message.toByteArray());
+        webSocketClient.sendTextMessage(gson.toJson(message));
     }
 
     public void updateGameState(GameState gameState) {
-        ServerMessage.GameState.State state;
+        int state;
         if (gameState == GameState.LOGGED_IN) {
-            state = ServerMessage.GameState.State.LOGGED_IN;
+            state = io.blert.json.GameState.STATE_LOGGED_IN;
         } else if (gameState == GameState.LOGIN_SCREEN) {
-            state = ServerMessage.GameState.State.LOGGED_OUT;
+            state = io.blert.json.GameState.STATE_LOGGED_OUT;
         } else {
             return;
         }
 
-        ServerMessage.GameState.Builder gameStateBuilder = ServerMessage.GameState.newBuilder().setState(state);
+        io.blert.json.GameState gameStateJson = new io.blert.json.GameState();
+        gameStateJson.state = state;
 
         if (gameState == GameState.LOGGED_IN) {
             Player localPlayer = runeliteClient.getLocalPlayer();
@@ -416,56 +409,55 @@ public class WebSocketEventHandler implements EventHandler {
                 return;
             }
 
-            ServerMessage.GameState.PlayerInfo.Builder playerInfoBuilder = ServerMessage.GameState.PlayerInfo.newBuilder()
-                    .setUsername(localPlayer.getName())
-                    .setAccountHash(Long.toString(runeliteClient.getAccountHash()))
-                    .setOverallExperience(runeliteClient.getOverallExperience())
-                    .setAttackExperience(runeliteClient.getSkillExperience(Skill.ATTACK))
-                    .setDefenceExperience(runeliteClient.getSkillExperience(Skill.DEFENCE))
-                    .setStrengthExperience(runeliteClient.getSkillExperience(Skill.STRENGTH))
-                    .setHitpointsExperience(runeliteClient.getSkillExperience(Skill.HITPOINTS))
-                    .setRangedExperience(runeliteClient.getSkillExperience(Skill.RANGED))
-                    .setPrayerExperience(runeliteClient.getSkillExperience(Skill.PRAYER))
-                    .setMagicExperience(runeliteClient.getSkillExperience(Skill.MAGIC));
-            gameStateBuilder.setPlayerInfo(playerInfoBuilder);
+            io.blert.json.GameState.PlayerInfo playerInfo = new io.blert.json.GameState.PlayerInfo();
+            playerInfo.username = localPlayer.getName();
+            playerInfo.accountHash = Long.toString(runeliteClient.getAccountHash());
+            playerInfo.overallExperience = runeliteClient.getOverallExperience();
+            playerInfo.attackExperience = runeliteClient.getSkillExperience(Skill.ATTACK);
+            playerInfo.defenceExperience = runeliteClient.getSkillExperience(Skill.DEFENCE);
+            playerInfo.strengthExperience = runeliteClient.getSkillExperience(Skill.STRENGTH);
+            playerInfo.hitpointsExperience = runeliteClient.getSkillExperience(Skill.HITPOINTS);
+            playerInfo.rangedExperience = runeliteClient.getSkillExperience(Skill.RANGED);
+            playerInfo.prayerExperience = runeliteClient.getSkillExperience(Skill.PRAYER);
+            playerInfo.magicExperience = runeliteClient.getSkillExperience(Skill.MAGIC);
+            gameStateJson.playerInfo = playerInfo;
         }
 
-        ServerMessage message = ServerMessage.newBuilder()
-                .setType(ServerMessage.Type.GAME_STATE)
-                .setGameState(gameStateBuilder)
-                .build();
-        webSocketClient.sendMessage(message.toByteArray());
+        ServerMessage message = new ServerMessage();
+        message.type = ServerMessage.TYPE_GAME_STATE;
+        message.gameState = gameStateJson;
+        webSocketClient.sendTextMessage(gson.toJson(message));
 
         apiKeyUsernameMismatch = false;
     }
 
-    private void handleProtoMessage(byte[] message) {
+    private void handleJsonMessage(String messageText) {
         ServerMessage serverMessage;
         try {
-            serverMessage = ServerMessage.parseFrom(message);
-        } catch (InvalidProtocolBufferException e) {
-            log.error("Failed to parse protobuf message", e);
+            serverMessage = gson.fromJson(messageText, ServerMessage.class);
+        } catch (Exception e) {
+            log.error("Failed to parse JSON message", e);
             return;
         }
 
-        switch (serverMessage.getType()) {
-            case PING:
+        switch (serverMessage.type) {
+            case ServerMessage.TYPE_PING:
                 sendPong();
                 log.debug("Received heartbeat ping from server; responding with pong");
                 break;
 
-            case ERROR:
+            case ServerMessage.TYPE_ERROR:
                 handleServerError(serverMessage);
                 break;
 
-            case CONNECTION_RESPONSE:
+            case ServerMessage.TYPE_CONNECTION_RESPONSE:
                 serverShutdownTime = null;
                 plugin.getSidePanel().setShutdownTime(null);
 
-                if (serverMessage.hasUser()) {
+                if (serverMessage.user != null) {
                     plugin.getSidePanel().updateConnectionState(
                             BlertPluginPanel.ConnectionState.CONNECTED,
-                            serverMessage.getUser().getName()
+                            serverMessage.user.name
                     );
                     sendRaidHistoryRequest();
                 } else {
@@ -474,16 +466,17 @@ public class WebSocketEventHandler implements EventHandler {
                 }
                 break;
 
-            case HISTORY_RESPONSE:
-                plugin.getSidePanel().setRecentRecordings(serverMessage.getRecentRecordingsList());
+            case ServerMessage.TYPE_HISTORY_RESPONSE:
+                plugin.getSidePanel().setRecentRecordings(serverMessage.recentRecordings);
                 break;
 
-            case CHALLENGE_START_RESPONSE:
+            case ServerMessage.TYPE_CHALLENGE_START_RESPONSE:
                 handleChallengeStartResponse(serverMessage);
                 break;
 
-            case CHALLENGE_END_RESPONSE:
-                if (status != Status.CHALLENGE_ENDING || serverMessage.getRequestId() != lastRequestId) {
+            case ServerMessage.TYPE_CHALLENGE_END_RESPONSE:
+                if (status != Status.CHALLENGE_ENDING || serverMessage.requestId == null ||
+                        serverMessage.requestId != lastRequestId) {
                     log.warn("Received unexpected CHALLENGE_END_RESPONSE from server");
                     return;
                 }
@@ -499,109 +492,77 @@ public class WebSocketEventHandler implements EventHandler {
 
                 break;
 
-            case SERVER_STATUS: {
-                var serverStatus = serverMessage.getServerStatus();
-                switch (serverStatus.getStatus()) {
-                    case SHUTDOWN_PENDING: {
-                        var shutdownTime = serverStatus.getShutdownTime();
-                        serverShutdownTime = Instant.ofEpochSecond(shutdownTime.getSeconds(), shutdownTime.getNanos());
-                        Duration timeUntilShutdown = Duration.between(Instant.now(), serverShutdownTime);
-                        plugin.getSidePanel().setShutdownTime(serverShutdownTime);
-
-                        String shutdownMessage = String.format(
-                                "Blert's servers will go offline for maintenance in %s.<br>Visit Blert's Discord server for status updates.",
-                                DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss")
-                        );
-
-                        sendGameMessage(ChatMessageType.BROADCAST, shutdownMessage);
-                        break;
-                    }
-
-                    case SHUTDOWN_IMMINENT: {
-                        reset();
-                        protoEventHandler.flushEventsUpTo(currentTick);
-                        closeWebsocketClient();
-                        break;
-                    }
-
-                    case SHUTDOWN_CANCELED: {
-                        serverShutdownTime = null;
-                        plugin.getSidePanel().setShutdownTime(null);
-                        sendGameMessage(
-                                ChatMessageType.BROADCAST,
-                                "The scheduled Blert maintenance has been canceled. You may continue to record PvM challenges!"
-                        );
-                        break;
-                    }
-
-                    case UNRECOGNIZED:
-                        log.error("Received unrecognized server status from server: {}", serverStatus.getStatus());
-                        break;
-
-                    default:
-                        break;
+            case ServerMessage.TYPE_SERVER_STATUS: {
+                var serverStatus = serverMessage.serverStatus;
+                if (serverStatus != null) {
+                    handleServerStatus(serverStatus);
                 }
                 break;
             }
 
-            case PLAYER_STATE:
+            case ServerMessage.TYPE_PLAYER_STATE:
                 break;
 
-            case GAME_STATE_REQUEST:
+            case ServerMessage.TYPE_GAME_STATE_REQUEST:
                 updateGameState(runeliteClient.getGameState());
                 break;
 
-            case ATTACK_DEFINITIONS:
-                plugin.getAttackRegistry().updateFromServer(
-                        serverMessage.getAttackDefinitionsList()
-                                .stream()
-                                .map(AttackDefinition::fromProto)
-                                .collect(Collectors.toList())
-                );
+            case ServerMessage.TYPE_ATTACK_DEFINITIONS:
+                if (serverMessage.attackDefinitions != null) {
+                    plugin.getAttackRegistry().updateFromServer(
+                            serverMessage.attackDefinitions.stream()
+                                    .map(io.blert.json.AttackDefinition::toCore)
+                                    .collect(Collectors.toList())
+                    );
+                }
                 break;
 
-            case SPELL_DEFINITIONS:
-                plugin.getSpellRegistry().updateFromServer(
-                        serverMessage.getSpellDefinitionsList()
-                                .stream()
-                                .map(SpellDefinition::fromProto)
-                                .collect(Collectors.toList())
-                );
+            case ServerMessage.TYPE_SPELL_DEFINITIONS:
+                if (serverMessage.spellDefinitions != null) {
+                    plugin.getSpellRegistry().updateFromServer(
+                            serverMessage.spellDefinitions.stream()
+                                    .map(io.blert.json.SpellDefinition::toCore)
+                                    .collect(Collectors.toList())
+                    );
+                }
                 break;
 
-            case CHALLENGE_STATE_CONFIRMATION:
+            case ServerMessage.TYPE_CHALLENGE_STATE_CONFIRMATION:
                 handleChallengeStateConfirmation(serverMessage);
                 break;
 
-            case PONG:
-            case HISTORY_REQUEST:
-            case EVENT_STREAM:
-            case GAME_STATE:
-                log.warn("Received unexpected protobuf message from server: {}", serverMessage.getType());
+            case ServerMessage.TYPE_PONG:
+            case ServerMessage.TYPE_HISTORY_REQUEST:
+            case ServerMessage.TYPE_EVENT_STREAM:
+            case ServerMessage.TYPE_GAME_STATE:
+                log.warn("Received unexpected message from server: type={}", serverMessage.type);
                 break;
 
-            case UNRECOGNIZED:
-                log.warn("Received unrecognized protobuf message from server");
+            default:
+                log.warn("Received unrecognized message from server: type={}", serverMessage.type);
                 break;
         }
     }
 
     private synchronized void handleServerError(ServerMessage message) {
-        ServerMessage.Error error = message.getError();
+        ErrorData error = message.error;
+        if (error == null) {
+            return;
+        }
 
-        switch (error.getType()) {
-            case BAD_REQUEST:
+        switch (error.type) {
+            case ErrorData.TYPE_BAD_REQUEST:
                 // TODO(frolv): Implement.
                 break;
 
-            case UNIMPLEMENTED:
+            case ErrorData.TYPE_UNIMPLEMENTED:
                 // TODO(frolv): Implement.
                 break;
 
-            case USERNAME_MISMATCH:
+            case ErrorData.TYPE_USERNAME_MISMATCH:
                 sendGameMessage(
                         ChatMessageType.GAMEMESSAGE,
-                        "<col=ef1020>This Blert API key is linked to the OSRS account " + error.getUsername() +
+                        "<col=ef1020>This Blert API key is linked to the OSRS account " + error.username +
                                 ". If you changed your display name, please go update it on the Blert website.</col>");
                 apiKeyUsernameMismatch = true;
                 // Abandon any pending challenge start since this account can't record.
@@ -610,13 +571,13 @@ public class WebSocketEventHandler implements EventHandler {
                 }
                 break;
 
-            case UNAUTHENTICATED:
+            case ErrorData.TYPE_UNAUTHENTICATED:
                 log.info("Disconnected from server due to authentication failure");
                 closeWebsocketClient();
                 break;
 
-            case CHALLENGE_RECORDING_ENDED:
-                if (challengeId == null || !challengeId.equals(message.getActiveChallengeId())) {
+            case ErrorData.TYPE_CHALLENGE_RECORDING_ENDED:
+                if (challengeId == null || !challengeId.equals(message.activeChallengeId)) {
                     break;
                 }
 
@@ -626,40 +587,39 @@ public class WebSocketEventHandler implements EventHandler {
                 }
                 break;
 
-            case UNKNOWN:
-            case UNRECOGNIZED:
-                log.error("Received unrecognized server error {}", error.getTypeValue());
+            case ErrorData.TYPE_UNKNOWN:
+            default:
+                log.error("Received unrecognized server error type={}", error.type);
                 break;
         }
     }
 
     private void handleChallengeStartResponse(ServerMessage serverMessage) {
-        if (status != Status.CHALLENGE_STARTING || serverMessage.getRequestId() != lastRequestId) {
+        if (status != Status.CHALLENGE_STARTING ||
+                serverMessage.requestId == null ||
+                serverMessage.requestId != lastRequestId) {
             log.warn("Received unexpected CHALLENGE_START_RESPONSE from server");
             return;
         }
 
-        if (!serverMessage.hasActiveChallengeId()) {
+        if (Strings.isNullOrEmpty(serverMessage.activeChallengeId)) {
             log.error("Failed to start challenge");
-            protoEventHandler.setChallengeId(null);
+            eventBuffer.setChallengeId(null);
             currentChallenge = null;
             challengeId = null;
             currentStartAttempt = null;
             setStatus(Status.IDLE);
 
-            if (serverMessage.hasError()) {
-                var error = serverMessage.getError();
-                if (error.hasMessage()) {
-                    sendGameMessage(ChatMessageType.GAMEMESSAGE, "<col=ef1020>[Blert] " + error.getMessage() + "</col>");
-                }
+            if (serverMessage.error != null && serverMessage.error.message != null) {
+                sendGameMessage(ChatMessageType.GAMEMESSAGE, "<col=ef1020>[Blert] " + serverMessage.error.message + "</col>");
             }
             return;
         }
 
-        challengeId = serverMessage.getActiveChallengeId();
+        challengeId = serverMessage.activeChallengeId;
 
-        // Stamp all buffered proto events with the challenge ID.
-        protoEventHandler.setChallengeId(challengeId);
+        // Stamp all buffered events with the challenge ID.
+        eventBuffer.setChallengeId(challengeId);
 
         // Capture and clear the start attempt before processing queued events.
         ChallengeStartAttempt attempt = currentStartAttempt;
@@ -667,9 +627,9 @@ public class WebSocketEventHandler implements EventHandler {
 
         setStatus(Status.CHALLENGE_ACTIVE);
 
-        // Flush any buffered proto events (now that they have the challenge ID).
-        if (protoEventHandler.hasEvents()) {
-            sendEvents(protoEventHandler.flushEventsUpTo(currentTick));
+        // Flush any buffered events (now that they have the challenge ID).
+        if (eventBuffer.hasEvents()) {
+            sendEvents(eventBuffer.flushEventsUpTo(currentTick));
         }
 
         // Process any queued STAGE_UPDATE and CHALLENGE_UPDATE events.
@@ -683,7 +643,7 @@ public class WebSocketEventHandler implements EventHandler {
                         updateChallenge((ChallengeUpdateEvent) qe.event, null);
                         break;
                     default:
-                        // Other event types were already buffered in protoEventHandler.
+                        // Other event types were already buffered in eventBuffer.
                         break;
                 }
             }
@@ -691,11 +651,55 @@ public class WebSocketEventHandler implements EventHandler {
             // If the challenge ended while waiting for the start response, process it now.
             if (attempt.pendingEndEvent != null) {
                 log.debug("Processing queued challenge end event");
-                if (protoEventHandler.hasEvents()) {
-                    sendEvents(protoEventHandler.flushEventsUpTo(currentTick));
+                if (eventBuffer.hasEvents()) {
+                    sendEvents(eventBuffer.flushEventsUpTo(currentTick));
                 }
                 endChallenge(attempt.pendingEndEvent);
             }
+        }
+    }
+
+    private void handleServerStatus(@NonNull ServerStatus serverStatus) {
+        switch (serverStatus.status) {
+            case ServerStatus.STATUS_SHUTDOWN_PENDING: {
+                if (serverStatus.shutdownTime != null) {
+                    serverShutdownTime = Instant.ofEpochSecond(
+                            serverStatus.shutdownTime.seconds,
+                            serverStatus.shutdownTime.nanos
+                    );
+                    Duration timeUntilShutdown = Duration.between(Instant.now(), serverShutdownTime);
+                    plugin.getSidePanel().setShutdownTime(serverShutdownTime);
+
+                    String shutdownMessage = String.format(
+                            "Blert's servers will go offline for maintenance in %s." +
+                            "<br>Visit Blert's Discord server for status updates.",
+                            DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss")
+                    );
+
+                    sendGameMessage(ChatMessageType.BROADCAST, shutdownMessage);
+                }
+                break;
+            }
+
+            case ServerStatus.STATUS_SHUTDOWN_IMMINENT: {
+                reset();
+                eventBuffer.flushEventsUpTo(currentTick);
+                closeWebsocketClient();
+                break;
+            }
+
+            case ServerStatus.STATUS_SHUTDOWN_CANCELED: {
+                serverShutdownTime = null;
+                plugin.getSidePanel().setShutdownTime(null);
+                sendGameMessage(
+                        ChatMessageType.BROADCAST,
+                        "The scheduled Blert maintenance has been canceled. You may continue to record PvM challenges!"
+                );
+                break;
+            }
+
+            default:
+                break;
         }
     }
 
@@ -724,37 +728,42 @@ public class WebSocketEventHandler implements EventHandler {
         plugin.getSidePanel().setRecentRecordings(null);
     }
 
-    private void sendEvents(List<io.blert.proto.Event> events) {
+    private void sendEvents(List<io.blert.json.Event> events) {
         if (!webSocketClient.isOpen() || events.isEmpty()) {
             return;
         }
 
-        ServerMessage.Builder message = ServerMessage.newBuilder()
-                .setType(ServerMessage.Type.EVENT_STREAM)
-                .setActiveChallengeId(events.get(0).getChallengeId());
+        ServerMessage message = new ServerMessage();
+        message.type = ServerMessage.TYPE_EVENT_STREAM;
+        message.activeChallengeId = events.get(0).challengeId;
+        message.challengeEvents = new ArrayList<>();
+
         int ignoredEvents = 0;
 
-        for (io.blert.proto.Event event : events) {
-            if (event.getChallengeId().isEmpty()) {
+        for (io.blert.json.Event event : events) {
+            if (Strings.isNullOrEmpty(event.challengeId)) {
                 ignoredEvents++;
                 continue;
             }
 
-            if (event.getChallengeId().equals(message.getActiveChallengeId())) {
-                message.addChallengeEvents(event.toBuilder().clearChallengeId().build());
-            } else {
-                if (message.getChallengeEventsCount() > 0) {
-                    webSocketClient.sendMessage(message.build().toByteArray());
+            if (!event.challengeId.equals(message.activeChallengeId)) {
+                if (!message.challengeEvents.isEmpty()) {
+                    webSocketClient.sendTextMessage(gson.toJson(message));
                 }
 
-                message = ServerMessage.newBuilder()
-                        .setType(ServerMessage.Type.EVENT_STREAM)
-                        .setActiveChallengeId(event.getChallengeId());
+                message = new ServerMessage();
+                message.type = ServerMessage.TYPE_EVENT_STREAM;
+                message.activeChallengeId = event.challengeId;
+                message.challengeEvents = new ArrayList<>();
             }
+
+            // Clear the challengeId from individual events since it's set at the message level.
+            event.challengeId = null;
+            message.challengeEvents.add(event);
         }
 
-        if (message.getChallengeEventsCount() > 0) {
-            webSocketClient.sendMessage(message.build().toByteArray());
+        if (!message.challengeEvents.isEmpty()) {
+            webSocketClient.sendTextMessage(gson.toJson(message));
         }
 
         if (ignoredEvents > 0) {
@@ -763,14 +772,16 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private void sendPong() {
-        ServerMessage message = ServerMessage.newBuilder().setType(ServerMessage.Type.PONG).build();
-        webSocketClient.sendMessage(message.toByteArray());
+        ServerMessage message = new ServerMessage();
+        message.type = ServerMessage.TYPE_PONG;
+        webSocketClient.sendTextMessage(gson.toJson(message));
     }
 
     private void sendRaidHistoryRequest() {
         if (webSocketClient.isOpen()) {
-            ServerMessage message = ServerMessage.newBuilder().setType(ServerMessage.Type.HISTORY_REQUEST).build();
-            webSocketClient.sendMessage(message.toByteArray());
+            ServerMessage message = new ServerMessage();
+            message.type = ServerMessage.TYPE_HISTORY_REQUEST;
+            webSocketClient.sendTextMessage(gson.toJson(message));
         }
     }
 
@@ -778,7 +789,7 @@ public class WebSocketEventHandler implements EventHandler {
         currentChallenge = null;
         challengeId = null;
         currentStartAttempt = null;
-        protoEventHandler.setChallengeId(null);
+        eventBuffer.setChallengeId(null);
         setStatus(Status.IDLE);
     }
 
@@ -790,10 +801,7 @@ public class WebSocketEventHandler implements EventHandler {
 
     private void setStatus(Status status) {
         this.status = status;
-        var challenge = currentChallenge != null
-                ? currentChallenge.toProto()
-                : io.blert.proto.Challenge.UNKNOWN_CHALLENGE;
-        plugin.getSidePanel().updateChallengeStatus(status, challenge, challengeId);
+        plugin.getSidePanel().updateChallengeStatus(status, currentChallenge, challengeId);
     }
 
     private boolean pendingServerShutdown() {
@@ -822,30 +830,35 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private void handleChallengeStateConfirmation(ServerMessage message) {
-        ServerMessage.ChallengeStateConfirmation stateToConfirm = message.getChallengeStateConfirmation();
+        ChallengeStateConfirmation stateToConfirm = message.challengeStateConfirmation;
+        if (stateToConfirm == null) {
+            return;
+        }
+
         Player player = runeliteClient.getLocalPlayer();
         if (player == null) {
             return;
         }
 
-        if (message.getActiveChallengeId().isEmpty()) {
+        if (Strings.isNullOrEmpty(message.activeChallengeId)) {
             log.warn("Received confirmation request with empty challenge ID");
             return;
         }
 
         String username = player.getName() != null ? player.getName().toLowerCase() : null;
-        if (!Objects.equals(stateToConfirm.getUsername(), username)) {
+        if (!Objects.equals(stateToConfirm.username, username)) {
             log.warn("Received confirmation request for {} but current player is {}",
-                    stateToConfirm.getUsername(), username);
+                    stateToConfirm.username, username);
             return;
         }
 
         if (plugin.getActiveChallenge() == null) {
-            ServerMessage.Builder response = ServerMessage.newBuilder()
-                    .setType(ServerMessage.Type.CHALLENGE_STATE_CONFIRMATION)
-                    .setActiveChallengeId(message.getActiveChallengeId())
-                    .setChallengeStateConfirmation(ServerMessage.ChallengeStateConfirmation.newBuilder().setIsValid(false));
-            webSocketClient.sendMessage(response.build().toByteArray());
+            ServerMessage response = new ServerMessage();
+            response.type = ServerMessage.TYPE_CHALLENGE_STATE_CONFIRMATION;
+            response.activeChallengeId = message.activeChallengeId;
+            response.challengeStateConfirmation = new ChallengeStateConfirmation();
+            response.challengeStateConfirmation.isValid = false;
+            webSocketClient.sendTextMessage(gson.toJson(response));
             return;
         }
 
@@ -853,15 +866,15 @@ public class WebSocketEventHandler implements EventHandler {
 
         // Getting the challenge status is a blocking operation, so run it in a separate thread.
         new Thread(() -> {
-            ServerMessage.Builder response = ServerMessage.newBuilder()
-                    .setType(ServerMessage.Type.CHALLENGE_STATE_CONFIRMATION)
-                    .setActiveChallengeId(message.getActiveChallengeId());
+            ServerMessage response = new ServerMessage();
+            response.type = ServerMessage.TYPE_CHALLENGE_STATE_CONFIRMATION;
+            response.activeChallengeId = message.activeChallengeId;
 
             RecordableChallenge activeChallenge = plugin.getActiveChallenge();
             if (activeChallenge == null) {
-                response.setChallengeStateConfirmation(
-                        ServerMessage.ChallengeStateConfirmation.newBuilder().setIsValid(false));
-                webSocketClient.sendMessage(response.build().toByteArray());
+                response.challengeStateConfirmation = new ChallengeStateConfirmation();
+                response.challengeStateConfirmation.isValid = false;
+                webSocketClient.sendTextMessage(gson.toJson(response));
                 return;
             }
 
@@ -873,37 +886,36 @@ public class WebSocketEventHandler implements EventHandler {
                 log.error("Failed to get challenge status", e);
             }
 
-            ServerMessage.ChallengeStateConfirmation.Builder confirmationBuilder =
-                    ServerMessage.ChallengeStateConfirmation.newBuilder().setUsername(username);
+            ChallengeStateConfirmation confirmationBuilder = new ChallengeStateConfirmation();
+            confirmationBuilder.username = username;
 
             boolean isValid = false;
 
             if (status != null) {
                 Set<String> party = status.getParty().stream().map(String::toLowerCase).collect(Collectors.toSet());
-                Set<String> partyToConfirm = stateToConfirm.getPartyList()
-                        .stream()
-                        .map(String::toLowerCase)
-                        .collect(Collectors.toSet());
+                Set<String> partyToConfirm = stateToConfirm.party != null
+                        ? stateToConfirm.party.stream().map(String::toLowerCase).collect(Collectors.toSet())
+                        : Collections.emptySet();
 
-                isValid = status.getChallenge().toProto().equals(stateToConfirm.getChallenge()) &&
+                isValid = status.getChallenge().getId() == stateToConfirm.challenge &&
                         status.getStage() != null &&
-                        status.getStage().toProto().getNumber() >= stateToConfirm.getStage().getNumber() &&
+                        status.getStage().getId() >= stateToConfirm.stage &&
                         party.equals(partyToConfirm);
 
                 if (!party.contains(username)) {
-                    confirmationBuilder.setSpectator(true);
+                    confirmationBuilder.spectator = true;
                 }
             }
 
-            confirmationBuilder.setIsValid(isValid);
-            response.setChallengeStateConfirmation(confirmationBuilder);
+            confirmationBuilder.isValid = isValid;
+            response.challengeStateConfirmation = confirmationBuilder;
 
             synchronized (self) {
-                self.webSocketClient.sendMessage(response.build().toByteArray());
+                self.webSocketClient.sendTextMessage(gson.toJson(response));
 
                 if (isValid) {
-                    self.challengeId = message.getActiveChallengeId();
-                    self.protoEventHandler.setChallengeId(self.challengeId);
+                    self.challengeId = message.activeChallengeId;
+                    self.eventBuffer.setChallengeId(self.challengeId);
                     self.setStatus(Status.CHALLENGE_ACTIVE);
                     log.debug("Confirmed challenge state; rejoining challenge {}", self.challengeId);
                 }
@@ -922,16 +934,16 @@ public class WebSocketEventHandler implements EventHandler {
         return id;
     }
 
-    private static ChallengeUpdate.StageUpdate.Status translateStageStatus(StageUpdateEvent.Status status) {
+    private static int translateStageStatus(StageUpdateEvent.Status status) {
         switch (status) {
             case ENTERED:
-                return ChallengeUpdate.StageUpdate.Status.ENTERED;
+                return ChallengeUpdate.StageUpdate.STATUS_ENTERED;
             case STARTED:
-                return ChallengeUpdate.StageUpdate.Status.STARTED;
+                return ChallengeUpdate.StageUpdate.STATUS_STARTED;
             case COMPLETED:
-                return ChallengeUpdate.StageUpdate.Status.COMPLETED;
+                return ChallengeUpdate.StageUpdate.STATUS_COMPLETED;
             case WIPED:
-                return ChallengeUpdate.StageUpdate.Status.WIPED;
+                return ChallengeUpdate.StageUpdate.STATUS_WIPED;
             default:
                 throw new NotImplementedException("Stage status translation not implemented for " + status);
         }

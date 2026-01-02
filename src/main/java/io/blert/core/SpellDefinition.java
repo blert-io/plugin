@@ -135,72 +135,11 @@ public class SpellDefinition {
      */
     public static List<SpellDefinition> loadFromJson(InputStream inputStream) throws IOException {
         Gson gson = new Gson();
-        Type listType = new TypeToken<List<JsonSpellDefinition>>() {
+        Type listType = new TypeToken<List<io.blert.json.SpellDefinition>>() {
         }.getType();
         try (Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            List<JsonSpellDefinition> jsonDefs = gson.fromJson(r, listType);
-            return jsonDefs.stream().map(JsonSpellDefinition::toSpellDefinition).collect(Collectors.toList());
+            List<io.blert.json.SpellDefinition> jsonDefs = gson.fromJson(r, listType);
+            return jsonDefs.stream().map(io.blert.json.SpellDefinition::toCore).collect(Collectors.toList());
         }
-    }
-
-    /**
-     * Parses a spell definition from a protobuf message.
-     */
-    public static SpellDefinition fromProto(io.blert.proto.SpellDefinition proto) {
-        List<Graphic> graphics = proto.getGraphicsList().stream()
-                .map(g -> new Graphic(g.getId(), g.getDurationTicks(), g.getMaxFrame()))
-                .collect(Collectors.toList());
-        List<Graphic> targetGraphics = proto.getTargetGraphicsList().stream()
-                .map(g -> new Graphic(g.getId(), g.getDurationTicks(), g.getMaxFrame()))
-                .collect(Collectors.toList());
-
-        return new SpellDefinition(
-                proto.getIdValue(),
-                proto.getName(),
-                proto.getAnimationIdsList().stream().mapToInt(Integer::intValue).toArray(),
-                graphics,
-                targetGraphics,
-                proto.getStallTicks()
-        );
-    }
-
-    private static class JsonSpellDefinition {
-        int id;
-        String name;
-        int[] animationIds;
-        JsonGraphic[] graphics;
-        JsonGraphic[] targetGraphics;
-        int stallTicks;
-
-        SpellDefinition toSpellDefinition() {
-            List<Graphic> graphicList = parseGraphics(graphics);
-            List<Graphic> targetGraphicList = parseGraphics(targetGraphics);
-
-            return new SpellDefinition(
-                    id,
-                    name,
-                    animationIds != null ? animationIds : new int[0],
-                    graphicList,
-                    targetGraphicList,
-                    stallTicks
-            );
-        }
-
-        private static List<Graphic> parseGraphics(JsonGraphic[] jsonGraphics) {
-            if (jsonGraphics == null || jsonGraphics.length == 0) {
-                return Collections.emptyList();
-            }
-            List<Graphic> result = new java.util.ArrayList<>();
-            for (JsonGraphic jg : jsonGraphics) {
-                result.add(new Graphic(jg.id, jg.durationTicks, jg.maxFrame));
-            }
-            return result;
-        }
-    }
-
-    private static class JsonGraphic {
-        int id;
-        int durationTicks;
-        int maxFrame;
     }
 }
