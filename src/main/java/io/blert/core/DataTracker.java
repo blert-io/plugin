@@ -607,6 +607,10 @@ public abstract class DataTracker {
      * Sends an {@link NpcEvent} about an NPC in the room.
      */
     protected void sendNpcUpdate(TrackedNpc trackedNpc) {
+        if (trackedNpc.getNpc().getId() == -1) {
+            return;
+        }
+
         final int tick = getTick();
         WorldPoint point = getWorldLocation(trackedNpc);
 

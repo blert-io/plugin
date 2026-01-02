@@ -531,7 +531,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                             // ticks total.
                             // TODO(frolv): `unidentifiedVerzikAttackTick` is deliberately not set here, as the green
                             // ball projectile seems to hide the regular attack projectiles. Investigate this further.
-                            dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.VERZIK_P3_BALL, verzik));
+                            dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_VERZIK_P3_BALL, verzik));
                             nextSpecial = nextSpecial.next();
                             verzikAttacksUntilSpecial += 1;
                             nextVerzikAttackTick += P3_GREEN_BALL_TICK_DELAY - attackSpeed();

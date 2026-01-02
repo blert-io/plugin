@@ -23,60 +23,81 @@
 
 package io.blert.core;
 
+import lombok.Getter;
+
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
+
 public enum Stage {
-    TOB_MAIDEN(io.blert.proto.Stage.TOB_MAIDEN),
-    TOB_BLOAT(io.blert.proto.Stage.TOB_BLOAT),
-    TOB_NYLOCAS(io.blert.proto.Stage.TOB_NYLOCAS),
-    TOB_SOTETSEG(io.blert.proto.Stage.TOB_SOTETSEG),
-    TOB_XARPUS(io.blert.proto.Stage.TOB_XARPUS),
-    TOB_VERZIK(io.blert.proto.Stage.TOB_VERZIK),
+    TOB_MAIDEN(10),
+    TOB_BLOAT(11),
+    TOB_NYLOCAS(12),
+    TOB_SOTETSEG(13),
+    TOB_XARPUS(14),
+    TOB_VERZIK(15),
 
-    COX_TEKTON(io.blert.proto.Stage.COX_TEKTON),
-    COX_CRABS(io.blert.proto.Stage.COX_CRABS),
-    COX_ICE_DEMON(io.blert.proto.Stage.COX_ICE_DEMON),
-    COX_SHAMANS(io.blert.proto.Stage.COX_SHAMANS),
-    COX_VANGUARDS(io.blert.proto.Stage.COX_VANGUARDS),
-    COX_THIEVING(io.blert.proto.Stage.COX_THIEVING),
-    COX_VESPULA(io.blert.proto.Stage.COX_VESPULA),
-    COX_TIGHTROPE(io.blert.proto.Stage.COX_TIGHTROPE),
-    COX_GUARDIANS(io.blert.proto.Stage.COX_GUARDIANS),
-    COX_VASA(io.blert.proto.Stage.COX_VASA),
-    COX_MYSTICS(io.blert.proto.Stage.COX_MYSTICS),
-    COX_MUTTADILE(io.blert.proto.Stage.COX_MUTTADILE),
-    COX_OLM(io.blert.proto.Stage.COX_OLM),
+    COX_TEKTON(20),
+    COX_CRABS(21),
+    COX_ICE_DEMON(22),
+    COX_SHAMANS(23),
+    COX_VANGUARDS(24),
+    COX_THIEVING(25),
+    COX_VESPULA(26),
+    COX_TIGHTROPE(27),
+    COX_GUARDIANS(28),
+    COX_VASA(29),
+    COX_MYSTICS(30),
+    COX_MUTTADILE(31),
+    COX_OLM(32),
 
-    TOA_APMEKEN(io.blert.proto.Stage.TOA_APMEKEN),
-    TOA_BABA(io.blert.proto.Stage.TOA_BABA),
-    TOA_SCABARAS(io.blert.proto.Stage.TOA_SCABARAS),
-    TOA_KEPHRI(io.blert.proto.Stage.TOA_KEPHRI),
-    TOA_HET(io.blert.proto.Stage.TOA_HET),
-    TOA_AKKHA(io.blert.proto.Stage.TOA_AKKHA),
-    TOA_CRONDIS(io.blert.proto.Stage.TOA_CRONDIS),
-    TOA_ZEBAK(io.blert.proto.Stage.TOA_ZEBAK),
-    TOA_WARDENS(io.blert.proto.Stage.TOA_WARDENS),
+    TOA_APMEKEN(40),
+    TOA_BABA(41),
+    TOA_SCABARAS(42),
+    TOA_KEPHRI(43),
+    TOA_HET(44),
+    TOA_AKKHA(45),
+    TOA_CRONDIS(46),
+    TOA_ZEBAK(47),
+    TOA_WARDENS(48),
 
-    COLOSSEUM_WAVE_1(io.blert.proto.Stage.COLOSSEUM_WAVE_1),
-    COLOSSEUM_WAVE_2(io.blert.proto.Stage.COLOSSEUM_WAVE_2),
-    COLOSSEUM_WAVE_3(io.blert.proto.Stage.COLOSSEUM_WAVE_3),
-    COLOSSEUM_WAVE_4(io.blert.proto.Stage.COLOSSEUM_WAVE_4),
-    COLOSSEUM_WAVE_5(io.blert.proto.Stage.COLOSSEUM_WAVE_5),
-    COLOSSEUM_WAVE_6(io.blert.proto.Stage.COLOSSEUM_WAVE_6),
-    COLOSSEUM_WAVE_7(io.blert.proto.Stage.COLOSSEUM_WAVE_7),
-    COLOSSEUM_WAVE_8(io.blert.proto.Stage.COLOSSEUM_WAVE_8),
-    COLOSSEUM_WAVE_9(io.blert.proto.Stage.COLOSSEUM_WAVE_9),
-    COLOSSEUM_WAVE_10(io.blert.proto.Stage.COLOSSEUM_WAVE_10),
-    COLOSSEUM_WAVE_11(io.blert.proto.Stage.COLOSSEUM_WAVE_11),
-    COLOSSEUM_WAVE_12(io.blert.proto.Stage.COLOSSEUM_WAVE_12),
-
+    COLOSSEUM_WAVE_1(100),
+    COLOSSEUM_WAVE_2(101),
+    COLOSSEUM_WAVE_3(102),
+    COLOSSEUM_WAVE_4(103),
+    COLOSSEUM_WAVE_5(104),
+    COLOSSEUM_WAVE_6(105),
+    COLOSSEUM_WAVE_7(106),
+    COLOSSEUM_WAVE_8(107),
+    COLOSSEUM_WAVE_9(108),
+    COLOSSEUM_WAVE_10(109),
+    COLOSSEUM_WAVE_11(110),
+    COLOSSEUM_WAVE_12(111),
     ;
 
-    private final io.blert.proto.Stage protoValue;
+    @Getter
+    private final int id;
 
-    Stage(io.blert.proto.Stage protoValue) {
-        this.protoValue = protoValue;
+    private static final Map<Integer, Stage> ID_MAP = new HashMap<>();
+
+    static {
+        for (Stage stage : values()) {
+            ID_MAP.put(stage.id, stage);
+        }
     }
 
-    public io.blert.proto.Stage toProto() {
-        return protoValue;
+    Stage(int id) {
+        this.id = id;
+    }
+
+    /**
+     * Retrieves the Stage enum constant associated with a specific ID.
+     *
+     * @param stageId The integer ID to look up.
+     * @return The matching Stage, or null if no match is found.
+     */
+    @Nullable
+    public static Stage fromId(int stageId) {
+        return ID_MAP.get(stageId);
     }
 }

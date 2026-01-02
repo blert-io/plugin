@@ -2,7 +2,7 @@
  * Copyright (c) 2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the “Software”), to deal in
+ * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to use,
  * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
  * Software, and to permit persons to whom the Software is furnished to do so,
@@ -11,7 +11,7 @@
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
@@ -23,55 +23,53 @@
 
 package io.blert.core;
 
+import lombok.Getter;
+
 public enum NpcAttack {
-    TOB_MAIDEN_AUTO(io.blert.proto.NpcAttack.TOB_MAIDEN_AUTO),
-    TOB_MAIDEN_BLOOD_THROW(io.blert.proto.NpcAttack.TOB_MAIDEN_BLOOD_THROW),
-    TOB_BLOAT_STOMP(io.blert.proto.NpcAttack.TOB_BLOAT_STOMP),
-    TOB_NYLO_BOSS_MELEE(io.blert.proto.NpcAttack.TOB_NYLO_BOSS_MELEE),
-    TOB_NYLO_BOSS_RANGE(io.blert.proto.NpcAttack.TOB_NYLO_BOSS_RANGE),
-    TOB_NYLO_BOSS_MAGE(io.blert.proto.NpcAttack.TOB_NYLO_BOSS_MAGE),
-    TOB_SOTE_MELEE(io.blert.proto.NpcAttack.TOB_SOTE_MELEE),
-    TOB_SOTE_BALL(io.blert.proto.NpcAttack.TOB_SOTE_BALL),
-    TOB_SOTE_DEATH_BALL(io.blert.proto.NpcAttack.TOB_SOTE_DEATH_BALL),
-    TOB_XARPUS_SPIT(io.blert.proto.NpcAttack.TOB_XARPUS_SPIT),
-    TOB_XARPUS_TURN(io.blert.proto.NpcAttack.TOB_XARPUS_TURN),
-    TOB_VERZIK_P1_AUTO(io.blert.proto.NpcAttack.TOB_VERZIK_P1_AUTO),
-    TOB_VERZIK_P2_BOUNCE(io.blert.proto.NpcAttack.TOB_VERZIK_P2_BOUNCE),
-    TOB_VERZIK_P2_CABBAGE(io.blert.proto.NpcAttack.TOB_VERZIK_P2_CABBAGE),
-    TOB_VERZIK_P2_ZAP(io.blert.proto.NpcAttack.TOB_VERZIK_P2_ZAP),
-    TOB_VERZIK_P2_PURPLE(io.blert.proto.NpcAttack.TOB_VERZIK_P2_PURPLE),
-    TOB_VERZIK_P2_MAGE(io.blert.proto.NpcAttack.TOB_VERZIK_P2_MAGE),
-    TOB_VERZIK_P3_AUTO(io.blert.proto.NpcAttack.TOB_VERZIK_P3_AUTO),
-    TOB_VERZIK_P3_WEBS(io.blert.proto.NpcAttack.TOB_VERZIK_P3_WEBS),
-    TOB_VERZIK_P3_YELLOWS(io.blert.proto.NpcAttack.TOB_VERZIK_P3_YELLOWS),
-    VERZIK_P3_BALL(io.blert.proto.NpcAttack.TOB_VERZIK_P3_BALL),
+    TOB_MAIDEN_AUTO(1),
+    TOB_MAIDEN_BLOOD_THROW(2),
+    TOB_BLOAT_STOMP(3),
+    TOB_NYLO_BOSS_MELEE(4),
+    TOB_NYLO_BOSS_RANGE(5),
+    TOB_NYLO_BOSS_MAGE(6),
+    TOB_SOTE_MELEE(7),
+    TOB_SOTE_BALL(8),
+    TOB_SOTE_DEATH_BALL(9),
+    TOB_XARPUS_SPIT(10),
+    TOB_XARPUS_TURN(11),
+    TOB_VERZIK_P1_AUTO(12),
+    TOB_VERZIK_P2_BOUNCE(13),
+    TOB_VERZIK_P2_CABBAGE(14),
+    TOB_VERZIK_P2_ZAP(15),
+    TOB_VERZIK_P2_PURPLE(16),
+    TOB_VERZIK_P2_MAGE(17),
+    TOB_VERZIK_P3_AUTO(18),
+    TOB_VERZIK_P3_WEBS(22),
+    TOB_VERZIK_P3_YELLOWS(23),
+    TOB_VERZIK_P3_BALL(24),
 
-    COLOSSEUM_BERSERKER_AUTO(io.blert.proto.NpcAttack.COLOSSEUM_BERSERKER_AUTO),
-    COLOSSEUM_SEER_AUTO(io.blert.proto.NpcAttack.COLOSSEUM_SEER_AUTO),
-    COLOSSEUM_ARCHER_AUTO(io.blert.proto.NpcAttack.COLOSSEUM_ARCHER_AUTO),
-    COLOSSEUM_SHAMAN_AUTO(io.blert.proto.NpcAttack.COLOSSEUM_SHAMAN_AUTO),
-    COLOSSEUM_JAGUAR_AUTO(io.blert.proto.NpcAttack.COLOSSEUM_JAGUAR_AUTO),
-    COLOSSEUM_JAVELIN_AUTO(io.blert.proto.NpcAttack.COLOSSEUM_JAVELIN_AUTO),
-    COLOSSEUM_JAVELIN_TOSS(io.blert.proto.NpcAttack.COLOSSEUM_JAVELIN_TOSS),
-    COLOSSEUM_MANTICORE_MAGE(io.blert.proto.NpcAttack.COLOSSEUM_MANTICORE_MAGE),
-    COLOSSEUM_MANTICORE_RANGE(io.blert.proto.NpcAttack.COLOSSEUM_MANTICORE_RANGE),
-    COLOSSEUM_MANTICORE_MELEE(io.blert.proto.NpcAttack.COLOSSEUM_MANTICORE_MELEE),
-    COLOSSEUM_SHOCKWAVE_AUTO(io.blert.proto.NpcAttack.COLOSSEUM_SHOCKWAVE_AUTO),
-    COLOSSEUM_MINOTAUR_AUTO(io.blert.proto.NpcAttack.COLOSSEUM_MINOTAUR_AUTO),
-    COLOSSEUM_HEREDIT_THRUST(io.blert.proto.NpcAttack.COLOSSEUM_HEREDIT_THRUST),
-    COLOSSEUM_HEREDIT_SLAM(io.blert.proto.NpcAttack.COLOSSEUM_HEREDIT_SLAM),
-    COLOSSEUM_HEREDIT_BREAK(io.blert.proto.NpcAttack.COLOSSEUM_HEREDIT_BREAK),
-    COLOSSEUM_HEREDIT_COMBO(io.blert.proto.NpcAttack.COLOSSEUM_HEREDIT_COMBO),
-
+    COLOSSEUM_BERSERKER_AUTO(100),
+    COLOSSEUM_SEER_AUTO(101),
+    COLOSSEUM_ARCHER_AUTO(102),
+    COLOSSEUM_SHAMAN_AUTO(103),
+    COLOSSEUM_JAGUAR_AUTO(104),
+    COLOSSEUM_JAVELIN_AUTO(105),
+    COLOSSEUM_JAVELIN_TOSS(106),
+    COLOSSEUM_MANTICORE_MAGE(107),
+    COLOSSEUM_MANTICORE_RANGE(114),
+    COLOSSEUM_MANTICORE_MELEE(115),
+    COLOSSEUM_SHOCKWAVE_AUTO(108),
+    COLOSSEUM_MINOTAUR_AUTO(109),
+    COLOSSEUM_HEREDIT_THRUST(110),
+    COLOSSEUM_HEREDIT_SLAM(111),
+    COLOSSEUM_HEREDIT_BREAK(112),
+    COLOSSEUM_HEREDIT_COMBO(113),
     ;
 
-    private final io.blert.proto.NpcAttack protoValue;
+    @Getter
+    private final int id;
 
-    NpcAttack(io.blert.proto.NpcAttack protoValue) {
-        this.protoValue = protoValue;
-    }
-
-    public io.blert.proto.NpcAttack toProto() {
-        return protoValue;
+    NpcAttack(int id) {
+        this.id = id;
     }
 }

@@ -25,7 +25,6 @@ package io.blert.core;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import io.blert.proto.PlayerAttack;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -67,29 +66,12 @@ public class AttackDefinition {
         public boolean isWeaponSpecific() {
             return weaponId > 0;
         }
-
-        public static Projectile fromProto(io.blert.proto.AttackDefinition.Projectile proto) {
-            int weaponId = proto.hasWeaponId() ? proto.getWeaponId() : -1;
-            return new Projectile(proto.getId(), proto.getStartCycleOffset(), weaponId);
-        }
     }
 
     public enum Category {
         MELEE,
         RANGED,
         MAGIC;
-
-        public static Category fromProto(io.blert.proto.AttackDefinition.Category proto) {
-            switch (proto) {
-                case RANGED:
-                    return RANGED;
-                case MAGIC:
-                    return MAGIC;
-                case MELEE:
-                default:
-                    return MELEE;
-            }
-        }
     }
 
     /**
@@ -152,13 +134,13 @@ public class AttackDefinition {
     }
 
     /**
-     * Returns whether this attack matches the given proto enum value.
+     * Returns whether this attack matches the given attack ID.
      *
-     * @param proto Enum value.
+     * @param attackId Attack ID.
      * @return True if the attack matches, false otherwise.
      */
-    public boolean is(PlayerAttack proto) {
-        return this.protoId == proto.getNumber();
+    public boolean is(int attackId) {
+        return this.protoId == attackId;
     }
 
     /**
@@ -209,96 +191,15 @@ public class AttackDefinition {
     }
 
     /**
-     * Creates an AttackDefinition from a proto AttackDefinition message.
-     */
-    public static AttackDefinition fromProto(io.blert.proto.AttackDefinition proto) {
-        List<Projectile> projectiles;
-
-        if (proto.getWeaponProjectilesCount() > 0) {
-            projectiles = proto.getWeaponProjectilesList().stream()
-                    .map(Projectile::fromProto)
-                    .collect(Collectors.toList());
-        } else if (proto.hasProjectile()) {
-            projectiles = Collections.singletonList(Projectile.fromProto(proto.getProjectile()));
-        } else {
-            projectiles = Collections.emptyList();
-        }
-
-        return new AttackDefinition(
-                proto.getIdValue(),
-                proto.getName(),
-                proto.getWeaponIdsList().stream().mapToInt(Integer::intValue).toArray(),
-                proto.getAnimationIdsList().stream().mapToInt(Integer::intValue).toArray(),
-                proto.getCooldown(),
-                projectiles,
-                proto.getContinuousAnimation(),
-                Category.fromProto(proto.getCategory())
-        );
-    }
-
-    /**
      * Loads attack definitions from a JSON input stream.
      */
     public static List<AttackDefinition> loadFromJson(InputStream inputStream) throws IOException {
         Gson gson = new Gson();
-        Type listType = new TypeToken<List<JsonAttackDefinition>>() {
+        Type listType = new TypeToken<List<io.blert.json.AttackDefinition>>() {
         }.getType();
         try (Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            List<JsonAttackDefinition> jsonDefs = gson.fromJson(r, listType);
-            return jsonDefs.stream().map(JsonAttackDefinition::toAttackDefinition).collect(Collectors.toList());
-        }
-    }
-
-    private static class JsonAttackDefinition {
-        int protoId;
-        String name;
-        int[] weaponIds;
-        int[] animationIds;
-        int cooldown;
-        JsonProjectile projectile;
-        JsonProjectile[] weaponProjectiles;
-        boolean continuousAnimation;
-        String category;
-
-        private static class JsonProjectile {
-            int id;
-            int startCycleOffset;
-            int weaponId;
-        }
-
-        AttackDefinition toAttackDefinition() {
-            List<Projectile> projectileList;
-
-            if (weaponProjectiles != null && weaponProjectiles.length > 0) {
-                projectileList = new ArrayList<>();
-                for (JsonProjectile jp : weaponProjectiles) {
-                    projectileList.add(new Projectile(jp.id, jp.startCycleOffset, jp.weaponId));
-                }
-            } else if (projectile != null) {
-                projectileList = Collections.singletonList(
-                        new Projectile(projectile.id, projectile.startCycleOffset));
-            } else {
-                projectileList = Collections.emptyList();
-            }
-
-            Category cat = Category.MELEE;
-            if (category != null) {
-                try {
-                    cat = Category.valueOf(category);
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
-
-            return new AttackDefinition(
-                    protoId,
-                    name,
-                    weaponIds != null ? weaponIds : new int[0],
-                    animationIds != null ? animationIds : new int[0],
-                    cooldown,
-                    projectileList,
-                    continuousAnimation,
-                    cat
-            );
+            List<io.blert.json.AttackDefinition> jsonDefs = gson.fromJson(r, listType);
+            return jsonDefs.stream().map(io.blert.json.AttackDefinition::toCore).collect(Collectors.toList());
         }
     }
 }

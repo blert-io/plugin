@@ -2,7 +2,7 @@
  * Copyright (c) 2024 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the “Software”), to deal in
+ * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to use,
  * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
  * Software, and to permit persons to whom the Software is furnished to do so,
@@ -11,7 +11,7 @@
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
@@ -23,54 +23,52 @@
 
 package io.blert.events;
 
-import io.blert.proto.Event;
+import lombok.Getter;
 
 public enum EventType {
-    CHALLENGE_START(null),
-    CHALLENGE_END(null),
-    CHALLENGE_UPDATE(null),
-    STAGE_UPDATE(null),
+    // These events are sent via server messages, so they do not have IDs.
+    CHALLENGE_START(-1),
+    CHALLENGE_END(-1),
+    CHALLENGE_UPDATE(-1),
+    STAGE_UPDATE(-1),
 
-    PLAYER_UPDATE(Event.Type.PLAYER_UPDATE),
-    PLAYER_ATTACK(Event.Type.PLAYER_ATTACK),
-    PLAYER_DEATH(Event.Type.PLAYER_DEATH),
-    NPC_SPAWN(Event.Type.NPC_SPAWN),
-    NPC_UPDATE(Event.Type.NPC_UPDATE),
-    NPC_DEATH(Event.Type.NPC_DEATH),
-    NPC_ATTACK(Event.Type.NPC_ATTACK),
-    PLAYER_SPELL(Event.Type.PLAYER_SPELL),
+    PLAYER_UPDATE(4),
+    PLAYER_ATTACK(5),
+    PLAYER_DEATH(6),
+    NPC_SPAWN(7),
+    NPC_UPDATE(8),
+    NPC_DEATH(9),
+    NPC_ATTACK(10),
+    PLAYER_SPELL(11),
 
-    MAIDEN_CRAB_LEAK(Event.Type.TOB_MAIDEN_CRAB_LEAK),
-    MAIDEN_BLOOD_SPLATS(Event.Type.TOB_MAIDEN_BLOOD_SPLATS),
+    MAIDEN_CRAB_LEAK(100),
+    MAIDEN_BLOOD_SPLATS(101),
 
-    BLOAT_DOWN(Event.Type.TOB_BLOAT_DOWN),
-    BLOAT_UP(Event.Type.TOB_BLOAT_UP),
+    BLOAT_DOWN(110),
+    BLOAT_UP(111),
 
-    NYLO_WAVE_SPAWN(Event.Type.TOB_NYLO_WAVE_SPAWN),
-    NYLO_WAVE_STALL(Event.Type.TOB_NYLO_WAVE_STALL),
-    NYLO_CLEANUP_END(Event.Type.TOB_NYLO_CLEANUP_END),
-    NYLO_BOSS_SPAWN(Event.Type.TOB_NYLO_BOSS_SPAWN),
+    NYLO_WAVE_SPAWN(120),
+    NYLO_WAVE_STALL(121),
+    NYLO_CLEANUP_END(122),
+    NYLO_BOSS_SPAWN(123),
 
-    SOTE_MAZE_PROC(Event.Type.TOB_SOTE_MAZE_PROC),
-    SOTE_MAZE_PATH(Event.Type.TOB_SOTE_MAZE_PATH),
-    SOTE_MAZE_END(Event.Type.TOB_SOTE_MAZE_END),
+    SOTE_MAZE_PROC(130),
+    SOTE_MAZE_PATH(131),
+    SOTE_MAZE_END(132),
 
-    XARPUS_PHASE(Event.Type.TOB_XARPUS_PHASE),
+    XARPUS_PHASE(140),
 
-    VERZIK_PHASE(Event.Type.TOB_VERZIK_PHASE),
-    VERZIK_REDS_SPAWN(Event.Type.TOB_VERZIK_REDS_SPAWN),
-    VERZIK_ATTACK_STYLE(Event.Type.TOB_VERZIK_ATTACK_STYLE),
+    VERZIK_PHASE(150),
+    VERZIK_REDS_SPAWN(151),
+    VERZIK_ATTACK_STYLE(152),
 
-    COLOSSEUM_HANDICAP_CHOICE(Event.Type.COLOSSEUM_HANDICAP_CHOICE),
+    COLOSSEUM_HANDICAP_CHOICE(200),
     ;
 
-    private final Event.Type protoValue;
+    @Getter
+    private final int id;
 
-    EventType(Event.Type protoValue) {
-        this.protoValue = protoValue;
-    }
-
-    public Event.Type toProto() {
-        return protoValue;
+    EventType(int id) {
+        this.id = id;
     }
 }
