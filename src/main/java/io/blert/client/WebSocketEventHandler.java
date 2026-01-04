@@ -23,10 +23,12 @@
 
 package io.blert.client;
 
-import com.google.gson.Gson;
 import io.blert.BlertPlugin;
 import io.blert.BlertPluginPanel;
-import io.blert.core.*;
+import io.blert.core.Challenge;
+import io.blert.core.ChallengeMode;
+import io.blert.core.RecordableChallenge;
+import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.Event;
 import io.blert.json.*;
@@ -36,7 +38,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.GameState;
-import net.runelite.api.Skill;
 import net.runelite.client.callback.ClientThread;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.DurationFormatUtils;
@@ -123,7 +124,6 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private static final int DEFAULT_REQUEST_TIMEOUT_MS = 5000;
-    private static final Gson gson = new Gson();
 
     private final BlertPlugin plugin;
     private final WebSocketClient webSocketClient;
@@ -282,7 +282,7 @@ public class WebSocketEventHandler implements EventHandler {
         message.challengeStartRequest = attempt.request;
 
         lastRequestId = attempt.currentRequestId;
-        webSocketClient.sendTextMessage(gson.toJson(message));
+        webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
 
         // Schedule timeout with linear backoff.
         requestTimeout.schedule(new TimerTask() {
@@ -342,7 +342,7 @@ public class WebSocketEventHandler implements EventHandler {
         lastRequestId = requestId;
 
         setStatus(Status.CHALLENGE_ENDING);
-        webSocketClient.sendTextMessage(gson.toJson(message));
+        webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
 
         requestTimeout.schedule(new TimerTask() {
             @Override
@@ -387,7 +387,7 @@ public class WebSocketEventHandler implements EventHandler {
         message.type = ServerMessage.TYPE_CHALLENGE_UPDATE;
         message.challengeUpdate = challengeUpdate;
 
-        webSocketClient.sendTextMessage(gson.toJson(message));
+        webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
     }
 
     public void updateGameState(GameState gameState) {
@@ -426,7 +426,7 @@ public class WebSocketEventHandler implements EventHandler {
         ServerMessage message = new ServerMessage();
         message.type = ServerMessage.TYPE_GAME_STATE;
         message.gameState = gameStateJson;
-        webSocketClient.sendTextMessage(gson.toJson(message));
+        webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
 
         apiKeyUsernameMismatch = false;
     }
@@ -434,7 +434,7 @@ public class WebSocketEventHandler implements EventHandler {
     private void handleJsonMessage(String messageText) {
         ServerMessage serverMessage;
         try {
-            serverMessage = gson.fromJson(messageText, ServerMessage.class);
+            serverMessage = plugin.getGson().fromJson(messageText, ServerMessage.class);
         } catch (Exception e) {
             log.error("Failed to parse JSON message", e);
             return;
@@ -672,7 +672,7 @@ public class WebSocketEventHandler implements EventHandler {
 
                     String shutdownMessage = String.format(
                             "Blert's servers will go offline for maintenance in %s." +
-                            "<br>Visit Blert's Discord server for status updates.",
+                                    "<br>Visit Blert's Discord server for status updates.",
                             DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss")
                     );
 
@@ -748,7 +748,7 @@ public class WebSocketEventHandler implements EventHandler {
 
             if (!event.challengeId.equals(message.activeChallengeId)) {
                 if (!message.challengeEvents.isEmpty()) {
-                    webSocketClient.sendTextMessage(gson.toJson(message));
+                    webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
                 }
 
                 message = new ServerMessage();
@@ -763,7 +763,7 @@ public class WebSocketEventHandler implements EventHandler {
         }
 
         if (!message.challengeEvents.isEmpty()) {
-            webSocketClient.sendTextMessage(gson.toJson(message));
+            webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
         }
 
         if (ignoredEvents > 0) {
@@ -774,14 +774,14 @@ public class WebSocketEventHandler implements EventHandler {
     private void sendPong() {
         ServerMessage message = new ServerMessage();
         message.type = ServerMessage.TYPE_PONG;
-        webSocketClient.sendTextMessage(gson.toJson(message));
+        webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
     }
 
     private void sendRaidHistoryRequest() {
         if (webSocketClient.isOpen()) {
             ServerMessage message = new ServerMessage();
             message.type = ServerMessage.TYPE_HISTORY_REQUEST;
-            webSocketClient.sendTextMessage(gson.toJson(message));
+            webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
         }
     }
 
@@ -858,7 +858,7 @@ public class WebSocketEventHandler implements EventHandler {
             response.activeChallengeId = message.activeChallengeId;
             response.challengeStateConfirmation = new ChallengeStateConfirmation();
             response.challengeStateConfirmation.isValid = false;
-            webSocketClient.sendTextMessage(gson.toJson(response));
+            webSocketClient.sendTextMessage(plugin.getGson().toJson(response));
             return;
         }
 
@@ -874,7 +874,7 @@ public class WebSocketEventHandler implements EventHandler {
             if (activeChallenge == null) {
                 response.challengeStateConfirmation = new ChallengeStateConfirmation();
                 response.challengeStateConfirmation.isValid = false;
-                webSocketClient.sendTextMessage(gson.toJson(response));
+                webSocketClient.sendTextMessage(plugin.getGson().toJson(response));
                 return;
             }
 
@@ -911,7 +911,7 @@ public class WebSocketEventHandler implements EventHandler {
             response.challengeStateConfirmation = confirmationBuilder;
 
             synchronized (self) {
-                self.webSocketClient.sendTextMessage(gson.toJson(response));
+                self.webSocketClient.sendTextMessage(plugin.getGson().toJson(response));
 
                 if (isValid) {
                     self.challengeId = message.activeChallengeId;

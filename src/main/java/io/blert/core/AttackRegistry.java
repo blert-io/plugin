@@ -23,7 +23,9 @@
 
 package io.blert.core;
 
+import com.google.gson.Gson;
 import lombok.AllArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -46,6 +48,9 @@ public class AttackRegistry {
          */
         private volatile List<AttackDefinition> suppressableAttacks;
     }
+
+    @Setter
+    private Gson gson;
 
     private volatile State state = new State(Map.of(), Set.of(), List.of());
 
@@ -79,7 +84,7 @@ public class AttackRegistry {
         }
 
         try {
-            List<AttackDefinition> definitions = AttackDefinition.loadFromJson(inputStream);
+            List<AttackDefinition> definitions = AttackDefinition.loadFromJson(gson, inputStream);
             updateDefinitions(definitions);
             log.info("Loaded {} bundled attack definitions", definitions.size());
         } catch (Exception e) {

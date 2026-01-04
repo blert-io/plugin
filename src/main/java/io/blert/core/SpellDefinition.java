@@ -133,8 +133,8 @@ public class SpellDefinition {
     /**
      * Loads spell definitions from a JSON input stream.
      */
-    public static List<SpellDefinition> loadFromJson(InputStream inputStream) throws IOException {
-        Gson gson = new Gson();
+    public static List<SpellDefinition> loadFromJson(Gson gson,
+                                                     InputStream inputStream) throws IOException {
         Type listType = new TypeToken<List<io.blert.json.SpellDefinition>>() {
         }.getType();
         try (Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
