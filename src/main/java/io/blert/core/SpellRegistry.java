@@ -23,7 +23,9 @@
 
 package io.blert.core;
 
+import com.google.gson.Gson;
 import lombok.AllArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nullable;
@@ -44,6 +46,9 @@ public class SpellRegistry {
         private final Map<Integer, List<SpellDefinition>> targetedByAnimationId;
     }
 
+    @Setter
+    private Gson gson;
+
     private volatile State state = new State(Map.of(), Map.of(), Map.of());
 
     /**
@@ -57,7 +62,8 @@ public class SpellRegistry {
         }
 
         try {
-            List<SpellDefinition> loaded = SpellDefinition.loadFromJson(stream);
+            List<SpellDefinition> loaded =
+                    SpellDefinition.loadFromJson(gson, stream);
             updateDefinitions(loaded);
             log.info("Loaded {} bundled spell definitions", loaded.size());
         } catch (Exception e) {

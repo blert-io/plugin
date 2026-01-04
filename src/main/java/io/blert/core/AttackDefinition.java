@@ -35,7 +35,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -193,8 +192,7 @@ public class AttackDefinition {
     /**
      * Loads attack definitions from a JSON input stream.
      */
-    public static List<AttackDefinition> loadFromJson(InputStream inputStream) throws IOException {
-        Gson gson = new Gson();
+    public static List<AttackDefinition> loadFromJson(Gson gson, InputStream inputStream) throws IOException {
         Type listType = new TypeToken<List<io.blert.json.AttackDefinition>>() {
         }.getType();
         try (Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {

@@ -23,6 +23,7 @@
 
 package io.blert;
 
+import com.google.gson.Gson;
 import com.google.inject.Provides;
 import io.blert.challenges.colosseum.ColosseumChallenge;
 import io.blert.challenges.inferno.InfernoChallenge;
@@ -81,6 +82,10 @@ public class BlertPlugin extends Plugin {
     @Inject
     private WebSocketManager websocketManager;
 
+    @Inject
+    @Getter
+    private Gson gson;
+
     @Getter
     private BlertPluginPanel sidePanel;
     private NavigationButton sidePanelButton;
@@ -129,6 +134,8 @@ public class BlertPlugin extends Plugin {
 
     @Override
     protected void startUp() throws Exception {
+        attackRegistry.setGson(gson);
+        spellRegistry.setGson(gson);
         attackRegistry.loadDefaults();
         spellRegistry.loadDefaults();
 
