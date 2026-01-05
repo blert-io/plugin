@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -135,10 +134,12 @@ public class SpellDefinition {
      */
     public static List<SpellDefinition> loadFromJson(Gson gson,
                                                      InputStream inputStream) throws IOException {
-        Type listType = new TypeToken<List<io.blert.json.SpellDefinition>>() {
-        }.getType();
         try (Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            List<io.blert.json.SpellDefinition> jsonDefs = gson.fromJson(r, listType);
+            List<io.blert.json.SpellDefinition> jsonDefs = gson.fromJson(
+                    r,
+                    new TypeToken<List<io.blert.json.SpellDefinition>>() {
+                    }.getType()
+            );
             return jsonDefs.stream().map(io.blert.json.SpellDefinition::toCore).collect(Collectors.toList());
         }
     }
