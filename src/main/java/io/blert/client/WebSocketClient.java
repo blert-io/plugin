@@ -174,6 +174,9 @@ public class WebSocketClient extends WebSocketListener {
     @Override
     @EverythingIsNonNull
     public void onMessage(WebSocket webSocket, okio.ByteString bytes) {
+        if (!isOpen()) {
+            return;
+        }
         if (this.binaryMessageCallback != null) {
             this.binaryMessageCallback.accept(bytes.toByteArray());
         }
@@ -182,6 +185,9 @@ public class WebSocketClient extends WebSocketListener {
     @Override
     @EverythingIsNonNull
     public void onMessage(WebSocket webSocket, String text) {
+        if (!isOpen()) {
+            return;
+        }
         log.debug("Blert websocket {} received message {}", webSocket, text);
         if (this.textMessageCallback != null) {
             this.textMessageCallback.accept(text);
