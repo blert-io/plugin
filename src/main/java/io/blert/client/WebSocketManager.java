@@ -88,6 +88,10 @@ public class WebSocketManager {
     }
 
     public Future<Void> close() {
+        if (eventHandler != null) {
+            eventHandler.shutdown();
+        }
+
         if (wsClient != null && wsClient.isOpen()) {
             var result = wsClient.close();
             wsClient = null;
@@ -98,6 +102,10 @@ public class WebSocketManager {
     }
 
     private void initializeWebSocketClient() {
+        if (eventHandler != null) {
+            eventHandler.shutdown();
+        }
+
         if (wsClient != null) {
             if (plugin != null && plugin.getSidePanel() != null) {
                 plugin.getSidePanel().updateConnectionState(BlertPluginPanel.ConnectionState.DISCONNECTED, null);

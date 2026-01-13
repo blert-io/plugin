@@ -799,6 +799,10 @@ public class WebSocketEventHandler implements EventHandler {
         plugin.getSidePanel().setRecentRecordings(null);
     }
 
+    public void shutdown() {
+        requestTimeout.cancel();
+    }
+
     private void setStatus(Status status) {
         this.status = status;
         plugin.getSidePanel().updateChallengeStatus(status, currentChallenge, challengeId);
@@ -821,12 +825,8 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private void closeWebsocketClient() {
-        try {
-            webSocketClient.close().get();
-        } catch (Exception e) {
-            log.error("Failed to close websocket client", e);
-        }
         plugin.getSidePanel().setShutdownTime(null);
+        webSocketClient.close();
     }
 
     private void handleChallengeStateConfirmation(ServerMessage message) {
