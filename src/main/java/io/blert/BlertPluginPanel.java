@@ -29,10 +29,19 @@ import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
 import io.blert.core.Stage;
 import io.blert.json.PastChallenge;
+import io.blert.ui.CardPanel;
+import io.blert.ui.FeedItem;
+import io.blert.ui.RoundedButton;
+import io.blert.ui.ScrollablePanel;
+import io.blert.ui.StatusDot;
+import io.blert.ui.ThinScrollBarUI;
+
+import static io.blert.ui.UIConstants.*;
+
+import java.util.Objects;
+
 import joptsimple.internal.Strings;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.LinkBrowser;
 import org.apache.commons.lang3.time.DurationFormatUtils;
@@ -40,13 +49,11 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
-import javax.swing.border.MatteBorder;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -87,10 +94,7 @@ public class BlertPluginPanel extends PluginPanel {
     private JPanel challengeStatusPanel;
     private JPanel recentRecordingsPanel;
     private JPanel recentRecordingsContainer;
-
-    private final JLabel activeChallengeLabel = new JLabel();
     private final JLabel serverStatusLabel = new JLabel();
-    private final JLabel connectionStatusLabel = new JLabel();
     private final Timer shutdownLabelTimer;
 
     private final List<PastChallenge> recentRecordings = new ArrayList<>();
@@ -99,65 +103,84 @@ public class BlertPluginPanel extends PluginPanel {
     private ConnectionState connectionState = ConnectionState.DISCONNECTED;
     private @Nullable String connectedUsername = null;
     private Instant shutdownTime = null;
+    private Challenge currentChallenge = null;
+    private String currentChallengeId = null;
 
     public BlertPluginPanel(BlertConfig config, WebSocketManager websocketManager) {
+        super(false);
         this.config = config;
         this.websocketManager = websocketManager;
 
-        shutdownLabelTimer = new Timer(1000, e -> {
-            if (shutdownTime == null) {
-                serverStatusLabel.setForeground(Color.GREEN);
-                serverStatusLabel.setText("Blert server is online.");
-                return;
-            }
+        shutdownLabelTimer = new Timer(1000, e -> updateShutdownLabel());
 
-            Duration timeUntilShutdown = Duration.between(Instant.now(), shutdownTime);
-            if (timeUntilShutdown.isNegative()) {
-                serverStatusLabel.setText("Server shutting down...");
-                serverStatusLabel.setForeground(Color.RED);
-            } else {
-                String time = DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss");
-                serverStatusLabel.setForeground(Color.YELLOW);
-                serverStatusLabel.setText("Server shutting down in " + time + ".");
-            }
-        });
-
-        activeChallengeLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        serverStatusLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        serverStatusLabel.setBorder(new EmptyBorder(0, 0, 5, 0));
-        connectionStatusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        setBorder(new EmptyBorder(10, 10, 10, 10));
+        setBackground(BG_BASE);
+        setLayout(new BorderLayout());
     }
 
     public void startPanel() {
-        setBorder(new EmptyBorder(10, 10, 10, 10));
-        setBackground(ColorScheme.DARK_GRAY_COLOR);
-        setLayout(new BorderLayout());
-        setFocusable(false);
+        removeAll();
+
+        JPanel topContainer = new JPanel();
+        topContainer.setLayout(new BoxLayout(topContainer, BoxLayout.Y_AXIS));
+        topContainer.setBackground(BG_BASE);
+
+        userPanel = new JPanel(new BorderLayout());
+        userPanel.setBackground(BG_BASE);
+        userPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        topContainer.add(userPanel);
+
+        challengeStatusPanel = new JPanel(new BorderLayout());
+        challengeStatusPanel.setBackground(BG_BASE);
+        challengeStatusPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        topContainer.add(challengeStatusPanel);
+
+        add(topContainer, BorderLayout.NORTH);
+
+        createRecentRecordingsPanel();
+        add(recentRecordingsPanel, BorderLayout.CENTER);
 
         rebuildUserPanel();
-        createChallengeStatusPanel(this, null, null);
-        createRecentRecordingsPanel(this);
+        rebuildChallengePanel();
         populateRecentRecordingsPanel();
 
         shutdownLabelTimer.start();
+        revalidate();
+        repaint();
     }
 
     public void stopPanel() {
         shutdownLabelTimer.stop();
     }
 
-    /**
-     * Updates the connection state displayed in the panel.
-     *
-     * @param state    The new connection state.
-     * @param username The username if connected, or null otherwise.
-     */
+    private void updateShutdownLabel() {
+        if (shutdownTime == null) {
+            if (connectionState == ConnectionState.CONNECTED) {
+                serverStatusLabel.setText("✔ Blert server is online");
+                serverStatusLabel.setForeground(TEXT_MUTED);
+            } else if (connectionState != ConnectionState.REJECTED && connectionState != ConnectionState.UNSUPPORTED_VERSION) {
+                serverStatusLabel.setText("");
+            }
+        } else {
+            Duration timeUntilShutdown = Duration.between(Instant.now(), shutdownTime);
+            if (timeUntilShutdown.isNegative()) {
+                serverStatusLabel.setText("✘ Server shutting down...");
+                serverStatusLabel.setForeground(ACCENT_RED);
+            } else {
+                String time = DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss");
+                serverStatusLabel.setForeground(ACCENT_YELLOW);
+                serverStatusLabel.setText("⚠ Shutdown in " + time);
+            }
+        }
+    }
+
     public void updateConnectionState(ConnectionState state, @Nullable String username) {
         SwingUtilities.invokeLater(() -> {
             synchronized (this) {
                 this.connectionState = state;
                 this.connectedUsername = username;
                 rebuildUserPanel();
+                rebuildChallengePanel();
                 revalidate();
                 repaint();
             }
@@ -172,7 +195,9 @@ public class BlertPluginPanel extends PluginPanel {
         SwingUtilities.invokeLater(() -> {
             synchronized (this) {
                 this.challengeStatus = status;
-                createChallengeStatusPanel(this, challenge, challengeId);
+                this.currentChallenge = challenge;
+                this.currentChallengeId = challengeId;
+                rebuildChallengePanel();
                 revalidate();
                 repaint();
             }
@@ -197,9 +222,8 @@ public class BlertPluginPanel extends PluginPanel {
         SwingUtilities.invokeLater(() -> {
             synchronized (this) {
                 this.shutdownTime = shutdownTime;
-                if (challengeStatus == WebSocketEventHandler.Status.IDLE) {
-                    setIdleActiveChallengeLabelText();
-                }
+                updateShutdownLabel();
+                rebuildChallengePanel();
             }
         });
     }
@@ -208,157 +232,256 @@ public class BlertPluginPanel extends PluginPanel {
      * Rebuilds the user panel based on the current connection state.
      */
     private void rebuildUserPanel() {
-        if (userPanel != null) {
-            remove(userPanel);
-        }
+        userPanel.removeAll();
 
-        userPanel = new JPanel();
-        userPanel.setLayout(new BorderLayout());
-        userPanel.setBorder(createSectionBorder());
+        userPanel.add(createHeader("SERVER CONNECTION"), BorderLayout.NORTH);
 
-        userPanel.add(createHeading("Server Status"), BorderLayout.NORTH);
+        CardPanel card = new CardPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(new EmptyBorder(6, 8, 6, 8));
+        userPanel.add(card, BorderLayout.CENTER);
+
+        JPanel topRow = new JPanel(new BorderLayout());
+        topRow.setOpaque(false);
+        topRow.setMaximumSize(new Dimension(Short.MAX_VALUE, 20));
+        topRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel statusContainer = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        statusContainer.setOpaque(false);
+        statusContainer.setBorder(new EmptyBorder(0, -6, 0, 0));
+
+        StatusDot statusDot = new StatusDot();
+
+        JLabel statusText = new JLabel();
+        statusText.setFont(FONT_BOLD);
+
+        JLabel userLabel = new JLabel();
+        userLabel.setFont(FONT_REGULAR);
+        userLabel.setForeground(TEXT_MUTED);
+
+        statusContainer.add(statusDot);
+        statusContainer.add(statusText);
+
+        topRow.add(statusContainer, BorderLayout.WEST);
+        topRow.add(userLabel, BorderLayout.EAST);
+
+        serverStatusLabel.setFont(FONT_SMALLEST);
+        serverStatusLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        serverStatusLabel.setBorder(new EmptyBorder(4, 0, 0, 0));
+
+        RoundedButton connectButton = new RoundedButton("Connect");
+        connectButton.addActionListener(e -> connectToServer());
+        connectButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        connectButton.setMaximumSize(new Dimension(Short.MAX_VALUE, 25));
+
+        JLabel configHint = new JLabel("Enter API Key in config");
+        configHint.setFont(FONT_SMALL);
+        configHint.setForeground(TEXT_MUTED);
+        configHint.setAlignmentX(Component.LEFT_ALIGNMENT);
+        configHint.setBorder(new EmptyBorder(4, 0, 0, 0));
+
+        Color stateColor = ACCENT_RED;
+        String stateTitle;
+        String detailMsg = null;
+        boolean showUser = false;
+        boolean showButton = false;
+        boolean hasApiKey = !Strings.isNullOrEmpty(config.apiKey());
 
         switch (connectionState) {
             case CONNECTED:
-                connectionStatusLabel.setText(wrapHtml(
-                        statusIndicator("green") + " Connected as: <b style=\"color: white\">" + connectedUsername + "</b>"));
-                connectionStatusLabel.setForeground(Color.GREEN);
-                userPanel.add(serverStatusLabel, BorderLayout.CENTER);
-                userPanel.add(connectionStatusLabel, BorderLayout.SOUTH);
+                stateColor = ACCENT_GREEN;
+                stateTitle = "Connected";
+                showUser = true;
+                userLabel.setText(connectedUsername != null ? connectedUsername : "Unknown");
+                serverStatusLabel.setForeground(TEXT_MAIN);
+                serverStatusLabel.setHorizontalAlignment(SwingConstants.LEFT);
+                updateShutdownLabel();
                 break;
-
             case CONNECTING:
-                connectionStatusLabel.setText(wrapHtml(statusIndicator("yellow") + " Connecting..."));
-                connectionStatusLabel.setForeground(Color.YELLOW);
-                userPanel.add(connectionStatusLabel, BorderLayout.CENTER);
+                stateColor = ACCENT_YELLOW;
+                stateTitle = "Connecting...";
                 break;
-
             case REJECTED:
-                connectionStatusLabel.setText(wrapHtml(
-                        "<p style=\"text-align: center\">" + statusIndicator("red") + " Connection rejected.<br>" +
-                                "Please check your API key in the plugin settings.</p>"));
-                connectionStatusLabel.setForeground(Color.RED);
-                userPanel.add(connectionStatusLabel, BorderLayout.CENTER);
-                userPanel.add(createConnectButtonPanel(), BorderLayout.SOUTH);
+                stateTitle = "Connection Failed";
+                detailMsg = "Invalid API Key, check plugin config.";
+                showButton = hasApiKey;
                 break;
-
             case UNSUPPORTED_VERSION:
-                connectionStatusLabel.setText(wrapHtml(
-                        "<p style=\"text-align: center\">" + statusIndicator("red") + " Connection rejected.<br>" +
-                                "You are running an outdated version of Blert. " +
-                                "Please restart RuneLite to update your plugin.</p>"));
-                connectionStatusLabel.setForeground(Color.RED);
-                userPanel.add(connectionStatusLabel, BorderLayout.CENTER);
+                stateTitle = "Update Required";
+                detailMsg = "Plugin version out of date, restart client.";
                 break;
-
             case DISCONNECTED:
             default:
-                connectionStatusLabel.setText(wrapHtml(statusIndicator("red") + " Not connected."));
-                connectionStatusLabel.setForeground(Color.RED);
-                userPanel.add(connectionStatusLabel, BorderLayout.CENTER);
-
-                if (Strings.isNullOrEmpty(config.apiKey())) {
-                    JLabel apiKeyLabel = new JLabel(wrapHtml(
-                            "<p style=\"text-align: center\">Enter your Blert API key in the plugin settings.</p>"));
-                    apiKeyLabel.setForeground(Color.WHITE);
-                    apiKeyLabel.setHorizontalAlignment(SwingConstants.CENTER);
-                    userPanel.add(apiKeyLabel, BorderLayout.SOUTH);
-                } else {
-                    userPanel.add(createConnectButtonPanel(), BorderLayout.SOUTH);
-                }
+                stateTitle = "Disconnected";
+                showButton = hasApiKey;
                 break;
         }
 
-        add(userPanel, BorderLayout.NORTH);
+        statusDot.setColor(stateColor);
+        statusText.setText(stateTitle);
+        statusText.setForeground(stateColor == ACCENT_GREEN ? TEXT_MAIN : stateColor);
+        userLabel.setVisible(showUser);
+
+        card.add(topRow);
+
+        if (connectionState == ConnectionState.CONNECTED) {
+            card.add(serverStatusLabel);
+        } else if (detailMsg != null) {
+            serverStatusLabel.setText(detailMsg);
+            serverStatusLabel.setForeground(ACCENT_RED);
+            card.add(serverStatusLabel);
+        }
+
+        card.add(Box.createVerticalStrut(4));
+        if (showButton) {
+            card.add(connectButton);
+        } else if (!hasApiKey && connectionState != ConnectionState.CONNECTED && connectionState != ConnectionState.CONNECTING) {
+            card.add(configHint);
+        }
     }
 
-    private @NonNull JPanel createConnectButtonPanel() {
-        JPanel connectButtonPanel = new JPanel();
-        connectButtonPanel.setLayout(new BorderLayout());
-        connectButtonPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        JButton connectButton = new JButton("Connect");
-        connectButton.addActionListener(e -> {
-            // Update state to show connecting status
-            updateConnectionState(ConnectionState.CONNECTING, null);
-
-            SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
-                @Override
-                protected Boolean doInBackground() {
-                    try {
-                        return websocketManager.open().get();
-                    } catch (Exception e) {
-                        log.error("Error connecting to Blert server", e);
-                        return false;
-                    }
+    private void connectToServer() {
+        updateConnectionState(ConnectionState.CONNECTING, null);
+        SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Boolean doInBackground() {
+                try {
+                    return websocketManager.open().get();
+                } catch (Exception e) {
+                    log.error("Error connecting to Blert server", e);
+                    return false;
                 }
+            }
 
-                @Override
-                protected void done() {
-                    try {
-                        boolean success = get();
-                        if (!success && connectionState == ConnectionState.CONNECTING) {
-                            // Connection failed and no other state update came through.
-                            updateConnectionState(ConnectionState.DISCONNECTED, null);
-                        }
-                    } catch (Exception e) {
-                        log.error("Error getting connection result", e);
+            @Override
+            protected void done() {
+                try {
+                    boolean success = get();
+                    if (!success && connectionState == ConnectionState.CONNECTING) {
                         updateConnectionState(ConnectionState.DISCONNECTED, null);
                     }
+                } catch (Exception e) {
+                    updateConnectionState(ConnectionState.DISCONNECTED, null);
                 }
-            };
-            worker.execute();
-        });
-        connectButtonPanel.add(connectButton, BorderLayout.CENTER);
-        return connectButtonPanel;
+            }
+        };
+        worker.execute();
     }
 
-    private void createChallengeStatusPanel(
-            JPanel parent,
-            @Nullable Challenge challenge,
-            @Nullable String challengeId
-    ) {
-        if (challengeStatusPanel != null) {
-            parent.remove(challengeStatusPanel);
+    private void rebuildChallengePanel() {
+        challengeStatusPanel.removeAll();
+        challengeStatusPanel.add(createHeader("CURRENT CHALLENGE"), BorderLayout.NORTH);
+
+        CardPanel card = new CardPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(new EmptyBorder(8, 8, 8, 8));
+
+        card.add(Box.createVerticalGlue());
+
+        if (connectionState != ConnectionState.CONNECTED) {
+            JLabel msg = new JLabel("Offline");
+            msg.setFont(FONT_BOLD);
+            msg.setForeground(TEXT_MUTED);
+            msg.setAlignmentX(Component.CENTER_ALIGNMENT);
+            card.add(msg);
+
+        } else if (challengeStatus == WebSocketEventHandler.Status.IDLE) {
+            boolean shuttingDown = (shutdownTime != null);
+            JLabel msg = new JLabel(shuttingDown ? "Server Maintenance" : "No Active Challenge");
+            msg.setFont(FONT_BOLD);
+            msg.setForeground(shuttingDown ? ACCENT_RED : TEXT_MAIN);
+            msg.setAlignmentX(Component.CENTER_ALIGNMENT);
+            card.add(msg);
+
+        } else {
+            JPanel activeRaidPanel = createActiveRaidPanel();
+            card.add(activeRaidPanel);
+
+            if (currentChallenge != null && currentChallengeId != null) {
+                card.add(Box.createVerticalStrut(8));
+
+                JPanel buttonPanel = createViewCopyButtonPanel();
+                card.add(buttonPanel);
+            }
         }
 
-        challengeStatusPanel = new JPanel();
-        challengeStatusPanel.setLayout(new BorderLayout());
-        challengeStatusPanel.setBorder(createSectionBorder());
+        card.add(Box.createVerticalGlue());
 
-        JPanel currentStatePanel = createCurrentChallengeStatePanel();
-
-        if (challengeStatus == WebSocketEventHandler.Status.CHALLENGE_ACTIVE && challenge != null) {
-            JPanel actionsPanel = createChallengeActionsPanel(challenge, challengeId);
-            challengeStatusPanel.add(actionsPanel, BorderLayout.SOUTH);
-        }
-
-        challengeStatusPanel.add(currentStatePanel, BorderLayout.CENTER);
-        parent.add(challengeStatusPanel, BorderLayout.CENTER);
+        challengeStatusPanel.add(card, BorderLayout.CENTER);
+        challengeStatusPanel.revalidate();
+        challengeStatusPanel.repaint();
     }
 
-    private void createRecentRecordingsPanel(JPanel parent) {
-        if (recentRecordingsPanel != null) {
-            parent.remove(recentRecordingsPanel);
+    private JPanel createViewCopyButtonPanel() {
+        JPanel btnPanel = new JPanel(new GridLayout(1, 2, 8, 0));
+        btnPanel.setOpaque(false);
+        btnPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnPanel.setMaximumSize(new Dimension(Short.MAX_VALUE, 26));
+
+        RoundedButton viewBtn = new RoundedButton("View");
+        viewBtn.addActionListener(e -> LinkBrowser.browse(challengeUrl(currentChallenge, currentChallengeId)));
+
+        RoundedButton copyBtn = new RoundedButton("Copy Link");
+        copyBtn.addActionListener(e -> Toolkit.getDefaultToolkit()
+                .getSystemClipboard()
+                .setContents(new StringSelection(challengeUrl(currentChallenge, currentChallengeId)), null));
+
+        btnPanel.add(viewBtn);
+        btnPanel.add(copyBtn);
+        return btnPanel;
+    }
+
+    private JPanel createActiveRaidPanel() {
+        String title = (currentChallenge != null) ? currentChallenge.getName() : "Unknown Raid";
+        Color statusColor = ACCENT_GREEN;
+
+        if (challengeStatus == WebSocketEventHandler.Status.CHALLENGE_STARTING ||
+                challengeStatus == WebSocketEventHandler.Status.CHALLENGE_ENDING) {
+            statusColor = ACCENT_YELLOW;
         }
 
-        recentRecordingsPanel = new JPanel();
-        recentRecordingsPanel.setLayout(new BorderLayout());
-        recentRecordingsPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
+        JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 6, 0));
+        titlePanel.setOpaque(false);
+        titlePanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titlePanel.setMaximumSize(new Dimension(Short.MAX_VALUE, 30));
 
-        recentRecordingsPanel.add(createHeading("Previous Recordings"), BorderLayout.NORTH);
+        StatusDot statusDot = new StatusDot();
+        statusDot.setColor(statusColor);
 
-        recentRecordingsContainer = new JPanel();
-        recentRecordingsContainer.setLayout(new BorderLayout());
-        recentRecordingsContainer.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(FONT_BOLD.deriveFont(14f));
+        titleLabel.setForeground(TEXT_MAIN);
 
-        JScrollPane scrollPane = new JScrollPane(recentRecordingsContainer,
+        titlePanel.add(statusDot);
+        titlePanel.add(titleLabel);
+        return titlePanel;
+    }
+
+    private void createRecentRecordingsPanel() {
+        recentRecordingsPanel = new JPanel(new BorderLayout());
+        recentRecordingsPanel.setBackground(BG_BASE);
+
+        recentRecordingsPanel.add(createHeader("RECENT ACTIVITY"), BorderLayout.NORTH);
+
+        recentRecordingsContainer = new ScrollablePanel(new GridBagLayout());
+        recentRecordingsContainer.setBackground(BG_BASE);
+
+        JScrollPane scrollPane = new JScrollPane(
+                recentRecordingsContainer,
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setPreferredSize(new Dimension(0, 600));
-        scrollPane.setBorder(new LineBorder(ColorScheme.BORDER_COLOR));
-        recentRecordingsPanel.add(scrollPane, BorderLayout.CENTER);
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
 
-        parent.add(recentRecordingsPanel, BorderLayout.SOUTH);
+        scrollPane.setBorder(null);
+        scrollPane.setViewportBorder(null);
+        scrollPane.getViewport().setBackground(BG_BASE);
+        scrollPane.getVerticalScrollBar().setUI(new ThinScrollBarUI());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+
+        scrollPane.setPreferredSize(new Dimension(0, 0));
+
+        recentRecordingsPanel.add(scrollPane, BorderLayout.CENTER);
     }
 
     private void populateRecentRecordingsPanel() {
@@ -368,97 +491,53 @@ public class BlertPluginPanel extends PluginPanel {
 
         recentRecordingsContainer.removeAll();
 
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.NORTH;
+        gbc.insets = new Insets(0, 0, 5, 0);
+
         if (recentRecordings.isEmpty()) {
             JLabel noRecordingsLabel = new JLabel("No past recordings.");
             noRecordingsLabel.setBorder(new EmptyBorder(10, 0, 0, 0));
-            noRecordingsLabel.setForeground(Color.GRAY);
+            noRecordingsLabel.setFont(FONT_REGULAR);
+            noRecordingsLabel.setForeground(TEXT_MUTED);
             noRecordingsLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            recentRecordingsContainer.add(noRecordingsLabel, BorderLayout.NORTH);
+            recentRecordingsContainer.add(noRecordingsLabel, gbc);
         } else {
-            JPanel recentRecordingsList = new JPanel();
-            recentRecordingsList.setLayout(new GridBagLayout());
-            recentRecordingsList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-
-            int index = 0;
             for (PastChallenge challenge : recentRecordings) {
-                GridBagConstraints constraints = new GridBagConstraints();
-                constraints.anchor = GridBagConstraints.FIRST_LINE_START;
-                constraints.gridy = index;
-                constraints.fill = GridBagConstraints.HORIZONTAL;
-                constraints.weightx = 1.0;
-                constraints.insets = new Insets(0, 0, 0, 6);
-                recentRecordingsList.add(createPastChallengeEntry(challenge, index), constraints);
-                index++;
+                Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.status, challenge.stage);
+
+                FeedItem item = new FeedItem(
+                        statusInfo.getLeft(),
+                        challengeModeToString(challenge.challenge, challenge.mode),
+                        formatTimeAgo(challenge.instant),
+                        statusInfo.getRight(),
+                        challenge.party != null ? challenge.party : new ArrayList<>()
+                );
+
+                item.addMouseListener(new MouseAdapter() {
+                    @Override
+                    public void mousePressed(MouseEvent e) {
+                        LinkBrowser.browse(challengeUrl(Objects.requireNonNull(Challenge.fromId(challenge.challenge)), challenge.id));
+                    }
+                });
+
+                recentRecordingsContainer.add(item, gbc);
+                gbc.gridy++;
             }
 
-            recentRecordingsContainer.add(recentRecordingsList, BorderLayout.NORTH);
-        }
-    }
-
-    @NonNull
-    private JPanel createCurrentChallengeStatePanel() {
-        JPanel currentStatePanel = new JPanel();
-        currentStatePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        currentStatePanel.setLayout(new BorderLayout());
-
-        if (connectionState != ConnectionState.CONNECTED) {
-            activeChallengeLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-            activeChallengeLabel.setText(wrapHtml(
-                    "<p style=\"text-align:center\">Connect to server to record challenges.</p>"));
-        } else {
-            switch (challengeStatus) {
-                case IDLE:
-                    setIdleActiveChallengeLabelText();
-                    break;
-                case CHALLENGE_STARTING:
-                    activeChallengeLabel.setText("Starting...");
-                    activeChallengeLabel.setForeground(Color.YELLOW);
-                    break;
-                case CHALLENGE_ENDING:
-                    activeChallengeLabel.setText("Ending...");
-                    activeChallengeLabel.setForeground(Color.YELLOW);
-                    break;
-                case CHALLENGE_ACTIVE:
-                    activeChallengeLabel.setText("Streaming challenge data!");
-                    activeChallengeLabel.setForeground(Color.GREEN);
-                    break;
-            }
+            GridBagConstraints glueGbc = new GridBagConstraints();
+            glueGbc.gridx = 0;
+            glueGbc.gridy = gbc.gridy;
+            glueGbc.weighty = 1.0;
+            recentRecordingsContainer.add(Box.createVerticalGlue(), glueGbc);
         }
 
-        currentStatePanel.add(createHeading("Current Challenge"), BorderLayout.NORTH);
-        currentStatePanel.add(activeChallengeLabel, BorderLayout.CENTER);
-        return currentStatePanel;
-    }
-
-    @NonNull
-    private JPanel createChallengeActionsPanel(Challenge challenge, @Nullable String challengeId) {
-        JPanel actionsPanel = new JPanel();
-        actionsPanel.setLayout(new GridLayout(1, 0, 5, 0));
-
-        JButton linkButton = new JButton("View Raid");
-        linkButton.addActionListener(e -> LinkBrowser.browse(challengeUrl(challenge, challengeId)));
-        actionsPanel.add(linkButton);
-
-        JButton copyLinkButton = new JButton("Copy Link");
-        copyLinkButton.addActionListener(e ->
-                Toolkit.getDefaultToolkit()
-                        .getSystemClipboard()
-                        .setContents(new StringSelection(challengeUrl(challenge, challengeId)), null));
-        actionsPanel.add(copyLinkButton);
-        return actionsPanel;
-    }
-
-    private static JPanel createHeading(String title) {
-        JPanel headingPanel = new JPanel();
-        headingPanel.setLayout(new BorderLayout());
-        headingPanel.setBorder(new EmptyBorder(0, 0, 5, 0));
-
-        JLabel heading = new JLabel(String.format("— %s —", title));
-        heading.setForeground(Color.WHITE);
-        heading.setHorizontalAlignment(SwingConstants.CENTER);
-        heading.setFont(heading.getFont().deriveFont(Font.BOLD));
-        headingPanel.add(heading, BorderLayout.NORTH);
-        return headingPanel;
+        recentRecordingsContainer.revalidate();
+        recentRecordingsContainer.repaint();
     }
 
     private Pair<String, Color> getChallengeStatusInfo(int status, int stageId) {
@@ -614,73 +693,6 @@ public class BlertPluginPanel extends PluginPanel {
         return "Unknown";
     }
 
-    private JPanel createPastChallengeEntry(PastChallenge challenge, int index) {
-        JPanel challengePanel = new JPanel();
-        challengePanel.setLayout(new BorderLayout());
-        challengePanel.setBorder(new EmptyBorder(8, 8, 8, 8));
-
-        Color bgColor = (index % 2 == 0)
-                ? ColorScheme.DARKER_GRAY_COLOR
-                : ColorScheme.DARK_GRAY_COLOR;
-        challengePanel.setBackground(bgColor);
-        challengePanel.setOpaque(true);
-
-        JPanel statusPanel = new JPanel();
-        statusPanel.setLayout(new GridLayout(1, 0, 5, 0));
-        statusPanel.setOpaque(false);
-
-        Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.status, challenge.stage);
-        JLabel statusLabel = new JLabel();
-        statusLabel.setForeground(statusInfo.getRight());
-        statusLabel.setText(statusInfo.getLeft());
-        statusPanel.add(statusLabel);
-
-        JLabel modeLabel = new JLabel();
-        modeLabel.setForeground(Color.WHITE);
-        modeLabel.setFont(modeLabel.getFont().deriveFont(Font.ITALIC));
-        modeLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        modeLabel.setText(challengeModeToString(challenge.challenge, challenge.mode));
-        statusPanel.add(modeLabel);
-
-        challengePanel.add(statusPanel, BorderLayout.NORTH);
-
-        JPanel partyPanel = new JPanel();
-        partyPanel.setLayout(new BorderLayout());
-        partyPanel.setBorder(new EmptyBorder(8, 0, 8, 0));
-        partyPanel.setOpaque(false);
-        int partyCount = challenge.party != null ? challenge.party.size() : 0;
-        JLabel partyHeading = new JLabel("Party (" + partyCount + "):");
-        partyHeading.setFont(partyHeading.getFont().deriveFont(Font.BOLD));
-        partyHeading.setForeground(Color.WHITE);
-        partyPanel.add(partyHeading, BorderLayout.NORTH);
-
-        JLabel partyLabel = new JLabel();
-        partyLabel.setForeground(Color.WHITE);
-        String party = challenge.party != null ? String.join(", ", challenge.party) : "";
-        partyLabel.setText(wrapHtml("<p style=\"width: 150px\">" + party + "</p>"));
-        partyPanel.add(partyLabel, BorderLayout.CENTER);
-        challengePanel.add(partyPanel, BorderLayout.CENTER);
-
-        Challenge c = Challenge.fromId(challenge.challenge);
-        if (c != null) {
-            challengePanel.add(createChallengeActionsPanel(c, challenge.id), BorderLayout.SOUTH);
-        }
-
-        return challengePanel;
-    }
-
-    void setIdleActiveChallengeLabelText() {
-        if (this.shutdownTime != null) {
-            activeChallengeLabel.setForeground(Color.RED);
-            activeChallengeLabel.setText(
-                    wrapHtml("<p style=\"text-align:center\">New challenges cannot be started at this time.</p>"));
-        } else {
-            activeChallengeLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
-            activeChallengeLabel.setText(wrapHtml(
-                    "<p style=\"text-align:center\">Begin a challenge to start recording.</p>"));
-        }
-    }
-
     private String challengeUrl(Challenge challenge, String challengeId) {
         String hostname = WebSocketManager.DEFAULT_BLERT_HOST;
 
@@ -702,23 +714,24 @@ public class BlertPluginPanel extends PluginPanel {
         return hostname;
     }
 
-    /**
-     * Creates a border for a section panel with a bottom separator line.
-     */
-    private static Border createSectionBorder() {
-        Border padding = new EmptyBorder(5, 5, 10, 5);
-        Border separator = new MatteBorder(0, 0, 1, 0, ColorScheme.LIGHT_GRAY_COLOR);
-        return new CompoundBorder(separator, padding);
+    private JLabel createHeader(String name) {
+        JLabel header = new JLabel(name);
+        header.setFont(FONT_SMALLEST);
+        header.setForeground(TEXT_MUTED);
+        header.setBorder(new EmptyBorder(0, 4, 4, 0));
+        return header;
     }
 
-    /**
-     * Returns an HTML colored circle indicator.
-     */
-    private static String statusIndicator(String color) {
-        return "<span style=\"color: " + color + "\">●</span>";
+    private String formatTimeAgo(Instant time) {
+        long seconds = Duration.between(time, Instant.now()).getSeconds();
+        if (seconds < 60) return "Just now";
+        long minutes = seconds / 60;
+        if (minutes < 60) return minutes + "m ago";
+        long hours = minutes / 60;
+        if (hours < 24) return hours + "h ago";
+        long days = hours / 24;
+        if (days < 30) return days + "d ago";
+        return (days / 365) + "y ago";
     }
 
-    static String wrapHtml(String content) {
-        return "<html><body>" + content + "</body></html>";
-    }
 }
