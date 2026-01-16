@@ -35,8 +35,6 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -71,8 +69,14 @@ public final class ColosseumChallenge extends RecordableChallenge {
     private @Nullable DeferredTask deferredTask = null;
     private boolean stateChangeCooldown;
 
-    public ColosseumChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
-        super(Challenge.COLOSSEUM, client, eventBus, clientThread);
+    public ColosseumChallenge(Client client, ClientThread clientThread) {
+        super(Challenge.COLOSSEUM, client, clientThread);
+    }
+
+    @Nullable
+    @Override
+    protected DataTracker getActiveTracker() {
+        return waveDataTracker;
     }
 
     @Override
@@ -118,78 +122,78 @@ public final class ColosseumChallenge extends RecordableChallenge {
         return waveDataTracker != null ? waveDataTracker.getStage() : null;
     }
 
-    @Subscribe
-    private void onNpcSpawned(NpcSpawned event) {
+    @Override
+    public void onNpcSpawned(NpcSpawned event) {
         if (!stateChangeCooldown && event.getNpc().getId() == MINIMUS_NPC_ID) {
             prepareNextWave();
         }
+        super.onNpcSpawned(event);
     }
 
-    @Subscribe
-    private void onNpcDespawned(NpcDespawned event) {
-        if (event.getNpc().getId() != MINIMUS_NPC_ID) {
-            return;
-        }
-
-        if (getState() == ChallengeState.STARTING) {
-            setState(ChallengeState.ACTIVE);
-        } else if (getState() != ChallengeState.ACTIVE) {
-            return;
-        }
-
-        stateChangeCooldown = true;
-        deferredTask = new DeferredTask(() -> {
-            stateChangeCooldown = false;
-
-            if (!waveHandicapOptions.isEmpty()) {
-                // The debuff selection varbit stores the index of the selected debuff option, starting from 1.
-                int selectedDebuffIndex = client.getVarbitValue(HANDICAP_SELECTION_VARBIT_ID) - 1;
-                Handicap selectedHandicap = waveHandicapOptions.get(selectedDebuffIndex);
-                if (waveDataTracker != null) {
-                    waveDataTracker.setHandicapOptions(waveHandicapOptions.toArray(new Handicap[3]));
-                    waveDataTracker.setHandicap(selectedHandicap);
-                }
+    @Override
+    public void onNpcDespawned(NpcDespawned event) {
+        if (event.getNpc().getId() == MINIMUS_NPC_ID) {
+            if (getState() == ChallengeState.STARTING) {
+                setState(ChallengeState.ACTIVE);
             }
-        }, 3);
+
+            if (getState() == ChallengeState.ACTIVE) {
+                stateChangeCooldown = true;
+                deferredTask = new DeferredTask(() -> {
+                    stateChangeCooldown = false;
+
+                    if (!waveHandicapOptions.isEmpty()) {
+                        // The debuff selection varbit stores the index of the selected debuff option, starting from 1.
+                        int selectedDebuffIndex = client.getVarbitValue(HANDICAP_SELECTION_VARBIT_ID) - 1;
+                        Handicap selectedHandicap = waveHandicapOptions.get(selectedDebuffIndex);
+                        if (waveDataTracker != null) {
+                            waveDataTracker.setHandicapOptions(waveHandicapOptions.toArray(new Handicap[3]));
+                            waveDataTracker.setHandicap(selectedHandicap);
+                        }
+                    }
+                }, 3);
+            }
+        }
+        super.onNpcDespawned(event);
     }
 
-    @Subscribe
-    private void onGameObjectSpawned(GameObjectSpawned event) {
+    @Override
+    public void onGameObjectSpawned(GameObjectSpawned event) {
         if (event.getGameObject().getId() == REWARD_CHEST_OBJECT_ID) {
             if (deferredTask != null) {
                 deferredTask.cancel();
             }
             queueFinishColosseum(ChallengeState.COMPLETE);
         }
+        super.onGameObjectSpawned(event);
     }
 
-    @Subscribe
-    private void onChatMessage(ChatMessage event) {
-        if (getState().isInactive()) {
-            return;
-        }
-
-        Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(Text.removeTags(event.getMessage()));
-        if (matcher.find()) {
-            try {
-                reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
-            } catch (Exception e) {
-                reportedChallengeTicks = -1;
+    @Override
+    public void onChatMessage(ChatMessage event) {
+        if (!getState().isInactive()) {
+            Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(Text.removeTags(event.getMessage()));
+            if (matcher.find()) {
+                try {
+                    reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                } catch (Exception e) {
+                    reportedChallengeTicks = -1;
+                }
             }
         }
+        super.onChatMessage(event);
     }
 
-    @Subscribe
-    private void onScriptPreFired(ScriptPreFired event) {
-        if (getState().isInactive() || event.getScriptId() != HANDICAP_SELECTION_SCRIPT_ID) {
-            return;
+    @Override
+    public void onScriptPreFired(ScriptPreFired event) {
+        if (!getState().isInactive() && event.getScriptId() == HANDICAP_SELECTION_SCRIPT_ID) {
+            waveHandicapOptions.clear();
+            Object[] scriptArgs = event.getScriptEvent().getArguments();
+            waveHandicapOptions.add(Handicap.withId((int) scriptArgs[2]));
+            waveHandicapOptions.add(Handicap.withId((int) scriptArgs[3]));
+            waveHandicapOptions.add(Handicap.withId((int) scriptArgs[4]));
         }
 
-        waveHandicapOptions.clear();
-        Object[] scriptArgs = event.getScriptEvent().getArguments();
-        waveHandicapOptions.add(Handicap.withId((int) scriptArgs[2]));
-        waveHandicapOptions.add(Handicap.withId((int) scriptArgs[3]));
-        waveHandicapOptions.add(Handicap.withId((int) scriptArgs[4]));
+        super.onScriptPreFired(event);
     }
 
     private void checkColosseumState() {
@@ -246,7 +250,6 @@ public final class ColosseumChallenge extends RecordableChallenge {
         currentWave++;
         if (currentWave < 13) {
             waveDataTracker = new WaveDataTracker(this, client, currentWave, recordedChallengeTicks);
-            getEventBus().register(waveDataTracker);
         }
     }
 
@@ -254,7 +257,6 @@ public final class ColosseumChallenge extends RecordableChallenge {
         if (waveDataTracker != null) {
             recordedChallengeTicks += waveDataTracker.getTotalTicks();
             waveDataTracker.terminate();
-            getEventBus().unregister(waveDataTracker);
             waveDataTracker = null;
         }
     }
