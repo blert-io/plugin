@@ -65,7 +65,8 @@ public abstract class RoomDataTracker extends DataTracker {
         this.theatreChallenge = theatreChallenge;
         this.room = room;
         this.waveEndRegex = Pattern.compile(
-                "Wave '" + room.waveName() + "' \\(\\w+ Mode\\) complete!Duration: ([0-9:.]+)"
+                "Wave '" + room.waveName() + "' \\(\\w+ Mode\\) " +
+                        "complete!Duration: (" + Tick.TIME_STRING_REGEX + ")"
         );
         this.startOnEntry = startOnEntry;
     }

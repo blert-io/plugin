@@ -36,6 +36,9 @@ public class TickTest extends TestCase {
         assertEquals("2:57.60", Tick.asTimeString(296));
         assertEquals("9:59.40", Tick.asTimeString(999));
         assertEquals("10:00.00", Tick.asTimeString(1000));
+        assertEquals("1:00:00.00", Tick.asTimeString(6000));
+        assertEquals("5:59:59.40", Tick.asTimeString(35999));
+        assertEquals("16:39:59.40", Tick.asTimeString(99999));
     }
 
     public void testFromTimeString() {
@@ -49,6 +52,9 @@ public class TickTest extends TestCase {
         assertEquals(Pair.of(296, true), Tick.fromTimeString("2:57.60").orElseThrow());
         assertEquals(Pair.of(999, true), Tick.fromTimeString("9:59.40").orElseThrow());
         assertEquals(Pair.of(1000, true), Tick.fromTimeString("10:00.00").orElseThrow());
+        assertEquals(Pair.of(6000, true), Tick.fromTimeString("1:00:00.00").orElseThrow());
+        assertEquals(Pair.of(35999, true), Tick.fromTimeString("5:59:59.40").orElseThrow());
+        assertEquals(Pair.of(99999, true), Tick.fromTimeString("16:39:59.40").orElseThrow());
 
         // Non-precise time strings without centiseconds.
         assertEquals(Pair.of(0, false), Tick.fromTimeString("0:00").orElseThrow());
@@ -61,5 +67,8 @@ public class TickTest extends TestCase {
         assertEquals(Pair.of(297, false), Tick.fromTimeString("2:58").orElseThrow());
         assertEquals(Pair.of(999, false), Tick.fromTimeString("9:59").orElseThrow());
         assertEquals(Pair.of(1000, false), Tick.fromTimeString("10:00").orElseThrow());
+        assertEquals(Pair.of(6000, false), Tick.fromTimeString("1:00:00").orElseThrow());
+        assertEquals(Pair.of(35997, false), Tick.fromTimeString("5:59:58").orElseThrow());
+        assertEquals(Pair.of(99999, false), Tick.fromTimeString("16:39:59").orElseThrow());
     }
 }

@@ -29,6 +29,8 @@ import java.util.Optional;
 
 public class Tick {
     public static final int MILLISECONDS_PER_TICK = 600;
+    public static final String TIME_STRING_REGEX =
+            "(\\d+:)?\\d{1,2}:\\d{2}(\\.\\d{2})?";
 
     /**
      * Convert a number of ticks to a human-readable time string.
@@ -41,10 +43,20 @@ public class Tick {
             throw new IllegalArgumentException("ticks must be non-negative");
         }
 
+        int hours = 0;
+        if (ticks >= 6000) {
+            hours = ticks / 6000;
+            ticks = ticks % 6000;
+        }
+
         int milliseconds = ticks * MILLISECONDS_PER_TICK;
         int seconds = (milliseconds / 1000) % 60;
         int minutes = milliseconds / 1000 / 60;
         int centiseconds = (milliseconds % 1000) / 10;
+
+        if (hours > 0) {
+            return String.format("%d:%02d:%02d.%02d", hours, minutes, seconds, centiseconds);
+        }
 
         return String.format("%d:%02d.%02d", minutes, seconds, centiseconds);
     }
@@ -62,19 +74,30 @@ public class Tick {
             return Optional.empty();
         }
 
-        if (!timeString.matches("\\d+:\\d{2}(\\.\\d{2})?")) {
+        if (!timeString.matches(TIME_STRING_REGEX)) {
             throw new IllegalArgumentException("Invalid time string: " + timeString);
         }
 
         String[] parts = timeString.split(":");
-        int minutes = Integer.parseInt(parts[0]);
 
-        String[] secondsAndCentiseconds = parts[1].split("\\.");
+        int hours = 0;
+        int minutes;
+        String[] secondsAndCentiseconds;
+        if (parts.length == 3) {
+            hours = Integer.parseInt(parts[0]);
+            minutes = Integer.parseInt(parts[1]);
+            secondsAndCentiseconds = parts[2].split("\\.");
+        } else {
+            minutes = Integer.parseInt(parts[0]);
+            secondsAndCentiseconds = parts[1].split("\\.");
+        }
+
         int seconds = Integer.parseInt(secondsAndCentiseconds[0]);
 
         boolean precise = true;
 
-        int milliseconds = minutes * 60 * 1000 + seconds * 1000;
+        int milliseconds =
+                hours * 60 * 60 * 1000 + minutes * 60 * 1000 + seconds * 1000;
         if (secondsAndCentiseconds.length == 2) {
             int centiseconds = Integer.parseInt(secondsAndCentiseconds[1]);
             milliseconds += centiseconds * 10;

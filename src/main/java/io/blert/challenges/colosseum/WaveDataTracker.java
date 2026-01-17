@@ -64,7 +64,8 @@ public class WaveDataTracker extends DataTracker {
         super(challenge, client, waveToStage(wave));
 
         this.waveStartMessage = "Wave: " + wave;
-        this.waveEndRegex = Pattern.compile("Wave " + wave + " completed! Wave duration: ([0-9:.]+)");
+        this.waveEndRegex = Pattern.compile("Wave " + wave + " completed! " +
+                "Wave duration: (" + Tick.TIME_STRING_REGEX + ")");
         this.ticksOnEntry = ticksOnEntry;
     }
 
