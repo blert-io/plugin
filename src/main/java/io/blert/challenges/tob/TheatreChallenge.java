@@ -69,9 +69,9 @@ public class TheatreChallenge extends RecordableChallenge {
     private static final Pattern RAID_ENTRY_REGEX_3P =
             Pattern.compile("(.+) has entered the Theatre of Blood \\((\\w+) Mode\\). Step inside to join (her|him|them)\\.\\.\\.");
     private static final Pattern RAID_COMPLETION_CHALLENGE_REGEX =
-            Pattern.compile("^.+Theatre of Blood completion time: ([0-9]+:[0-9]+(\\.[0-9]+)?).*");
+            Pattern.compile("^.+Theatre of Blood completion time: (" + Tick.TIME_STRING_REGEX + ").*");
     private static final Pattern RAID_COMPLETION_OVERALL_REGEX =
-            Pattern.compile("Theatre of Blood total completion time: ([0-9]+:[0-9]+(\\.[0-9]+)?).*");
+            Pattern.compile("Theatre of Blood total completion time: (" + Tick.TIME_STRING_REGEX + ").*");
 
     private Location location = Location.ELSEWHERE;
     private boolean locationChangedThisTick = false;

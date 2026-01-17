@@ -28,6 +28,7 @@ import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.mokhaiotl.*;
 import io.blert.util.Location;
+import io.blert.util.Tick;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -105,9 +106,11 @@ public class DelveDataTracker extends DataTracker {
         super(challenge, client, delveToStage(delve));
         this.delve = delve;
         if (delve > 8) {
-            this.delveEndRegex = Pattern.compile("Delve level: 8\\+ \\(" + delve + "\\) duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
+            this.delveEndRegex = Pattern.compile(
+                    "Delve level: 8\\+ \\(" + delve + "\\) duration: (" + Tick.TIME_STRING_REGEX + ")");
         } else {
-            this.delveEndRegex = Pattern.compile("Delve level: " + delve + " duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
+            this.delveEndRegex = Pattern.compile(
+                    "Delve level: " + delve + " duration: (" + Tick.TIME_STRING_REGEX + ")");
         }
         this.unidentifiedAttackTick = -1;
         this.lastRacecarTick = -1;

@@ -47,7 +47,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public final class ColosseumChallenge extends RecordableChallenge {
-    final static Pattern COLOSSEUM_END_REGEX = Pattern.compile("Colosseum duration: ([0-9:.]+).*");
+    final static Pattern COLOSSEUM_END_REGEX = Pattern.compile(
+            "Colosseum duration: (" + Tick.TIME_STRING_REGEX + ")");
 
     private static final int COLOSSEUM_REGION_ID = 7216;
     private static final int COLOSSEUM_LOBBY_REGION_ID = 7316;
