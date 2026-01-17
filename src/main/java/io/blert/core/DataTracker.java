@@ -35,14 +35,13 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.Subscribe;
 
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
 @Slf4j
-public abstract class DataTracker {
+public abstract class DataTracker implements RuneliteEventHandler {
     protected enum State {
         NOT_STARTED,
         IN_PROGRESS,
@@ -706,7 +705,6 @@ public abstract class DataTracker {
         log.debug("Hit a {} with {} on {}", spec.getDamage(), weapon.getName(), spec.getTarget().getName());
     }
 
-    @Subscribe
     public final void onGameStateChanged(GameStateChanged event) {
         if (terminating()) {
             return;
@@ -715,7 +713,6 @@ public abstract class DataTracker {
         onGameState(event);
     }
 
-    @Subscribe
     public final void onNpcSpawned(NpcSpawned event) {
         if (terminating()) {
             return;
@@ -724,8 +721,8 @@ public abstract class DataTracker {
         onNpcSpawn(event).ifPresent(this::addTrackedNpc);
     }
 
-    @Subscribe
-    protected final void onNpcDespawned(NpcDespawned event) {
+    @Override
+    public final void onNpcDespawned(NpcDespawned event) {
         if (terminating()) {
             return;
         }
@@ -736,15 +733,15 @@ public abstract class DataTracker {
         }
     }
 
-    @Subscribe
-    protected final void onNpcChanged(NpcChanged event) {
+    @Override
+    public final void onNpcChanged(NpcChanged event) {
         if (!terminating()) {
             onNpcChange(event);
         }
     }
 
-    @Subscribe
-    protected final void onAnimationChanged(AnimationChanged event) {
+    @Override
+    public final void onAnimationChanged(AnimationChanged event) {
         if (getState() != State.IN_PROGRESS) {
             return;
         }
@@ -762,22 +759,22 @@ public abstract class DataTracker {
         onAnimation(event);
     }
 
-    @Subscribe
-    protected final void onProjectileMoved(ProjectileMoved event) {
+    @Override
+    public final void onProjectileMoved(ProjectileMoved event) {
         if (!terminating()) {
             onProjectile(event);
         }
     }
 
-    @Subscribe(priority = 10)
-    protected final void onChatMessage(ChatMessage event) {
+    @Override
+    public final void onChatMessage(ChatMessage event) {
         if (state == State.IN_PROGRESS || event.getType() == ChatMessageType.GAMEMESSAGE) {
             onMessage(event);
         }
     }
 
-    @Subscribe
-    protected final void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
+    @Override
+    public final void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
         if (getState() != State.IN_PROGRESS) {
             return;
         }
@@ -801,50 +798,50 @@ public abstract class DataTracker {
         onHitsplat(hitsplatApplied);
     }
 
-    @Subscribe
-    protected final void onGameObjectSpawned(GameObjectSpawned event) {
+    @Override
+    public final void onGameObjectSpawned(GameObjectSpawned event) {
         if (!terminating()) {
             onGameObjectSpawn(event);
         }
     }
 
-    @Subscribe
-    protected final void onGameObjectDespawned(GameObjectDespawned event) {
+    @Override
+    public final void onGameObjectDespawned(GameObjectDespawned event) {
         if (!terminating()) {
             onGameObjectDespawn(event);
         }
     }
 
-    @Subscribe
-    protected final void onGroundObjectSpawned(GroundObjectSpawned event) {
+    @Override
+    public final void onGroundObjectSpawned(GroundObjectSpawned event) {
         if (!terminating()) {
             onGroundObjectSpawn(event);
         }
     }
 
-    @Subscribe
-    protected final void onGroundObjectDespawned(GroundObjectDespawned event) {
+    @Override
+    public final void onGroundObjectDespawned(GroundObjectDespawned event) {
         if (!terminating()) {
             onGroundObjectDespawn(event);
         }
     }
 
-    @Subscribe
-    protected final void onGraphicChanged(GraphicChanged event) {
+    @Override
+    public final void onGraphicChanged(GraphicChanged event) {
         if (!terminating()) {
             onGraphicChange(event);
         }
     }
 
-    @Subscribe
-    private void onGraphicsObjectCreated(GraphicsObjectCreated event) {
+    @Override
+    public final void onGraphicsObjectCreated(GraphicsObjectCreated event) {
         if (!terminating()) {
             onGraphicsObjectCreation(event);
         }
     }
 
-    @Subscribe
-    protected final void onActorDeath(ActorDeath event) {
+    @Override
+    public final void onActorDeath(ActorDeath event) {
         if (terminating()) {
             return;
         }
@@ -862,8 +859,8 @@ public abstract class DataTracker {
         onDeath(event);
     }
 
-    @Subscribe
-    protected final void onVarbitChanged(VarbitChanged varbitChanged) {
+    @Override
+    public final void onVarbitChanged(VarbitChanged varbitChanged) {
         if (getState() != State.IN_PROGRESS) {
             return;
         }

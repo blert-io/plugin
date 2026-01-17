@@ -34,8 +34,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
@@ -44,16 +44,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 @Slf4j
-public abstract class RecordableChallenge {
+public abstract class RecordableChallenge implements RuneliteEventHandler {
     @Getter
     private final Challenge challenge;
     @Getter
     private @NonNull ChallengeMode challengeMode;
 
     protected final Client client;
-
-    @Getter(AccessLevel.PROTECTED)
-    private final EventBus eventBus;
 
     @Getter
     private final ClientThread clientThread;
@@ -96,11 +93,10 @@ public abstract class RecordableChallenge {
      */
     private final Map<String, Raider> party = new LinkedHashMap<>();
 
-    protected RecordableChallenge(Challenge challenge, Client client, EventBus eventBus, ClientThread clientThread) {
+    protected RecordableChallenge(Challenge challenge, Client client, ClientThread clientThread) {
         this.challenge = challenge;
         this.challengeMode = ChallengeMode.NO_MODE;
         this.client = client;
-        this.eventBus = eventBus;
         this.clientThread = clientThread;
     }
 
@@ -261,5 +257,147 @@ public abstract class RecordableChallenge {
 
     private Status currentStatus() {
         return new Status(challenge, challengeMode, getStage(), new ArrayList<>(party.keySet()));
+    }
+
+    /**
+     * Returns the currently active data tracker for this challenge, if any.
+     */
+    @Nullable
+    protected abstract DataTracker getActiveTracker();
+
+    @Override
+    public void onGameStateChanged(GameStateChanged event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onGameStateChanged(event);
+        }
+    }
+
+    @Override
+    public void onNpcSpawned(NpcSpawned event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onNpcSpawned(event);
+        }
+    }
+
+    @Override
+    public void onNpcDespawned(NpcDespawned event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onNpcDespawned(event);
+        }
+    }
+
+    @Override
+    public void onNpcChanged(NpcChanged event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onNpcChanged(event);
+        }
+    }
+
+    @Override
+    public void onAnimationChanged(AnimationChanged event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onAnimationChanged(event);
+        }
+    }
+
+    @Override
+    public void onProjectileMoved(ProjectileMoved event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onProjectileMoved(event);
+        }
+    }
+
+    @Override
+    public void onChatMessage(ChatMessage event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onChatMessage(event);
+        }
+    }
+
+    @Override
+    public void onHitsplatApplied(HitsplatApplied event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onHitsplatApplied(event);
+        }
+    }
+
+    @Override
+    public void onGameObjectSpawned(GameObjectSpawned event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onGameObjectSpawned(event);
+        }
+    }
+
+    @Override
+    public void onGameObjectDespawned(GameObjectDespawned event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onGameObjectDespawned(event);
+        }
+    }
+
+    @Override
+    public void onGroundObjectSpawned(GroundObjectSpawned event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onGroundObjectSpawned(event);
+        }
+    }
+
+    @Override
+    public void onGroundObjectDespawned(GroundObjectDespawned event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onGroundObjectDespawned(event);
+        }
+    }
+
+    @Override
+    public void onGraphicChanged(GraphicChanged event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onGraphicChanged(event);
+        }
+    }
+
+    @Override
+    public void onGraphicsObjectCreated(GraphicsObjectCreated event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onGraphicsObjectCreated(event);
+        }
+    }
+
+    @Override
+    public void onActorDeath(ActorDeath event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onActorDeath(event);
+        }
+    }
+
+    @Override
+    public void onVarbitChanged(VarbitChanged event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onVarbitChanged(event);
+        }
+    }
+
+    @Override
+    public void onScriptPreFired(ScriptPreFired event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onScriptPreFired(event);
+        }
     }
 }

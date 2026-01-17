@@ -38,8 +38,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -76,12 +74,18 @@ public class InfernoChallenge extends RecordableChallenge {
     private Pillar eastPillar;
     private Pillar southPillar;
 
-    public InfernoChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
-        super(Challenge.INFERNO, client, eventBus, clientThread);
+    public InfernoChallenge(Client client, ClientThread clientThread) {
+        super(Challenge.INFERNO, client, clientThread);
         this.wave = 0;
         this.challengeStartTick = -1;
         this.reportedChallengeTicks = -1;
         this.hasLogged = false;
+    }
+
+    @Nullable
+    @Override
+    protected DataTracker getActiveTracker() {
+        return waveDataTracker;
     }
 
     public int recordedDurationTicks() {
@@ -149,40 +153,39 @@ public class InfernoChallenge extends RecordableChallenge {
         return waveDataTracker != null ? waveDataTracker.getStage() : null;
     }
 
-    @Subscribe
-    private void onGameStateChanged(GameStateChanged event) {
+    @Override
+    public void onGameStateChanged(GameStateChanged event) {
         if (event.getGameState() == GameState.LOGIN_SCREEN && getState().inChallenge()) {
             hasLogged = true;
         }
+        super.onGameStateChanged(event);
     }
 
-    @Subscribe
-    private void onChatMessage(ChatMessage event) {
-        if (getState().isInactive()) {
-            return;
-        }
-
-        String stripped = Text.removeTags(event.getMessage());
-        if (stripped.equals(WAVE_1_START_MESSAGE)) {
-            challengeStartTick =
-                    client.getTickCount() - WAVE_1_TIME_OFFSET_TICKS;
-            return;
-        }
-
-        Matcher matcher = INFERNO_END_REGEX.matcher(stripped);
-        if (matcher.find()) {
-            try {
-                reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
-            } catch (Exception e) {
-                reportedChallengeTicks = -1;
+    @Override
+    public void onChatMessage(ChatMessage event) {
+        if (!getState().isInactive()) {
+            String stripped = Text.removeTags(event.getMessage());
+            if (stripped.equals(WAVE_1_START_MESSAGE)) {
+                challengeStartTick =
+                        client.getTickCount() - WAVE_1_TIME_OFFSET_TICKS;
+            } else {
+                Matcher matcher = INFERNO_END_REGEX.matcher(stripped);
+                if (matcher.find()) {
+                    try {
+                        reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                    } catch (Exception e) {
+                        reportedChallengeTicks = -1;
+                    }
+                    deferredTask =
+                            new DeferredTask(() -> finishInferno(ChallengeState.COMPLETE), 3);
+                }
             }
-            deferredTask =
-                    new DeferredTask(() -> finishInferno(ChallengeState.COMPLETE), 3);
         }
+        super.onChatMessage(event);
     }
 
-    @Subscribe
-    public final void onNpcSpawned(NpcSpawned event) {
+    @Override
+    public void onNpcSpawned(NpcSpawned event) {
         NPC npc = event.getNpc();
         if (npc.getId() == InfernoNpc.ROCKY_SUPPORT.getId()) {
             Pillar pillar = new Pillar(npc, npc.getIndex(),
@@ -199,6 +202,7 @@ public class InfernoChallenge extends RecordableChallenge {
                     break;
             }
         }
+        super.onNpcSpawned(event);
     }
 
     public void removePillar(TrackedNpc pillar) {
@@ -263,7 +267,6 @@ public class InfernoChallenge extends RecordableChallenge {
 
         wave++;
         waveDataTracker = new WaveDataTracker(this, client, wave);
-        getEventBus().register(waveDataTracker);
 
         if (westPillar != null) {
             waveDataTracker.addTrackedNpc(westPillar);
@@ -279,7 +282,6 @@ public class InfernoChallenge extends RecordableChallenge {
     private void clearWaveDataTracker() {
         if (waveDataTracker != null) {
             waveDataTracker.terminate();
-            getEventBus().unregister(waveDataTracker);
             waveDataTracker = null;
         }
     }

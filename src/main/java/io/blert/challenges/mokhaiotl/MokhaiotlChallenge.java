@@ -33,8 +33,6 @@ import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -55,12 +53,18 @@ public class MokhaiotlChallenge extends RecordableChallenge {
     int recordedChallengeTicks;
     int reportedChallengeTicks;
 
-    public MokhaiotlChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
-        super(Challenge.MOKHAIOTL, client, eventBus, clientThread);
+    public MokhaiotlChallenge(Client client, ClientThread clientThread) {
+        super(Challenge.MOKHAIOTL, client, clientThread);
         delveDataTracker = null;
         delve = 0;
         recordedChallengeTicks = 0;
         reportedChallengeTicks = -1;
+    }
+
+    @Nullable
+    @Override
+    protected DataTracker getActiveTracker() {
+        return delveDataTracker;
     }
 
     @Override
@@ -105,21 +109,20 @@ public class MokhaiotlChallenge extends RecordableChallenge {
         return delveDataTracker != null ? delveDataTracker.getStage() : null;
     }
 
-    @Subscribe
-    private void onChatMessage(ChatMessage event) {
-        if (getState().isInactive()) {
-            return;
-        }
-
-        Matcher matcher =
-                MokhaiotlChallenge.MOKHAIOTL_END_REGEX.matcher(Text.removeTags(event.getMessage()));
-        if (matcher.find()) {
-            try {
-                reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
-            } catch (Exception e) {
-                reportedChallengeTicks = -1;
+    @Override
+    public void onChatMessage(ChatMessage event) {
+        if (!getState().isInactive()) {
+            Matcher matcher =
+                    MokhaiotlChallenge.MOKHAIOTL_END_REGEX.matcher(Text.removeTags(event.getMessage()));
+            if (matcher.find()) {
+                try {
+                    reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                } catch (Exception e) {
+                    reportedChallengeTicks = -1;
+                }
             }
         }
+        super.onChatMessage(event);
     }
 
     void updateChallengeState() {
@@ -172,13 +175,11 @@ public class MokhaiotlChallenge extends RecordableChallenge {
         }
 
         delveDataTracker = new DelveDataTracker(this, client, delve);
-        getEventBus().register(delveDataTracker);
     }
 
     private void clearDelveDataTracker() {
         if (delveDataTracker != null) {
             delveDataTracker.terminate();
-            getEventBus().unregister(delveDataTracker);
             delveDataTracker = null;
         }
     }
