@@ -57,7 +57,7 @@ public class InfernoChallenge extends RecordableChallenge {
 
     private static final String WAVE_1_START_MESSAGE = "Wave: 1";
     static final Pattern INFERNO_END_REGEX =
-            Pattern.compile("Duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
+            Pattern.compile("Duration: (" + Tick.TIME_STRING_REGEX + ")");
     // The inferno timer begins 6 seconds (10 ticks) before the first wave.
     private static final int WAVE_1_TIME_OFFSET_TICKS = 10;
 

@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 public class MokhaiotlChallenge extends RecordableChallenge {
     private static final int MOKHAIOTL_BURROW_OBJECT_ID = 57285;
     private static final Pattern MOKHAIOTL_END_REGEX =
-            Pattern.compile("Delve level 1 - 8 duration: ([0-9]{1,2}:[0-9]{2}(\\.[0-9]{2})?)");
+            Pattern.compile("Delve level 1 - 8 duration: (" + Tick.TIME_STRING_REGEX + ")");
 
     private DelveDataTracker delveDataTracker;
     int delve;
