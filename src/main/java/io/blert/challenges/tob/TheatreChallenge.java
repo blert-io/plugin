@@ -47,8 +47,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -86,8 +84,14 @@ public class TheatreChallenge extends RecordableChallenge {
 
     private @Nullable DeferredTask deferredTask = null;
 
-    public TheatreChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
-        super(Challenge.TOB, client, eventBus, clientThread);
+    public TheatreChallenge(Client client, ClientThread clientThread) {
+        super(Challenge.TOB, client, clientThread);
+    }
+
+    @Nullable
+    @Override
+    protected DataTracker getActiveTracker() {
+        return roomDataTracker;
     }
 
     @Override
@@ -300,18 +304,14 @@ public class TheatreChallenge extends RecordableChallenge {
         locationChangedThisTick = true;
     }
 
-    @Subscribe(priority = 10)
-    private void onNpcSpawned(NpcSpawned npcSpawned) {
+    @Override
+    public void onNpcSpawned(NpcSpawned npcSpawned) {
         updateLocation();
-
-        if (locationChangedThisTick && roomDataTracker != null) {
-            // When the room changes, the event must be manually forwarded to the new `roomDataTracker`.
-            roomDataTracker.onNpcSpawned(npcSpawned);
-        }
+        super.onNpcSpawned(npcSpawned);
     }
 
-    @Subscribe(priority = 10)
-    private void onVarbitChanged(VarbitChanged varbit) {
+    @Override
+    public void onVarbitChanged(VarbitChanged varbit) {
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
             if (getState().isInactive() && varbit.getValue() == 2) {
                 // A raid start due to a varbit change usually means that the player is joining late, rejoining, or
@@ -337,48 +337,52 @@ public class TheatreChallenge extends RecordableChallenge {
         if (previousState != roomState) {
             log.debug("Room status changed from " + previousState + " to " + roomState);
         }
+
+        super.onVarbitChanged(varbit);
     }
 
-    @Subscribe(priority = 5)
-    private void onChatMessage(ChatMessage message) {
+    @Override
+    public void onChatMessage(ChatMessage message) {
         updateLocation();
 
-        if (message.getType() != ChatMessageType.GAMEMESSAGE) {
-            return;
-        }
+        if (message.getType() == ChatMessageType.GAMEMESSAGE) {
+            String stripped = Text.removeTags(message.getMessage());
 
-        String stripped = Text.removeTags(message.getMessage());
+            if (getState().isInactive()) {
+                // Listen for a chat message indicating the start of a raid, and queue the start action immediately
+                // instead of waiting to enter.
+                Matcher matcher = RAID_ENTRY_REGEX_1P.matcher(stripped);
+                if (matcher.matches()) {
+                    log.debug("Raid started via 1p chat message (mode: {})", matcher.group(1));
+                    queueRaidStart(ChallengeMode.parseTob(matcher.group(1)).orElse(ChallengeMode.NO_MODE),
+                            getParty().isEmpty());
+                    super.onChatMessage(message);
+                    return;
+                }
 
-        if (getState().isInactive()) {
-            // Listen for a chat message indicating the start of a raid, and queue the start action immediately
-            // instead of waiting to enter.
-            Matcher matcher = RAID_ENTRY_REGEX_1P.matcher(stripped);
-            if (matcher.matches()) {
-                log.debug("Raid started via 1p chat message (mode: {})", matcher.group(1));
-                queueRaidStart(ChallengeMode.parseTob(matcher.group(1)).orElse(ChallengeMode.NO_MODE),
-                        getParty().isEmpty());
+                matcher = RAID_ENTRY_REGEX_3P.matcher(stripped);
+                if (matcher.matches()) {
+                    log.debug("Raid started via 3p chat message (leader: {} mode: {})", matcher.group(1), matcher.group(2));
+                    queueRaidStart(ChallengeMode.parseTob(matcher.group(2)).orElse(ChallengeMode.NO_MODE),
+                            getParty().isEmpty());
+                }
+                super.onChatMessage(message);
                 return;
             }
 
-            matcher = RAID_ENTRY_REGEX_3P.matcher(stripped);
+            Matcher matcher = RAID_COMPLETION_CHALLENGE_REGEX.matcher(stripped);
             if (matcher.matches()) {
-                log.debug("Raid started via 3p chat message (leader: {} mode: {})", matcher.group(1), matcher.group(2));
-                queueRaidStart(ChallengeMode.parseTob(matcher.group(2)).orElse(ChallengeMode.NO_MODE),
-                        getParty().isEmpty());
+                reportedChallengeTime = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
             }
-            return;
+
+            matcher = RAID_COMPLETION_OVERALL_REGEX.matcher(stripped);
+            if (matcher.matches()) {
+                int overallTime = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                queueRaidEnd(ChallengeState.COMPLETE, overallTime);
+            }
         }
 
-        Matcher matcher = RAID_COMPLETION_CHALLENGE_REGEX.matcher(stripped);
-        if (matcher.matches()) {
-            reportedChallengeTime = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
-        }
-
-        matcher = RAID_COMPLETION_OVERALL_REGEX.matcher(stripped);
-        if (matcher.matches()) {
-            int overallTime = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
-            queueRaidEnd(ChallengeState.COMPLETE, overallTime);
-        }
+        super.onChatMessage(message);
     }
 
     /**
@@ -418,7 +422,6 @@ public class TheatreChallenge extends RecordableChallenge {
     private void clearRoomDataTracker() {
         if (roomDataTracker != null) {
             roomDataTracker.terminate();
-            getEventBus().unregister(roomDataTracker);
             roomDataTracker = null;
         }
     }
@@ -442,7 +445,6 @@ public class TheatreChallenge extends RecordableChallenge {
 
         if (roomDataTracker != null) {
             log.info("Initialized room data tracker for {} from {}", roomDataTracker.getRoom(), location);
-            getEventBus().register(roomDataTracker);
             dispatchEvent(new StageUpdateEvent(roomDataTracker.getStage(), 0, StageUpdateEvent.Status.ENTERED));
             getParty().forEach(Raider::resetForNewRoom);
         }

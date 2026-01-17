@@ -39,12 +39,12 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
+import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.ClientToolbar;
@@ -137,7 +137,6 @@ public class BlertPlugin extends Plugin {
         attackRegistry.loadDefaults();
         spellRegistry.loadDefaults();
 
-        eventBus.register(websocketManager);
         websocketManager.open();
 
         sidePanel = new BlertPluginPanel(config, websocketManager);
@@ -146,8 +145,8 @@ public class BlertPlugin extends Plugin {
         clientToolbar.addNavigation(sidePanelButton);
         sidePanel.startPanel();
 
-        challenges.add(new TheatreChallenge(client, eventBus, clientThread));
-        challenges.add(new ColosseumChallenge(client, eventBus, clientThread));
+        challenges.add(new TheatreChallenge(client, clientThread));
+        challenges.add(new ColosseumChallenge(client, clientThread));
 
         previousGameState = client.getGameState();
         loginState = previousGameState == GameState.LOGGED_IN ? LoginState.LOGGED_IN : LoginState.LOGGED_OUT;
@@ -160,14 +159,12 @@ public class BlertPlugin extends Plugin {
     @Override
     protected void shutDown() throws Exception {
         websocketManager.close();
-        eventBus.unregister(websocketManager);
 
         clientToolbar.removeNavigation(sidePanelButton);
         sidePanel.stopPanel();
         sidePanel = null;
 
         if (activeChallenge != null) {
-            eventBus.unregister(activeChallenge);
             activeChallenge.terminate();
             activeChallenge = null;
         }
@@ -181,12 +178,7 @@ public class BlertPlugin extends Plugin {
             deferredTask.tick();
         }
 
-        if (loginState == LoginState.JUST_LOGGED_IN) {
-            // Resume the active challenge at the end of the login tick.
-            if (activeChallenge != null) {
-                eventBus.register(activeChallenge);
-            }
-        } else {
+        if (loginState != LoginState.JUST_LOGGED_IN) {
             updateActiveChallenge();
 
             if (activeChallenge != null) {
@@ -226,15 +218,14 @@ public class BlertPlugin extends Plugin {
                 websocketManager.getEventHandler().updateGameState(GameState.LOGIN_SCREEN);
             }
 
-            if (activeChallenge != null) {
-                // Suspend the challenge while the player is logged out.
-                eventBus.unregister(activeChallenge);
-            }
-
             loginState = LoginState.LOGGED_OUT;
         }
 
         previousGameState = gameState;
+
+        if (activeChallenge != null) {
+            activeChallenge.onGameStateChanged(gameStateChanged);
+        }
     }
 
     @Provides
@@ -260,14 +251,12 @@ public class BlertPlugin extends Plugin {
             }
 
             activeChallenge = challenge;
-            eventBus.register(activeChallenge);
             activeChallenge.initialize(websocketManager.getEventHandler(), attackRegistry, spellRegistry);
 
             log.info("Entered challenge \"{}\"", activeChallenge.getName());
         } else if (activeChallenge != null) {
             log.info("Exited challenge \"{}\"", activeChallenge.getName());
 
-            eventBus.unregister(activeChallenge);
             activeChallenge.terminate();
             activeChallenge = null;
         }
@@ -281,6 +270,123 @@ public class BlertPlugin extends Plugin {
                 && !worldTypes.contains(WorldType.SEASONAL);
         if (!enabled) {
             log.info("Plugin is disabled due to world type: {}", worldTypes);
+        }
+    }
+
+    @Subscribe
+    private void onConfigChanged(ConfigChanged event) {
+        websocketManager.onConfigChanged(event);
+    }
+
+    @Subscribe(priority = 10)
+    private void onNpcSpawned(NpcSpawned event) {
+        if (activeChallenge != null) {
+            activeChallenge.onNpcSpawned(event);
+        }
+    }
+
+    @Subscribe
+    private void onNpcDespawned(NpcDespawned event) {
+        if (activeChallenge != null) {
+            activeChallenge.onNpcDespawned(event);
+        }
+    }
+
+    @Subscribe
+    private void onNpcChanged(NpcChanged event) {
+        if (activeChallenge != null) {
+            activeChallenge.onNpcChanged(event);
+        }
+    }
+
+    @Subscribe
+    private void onAnimationChanged(AnimationChanged event) {
+        if (activeChallenge != null) {
+            activeChallenge.onAnimationChanged(event);
+        }
+    }
+
+    @Subscribe
+    private void onProjectileMoved(ProjectileMoved event) {
+        if (activeChallenge != null) {
+            activeChallenge.onProjectileMoved(event);
+        }
+    }
+
+    @Subscribe(priority = 5)
+    private void onChatMessage(ChatMessage event) {
+        if (activeChallenge != null) {
+            activeChallenge.onChatMessage(event);
+        }
+    }
+
+    @Subscribe
+    private void onHitsplatApplied(HitsplatApplied event) {
+        if (activeChallenge != null) {
+            activeChallenge.onHitsplatApplied(event);
+        }
+    }
+
+    @Subscribe
+    private void onGameObjectSpawned(GameObjectSpawned event) {
+        if (activeChallenge != null) {
+            activeChallenge.onGameObjectSpawned(event);
+        }
+    }
+
+    @Subscribe
+    private void onGameObjectDespawned(GameObjectDespawned event) {
+        if (activeChallenge != null) {
+            activeChallenge.onGameObjectDespawned(event);
+        }
+    }
+
+    @Subscribe
+    private void onGroundObjectSpawned(GroundObjectSpawned event) {
+        if (activeChallenge != null) {
+            activeChallenge.onGroundObjectSpawned(event);
+        }
+    }
+
+    @Subscribe
+    private void onGroundObjectDespawned(GroundObjectDespawned event) {
+        if (activeChallenge != null) {
+            activeChallenge.onGroundObjectDespawned(event);
+        }
+    }
+
+    @Subscribe
+    private void onGraphicChanged(GraphicChanged event) {
+        if (activeChallenge != null) {
+            activeChallenge.onGraphicChanged(event);
+        }
+    }
+
+    @Subscribe
+    private void onGraphicsObjectCreated(GraphicsObjectCreated event) {
+        if (activeChallenge != null) {
+            activeChallenge.onGraphicsObjectCreated(event);
+        }
+    }
+
+    @Subscribe
+    private void onActorDeath(ActorDeath event) {
+        if (activeChallenge != null) {
+            activeChallenge.onActorDeath(event);
+        }
+    }
+
+    @Subscribe(priority = 10)
+    private void onVarbitChanged(VarbitChanged event) {
+        if (activeChallenge != null) {
+            activeChallenge.onVarbitChanged(event);
+        }
+    }
+
+    @Subscribe
+    private void onScriptPreFired(ScriptPreFired event) {
+        if (activeChallenge != null) {
+            activeChallenge.onScriptPreFired(event);
         }
     }
 }

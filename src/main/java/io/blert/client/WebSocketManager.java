@@ -32,7 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import okhttp3.OkHttpClient;
 
@@ -132,8 +131,7 @@ public class WebSocketManager {
         }
     }
 
-    @Subscribe
-    private void onConfigChanged(ConfigChanged changed) {
+    public void onConfigChanged(ConfigChanged changed) {
         if (!changed.getGroup().equals("blert")) {
             return;
         }

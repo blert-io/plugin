@@ -36,8 +36,10 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.*;
-import net.runelite.client.eventbus.Subscribe;
+import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.HitsplatApplied;
+import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.util.Text;
 
 import java.util.regex.Matcher;
@@ -162,54 +164,6 @@ public abstract class RoomDataTracker extends DataTracker {
      * Initialization method invoked when the room is first started.
      */
     protected abstract void onRoomStart();
-
-    /**
-     * Implementation-specific equivalent of the {@code onGameObjectSpawned} Runelite event handler.
-     * Should be overriden by implementations which require special handling.
-     *
-     * @param event The event.
-     */
-    protected void onGameObjectSpawn(GameObjectSpawned event) {
-    }
-
-    /**
-     * Implementation-specific equivalent of the {@code onGameObjectDespawned} Runelite event handler.
-     * Should be overriden by implementations which require special handling.
-     *
-     * @param event The event.
-     */
-    protected void onGameObjectDespawn(GameObjectDespawned event) {
-    }
-
-    /**
-     * Implementation-specific equivalent of the {@code onGraphicsObjectCreated} Runelite event handler.
-     * Should be overriden by implementations which require special handling.
-     *
-     * @param event The event.
-     */
-    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
-    }
-
-    @Subscribe
-    protected final void onGameObjectSpawned(GameObjectSpawned event) {
-        if (!terminating()) {
-            onGameObjectSpawn(event);
-        }
-    }
-
-    @Subscribe
-    protected final void onGameObjectDespawned(GameObjectDespawned event) {
-        if (!terminating()) {
-            onGameObjectDespawn(event);
-        }
-    }
-
-    @Subscribe
-    private void onGraphicsObjectCreated(GraphicsObjectCreated event) {
-        if (!terminating()) {
-            onGraphicsObjectCreation(event);
-        }
-    }
 
     @Override
     protected void onGameState(GameStateChanged event) {
