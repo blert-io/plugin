@@ -29,17 +29,7 @@ import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
 import io.blert.core.Stage;
 import io.blert.json.PastChallenge;
-import io.blert.ui.CardPanel;
-import io.blert.ui.FeedItem;
-import io.blert.ui.RoundedButton;
-import io.blert.ui.ScrollablePanel;
-import io.blert.ui.StatusDot;
-import io.blert.ui.ThinScrollBarUI;
-
-import static io.blert.ui.UIConstants.*;
-
-import java.util.Objects;
-
+import io.blert.ui.*;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.ui.PluginPanel;
@@ -58,6 +48,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
+import static io.blert.ui.UIConstants.*;
 
 @Slf4j
 public class BlertPluginPanel extends PluginPanel {
@@ -509,11 +502,16 @@ public class BlertPluginPanel extends PluginPanel {
         } else {
             for (PastChallenge challenge : recentRecordings) {
                 Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.status, challenge.stage);
+                String timeAgo = null;
+                if (challenge.timestamp != null) {
+                    timeAgo = formatTimeAgo(challenge.timestamp.toInstant());
+                }
 
                 FeedItem item = new FeedItem(
                         statusInfo.getLeft(),
                         challengeModeToString(challenge.challenge, challenge.mode),
-                        formatTimeAgo(challenge.instant),
+                        challenge.challengeTicks,
+                        timeAgo,
                         statusInfo.getRight(),
                         challenge.party != null ? challenge.party : new ArrayList<>()
                 );
@@ -654,30 +652,30 @@ public class BlertPluginPanel extends PluginPanel {
 
     private String challengeModeToString(int challengeId, int modeId) {
         if (challengeId == Challenge.COLOSSEUM.getId()) {
-            return "Colosseum";
+            return "COL";
         }
         if (challengeId == Challenge.INFERNO.getId()) {
-            return "Inferno";
+            return "INF";
         }
         if (challengeId == Challenge.MOKHAIOTL.getId()) {
-            return "Mokhaiotl";
+            return "MOK";
         }
 
         if (modeId == ChallengeMode.TOB_ENTRY.getId()) {
-            return "Entry Mode";
+            return "EMT";
         }
         if (modeId == ChallengeMode.TOB_REGULAR.getId()) {
-            return "Regular Mode";
+            return "TOB";
         }
         if (modeId == ChallengeMode.TOB_HARD.getId()) {
-            return "Hard Mode";
+            return "HMT";
         }
 
         if (modeId == ChallengeMode.COX_REGULAR.getId()) {
-            return "Cox Regular";
+            return "COX";
         }
         if (modeId == ChallengeMode.COX_CHALLENGE.getId()) {
-            return "CoX CM";
+            return "CM";
         }
 
         if (modeId == ChallengeMode.TOA_ENTRY.getId()) {
@@ -690,7 +688,7 @@ public class BlertPluginPanel extends PluginPanel {
             return "TOA Expert";
         }
 
-        return "Unknown";
+        return "UNK";
     }
 
     private String challengeUrl(Challenge challenge, String challengeId) {

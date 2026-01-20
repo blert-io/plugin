@@ -1,39 +1,32 @@
 package io.blert.ui;
 
-import static io.blert.ui.UIConstants.BG_CARD;
-import static io.blert.ui.UIConstants.BG_CARD_HOVER;
-import static io.blert.ui.UIConstants.BORDER;
-import static io.blert.ui.UIConstants.FONT_BOLD;
-import static io.blert.ui.UIConstants.FONT_SMALLEST;
-import static io.blert.ui.UIConstants.TEXT_MAIN;
-import static io.blert.ui.UIConstants.TEXT_MUTED;
+import com.google.common.base.Strings;
+import io.blert.util.Tick;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.FlowLayout;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import javax.annotation.Nullable;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.border.EmptyBorder;
+
+import static io.blert.ui.UIConstants.*;
 
 public class FeedItem extends JPanel {
     private final Color accentColor;
     private boolean isHovered = false;
 
-    public FeedItem(String title, String mode, String time, Color accent, List<String> party) {
+    public FeedItem(String title, String mode,
+                    int ticks, @Nullable String timestamp,
+                    Color accent, List<String> party) {
         this.accentColor = accent;
         setOpaque(false);
         setLayout(new BorderLayout(0, 4));
         setBorder(new EmptyBorder(5, 12, 5, 8));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        JPanel header = getTitlePanel(title, mode, time);
+        JPanel header = getTitlePanel(title, mode, ticks, timestamp);
 
         add(header, BorderLayout.NORTH);
 
@@ -59,7 +52,8 @@ public class FeedItem extends JPanel {
         });
     }
 
-    private static JPanel getTitlePanel(String title, String mode, String time) {
+    private static JPanel getTitlePanel(String title, String mode, int ticks,
+                                        @Nullable String timestamp) {
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
 
@@ -78,9 +72,20 @@ public class FeedItem extends JPanel {
             leftHead.add(modeLabel);
         }
 
+        if (ticks > 0) {
+            JLabel ticksLabel = new JLabel(" • " + Tick.asTimeString(ticks));
+            ticksLabel.setFont(FONT_SMALLEST);
+            ticksLabel.setForeground(TEXT_MUTED);
+            leftHead.add(ticksLabel);
+        }
+
         header.add(leftHead, BorderLayout.WEST);
 
-        JLabel timeLabel = new JLabel(time);
+        if (Strings.isNullOrEmpty(timestamp)) {
+            return header;
+        }
+
+        JLabel timeLabel = new JLabel(timestamp);
         timeLabel.setFont(FONT_SMALLEST);
         timeLabel.setForeground(TEXT_MUTED);
         header.add(timeLabel, BorderLayout.EAST);
