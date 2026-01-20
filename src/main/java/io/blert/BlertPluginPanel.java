@@ -502,11 +502,16 @@ public class BlertPluginPanel extends PluginPanel {
         } else {
             for (PastChallenge challenge : recentRecordings) {
                 Pair<String, Color> statusInfo = getChallengeStatusInfo(challenge.status, challenge.stage);
+                String timeAgo = null;
+                if (challenge.timestamp != null) {
+                    timeAgo = formatTimeAgo(challenge.timestamp.toInstant());
+                }
 
                 FeedItem item = new FeedItem(
                         statusInfo.getLeft(),
                         challengeModeToString(challenge.challenge, challenge.mode),
-                        formatTimeAgo(challenge.instant),
+                        challenge.challengeTicks,
+                        timeAgo,
                         statusInfo.getRight(),
                         challenge.party != null ? challenge.party : new ArrayList<>()
                 );
@@ -614,27 +619,27 @@ public class BlertPluginPanel extends PluginPanel {
 
     private String challengeModeToString(int challengeId, int modeId) {
         if (challengeId == Challenge.COLOSSEUM.getId()) {
-            return "Colosseum";
+            return "COL";
         }
         if (challengeId == Challenge.INFERNO.getId()) {
-            return "Inferno";
+            return "INF";
         }
 
         if (modeId == ChallengeMode.TOB_ENTRY.getId()) {
-            return "Entry Mode";
+            return "EMT";
         }
         if (modeId == ChallengeMode.TOB_REGULAR.getId()) {
-            return "Regular Mode";
+            return "TOB";
         }
         if (modeId == ChallengeMode.TOB_HARD.getId()) {
-            return "Hard Mode";
+            return "HMT";
         }
 
         if (modeId == ChallengeMode.COX_REGULAR.getId()) {
-            return "Cox Regular";
+            return "COX";
         }
         if (modeId == ChallengeMode.COX_CHALLENGE.getId()) {
-            return "CoX CM";
+            return "CM";
         }
 
         if (modeId == ChallengeMode.TOA_ENTRY.getId()) {
@@ -647,7 +652,7 @@ public class BlertPluginPanel extends PluginPanel {
             return "TOA Expert";
         }
 
-        return "Unknown";
+        return "UNK";
     }
 
     private String challengeUrl(Challenge challenge, String challengeId) {

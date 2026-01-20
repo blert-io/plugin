@@ -23,7 +23,6 @@
 
 package io.blert.json;
 
-import java.time.Instant;
 import java.util.List;
 
 public class PastChallenge {
@@ -39,5 +38,6 @@ public class PastChallenge {
     public int mode;
     public List<String> party;
     public int challenge;
-	public Instant instant = Instant.now();
+    public Timestamp timestamp;
+    public int challengeTicks;
 }

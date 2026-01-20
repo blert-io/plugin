@@ -663,10 +663,7 @@ public class WebSocketEventHandler implements EventHandler {
         switch (serverStatus.status) {
             case ServerStatus.STATUS_SHUTDOWN_PENDING: {
                 if (serverStatus.shutdownTime != null) {
-                    serverShutdownTime = Instant.ofEpochSecond(
-                            serverStatus.shutdownTime.seconds,
-                            serverStatus.shutdownTime.nanos
-                    );
+                    serverShutdownTime = serverStatus.shutdownTime.toInstant();
                     Duration timeUntilShutdown = Duration.between(Instant.now(), serverShutdownTime);
                     plugin.getSidePanel().setShutdownTime(serverShutdownTime);
 

@@ -31,9 +31,4 @@ public class ServerStatus {
 
     public int status;
     public Timestamp shutdownTime;
-
-    public static class Timestamp {
-        public long seconds;
-        public int nanos;
-    }
 }
