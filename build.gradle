@@ -24,7 +24,7 @@ dependencies {
 }
 
 group = 'io.blert'
-version = '0.7.4-RUNELITE'
+version = '0.8.0-RUNELITE'
 
 def getGitHash = { ->
     def stdout = new ByteArrayOutputStream()
