@@ -223,17 +223,16 @@ public class OlmDataTracker extends RoomDataTracker
             
             return Optional.of(updatedOlm);
         }
-        
+
         if (!olms.containsKey(npcHash))
         {
             CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-            int scaledHp = coxChallenge.getScaledHitpoints(coxNpc);
             
             BasicTrackedNpc newOlm = new BasicTrackedNpc(
                 npc,
                 coxNpc,
                 generateRoomId(npc),
-                new Hitpoints(scaledHp)
+                new Hitpoints(coxNpc.getBaseHitpoints())
             );
             
             olms.put(npcHash, newOlm);
@@ -247,11 +246,10 @@ public class OlmDataTracker extends RoomDataTracker
             }
             
             log.info(
-                "✓ Olm {} tracked: id={}, base HP {} (scaled={}){} - Total Olm: {}",
+                "✓ Olm {} tracked: id={}, HP {} {} - Total Olm: {}",
                 coxNpc.name(),
                 npc.getId(),
-                coxNpc.getOriginalBaseHitpoints(),
-                scaledHp,
+                newOlm.getHitpoints().getBase(),
                 modeStatus,
                 olms.size()
             );

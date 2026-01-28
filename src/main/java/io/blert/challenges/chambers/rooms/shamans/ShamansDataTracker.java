@@ -58,7 +58,10 @@ public class ShamansDataTracker extends RoomDataTracker
     // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
 
     private final Map<Integer, BasicTrackedNpc> shamans = new HashMap<>(); // Track multiple Shamans by NPC ID
+    private final Map<Integer, Boolean> targetedShamans = new HashMap<>(); // Track which Shaman IDs have been targeted
+    private final Map<Integer, Boolean> attackedShamans = new HashMap<>(); // Track which Shaman IDs have been attacked
     private @Nullable NpcAttack attackThisTick = null;
+    private int lastPlayerAnimation = -1; // Track player's last animation
 
     public ShamansDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -72,6 +75,49 @@ public class ShamansDataTracker extends RoomDataTracker
         super.onTick();
 
         final int tick = getTick();
+        
+        // Check player targeting
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer != null && localPlayer.getInteracting() instanceof NPC)
+        {
+            NPC targetedNpc = (NPC) localPlayer.getInteracting();
+            int npcId = targetedNpc.getId();
+            
+            // Check if this is a Shaman we're tracking and haven't logged targeting for yet
+            if (shamans.containsKey(npcId) && !targetedShamans.getOrDefault(npcId, false))
+            {
+                targetedShamans.put(npcId, true);
+                log.info("[Shaman Target] First time targeting Shaman id={} index={} at tick {}/{}",
+                    npcId, targetedNpc.getIndex(), tick, getStartTick() + tick);
+            }
+        }
+        
+        // Check player attacking (based on player animation)
+        if (localPlayer != null)
+        {
+            int currentAnimation = localPlayer.getAnimation();
+            
+            // Detect if player is performing an attack animation (not idle/moving)
+            if (currentAnimation != -1 && currentAnimation != lastPlayerAnimation)
+            {
+                Actor interacting = localPlayer.getInteracting();
+                if (interacting instanceof NPC)
+                {
+                    NPC attackedNpc = (NPC) interacting;
+                    int npcId = attackedNpc.getId();
+                    
+                    // Check if this is a Shaman we're tracking and haven't logged attacking for yet
+                    if (shamans.containsKey(npcId) && !attackedShamans.getOrDefault(npcId, false))
+                    {
+                        attackedShamans.put(npcId, true);
+                        log.info("[Shaman Attack] First time attacking Shaman id={} index={} with animation {} at tick {}/{}",
+                            npcId, attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
+                    }
+                }
+            }
+            
+            lastPlayerAnimation = currentAnimation;
+        }
 
         // Update HP for all tracked Shamans
         for (Map.Entry<Integer, BasicTrackedNpc> entry : shamans.entrySet())
@@ -160,6 +206,8 @@ public class ShamansDataTracker extends RoomDataTracker
                     new Hitpoints(coxNpc.getBaseHitpoints())
                 );
                 shamans.put(npc.getId(), newShaman);
+                targetedShamans.put(npc.getId(), false); // Initialize targeting state
+                attackedShamans.put(npc.getId(), false); // Initialize attacking state
                 String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
                 log.info("✓ Shaman tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Shamans: {}{}", 
                             npc.getId(), coxNpc, newShaman.getHitpoints().getBase(), getChallenge().getScale(), shamans.size(), modeStatus);
@@ -179,6 +227,8 @@ public class ShamansDataTracker extends RoomDataTracker
         BasicTrackedNpc removedShaman = shamans.remove(npc.getId());
         if (removedShaman != null)
         {   
+            targetedShamans.remove(npc.getId()); // Clean up targeting state
+            attackedShamans.remove(npc.getId()); // Clean up attacking state
             log.info("[Shaman] Despawned NPC id={} at tick {}/{}. Remaining Shamans: {}", npc.getId(), getTick(), getTick() + getStartTick(), shamans.size());
             if (shamans.size() == 0)
             {

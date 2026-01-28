@@ -51,6 +51,11 @@ public class VespulaDataTracker extends RoomDataTracker
 
     // Track previous varbit value to detect heals
     private int previousVarbitValue = -1;
+    
+    // Track player interactions
+    private boolean targetedVespula = false; // Track if Vespula has been targeted
+    private boolean attackedVespula = false; // Track if Vespula has been attacked
+    private int lastPlayerAnimation = -1; // Track player's last animation
 
     public VespulaDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -65,6 +70,47 @@ public class VespulaDataTracker extends RoomDataTracker
 
         final int tick = getTick();
         final var currentVespula = vespula; // Capture for null safety
+        
+        // Check player targeting
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer != null && localPlayer.getInteracting() instanceof NPC)
+        {
+            NPC targetedNpc = (NPC) localPlayer.getInteracting();
+            
+            // Check if this is Vespula and we haven't logged targeting yet
+            if (currentVespula != null && targetedNpc == currentVespula.getNpc() && !targetedVespula)
+            {
+                targetedVespula = true;
+                log.info("[Vespula Target] First time targeting Vespula id={} index={} at tick {}/{}",
+                    targetedNpc.getId(), targetedNpc.getIndex(), tick, getStartTick() + tick);
+            }
+        }
+        
+        // Check player attacking (based on player animation)
+        if (localPlayer != null)
+        {
+            int currentAnimation = localPlayer.getAnimation();
+            
+            // Detect if player is performing an attack animation (not idle/moving)
+            if (currentAnimation != -1 && currentAnimation != lastPlayerAnimation)
+            {
+                Actor interacting = localPlayer.getInteracting();
+                if (interacting instanceof NPC)
+                {
+                    NPC attackedNpc = (NPC) interacting;
+                    
+                    // Check if this is Vespula and we haven't logged attacking yet
+                    if (currentVespula != null && attackedNpc == currentVespula.getNpc() && !attackedVespula)
+                    {
+                        attackedVespula = true;
+                        log.info("[Vespula Attack] First time attacking Vespula id={} index={} with animation {} at tick {}/{}",
+                            attackedNpc.getId(), attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
+                    }
+                }
+            }
+            
+            lastPlayerAnimation = currentAnimation;
+        }
         
         // Check if Vespula's state changed (particularly if it's now at anvil)
         if (currentVespula != null)
@@ -145,6 +191,8 @@ public class VespulaDataTracker extends RoomDataTracker
                     
                     // Initialize anvil state based on spawn ID
                     vespulaAtAnvil = (npc.getId() == 7545);
+                    targetedVespula = false; // Initialize targeting state
+                    attackedVespula = false; // Initialize attacking state
                     String anvilStatus = vespulaAtAnvil ? " (at anvil)" : " (not at anvil)";
 
                     log.info(
@@ -170,12 +218,15 @@ public class VespulaDataTracker extends RoomDataTracker
         
         // Capture vespula reference for comparison
         HpVarbitTrackedNpc currentVespula = vespula;
+        
         // Only log and cleanup if matches the despawned NPC
-        if (npc == currentVespula.getNpc())
+        if (currentVespula != null && npc == currentVespula.getNpc())
         {
             // Clear vespula immediately to prevent duplicate processing
             vespula = null;
             previousVarbitValue = -1;
+            targetedVespula = false; // Clean up targeting state
+            attackedVespula = false; // Clean up attacking state
             
             log.info("[Vespula] Despawned NPC id={}, at tick {}/{}", npc.getId(), getTick(), getStartTick() + getTick());
             int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;

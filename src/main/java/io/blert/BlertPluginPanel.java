@@ -636,7 +636,45 @@ public class BlertPluginPanel extends PluginPanel {
                 case MOKHAIOTL_DELVE_8PLUS:
                     boss = "Delve 8+";
                     break;
-            }
+                case COX_TEKTON:
+                    boss = "Tekton";
+                    break;
+                case COX_CRABS:
+                    boss = "Crabs";
+                    break;
+                case COX_ICE_DEMON:
+                    boss = "Ice Demon";
+                    break;
+                case COX_SHAMANS:
+                    boss = "Shamans";
+                    break;
+                case COX_VANGUARDS:
+                    boss = "Vanguards";
+                    break;
+                case COX_THIEVING:
+                    boss = "Thieving";
+                    break;
+                case COX_VESPULA:
+                    boss = "Vespula";
+                    break;
+                case COX_TIGHTROPE:
+                    boss = "Tightrope";
+                    break;
+                case COX_GUARDIANS:
+                    boss = "Guardians";
+                    break;
+                case COX_VASA:
+                    boss = "Vasa";
+                    break;
+                case COX_MYSTICS:
+                    boss = "Mystics";
+                    break;
+                case COX_MUTTADILE:
+                    boss = "Muttadile";
+                    break;
+                case COX_OLM:
+                    boss = "Olm";
+                    break;
         }
 
         if (stageId >= Stage.INFERNO_WAVE_1.getId() && stageId <= Stage.INFERNO_WAVE_69.getId()) {

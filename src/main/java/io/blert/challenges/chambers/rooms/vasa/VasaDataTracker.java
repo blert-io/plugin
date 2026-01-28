@@ -65,6 +65,11 @@ public class VasaDataTracker extends RoomDataTracker
 
     // Track previous varbit value to detect heals
     private int previousVarbitValue = -1;
+    
+    // Track player interactions
+    private boolean targetedVasa = false; // Track if Vasa has been targeted
+    private boolean attackedVasa = false; // Track if Vasa has been attacked
+    private int lastPlayerAnimation = -1; // Track player's last animation
 
     public VasaDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -79,6 +84,47 @@ public class VasaDataTracker extends RoomDataTracker
 
         final int tick = getTick();
         final var currentVasa = vasa; // Capture for null safety
+        
+        // Check player targeting
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer != null && localPlayer.getInteracting() instanceof NPC)
+        {
+            NPC targetedNpc = (NPC) localPlayer.getInteracting();
+            
+            // Check if this is Vasa and we haven't logged targeting yet
+            if (currentVasa != null && targetedNpc == currentVasa.getNpc() && !targetedVasa)
+            {
+                targetedVasa = true;
+                log.info("[Vasa Target] First time targeting Vasa id={} index={} at tick {}/{}",
+                    targetedNpc.getId(), targetedNpc.getIndex(), tick, getStartTick() + tick);
+            }
+        }
+        
+        // Check player attacking (based on player animation)
+        if (localPlayer != null)
+        {
+            int currentAnimation = localPlayer.getAnimation();
+            
+            // Detect if player is performing an attack animation (not idle/moving)
+            if (currentAnimation != -1 && currentAnimation != lastPlayerAnimation)
+            {
+                Actor interacting = localPlayer.getInteracting();
+                if (interacting instanceof NPC)
+                {
+                    NPC attackedNpc = (NPC) interacting;
+                    
+                    // Check if this is Vasa and we haven't logged attacking yet
+                    if (currentVasa != null && attackedNpc == currentVasa.getNpc() && !attackedVasa)
+                    {
+                        attackedVasa = true;
+                        log.info("[Vasa Attack] First time attacking Vasa id={} index={} with animation {} at tick {}/{}",
+                            attackedNpc.getId(), attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
+                    }
+                }
+            }
+            
+            lastPlayerAnimation = currentAnimation;
+        }
         
         // Check if Vasa's state changed (particularly if it's now at anvil)
         if (currentVasa != null)
@@ -159,6 +205,8 @@ public class VasaDataTracker extends RoomDataTracker
                     
                     // Initialize anvil state based on spawn ID
                     vasaAtAnvil = (npc.getId() == 7545);
+                    targetedVasa = false; // Initialize targeting state
+                    attackedVasa = false; // Initialize attacking state
                     String anvilStatus = vasaAtAnvil ? " (at anvil)" : " (not at anvil)";
 
                     log.info(
@@ -196,6 +244,8 @@ public class VasaDataTracker extends RoomDataTracker
             // Clear vasa immediately to prevent duplicate processing
             vasa = null;
             previousVarbitValue = -1;
+            targetedVasa = false; // Clean up targeting state
+            attackedVasa = false; // Clean up attacking state
             log.info("[Vasa] Despawned NPC id={}, at tick {}", npc.getId(), getTick());
             log.info("[Vasa] RoomEnd: {}", getTick() + 5);
             return true;
