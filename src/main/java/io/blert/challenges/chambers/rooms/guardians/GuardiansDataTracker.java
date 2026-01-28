@@ -64,8 +64,11 @@ public class GuardiansDataTracker extends RoomDataTracker
     // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
 
     private final Map<Integer, BasicTrackedNpc> guardians = new HashMap<>(); // Track Guardians by NPC ID (includes live and dead IDs)
+    private final Map<Integer, Boolean> targetedGuardians = new HashMap<>(); // Track which Guardian IDs have been targeted
+    private final Map<Integer, Boolean> attackedGuardians = new HashMap<>(); // Track which Guardian IDs have been attacked
     private @Nullable NpcAttack attackThisTick = null;
     private int counter = 0; // Counter for room completion logging
+    private int lastPlayerAnimation = -1; // Track player's last animation
 
     public GuardiansDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -79,6 +82,49 @@ public class GuardiansDataTracker extends RoomDataTracker
         super.onTick();
 
         final int tick = getTick();
+        
+        // Check player targeting
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer != null && localPlayer.getInteracting() instanceof NPC)
+        {
+            NPC targetedNpc = (NPC) localPlayer.getInteracting();
+            int npcId = targetedNpc.getId();
+            
+            // Check if this is a Guardian we're tracking and haven't logged targeting for yet
+            if (guardians.containsKey(npcId) && !targetedGuardians.getOrDefault(npcId, false))
+            {
+                targetedGuardians.put(npcId, true);
+                log.info("[Guardian Target] First time targeting Guardian id={} index={} at tick {}/{}",
+                    npcId, targetedNpc.getIndex(), tick, getStartTick() + tick);
+            }
+        }
+        
+        // Check player attacking (based on player animation)
+        if (localPlayer != null)
+        {
+            int currentAnimation = localPlayer.getAnimation();
+            
+            // Detect if player is performing an attack animation (not idle/moving)
+            if (currentAnimation != -1 && currentAnimation != lastPlayerAnimation)
+            {
+                Actor interacting = localPlayer.getInteracting();
+                if (interacting instanceof NPC)
+                {
+                    NPC attackedNpc = (NPC) interacting;
+                    int npcId = attackedNpc.getId();
+                    
+                    // Check if this is a Guardian we're tracking and haven't logged attacking for yet
+                    if (guardians.containsKey(npcId) && !attackedGuardians.getOrDefault(npcId, false))
+                    {
+                        attackedGuardians.put(npcId, true);
+                        log.info("[Guardian Attack] First time attacking Guardian id={} index={} with animation {} at tick {}/{}",
+                            npcId, attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
+                    }
+                }
+            }
+            
+            lastPlayerAnimation = currentAnimation;
+        }
 
         // Update HP for all tracked Guardians
         int deadGuardiansCount = 0;
@@ -204,6 +250,8 @@ public class GuardiansDataTracker extends RoomDataTracker
                         new Hitpoints(coxNpc.getBaseHitpoints())
                     );
                     guardians.put(npc.getId(), newGuardian);
+                    targetedGuardians.put(npc.getId(), false); // Initialize targeting state
+                    attackedGuardians.put(npc.getId(), false); // Initialize attacking state
                     log.info("✓ Guardian tracked instance created: id={}, index={}, enum={}, base HP {} (scale={}) - Total Guardians: {}", 
                                 npc.getId(), npc.getIndex(), coxNpc, newGuardian.getHitpoints().getBase(), getChallenge().getScale(), guardians.size());
                     return Optional.of(newGuardian);
@@ -223,6 +271,8 @@ public class GuardiansDataTracker extends RoomDataTracker
         BasicTrackedNpc removedGuardian = guardians.remove(npc.getId());
         if (removedGuardian != null)
         {
+            targetedGuardians.remove(npc.getId()); // Clean up targeting state
+            attackedGuardians.remove(npc.getId()); // Clean up attacking state
             log.info("[Guardian] Despawned NPC id={} index={} – removed from tracking. Remaining Guardians: {}", npc.getId(), npc.getIndex(), guardians.size());
             if (guardians.size() == 0) {
                 log.info("[Guardian] All Guardians despawned at tick {}/{}", getTick(), getStartTick() + getTick());

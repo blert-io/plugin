@@ -59,6 +59,8 @@ public class CoxChallenge extends RecordableChallenge {
     private int raidStartTick = -1;
     private boolean isChallengeMode = false; // Track if this is a Challenge Mode raid
     private boolean hitpointsScaled = false; // Track if we've already scaled the hitpoints
+    private int maxCombatLevel = -1; // Cached max combat level for the party
+    private int avgMiningLevel = -1; // Cached average mining level for the party
 
     private static final List<Stage> COX_ROOM_ORDER = List.of(
         // Stage.COX_THIEVING,
@@ -122,6 +124,8 @@ public class CoxChallenge extends RecordableChallenge {
         inRaid = false;
         isChallengeMode = false;
         hitpointsScaled = false;
+        maxCombatLevel = -1;
+        avgMiningLevel = -1;
         
         // Reset all NPC scaled hitpoints
         for (CoxNpc npc : CoxNpc.values()) {
@@ -322,10 +326,10 @@ public class CoxChallenge extends RecordableChallenge {
         int partySize = getScale(); // PS: Party size
         boolean challengeMode = isChallengeMode(); // CM: Challenge mode
         
-        // Get party stats - for now use local player stats until we implement proper party tracking
-        int maxCombatLevel = client.getLocalPlayer().getCombatLevel(); // CMB: Maximum player combat level in the party
+        // Get party stats - cache them for back-calculation later
+        maxCombatLevel = client.getLocalPlayer().getCombatLevel(); // CMB: Maximum player combat level in the party
         int maxHpLevel = client.getRealSkillLevel(net.runelite.api.Skill.HITPOINTS);      // HP: Maximum player HP level in the party  
-        int avgMiningLevel = client.getRealSkillLevel(net.runelite.api.Skill.MINING);     // MIN: Average mining level of the party
+        avgMiningLevel = client.getRealSkillLevel(net.runelite.api.Skill.MINING);     // MIN: Average mining level of the party
         
         log.info("Scaling NPC hitpoints for PS:{} CMB:{} HP:{} MIN:{} CM:{}", 
                     partySize, maxCombatLevel, maxHpLevel, avgMiningLevel, challengeMode);
@@ -345,8 +349,8 @@ public class CoxChallenge extends RecordableChallenge {
 
     /**
      * Calculates scaled hitpoints for a COX NPC using the proper formulas:
-     * - All but Guardians and Olm: hp=base_hp*CMB/126*(PS/2+1)*(CM?3:2)/2
-     * - Guardians: hp=(151+MIN)*CMB/126*(PS/2+1)*(CM?3:2)/2
+     * - All but Guardians and Olm: hp=base_hp*CMB/126*(PS/2+0.5)*(CM?1.5:1)
+     * - Guardians: hp=(151+MIN)*CMB/126*(PS/2+0.5)*(CM?1.5:1)
      * - Olm: hp=300*(PS-PS/8*3+1) (ignored for now as requested)
      */
     private int calculateScaledHitpoints(CoxNpc npc, int partySize, int maxCombatLevel, int maxHpLevel, int avgMiningLevel, boolean challengeMode) {
@@ -361,11 +365,11 @@ public class CoxChallenge extends RecordableChallenge {
         }
         double scaledHp;
         if (npc == CoxNpc.GUARDIAN_1 || npc == CoxNpc.GUARDIAN_2) {
-            // Guardians: hp=(151+MIN)*CMB/126*(PS/2+1)*(CM?3:2)/2
-            scaledHp = (151.0 + avgMiningLevel) * maxCombatLevel / 126.0 * (partySize / 2.0 + 1) * (challengeMode ? 3 : 2) / 2.0;
+            // Guardians: hp=(151+MIN)*CMB/126*(PS/2+0.5)*(CM?1.5:1)
+            scaledHp = (151.0 + avgMiningLevel) * maxCombatLevel / 126.0 * (partySize / 2.0 + 0.5) * (challengeMode ? 1.5 : 1.0);
         } else {
-            // All but Guardians and Olm: hp=base_hp*CMB/126*(PS/2+1)*(CM?3:2)/2
-            scaledHp = baseHp * maxCombatLevel / 126.0 * (partySize / 2.0 + 1) * (challengeMode ? 3 : 2) / 2.0;
+            // All but Guardians and Olm: hp=base_hp*CMB/126*(PS/2+0.5)*(CM?1.5:1)
+            scaledHp = baseHp * maxCombatLevel / 126.0 * (partySize / 2.0 + 0.5) * (challengeMode ? 1.5 : 1.0);
         }
         return (int) Math.round(scaledHp);
     }
@@ -383,6 +387,67 @@ public class CoxChallenge extends RecordableChallenge {
             return coxNpc.getOriginalBaseHitpoints();
         }
         return coxNpc.getBaseHitpoints();
+    }
+
+    /**
+     * Back-calculates the actual combat level based on observed NPC HP.
+     * When an NPC spawns with HP that doesn't match our expected scaling,
+     * we can reverse the formula to find what combat level would produce that HP.
+     * 
+     * Formula: CMB = (actual_hp * 126) / (base_hp * (PS/2+0.5) * (CM?1.5:1))
+     * For Guardians: CMB = (actual_hp * 126) / ((151+MIN) * (PS/2+0.5) * (CM?1.5:1))
+     * 
+     * @param npc The NPC type
+     * @param actualHp The observed HP from varbit
+     * @return The calculated combat level (rounded to nearest integer)
+     */
+    public int backCalculateCombatLevel(CoxNpc npc, int actualHp) {
+        int partySize = getScale();
+        boolean challengeMode = isChallengeMode();
+        
+        double partySizeMultiplier = (partySize / 2.0 + 0.5);
+        double challengeModeMultiplier = challengeMode ? 1.5 : 1.0;
+        
+        double calculatedCombatLevel;
+        if (npc == CoxNpc.GUARDIAN_1 || npc == CoxNpc.GUARDIAN_2) {
+            // Guardians use (151+MIN) as base
+            double effectiveBase = 151.0 + avgMiningLevel;
+            calculatedCombatLevel = (actualHp * 126.0) / (effectiveBase * partySizeMultiplier * challengeModeMultiplier);
+        } else {
+            // Regular NPCs use their base HP
+            int baseHp = npc.getOriginalBaseHitpoints();
+            calculatedCombatLevel = (actualHp * 126.0) / (baseHp * partySizeMultiplier * challengeModeMultiplier);
+        }
+        
+        return (int) Math.round(calculatedCombatLevel);
+    }
+
+    /**
+     * Updates the combat level and rescales all NPC hitpoints.
+     * Called when we detect actual HP values that indicate a different combat level than expected.
+     * 
+     * @param newCombatLevel The new combat level to use for scaling
+     */
+    public void updateCombatLevelAndRescale(int newCombatLevel) {
+        if (newCombatLevel == maxCombatLevel) {
+            return; // No change needed
+        }
+        
+        log.info("Updating combat level from {} to {} and rescaling NPCs", maxCombatLevel, newCombatLevel);
+        maxCombatLevel = newCombatLevel;
+        
+        // Rescale all NPCs with the new combat level
+        int partySize = getScale();
+        boolean challengeMode = isChallengeMode();
+        int maxHpLevel = client.getRealSkillLevel(net.runelite.api.Skill.HITPOINTS);
+        
+        for (CoxNpc npc : CoxNpc.values()) {
+            if (npc.getOriginalBaseHitpoints() > 0) {
+                int scaledHp = calculateScaledHitpoints(npc, partySize, maxCombatLevel, maxHpLevel, avgMiningLevel, challengeMode);
+                npc.setScaledHitpoints(scaledHp);
+                log.debug("NPC {} rescaled to {} HP (CMB={})", npc, scaledHp, maxCombatLevel);
+            }
+        }
     }
 
     private Stage getNextStage(Stage currentStage) {
@@ -529,17 +594,30 @@ public class CoxChallenge extends RecordableChallenge {
 
     // Add methods for party management, room tracking, etc. as needed.
 
+    private static final int COX_LOBBY_REGION_ID = 4919;
+    // COX lobby area coordinates (center point from Mount Quidamortem bank)
+    private static final int COX_LOBBY_X = 1232;
+    private static final int COX_LOBBY_Y = 3572;
+    private static final int COX_LOBBY_Z = 0;
+    private static final int COX_LOBBY_RADIUS = 5; // Tiles from center point
     private boolean enteredLobby = false;
 
     @Override
     public boolean containsLocation(net.runelite.api.coords.WorldPoint worldPoint) {
         if (!enteredLobby) {
-            // Replace with your actual lobby area check
-            // if (CoxLocation.LOBBY_AREA.contains(worldPoint)) {
-            //     enteredLobby = true;
-            //     return true;
-            // }
-            return true;
+            // Check if player is in the COX lobby area
+            int regionId = worldPoint.getRegionID();
+            if (regionId == COX_LOBBY_REGION_ID) {
+                int dx = Math.abs(worldPoint.getX() - COX_LOBBY_X);
+                int dy = Math.abs(worldPoint.getY() - COX_LOBBY_Y);
+                int dz = Math.abs(worldPoint.getPlane() - COX_LOBBY_Z);
+                
+                if (dz == 0 && dx <= COX_LOBBY_RADIUS && dy <= COX_LOBBY_RADIUS) {
+                    enteredLobby = true;
+                    return true;
+                }
+            }
+            return false;
         }
         // After initial lobby entry, always return true
         return true;

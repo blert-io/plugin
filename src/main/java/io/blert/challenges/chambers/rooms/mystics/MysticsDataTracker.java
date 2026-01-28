@@ -57,7 +57,10 @@ public class MysticsDataTracker extends RoomDataTracker
     // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
 
     private final Map<Integer, BasicTrackedNpc> Mystics = new HashMap<>(); // Track multiple Mystics by NPC ID
+    private final Map<Integer, Boolean> targetedMystics = new HashMap<>(); // Track which Mystic IDs have been targeted
+    private final Map<Integer, Boolean> attackedMystics = new HashMap<>(); // Track which Mystic IDs have been attacked
     private @Nullable NpcAttack attackThisTick = null;
+    private int lastPlayerAnimation = -1; // Track player's last animation
 
     public MysticsDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -71,6 +74,49 @@ public class MysticsDataTracker extends RoomDataTracker
         super.onTick();
 
         final int tick = getTick();
+        
+        // Check player targeting
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer != null && localPlayer.getInteracting() instanceof NPC)
+        {
+            NPC targetedNpc = (NPC) localPlayer.getInteracting();
+            int npcId = targetedNpc.getId();
+            
+            // Check if this is a Mystic we're tracking and haven't logged targeting for yet
+            if (Mystics.containsKey(npcId) && !targetedMystics.getOrDefault(npcId, false))
+            {
+                targetedMystics.put(npcId, true);
+                log.info("[Mystic Target] First time targeting Mystic id={} index={} at tick {}/{}",
+                    npcId, targetedNpc.getIndex(), tick, getStartTick() + tick);
+            }
+        }
+        
+        // Check player attacking (based on player animation)
+        if (localPlayer != null)
+        {
+            int currentAnimation = localPlayer.getAnimation();
+            
+            // Detect if player is performing an attack animation (not idle/moving)
+            if (currentAnimation != -1 && currentAnimation != lastPlayerAnimation)
+            {
+                Actor interacting = localPlayer.getInteracting();
+                if (interacting instanceof NPC)
+                {
+                    NPC attackedNpc = (NPC) interacting;
+                    int npcId = attackedNpc.getId();
+                    
+                    // Check if this is a Mystic we're tracking and haven't logged attacking for yet
+                    if (Mystics.containsKey(npcId) && !attackedMystics.getOrDefault(npcId, false))
+                    {
+                        attackedMystics.put(npcId, true);
+                        log.info("[Mystic Attack] First time attacking Mystic id={} index={} with animation {} at tick {}/{}",
+                            npcId, attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
+                    }
+                }
+            }
+            
+            lastPlayerAnimation = currentAnimation;
+        }
 
         // Update HP for all tracked Mystics
         for (Map.Entry<Integer, BasicTrackedNpc> entry : Mystics.entrySet())
@@ -162,6 +208,8 @@ public class MysticsDataTracker extends RoomDataTracker
                     new Hitpoints(coxNpc.getBaseHitpoints())
                 );
                 Mystics.put(npc.getId(), newMystic);
+                targetedMystics.put(npc.getId(), false); // Initialize targeting state
+                attackedMystics.put(npc.getId(), false); // Initialize attacking state
                 log.info("✓ Mystic instance created: id={}, enum={}, Total Mystics: {}", 
                             npc.getId(), coxNpc, Mystics.size());
                 return Optional.of(newMystic);
@@ -178,6 +226,8 @@ public class MysticsDataTracker extends RoomDataTracker
         BasicTrackedNpc removedMystic = Mystics.remove(npc.getId());
         if (removedMystic != null)
         {
+            targetedMystics.remove(npc.getId()); // Clean up targeting state
+            attackedMystics.remove(npc.getId()); // Clean up attacking state
             log.info("[Mystic] Despawned NPC id={}. Remaining Mystics: {}, at tick {}/{}", npc.getId(), Mystics.size(), getTick(), getStartTick() + getTick());
             if (Mystics.size() == 0) {
                 int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;

@@ -9,6 +9,8 @@ public class CoxRoomCompleteEvent extends Event {
     private final int endTick;
 
     public CoxRoomCompleteEvent(Stage stage, int startTick, int endTick) {
+        // Use COX_ROOM_COMPLETE which doesn't have special casting in WebSocketEventHandler
+        // super(EventType.COX_ROOM_COMPLETE, stage, endTick, null);
         super(EventType.STAGE_UPDATE, stage, endTick, null); // Use STAGE_UPDATE or define a new EventType if needed
         this.startTick = startTick;
         this.endTick = endTick;

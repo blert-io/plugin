@@ -68,6 +68,13 @@ public class MuttadilesDataTracker extends RoomDataTracker
     private int previousVarbitValue = -1;
     // Track which muttadile the varbit currently represents
     private @Nullable HpVarbitTrackedNpc activeVarbitMuttadile = null;
+    
+    // Track player interactions
+    private boolean targetedSmallMuttadile = false; // Track if small muttadile has been targeted
+    private boolean attackedSmallMuttadile = false; // Track if small muttadile has been attacked
+    private boolean targetedLargeMuttadile = false; // Track if large muttadile has been targeted
+    private boolean attackedLargeMuttadile = false; // Track if large muttadile has been attacked
+    private int lastPlayerAnimation = -1; // Track player's last animation
 
     public MuttadilesDataTracker(RecordableChallenge challenge, Stage stage, Client client)
     {
@@ -81,6 +88,63 @@ public class MuttadilesDataTracker extends RoomDataTracker
         super.onTick();
 
         final int tick = getTick();
+        
+        // Check player targeting
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer != null && localPlayer.getInteracting() instanceof NPC)
+        {
+            NPC targetedNpc = (NPC) localPlayer.getInteracting();
+            
+            // Check if targeting small muttadile
+            if (smallMuttadile != null && targetedNpc == smallMuttadile.getNpc() && !targetedSmallMuttadile)
+            {
+                targetedSmallMuttadile = true;
+                log.info("[Small Muttadile Target] First time targeting Small Muttadile id={} index={} at tick {}/{}",
+                    targetedNpc.getId(), targetedNpc.getIndex(), tick, getStartTick() + tick);
+            }
+            
+            // Check if targeting large muttadile
+            if (largeMuttadile != null && targetedNpc == largeMuttadile.getNpc() && !targetedLargeMuttadile)
+            {
+                targetedLargeMuttadile = true;
+                log.info("[Large Muttadile Target] First time targeting Large Muttadile id={} index={} at tick {}/{}",
+                    targetedNpc.getId(), targetedNpc.getIndex(), tick, getStartTick() + tick);
+            }
+        }
+        
+        // Check player attacking (based on player animation)
+        if (localPlayer != null)
+        {
+            int currentAnimation = localPlayer.getAnimation();
+            
+            // Detect if player is performing an attack animation (not idle/moving)
+            if (currentAnimation != -1 && currentAnimation != lastPlayerAnimation)
+            {
+                Actor interacting = localPlayer.getInteracting();
+                if (interacting instanceof NPC)
+                {
+                    NPC attackedNpc = (NPC) interacting;
+                    
+                    // Check if attacking small muttadile
+                    if (smallMuttadile != null && attackedNpc == smallMuttadile.getNpc() && !attackedSmallMuttadile)
+                    {
+                        attackedSmallMuttadile = true;
+                        log.info("[Small Muttadile Attack] First time attacking Small Muttadile id={} index={} with animation {} at tick {}/{}",
+                            attackedNpc.getId(), attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
+                    }
+                    
+                    // Check if attacking large muttadile
+                    if (largeMuttadile != null && attackedNpc == largeMuttadile.getNpc() && !attackedLargeMuttadile)
+                    {
+                        attackedLargeMuttadile = true;
+                        log.info("[Large Muttadile Attack] First time attacking Large Muttadile id={} index={} with animation {} at tick {}/{}",
+                            attackedNpc.getId(), attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
+                    }
+                }
+            }
+            
+            lastPlayerAnimation = currentAnimation;
+        }
         
         // Determine which muttadile is currently being tracked by the varbit
         // Small muttadile gets priority while alive, then switch to large
@@ -180,6 +244,8 @@ public class MuttadilesDataTracker extends RoomDataTracker
                     );
                     
                     smallMuttadile = newSmallMuttadile;
+                    targetedSmallMuttadile = false; // Initialize targeting state
+                    attackedSmallMuttadile = false; // Initialize attacking state
                     
                     log.info(
                         "Small Muttadile id={} tracked with base HP {} (scale={}) at tick {}", 
@@ -228,6 +294,8 @@ public class MuttadilesDataTracker extends RoomDataTracker
                     );
                     
                     largeMuttadile = newLargeMuttadile;
+                    targetedLargeMuttadile = false; // Initialize targeting state
+                    attackedLargeMuttadile = false; // Initialize attacking state
                     
                     log.info(
                         "Large Muttadile id={} tracked with base HP {} (scale={}) at tick {}", 
@@ -255,6 +323,8 @@ public class MuttadilesDataTracker extends RoomDataTracker
         {
             log.info("[Small Muttadile] Despawned NPC id={}, at tick {}/{}", npc.getId(), getTick(), getStartTick() + getTick());
             smallMuttadile = null;
+            targetedSmallMuttadile = false; // Clean up targeting state
+            attackedSmallMuttadile = false; // Clean up attacking state
             
             // If this was the active varbit tracker, clear it so large muttadile can take over
             if (activeVarbitMuttadile == smallMuttadile)
@@ -274,6 +344,8 @@ public class MuttadilesDataTracker extends RoomDataTracker
         {
             log.info("[Large Muttadile] Despawned NPC id={}, at tick {}/{}", npc.getId(), getTick(), getStartTick() + getTick());
             largeMuttadile = null;
+            targetedLargeMuttadile = false; // Clean up targeting state
+            attackedLargeMuttadile = false; // Clean up attacking state
             
             // If this was the active varbit tracker, clear it
             if (activeVarbitMuttadile == largeMuttadile)

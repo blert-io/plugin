@@ -227,13 +227,12 @@ public class VanguardsDataTracker extends RoomDataTracker
         if (!vanguards.containsKey(npcHash))
         {
             CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-            int scaledHp = coxChallenge.getScaledHitpoints(coxNpc);
             
             BasicTrackedNpc newVanguard = new BasicTrackedNpc(
                 npc,
                 coxNpc,
                 generateRoomId(npc),
-                new Hitpoints(scaledHp)
+                new Hitpoints(coxNpc.getBaseHitpoints())
             );
             
             vanguards.put(npcHash, newVanguard);
@@ -247,11 +246,11 @@ public class VanguardsDataTracker extends RoomDataTracker
             }
             
             log.info(
-                "✓ Vanguard {} tracked: id={}, base HP {} (scaled={}){} - Total Vanguards: {}",
+                "✓ Vanguard {} tracked: id={}, base HP {} (scale={}){} - Total Vanguards: {}",
                 coxNpc.name(),
                 npc.getId(),
-                coxNpc.getOriginalBaseHitpoints(),
-                scaledHp,
+                newVanguard.getHitpoints().getBase(),
+                getChallenge().getScale(),
                 modeStatus,
                 vanguards.size()
             );
