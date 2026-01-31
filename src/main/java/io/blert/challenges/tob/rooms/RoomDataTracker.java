@@ -27,9 +27,11 @@ import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.Location;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
+import io.blert.core.ChallengeState;
 import io.blert.core.DataTracker;
 import io.blert.core.Hitpoints;
 import io.blert.core.Raider;
+import io.blert.events.ChallengeUpdateEvent;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.PlayerDeathEvent;
@@ -44,6 +46,8 @@ import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.util.Text;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -98,6 +102,13 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         }
 
         super.start();
+
+        // Players may leave between rooms; send the current party when the room starts.
+        if (theatreChallenge.getState() != ChallengeState.PREPARING) {
+            List<String> party = new ArrayList<>();
+            theatreChallenge.forEachOrb((orb, username) -> party.add(username));
+            dispatchEvent(new ChallengeUpdateEvent(theatreChallenge.getChallengeMode(), party));
+        }
 
         startingTickAccurate = accurate;
         onRoomStart();

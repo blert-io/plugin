@@ -26,17 +26,26 @@ package io.blert.events;
 import io.blert.core.ChallengeMode;
 import lombok.Getter;
 
+import javax.annotation.Nullable;
+import java.util.List;
+
 @Getter
 public class ChallengeUpdateEvent extends Event {
     private final ChallengeMode mode;
+    private final @Nullable List<String> party;
 
     public ChallengeUpdateEvent(ChallengeMode mode) {
+        this(mode, null);
+    }
+
+    public ChallengeUpdateEvent(ChallengeMode mode, @Nullable List<String> party) {
         super(EventType.CHALLENGE_UPDATE);
         this.mode = mode;
+        this.party = party;
     }
 
     @Override
     protected String eventDataString() {
-        return "mode=" + mode;
+        return "mode=" + mode + ", party=" + party;
     }
 }
