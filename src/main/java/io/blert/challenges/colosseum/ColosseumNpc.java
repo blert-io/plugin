@@ -32,7 +32,7 @@ import java.util.Optional;
 public enum ColosseumNpc {
     JAGUAR_WARRIOR(12810, 125, Pair.of(10847, NpcAttack.COLOSSEUM_JAGUAR_AUTO)),
     SERPENT_SHAMAN(12811, 125, Pair.of(10859, NpcAttack.COLOSSEUM_SHAMAN_AUTO)),
-    MINOTAUR(12812, 225, Pair.of(10843, NpcAttack.COLOSSEUM_MINOTAUR_AUTO)),
+    MINOTAUR(new int[]{12812, 12813}, 225, Pair.of(10843, NpcAttack.COLOSSEUM_MINOTAUR_AUTO)),
     FREMENNIK_ARCHER(12814, 50, Pair.of(10850, NpcAttack.COLOSSEUM_ARCHER_AUTO)),
     FREMENNIK_SEER(12815, 50, Pair.of(10853, NpcAttack.COLOSSEUM_SEER_AUTO)),
     FREMENNIK_BERSERKER(12816, 50, Pair.of(10856, NpcAttack.COLOSSEUM_BERSERKER_AUTO)),
@@ -55,16 +55,17 @@ public enum ColosseumNpc {
     SOLARFLARE(12826, 0),
     ;
 
-    @Getter
-    private final int id;
+    private final int[] ids;
     @Getter
     private final int hitpoints;
     private final Pair<Integer, NpcAttack>[] attacks;
 
     public static Optional<ColosseumNpc> withId(int id) {
         for (ColosseumNpc npc : values()) {
-            if (npc.id == id) {
-                return Optional.of(npc);
+            for (int npcId : npc.ids) {
+                if (npcId == id) {
+                    return Optional.of(npc);
+                }
             }
         }
         return Optional.empty();
@@ -85,7 +86,14 @@ public enum ColosseumNpc {
 
     @SafeVarargs
     ColosseumNpc(int id, int hitpoints, Pair<Integer, NpcAttack>... attacks) {
-        this.id = id;
+        this.ids = new int[]{id};
+        this.hitpoints = hitpoints;
+        this.attacks = attacks;
+    }
+
+    @SafeVarargs
+    ColosseumNpc(int[] ids, int hitpoints, Pair<Integer, NpcAttack>... attacks) {
+        this.ids = ids;
         this.hitpoints = hitpoints;
         this.attacks = attacks;
     }
