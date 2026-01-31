@@ -64,6 +64,10 @@ public class TheatreChallenge extends RecordableChallenge {
     private static final int TOB_ROOM_STATUS_VARBIT = 6447;
     private static final int TOB_PARTY_LIST_COMPONENT_ID = 1835020;
 
+    private static final int TOB_VARBIT_NO_PARTY = 0;
+    private static final int TOB_VARBIT_IN_PARTY = 1;
+    private static final int TOB_VARBIT_RAID_STARTED = 2;
+
     private static final Pattern RAID_ENTRY_REGEX_1P =
             Pattern.compile("You enter the Theatre of Blood \\((\\w+) Mode\\)\\.\\.\\.");
     private static final Pattern RAID_ENTRY_REGEX_3P =
@@ -115,7 +119,7 @@ public class TheatreChallenge extends RecordableChallenge {
     protected void onTick() {
         updateLocation();
 
-        if (location == Location.LOBBY && client.getVarbitValue(Varbits.THEATRE_OF_BLOOD) == 1) {
+        if (location == Location.LOBBY && client.getVarbitValue(Varbits.THEATRE_OF_BLOOD) == TOB_VARBIT_IN_PARTY) {
             // If the player is in a party in the raid lobby, grab the party information from the party widget.
             initializePartyFromLobby();
         }
@@ -163,10 +167,6 @@ public class TheatreChallenge extends RecordableChallenge {
 
             if (roomDataTracker.notStarted() && roomState.isActive() && roomDataTracker.playersAreInRoom()) {
                 // The room may already be active when entered (e.g. as a spectator); start its tracker.
-                if (getState() == ChallengeState.PREPARING) {
-                    startRaid();
-                }
-
                 roomDataTracker.startRoomInaccurate();
                 log.debug("Room {} started via activity check", roomDataTracker.getRoom());
             }
@@ -268,12 +268,15 @@ public class TheatreChallenge extends RecordableChallenge {
                 challengeTime == -1 ? "unknown" : Tick.asTimeString(reportedChallengeTime),
                 overallTime == -1 ? "unknown" : Tick.asTimeString(overallTime));
 
+        // Spectators should send a soft end so they don't affect other recorders.
+        boolean soft = !playerIsInChallenge(client.getLocalPlayer().getName());
+
         clearRoomDataTracker();
         setState(state);
         updateMode(ChallengeMode.NO_MODE);
         resetParty();
 
-        getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(challengeTime, overallTime)));
+        getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(challengeTime, overallTime, soft)));
 
         reportedChallengeTime = -1;
     }
@@ -313,14 +316,22 @@ public class TheatreChallenge extends RecordableChallenge {
     @Override
     public void onVarbitChanged(VarbitChanged varbit) {
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
-            if (getState().isInactive() && varbit.getValue() == 2) {
+            if (getState().isInactive() && varbit.getValue() == TOB_VARBIT_RAID_STARTED) {
                 // A raid start due to a varbit change usually means that the player is joining late, rejoining, or
                 // spectating. Party and mode information is not immediately available.
                 log.debug("Raid started via varbit change");
                 queueRaidStart(ChallengeMode.NO_MODE, true);
-            } else if (getState().inChallenge() && varbit.getValue() < 2) {
-                if (getState() == ChallengeState.COMPLETE) {
-                    setState(ChallengeState.INACTIVE);
+            } else if (getState().inChallenge() && varbit.getValue() < TOB_VARBIT_RAID_STARTED) {
+                switch (getState()) {
+                    case COMPLETE:
+                        setState(ChallengeState.INACTIVE);
+                        break;
+                    case STARTING:
+                    case PREPARING:
+                        // Raid ended while the player is still in the lobby.
+                        log.debug("Raid ended via varbit change while in state {}", getState());
+                        queueRaidEnd(ChallengeState.INACTIVE);
+                        break;
                 }
             }
         }

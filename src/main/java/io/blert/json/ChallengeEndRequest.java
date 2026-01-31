@@ -26,4 +26,5 @@ package io.blert.json;
 public class ChallengeEndRequest {
     public int overallTimeTicks;
     public int challengeTimeTicks;
+    public boolean soft;
 }

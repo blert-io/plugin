@@ -29,11 +29,17 @@ import lombok.Getter;
 public class ChallengeEndEvent extends Event {
     private final int challengeTime;
     private final int overallTime;
+    private final boolean soft;
 
     public ChallengeEndEvent(int challengeTime, int overallTime) {
+        this(challengeTime, overallTime, false);
+    }
+
+    public ChallengeEndEvent(int challengeTime, int overallTime, boolean soft) {
         super(EventType.CHALLENGE_END);
         this.challengeTime = challengeTime;
         this.overallTime = overallTime;
+        this.soft = soft;
     }
 
     @Override
