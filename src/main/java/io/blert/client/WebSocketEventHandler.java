@@ -338,6 +338,7 @@ public class WebSocketEventHandler implements EventHandler {
         message.challengeEndRequest = new io.blert.json.ChallengeEndRequest();
         message.challengeEndRequest.challengeTimeTicks = event.getChallengeTime();
         message.challengeEndRequest.overallTimeTicks = event.getOverallTime();
+        message.challengeEndRequest.soft = event.isSoft();
 
         lastRequestId = requestId;
 
@@ -364,6 +365,7 @@ public class WebSocketEventHandler implements EventHandler {
 
         if (challenge != null) {
             challengeUpdate.mode = challenge.getMode().getId();
+            challengeUpdate.party = challenge.getParty();
         }
 
         if (stage != null) {

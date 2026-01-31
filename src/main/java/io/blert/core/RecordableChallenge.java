@@ -23,6 +23,7 @@
 
 package io.blert.core;
 
+import io.blert.events.ChallengeEndEvent;
 import io.blert.events.ChallengeUpdateEvent;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
@@ -65,7 +66,7 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
 
     List<Event> pendingEvents = new ArrayList<>();
 
-    @Getter(AccessLevel.PROTECTED)
+    @Getter
     private ChallengeState state = ChallengeState.INACTIVE;
 
     private List<CompletableFuture<Status>> statusUpdateFutures = new ArrayList<>();
@@ -197,6 +198,11 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
     }
 
     public void terminate() {
+        if (state == ChallengeState.STARTING) {
+            // Player left the challenge area without ever entering their new challenge.
+            dispatchEvent(new ChallengeEndEvent(-1, -1, true));
+        }
+
         onTerminate();
 
         state = ChallengeState.INACTIVE;
