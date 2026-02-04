@@ -299,6 +299,14 @@ public class TheatreChallenge extends RecordableChallenge {
         log.debug("Location changed to {}", loc);
         location = loc;
 
+        if (location == Location.ELSEWHERE) {
+            // ELSEWHERE should only occur during a raid when logging out then
+            // back in (since actually going ELSEWHERE would terminate the
+            // TheatreChallenge). Don't reinitialize the data tracker.
+            locationChangedThisTick = true;
+            return;
+        }
+
         if (roomDataTracker == null || !location.inRoomInstance(roomDataTracker.getRoom())) {
             // When entering a new instance for the first time, its room data tracker must be initialized.
             initializeRoomDataTracker();
