@@ -564,8 +564,8 @@ public class WebSocketEventHandler implements EventHandler {
             case ErrorData.TYPE_USERNAME_MISMATCH:
                 sendGameMessage(
                         ChatMessageType.GAMEMESSAGE,
-                        "<col=ef1020>This Blert API key is linked to the OSRS account " + error.username +
-                                ". If you changed your display name, please go update it on the Blert website.</col>");
+                        "<col=ef1020>This Blert API key is linked a different OSRS account. " +
+                                "If you changed your display name, please go update it on the Blert website.</col>");
                 apiKeyUsernameMismatch = true;
                 // Abandon any pending challenge start since this account can't record.
                 if (currentStartAttempt != null) {
