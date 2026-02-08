@@ -250,7 +250,7 @@ public class TheatreChallenge extends RecordableChallenge {
         if (getState() == ChallengeState.PREPARING) {
             // If a raid start is pending, cancel it.
             setState(ChallengeState.INACTIVE);
-            updateMode(ChallengeMode.NO_MODE);
+            resetMode();
             clearPendingEvents();
             resetParty();
             deferredTask = null;
@@ -273,7 +273,7 @@ public class TheatreChallenge extends RecordableChallenge {
 
         clearRoomDataTracker();
         setState(state);
-        updateMode(ChallengeMode.NO_MODE);
+        resetMode();
         resetParty();
 
         getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(challengeTime, overallTime, soft)));
