@@ -23,11 +23,7 @@
 
 package io.blert.core;
 
-import io.blert.events.ChallengeEndEvent;
-import io.blert.events.ChallengeUpdateEvent;
-import io.blert.events.Event;
-import io.blert.events.EventHandler;
-import io.blert.events.EventType;
+import io.blert.events.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -152,6 +148,17 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
     }
 
     /**
+     * Resets the challenge mode to {@link ChallengeMode#NO_MODE}. Must be called when a challenge ends to prevent
+     * stale mode values from carrying over to the next challenge.
+     */
+    public void resetMode() {
+        if (challengeMode != ChallengeMode.NO_MODE) {
+            log.debug("Mode reset from {} (state={})", challengeMode, state);
+        }
+        challengeMode = ChallengeMode.NO_MODE;
+    }
+
+    /**
      * Updates the challenge mode. If the challenge is active and the mode has changed, an update event is dispatched.
      * Updates to {@link ChallengeMode#NO_MODE} are ignored.
      *
@@ -163,7 +170,7 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
         }
 
         if (challengeMode != mode) {
-            log.debug("Raid mode set to {}", mode);
+            log.debug("Mode changed from {} to {}", challengeMode, mode);
             challengeMode = mode;
 
             if (state == ChallengeState.STARTING || state == ChallengeState.ACTIVE) {
