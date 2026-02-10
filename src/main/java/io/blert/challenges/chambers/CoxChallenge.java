@@ -20,8 +20,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
@@ -50,7 +48,6 @@ public class CoxChallenge extends RecordableChallenge {
     private static final Pattern MAP_LAYOUT_REGEX =
             Pattern.compile("Map Layout:.*");
 
-    private List<Raider> party = new ArrayList<>();
     @Nullable
     private RoomDataTracker roomDataTracker = null;
     private int reportedChallengeTime = -1;
@@ -95,14 +92,19 @@ public class CoxChallenge extends RecordableChallenge {
         // Stage.COX_OLM
     );
 
-    public CoxChallenge(Client client, EventBus eventBus, ClientThread clientThread) {
-        super(Challenge.COX, client, eventBus, clientThread);
+    public CoxChallenge(Client client, ClientThread clientThread) {
+        super(Challenge.COX, client, clientThread);
+    }
+
+    @Nullable
+    @Override
+    protected DataTracker getActiveTracker() {
+        return roomDataTracker;
     }
 
     @Override
     protected void onInitialize() {
         reportedChallengeTime = -1;
-        party.clear();
         isChallengeMode = false;
         hitpointsScaled = false;
     }
@@ -113,10 +115,9 @@ public class CoxChallenge extends RecordableChallenge {
             final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
             tracker.terminate();
             removeEventHandler(tracker);
-            getEventBus().unregister(tracker);
             roomDataTracker = null;
         }
-        party.clear();
+        resetParty();
         reportedChallengeTime = -1;
         startTick = -1;
         endTick = -1;
@@ -161,8 +162,8 @@ public class CoxChallenge extends RecordableChallenge {
         return roomDataTracker != null ? roomDataTracker.getStage() : null;
     }
 
-    @Subscribe(priority = 5)
-    private void onChatMessage(ChatMessage message) {
+    @Override
+    public void onChatMessage(ChatMessage message) {
         String stripped = Text.removeTags(message.getMessage());
         // log.info("Chat message received: {}", stripped);
 
@@ -197,7 +198,6 @@ public class CoxChallenge extends RecordableChallenge {
             tracker.finishLastRoom(currentTick);
 
             // Clean up the old tracker properly
-            getEventBus().unregister(tracker);
             removeEventHandler(tracker);
             roomDataTracker = null;
             endRaid();
@@ -211,18 +211,20 @@ public class CoxChallenge extends RecordableChallenge {
             final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
             tracker.finishRoom(currentTick);
             log.info("Finished floor at tick {}", currentTick);
-            getEventBus().unregister(tracker);
             removeEventHandler(tracker);
             roomDataTracker = null;
-            // Implicitly start tracking the next room
+            // Delay starting the next room to ensure the finish event is dispatched first
             Stage nextStage = getNextStage(tracker.getStage());
             if (nextStage != null) {
-                roomDataTracker = createRoomDataTracker(nextStage);
-                final RoomDataTracker newTracker = roomDataTracker; // Capture new non-null value
-                if (newTracker != null) {
-                    newTracker.startRoom(currentTick);
-                    log.info("Started tracking next room {} at tick {}", nextStage, currentTick);
-                }
+                final int tickForNextRoom = currentTick; // Capture tick for lambda
+                getClientThread().invokeLater(() -> {
+                    roomDataTracker = createRoomDataTracker(nextStage);
+                    final RoomDataTracker newTracker = roomDataTracker; // Capture new non-null value
+                    if (newTracker != null) {
+                        newTracker.startRoom(tickForNextRoom);
+                        log.info("Started tracking next room {} at tick {}", nextStage, tickForNextRoom);
+                    }
+                });
             }
         }
 
@@ -234,19 +236,21 @@ public class CoxChallenge extends RecordableChallenge {
             tracker.finishRoom(currentTick);
 
             // Clean up the old tracker properly
-            getEventBus().unregister(tracker);
             removeEventHandler(tracker);
             roomDataTracker = null;
 
-            // Implicitly start tracking the next room
+            // Delay starting the next room to ensure the finish event is dispatched first
             Stage nextStage = getNextStage(tracker.getStage());
             if (nextStage != null) {
-                roomDataTracker = createRoomDataTracker(nextStage);
-                final RoomDataTracker newTracker = roomDataTracker; // Capture new non-null value
-                if (newTracker != null) {
-                    newTracker.startRoom(currentTick);
-                    log.info("Started tracking next room {} at tick {}", nextStage, currentTick);
-                }
+                final int tickForNextRoom = currentTick; // Capture tick for lambda
+                getClientThread().invokeLater(() -> {
+                    roomDataTracker = createRoomDataTracker(nextStage);
+                    final RoomDataTracker newTracker = roomDataTracker; // Capture new non-null value
+                    if (newTracker != null) {
+                        newTracker.startRoom(tickForNextRoom);
+                        log.info("Started tracking next room {} at tick {}", nextStage, tickForNextRoom);
+                    }
+                });
             }
         }
     }
@@ -272,19 +276,21 @@ public class CoxChallenge extends RecordableChallenge {
         
         log.info("Starting COX raid with scale {} (party size: {})", getScale(), getParty().size());
 
-        // Start the first room data tracker
+        // Create the first room data tracker so challenge start includes the initial stage.
         Stage firstStage = getNextStage(null); // Gets the first room in COX_ROOM_ORDER
         if (firstStage != null) {
             roomDataTracker = createRoomDataTracker(firstStage);
-            final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
-            if (tracker != null) {
-                tracker.startRoom(0); // first room starts at tick 0
-                log.info("Started tracking first room {} at tick {}", firstStage, 0);
-            }
         }
 
         dispatchEvent(new ChallengeStartEvent(getChallenge(), getChallengeMode(), getStage(), getPartyUsernames(), false));
         log.info("Chambers of Xeric raid started at tick {}", startTick);
+
+        // Start the first room after challenge start so stage updates are queued properly.
+        final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
+        if (tracker != null) {
+            tracker.startRoom(0); // first room starts at tick 0
+            log.info("Started tracking first room {} at tick {}", firstStage, 0);
+        }
     }
 
     private void endRaid() {
@@ -299,7 +305,7 @@ public class CoxChallenge extends RecordableChallenge {
 
     private List<String> getPartyUsernames() {
         List<String> names = new ArrayList<>();
-        for (Raider r : party) {
+        for (Raider r : getParty()) {
             names.add(r.getUsername());
         }
         return names;
@@ -467,8 +473,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating TektonDataTracker for stage {}", stage);
                 RoomDataTracker tracker = new TektonDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(tracker);
                 addEventHandler(tracker);
                 
                 return tracker;
@@ -476,8 +480,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating CrabsDataTracker for stage {}", stage);
                 RoomDataTracker crabsTracker = new CrabsDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(crabsTracker);
                 addEventHandler(crabsTracker);
                 
                 return crabsTracker;
@@ -485,8 +487,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating IceDemonDataTracker for stage {}", stage);
                 RoomDataTracker iceDemonTracker = new IceDemonDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(iceDemonTracker);
                 addEventHandler(iceDemonTracker);
                 
                 return iceDemonTracker;
@@ -494,8 +494,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating ShamansDataTracker for stage {}", stage);
                 RoomDataTracker shamansTracker = new ShamansDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(shamansTracker);
                 addEventHandler(shamansTracker);
                 
                 return shamansTracker;
@@ -503,8 +501,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating VanguardsDataTracker for stage {}", stage);
                 RoomDataTracker vanguardsTracker = new VanguardsDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(vanguardsTracker);
                 addEventHandler(vanguardsTracker);
                 
                 return vanguardsTracker;
@@ -512,8 +508,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating ThievingDataTracker for stage {}", stage);
                 RoomDataTracker thievingTracker = new ThievingDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(thievingTracker);
                 addEventHandler(thievingTracker);
                 
                 return thievingTracker;
@@ -521,8 +515,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating VespulaDataTracker for stage {}", stage);
                 RoomDataTracker vespulaTracker = new VespulaDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(vespulaTracker);
                 addEventHandler(vespulaTracker);
                 
                 return vespulaTracker;
@@ -530,8 +522,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating TightropeDataTracker for stage {}", stage);
                 RoomDataTracker tightropeTracker = new TightropeDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(tightropeTracker);
                 addEventHandler(tightropeTracker);
                 
                 return tightropeTracker;
@@ -539,8 +529,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating GuardiansDataTracker for stage {}", stage);
                 RoomDataTracker guardiansTracker = new GuardiansDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(guardiansTracker);
                 addEventHandler(guardiansTracker);
                 
                 return guardiansTracker;
@@ -548,8 +536,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating VasaDataTracker for stage {}", stage);
                 RoomDataTracker vasaTracker = new VasaDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(vasaTracker);
                 addEventHandler(vasaTracker);
                 
                 return vasaTracker;
@@ -557,8 +543,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating MysticsDataTracker for stage {}", stage);
                 RoomDataTracker mysticsTracker = new MysticsDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(mysticsTracker);
                 addEventHandler(mysticsTracker);
                 
                 return mysticsTracker;
@@ -566,8 +550,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating MuttadilesDataTracker for stage {}", stage);
                 RoomDataTracker muttadilesTracker = new MuttadilesDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(muttadilesTracker);
                 addEventHandler(muttadilesTracker);
                 
                 return muttadilesTracker;
@@ -575,8 +557,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating OlmDataTracker for stage {}", stage);
                 RoomDataTracker olmTracker = new OlmDataTracker(this, stage, client);
                 
-                // Register with event bus to receive NPC spawn/despawn events
-                getEventBus().register(olmTracker);
                 addEventHandler(olmTracker);
                 
                 return olmTracker;
@@ -584,8 +564,6 @@ public class CoxChallenge extends RecordableChallenge {
                 log.info("Creating generic CoxRoomDataTracker for stage {}", stage);
                 RoomDataTracker genericTracker = new CoxRoomDataTracker(this, stage, client);
                 
-                // Register with event bus
-                getEventBus().register(genericTracker);
                 addEventHandler(genericTracker);
                 
                 return genericTracker;

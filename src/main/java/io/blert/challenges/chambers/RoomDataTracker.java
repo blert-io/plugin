@@ -7,7 +7,6 @@ import io.blert.core.Stage;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.PlayerDeathEvent;
-import io.blert.events.chambers.CoxRoomCompleteEvent;
 import io.blert.util.Tick;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -54,7 +53,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         startTick = currentTick;
         
         // Start the underlying DataTracker to enable event processing
-        start(0);
+        start(-currentTick);
         
         log.info("Started tracking room {} at tick {}", stage, startTick);
     }
@@ -65,19 +64,23 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     public void finishRoom(int currentTick) {
         if (!started) return;
         endTick = currentTick;
+        int duration = endTick - startTick;
+        finish(true, duration, false);
         started = false;
-        log.info("Finished room {} at tick {} with duration {}", stage, startTick + endTick, endTick);
-        // Dispatch event to Blert event handler
-        dispatchEvent(new CoxRoomCompleteEvent(stage, startTick, endTick));
+        log.info("Finished room {} at tick {} with duration {}", stage, endTick, duration);
+        // Don't dispatch an event - just finish tracking
+        // The COX challenge will handle room transitions internally
     }
 
     public void finishLastRoom(int currentTick) {
         if (!started) return;
         endTick = currentTick;
+        int duration = endTick - startTick;
+        finish(true, duration, false);
         started = false;
-        log.info("Finished Last room {} at tick {} with duration {}", stage, endTick, endTick - getStartTick());
-        // Dispatch event to Blert event handler
-        dispatchEvent(new CoxRoomCompleteEvent(stage, startTick, endTick));
+        log.info("Finished Last room {} at tick {} with duration {}", stage, endTick, duration);
+        // Don't dispatch an event - just finish tracking
+        // The COX challenge will handle final room completion internally
     }
 
     @Override
