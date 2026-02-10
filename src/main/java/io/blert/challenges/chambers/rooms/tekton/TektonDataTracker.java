@@ -234,7 +234,7 @@ public class TektonDataTracker extends RoomDataTracker
         // Capture tekton reference for comparison
         HpVarbitTrackedNpc currentTekton = tekton;
         // Only log and cleanup if matches the despawned NPC
-        if (npc == currentTekton.getNpc())
+        if (currentTekton != null && npc == currentTekton.getNpc())
         {
             // Clear tekton immediately to prevent duplicate processing
             tekton = null;
@@ -266,16 +266,16 @@ public class TektonDataTracker extends RoomDataTracker
             switch (animation)
             {
                 case TEKTON_ANVIL_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_ANVIL;
-                    log.info("[Tekton] Anvil animation detected");
+                    // attackThisTick = NpcAttack.COX_TEKTON_ANVIL;
+                    // log.info("[Tekton] Anvil animation detected");
                     // Note: Healing is now detected by NPC ID 7545, not animation
                     break;
                 case TEKTON_STOMP_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_STOMP;
+                    // attackThisTick = NpcAttack.COX_TEKTON_STOMP;
                     // log.info("[Tekton] Stomp animation detected");
                     break;
                 case TEKTON_AUTO_ANIMATION:
-                    attackThisTick = NpcAttack.COX_TEKTON_AUTO;
+                    // attackThisTick = NpcAttack.COX_TEKTON_AUTO;
                     // log.info("[Tekton] Auto attack animation detected");
                     break;
                 // Discovered animations - TODO: determine which attacks these represent
@@ -289,7 +289,7 @@ public class TektonDataTracker extends RoomDataTracker
                 case TEKTON_UNKNOWN_7484:
                     // log.debug("[Tekton] Known animation: {} at tick {}", animation, getTick());
                     // For now, treat as auto attacks until we identify specific attacks
-                    attackThisTick = NpcAttack.COX_TEKTON_AUTO;
+                    // attackThisTick = NpcAttack.COX_TEKTON_AUTO;
                     break;
                 default:
                     // Only log truly unknown animations

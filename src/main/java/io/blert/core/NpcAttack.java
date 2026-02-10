@@ -65,12 +65,12 @@ public enum NpcAttack {
     COLOSSEUM_HEREDIT_BREAK(112),
     COLOSSEUM_HEREDIT_COMBO(113),
 
-    COX_TEKTON_AUTO(io.blert.proto.NpcAttack.COX_TEKTON_AUTO),
-    COX_TEKTON_ANVIL(io.blert.proto.NpcAttack.COX_TEKTON_ANVIL),
-    COX_TEKTON_STOMP(io.blert.proto.NpcAttack.COX_TEKTON_STOMP),
+    COX_TEKTON_AUTO(200),
+    COX_TEKTON_ANVIL(201),
+    COX_TEKTON_STOMP(202),
     // TODO: Add Ice Demon proto enums when available
-    COX_ICE_DEMON_AUTO(io.blert.proto.NpcAttack.COX_TEKTON_AUTO), // placeholder
-    COX_ICE_DEMON_FREEZE(io.blert.proto.NpcAttack.COX_TEKTON_ANVIL), // placeholder
+    COX_ICE_DEMON_AUTO(203), // placeholder
+    COX_ICE_DEMON_FREEZE(204), // placeholder
 
     INFERNO_BAT_AUTO(70),
     INFERNO_BLOB_RANGED(71),
