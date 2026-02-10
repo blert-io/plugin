@@ -675,6 +675,7 @@ public class BlertPluginPanel extends PluginPanel {
                 case COX_OLM:
                     boss = "Olm";
                     break;
+            }
         }
 
         if (stageId >= Stage.INFERNO_WAVE_1.getId() && stageId <= Stage.INFERNO_WAVE_69.getId()) {
