@@ -25,24 +25,22 @@ package io.blert.challenges.colosseum;
 
 import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
-import io.blert.events.colosseum.HandicapChoiceEvent;
+import io.blert.events.colosseum.*;
 import io.blert.util.Tick;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.NPC;
+import net.runelite.api.*;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.NpcDespawned;
-import net.runelite.api.events.NpcSpawned;
+import net.runelite.api.events.*;
 import net.runelite.client.util.Text;
+import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class WaveDataTracker extends DataTracker {
@@ -55,6 +53,38 @@ public class WaveDataTracker extends DataTracker {
     private Handicap handicap;
     @Setter
     private Handicap[] handicapOptions;
+
+    private static final int REENTRY_PRIMARY_GAME_OBJECT_ID = 50743;
+    private static final int REENTRY_SECONDARY_GROUND_OBJECT_ID = 50744;
+    private static final int HEALING_TOTEM_PROJECTILE_ID = 2687;
+    private static final Set<Integer> SOL_DUST_GRAPHIC_OBJECT_IDS = Set.of(2669, 2670, 2671);
+    private static final Set<Integer> SOL_LASER_SCAN_GRAPHIC_OBJECT_IDS = Set.of(2689, 2690, 2691);
+    private static final Set<Integer> SOL_LASER_SHOT_GRAPHIC_OBJECT_IDS = Set.of(2693, 2694, 2695);
+    private static final int SOL_POOL_GRAPHIC_OBJECT_ID = 2698;
+
+    private final Map<WorldPoint, NPC> healingTotems = new HashMap<>();
+    private final Map<NPC, Pair<NPC, Integer>> activeHeals = new HashMap<>();
+
+    private final List<GameObject> reentryPrimaryPoolsSpawned = new ArrayList<>();
+    private final List<GroundObject> reentrySecondaryPoolsSpawned = new ArrayList<>();
+    private final List<GameObject> reentryPrimaryPoolsDespawned = new ArrayList<>();
+    private final List<GroundObject> reentrySecondaryPoolsDespawned = new ArrayList<>();
+    private final Set<WorldPoint> solDustGraphics = new HashSet<>();
+    private final List<WorldPoint> solPools = new ArrayList<>();
+    private GraphicsObject solLaserGraphic;
+
+    private static final Map<String, EquipmentSlot> GRAPPLE_MESSAGES = Map.of(
+            "Sol Heredit: I'LL CRUSH YOUR BODY!", EquipmentSlot.TORSO,
+            "Sol Heredit: I'LL BREAK YOUR BACK!", EquipmentSlot.CAPE,
+            "Sol Heredit: I'LL TWIST YOUR HANDS OFF!", EquipmentSlot.GLOVES,
+            "Sol Heredit: I'LL BREAK YOUR LEGS!", EquipmentSlot.LEGS,
+            "Sol Heredit: I'LL CUT YOUR FEET OFF!", EquipmentSlot.BOOTS
+    );
+    private static final String GRAPPLE_DEFEND_MESSAGE = "You successfully defend from Sol Heredit's grapple!";
+    private static final String GRAPPLE_PARRY_MESSAGE = "You perfectly parry Sol Heredit's grapple!";
+
+    private @Nullable EquipmentSlot pendingGrappleTarget = null;
+    private int pendingGrappleTick = -1;
 
     public static Stage waveToStage(int wave) {
         return Stage.values()[Stage.COLOSSEUM_WAVE_1.ordinal() + wave - 1];
@@ -73,6 +103,9 @@ public class WaveDataTracker extends DataTracker {
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
         return ColosseumNpc.withId(event.getNpc().getId()).map(colosseumNpc -> {
             NPC npc = event.getNpc();
+            if (colosseumNpc.isHealingTotem()) {
+                healingTotems.put(npc.getWorldLocation(), npc);
+            }
             if (colosseumNpc.isManticore()) {
                 return new Manticore(npc, generateRoomId(npc), new Hitpoints(colosseumNpc.getHitpoints()));
             }
@@ -82,6 +115,12 @@ public class WaveDataTracker extends DataTracker {
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned event, @Nullable TrackedNpc trackedNpc) {
+        if (trackedNpc != null) {
+            if (ColosseumNpc.withId(trackedNpc.getNpc().getId()).map(ColosseumNpc::isHealingTotem).orElse(false)) {
+                healingTotems.remove(trackedNpc.getNpc().getWorldLocation());
+            }
+            activeHeals.remove(trackedNpc.getNpc());
+        }
         return ColosseumNpc.withId(event.getNpc().getId()).isPresent();
     }
 
@@ -133,6 +172,122 @@ public class WaveDataTracker extends DataTracker {
                     }
                     manticore.updateStyle();
                 });
+
+        sendReentryPoolsEvent();
+
+        if (getStage() == Stage.COLOSSEUM_WAVE_12) {
+            handleSolEvents();
+        }
+
+        reentryPrimaryPoolsSpawned.clear();
+        reentrySecondaryPoolsSpawned.clear();
+        reentryPrimaryPoolsDespawned.clear();
+        reentrySecondaryPoolsDespawned.clear();
+        solDustGraphics.clear();
+        solPools.clear();
+        solLaserGraphic = null;
+    }
+
+    @Override
+    protected void onHitsplat(HitsplatApplied event) {
+        Actor actor = event.getActor();
+        Hitsplat hitsplat = event.getHitsplat();
+        if (actor == client.getLocalPlayer()) {
+            if (hitsplat.getHitsplatType() == HitsplatID.DOOM) {
+                dispatchEvent(new DoomAppliedEvent(getStage(), getTick(), getWorldLocation(actor)));
+            }
+            return;
+        }
+
+        if (actor instanceof NPC && hitsplat.getHitsplatType() == HitsplatID.HEAL) {
+            var activeHeal = activeHeals.get(actor);
+            if (activeHeal == null) {
+                return;
+            }
+
+            Optional<TrackedNpc> totem = getTrackedNpcs().getByNpc(activeHeal.getLeft());
+            Optional<TrackedNpc> target = getTrackedNpcs().getByNpc((NPC) actor);
+            if (totem.isPresent() && target.isPresent()) {
+                dispatchEvent(
+                        new TotemHealEvent(getStage(), getTick(), getWorldLocation(actor), totem.get(),
+                                target.get(), activeHeal.getRight(), hitsplat.getAmount())
+                );
+            }
+        }
+    }
+
+    @Override
+    protected void onProjectile(ProjectileMoved event) {
+        Projectile projectile = event.getProjectile();
+        if (projectile.getId() != HEALING_TOTEM_PROJECTILE_ID) {
+            return;
+        }
+
+        NPC totem = healingTotems.get(projectile.getSourcePoint());
+        if (totem == null) {
+            return;
+        }
+
+        Actor target = projectile.getTargetActor();
+        if (!(target instanceof NPC)) {
+            return;
+        }
+
+        int cycle = client.getGameCycle() - projectile.getStartCycle();
+        if (cycle == 0) {
+            getTrackedNpcs().getByNpc((NPC) target).ifPresent(npc -> {
+                activeHeals.put(npc.getNpc(), Pair.of(totem, getTick()));
+            });
+        }
+    }
+
+    @Override
+    protected void onGameObjectSpawn(GameObjectSpawned event) {
+        GameObject object = event.getGameObject();
+        if (object.getId() == REENTRY_PRIMARY_GAME_OBJECT_ID) {
+            reentryPrimaryPoolsSpawned.add(object);
+        }
+    }
+
+    @Override
+    protected void onGameObjectDespawn(GameObjectDespawned event) {
+        GameObject object = event.getGameObject();
+        if (object.getId() == REENTRY_PRIMARY_GAME_OBJECT_ID) {
+            reentryPrimaryPoolsDespawned.add(object);
+        }
+    }
+
+    @Override
+    protected void onGroundObjectSpawn(GroundObjectSpawned event) {
+        GroundObject object = event.getGroundObject();
+        if (object.getId() == REENTRY_SECONDARY_GROUND_OBJECT_ID) {
+            reentrySecondaryPoolsSpawned.add(object);
+        }
+    }
+
+    @Override
+    protected void onGroundObjectDespawn(GroundObjectDespawned event) {
+        GroundObject object = event.getGroundObject();
+        if (object.getId() == REENTRY_SECONDARY_GROUND_OBJECT_ID) {
+            reentrySecondaryPoolsDespawned.add(object);
+        }
+    }
+
+    @Override
+    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
+        GraphicsObject object = event.getGraphicsObject();
+        if (SOL_DUST_GRAPHIC_OBJECT_IDS.contains(object.getId())) {
+            solDustGraphics.add(getWorldLocation(object));
+        } else if (object.getId() == SOL_POOL_GRAPHIC_OBJECT_ID) {
+            solPools.add(getWorldLocation(object));
+        } else if (SOL_LASER_SCAN_GRAPHIC_OBJECT_IDS.contains(object.getId())
+                || SOL_LASER_SHOT_GRAPHIC_OBJECT_IDS.contains(object.getId())) {
+            // Scans and shots should never happen on the same tick but if it somehow occurs,
+            // prioritize a shot, which has a higher ID.
+            if (solLaserGraphic == null || object.getId() > solLaserGraphic.getId()) {
+                solLaserGraphic = object;
+            }
+        }
     }
 
     @Override
@@ -149,6 +304,24 @@ public class WaveDataTracker extends DataTracker {
         }
 
         if (getStage() == Stage.COLOSSEUM_WAVE_12) {
+            EquipmentSlot grappleSlot = GRAPPLE_MESSAGES.get(stripped);
+            if (grappleSlot != null) {
+                pendingGrappleTarget = grappleSlot;
+                pendingGrappleTick = getTick();
+                return;
+            }
+
+            if (pendingGrappleTarget != null) {
+                if (stripped.equals(GRAPPLE_DEFEND_MESSAGE)) {
+                    dispatchGrapple(SolGrappleEvent.Outcome.DEFEND);
+                    return;
+                }
+                if (stripped.equals(GRAPPLE_PARRY_MESSAGE)) {
+                    dispatchGrapple(SolGrappleEvent.Outcome.PARRY);
+                    return;
+                }
+            }
+
             Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(stripped);
             if (matcher.find()) {
                 try {
@@ -179,11 +352,144 @@ public class WaveDataTracker extends DataTracker {
         }
     }
 
+    private void dispatchGrapple(SolGrappleEvent.Outcome outcome) {
+        if (pendingGrappleTarget == null) {
+            return;
+        }
+
+        Player player = client.getLocalPlayer();
+        WorldPoint coords = player != null ? getWorldLocation(player) : null;
+        dispatchEvent(new SolGrappleEvent(getTick(), coords, pendingGrappleTick, pendingGrappleTarget, outcome));
+        pendingGrappleTarget = null;
+        pendingGrappleTick = -1;
+    }
+
     private void startWave(int tickOffset) {
         if (getState() == State.NOT_STARTED) {
             super.start(tickOffset);
             dispatchEvent(new HandicapChoiceEvent(
                     getStage(), handicap, Arrays.copyOf(handicapOptions, handicapOptions.length)));
+            collectExistingReentryPools();
+        }
+    }
+
+    private void collectExistingReentryPools() {
+        Tile[][][] tiles = client.getTopLevelWorldView().getScene().getTiles();
+        if (tiles.length == 0 || tiles[0].length == 0) {
+            return;
+        }
+
+        try {
+            for (Tile[] tileRow : tiles[0]) {
+                for (Tile tile : tileRow) {
+                    if (tile == null) {
+                        continue;
+                    }
+                    if (tile.getGameObjects() != null) {
+                        for (GameObject gameObject : tile.getGameObjects()) {
+                            if (gameObject != null && gameObject.getId() == REENTRY_PRIMARY_GAME_OBJECT_ID) {
+                                reentryPrimaryPoolsSpawned.add(gameObject);
+                            }
+                        }
+                    }
+                    GroundObject groundObject = tile.getGroundObject();
+                    if (groundObject != null && groundObject.getId() == REENTRY_SECONDARY_GROUND_OBJECT_ID) {
+                        reentrySecondaryPoolsSpawned.add(groundObject);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error collecting existing reentry pools on wave start", e);
+        }
+    }
+
+    private void sendReentryPoolsEvent() {
+        if (reentryPrimaryPoolsSpawned.isEmpty() && reentrySecondaryPoolsSpawned.isEmpty()
+                && reentryPrimaryPoolsDespawned.isEmpty() && reentrySecondaryPoolsDespawned.isEmpty()) {
+            return;
+        }
+
+        List<WorldPoint> primarySpawned = reentryPrimaryPoolsSpawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
+        List<WorldPoint> secondarySpawned = reentrySecondaryPoolsSpawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
+        List<WorldPoint> primaryDespawned = reentryPrimaryPoolsDespawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
+        List<WorldPoint> secondaryDespawned = reentrySecondaryPoolsDespawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
+
+        dispatchEvent(new ReentryPoolsEvent(getStage(), getTick(),
+                primarySpawned, secondarySpawned, primaryDespawned, secondaryDespawned));
+    }
+
+    private void handleSolEvents() {
+        // If a grapple was announced and no defend/parry message arrived within 4 ticks, it was a hit.
+        if (pendingGrappleTarget != null && getTick() - pendingGrappleTick > 4) {
+            dispatchGrapple(SolGrappleEvent.Outcome.HIT);
+        }
+
+        NPC sol = getTrackedNpcs().stream()
+                .filter(trackedNpc -> ColosseumNpc.isSolHeredit(trackedNpc.getNpc().getId()))
+                .findFirst()
+                .map(TrackedNpc::getNpc)
+                .orElse(null);
+        if (sol == null) {
+            return;
+        }
+
+        if (!solDustGraphics.isEmpty()) {
+            SolDustEvent.Pattern pattern;
+            SolDustEvent.Direction direction = null;
+
+            WorldPoint solLoc = getWorldLocation(sol);
+            int solSize = sol.getWorldArea().getWidth();
+            WorldArea solArea = new WorldArea(solLoc.getX(), solLoc.getY(), solSize, solSize, solLoc.getPlane());
+
+            // Pattern can be identified by counting how many dusts are 2 tiles away from Sol.
+            List<WorldPoint> twoAway = solDustGraphics.stream()
+                    .filter(point -> solArea.distanceTo2D(point) == 2)
+                    .collect(Collectors.toList());
+
+            switch (twoAway.size()) {
+                case 0:
+                    // Safe ring 2 tiles away => shield 1.
+                    pattern = SolDustEvent.Pattern.SHIELD_1;
+                    break;
+                case 2:
+                    // Two trident prongs => trident 1.
+                    pattern = SolDustEvent.Pattern.TRIDENT_1;
+                    break;
+                case 3:
+                    // Three trident prongs => trident 2.
+                    pattern = SolDustEvent.Pattern.TRIDENT_2;
+                    break;
+                default:
+                    // Safe ring 3 tiles away, everything else is dust => shield 2.
+                    pattern = SolDustEvent.Pattern.SHIELD_2;
+                    break;
+            }
+
+            if (pattern == SolDustEvent.Pattern.TRIDENT_1 || pattern == SolDustEvent.Pattern.TRIDENT_2) {
+                WorldPoint dust = twoAway.get(0);
+
+                if (dust.getX() < solLoc.getX()) {
+                    direction = SolDustEvent.Direction.WEST;
+                } else if (dust.getX() >= solLoc.getX() + solSize) {
+                    direction = SolDustEvent.Direction.EAST;
+                } else if (dust.getY() >= solLoc.getY() + solSize) {
+                    direction = SolDustEvent.Direction.NORTH;
+                } else {
+                    direction = SolDustEvent.Direction.SOUTH;
+                }
+            }
+
+            dispatchEvent(new SolDustEvent(getTick(), getWorldLocation(sol), pattern, direction));
+        }
+
+        if (!solPools.isEmpty()) {
+            dispatchEvent(new SolPoolsEvent(getTick(), solPools));
+        }
+
+        if (solLaserGraphic != null) {
+            SolLasersEvent.Phase phase = SOL_LASER_SCAN_GRAPHIC_OBJECT_IDS.contains(solLaserGraphic.getId())
+                    ? SolLasersEvent.Phase.SCAN : SolLasersEvent.Phase.SHOT;
+            dispatchEvent(new SolLasersEvent(getTick(), phase));
         }
     }
 }
