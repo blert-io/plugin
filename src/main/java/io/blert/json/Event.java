@@ -63,6 +63,12 @@ public class Event {
     // Colosseum event-specific fields
     public Integer handicap;
     public List<Integer> handicapOptions;
+    public ColosseumTotemHeal colosseumTotemHeal;
+    public ColosseumReentryPools colosseumReentryPools;
+    public ColosseumSolDust colosseumSolDust;
+    public ColosseumSolGrapple colosseumSolGrapple;
+    public ColosseumSolPools colosseumSolPools;
+    public ColosseumSolLasers colosseumSolLasers;
 
     // Mokhaiotl event-specific fields
     public AttackStyle mokhaiotlAttackStyle;
@@ -236,6 +242,54 @@ public class Event {
 
     public static class MokhaiotlShockwave {
         public List<Coords> tiles;
+    }
+
+    public static class ColosseumTotemHeal {
+        public Npc source;
+        public Npc target;
+        public int startTick;
+        public int healAmount;
+    }
+
+    public static class ColosseumReentryPools {
+        public List<Coords> primarySpawned;
+        public List<Coords> primaryDespawned;
+        public List<Coords> secondarySpawned;
+        public List<Coords> secondaryDespawned;
+    }
+
+    public static class ColosseumSolDust {
+        public static final int PATTERN_TRIDENT_1 = 0;
+        public static final int PATTERN_TRIDENT_2 = 1;
+        public static final int PATTERN_SHIELD_1 = 2;
+        public static final int PATTERN_SHIELD_2 = 3;
+        public static final int DIRECTION_NORTH = 0;
+        public static final int DIRECTION_EAST = 1;
+        public static final int DIRECTION_SOUTH = 2;
+        public static final int DIRECTION_WEST = 3;
+
+        public int pattern;
+        public Integer direction;
+    }
+
+    public static class ColosseumSolGrapple {
+        public static final int OUTCOME_HIT = 0;
+        public static final int OUTCOME_DEFEND = 1;
+        public static final int OUTCOME_PARRY = 2;
+
+        public int attackTick;
+        public int target;
+        public int outcome;
+    }
+
+    public static class ColosseumSolPools {
+        public List<Coords> pools;
+    }
+
+    public static class ColosseumSolLasers {
+        public static final int PHASE_SCAN = 0;
+        public static final int PHASE_SHOT = 1;
+        public int phase;
     }
 
     public static class InfernoWaveStart {

@@ -52,6 +52,9 @@ public enum ColosseumNpc {
             Pair.of(10885, NpcAttack.COLOSSEUM_HEREDIT_SLAM),
             Pair.of(10887, NpcAttack.COLOSSEUM_HEREDIT_COMBO)
     ),
+    BEE_SWARM(12823, 0),  // Deliberately ignoring hitpoints as they're not meaningful.
+    LASER_PRISM(12824, 0),
+    HEALING_TOTEM(12825, 1),
     SOLARFLARE(12826, 0),
     ;
 
@@ -82,6 +85,14 @@ public enum ColosseumNpc {
 
     public boolean isManticore() {
         return this == MANTICORE;
+    }
+
+    public boolean isHealingTotem() {
+        return this == HEALING_TOTEM;
+    }
+
+    public static boolean isSolHeredit(int id) {
+        return id == SOL_HEREDIT.ids[0];
     }
 
     @SafeVarargs

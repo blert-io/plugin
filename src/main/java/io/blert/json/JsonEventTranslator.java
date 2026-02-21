@@ -33,7 +33,7 @@ import io.blert.core.ItemDelta;
 import io.blert.core.Stage;
 import io.blert.core.TrackedNpc;
 import io.blert.events.*;
-import io.blert.events.colosseum.HandicapChoiceEvent;
+import io.blert.events.colosseum.*;
 import io.blert.events.inferno.InfernoWaveStartEvent;
 import io.blert.events.mokhaiotl.*;
 import io.blert.events.tob.*;
@@ -335,6 +335,110 @@ public class JsonEventTranslator {
                         Arrays.stream(handicapChoiceEvent.getHandicapOptions())
                                 .map(Handicap::getId)
                                 .collect(Collectors.toList());
+                break;
+            }
+
+            case COLOSSEUM_TOTEM_HEAL: {
+                TotemHealEvent totemHealEvent = (TotemHealEvent) event;
+                json.colosseumTotemHeal = new Event.ColosseumTotemHeal();
+                json.colosseumTotemHeal.source = new Event.Npc();
+                json.colosseumTotemHeal.source.id = totemHealEvent.getSourceNpcId();
+                json.colosseumTotemHeal.source.roomId = totemHealEvent.getSourceRoomId();
+                json.colosseumTotemHeal.target = new Event.Npc();
+                json.colosseumTotemHeal.target.id = totemHealEvent.getTargetNpcId();
+                json.colosseumTotemHeal.target.roomId = totemHealEvent.getTargetRoomId();
+                json.colosseumTotemHeal.startTick = totemHealEvent.getStartTick();
+                json.colosseumTotemHeal.healAmount = totemHealEvent.getHealAmount();
+                break;
+            }
+
+            case COLOSSEUM_REENTRY_POOLS: {
+                ReentryPoolsEvent reentryPoolsEvent = (ReentryPoolsEvent) event;
+                json.colosseumReentryPools = new Event.ColosseumReentryPools();
+                json.colosseumReentryPools.primarySpawned =
+                        toCoordsList(reentryPoolsEvent.getPrimaryPoolsSpawned());
+                json.colosseumReentryPools.primaryDespawned =
+                        toCoordsList(reentryPoolsEvent.getPrimaryPoolsDespawned());
+                json.colosseumReentryPools.secondarySpawned =
+                        toCoordsList(reentryPoolsEvent.getSecondaryPoolsSpawned());
+                json.colosseumReentryPools.secondaryDespawned =
+                        toCoordsList(reentryPoolsEvent.getSecondaryPoolsDespawned());
+                break;
+            }
+
+            case COLOSSEUM_SOL_DUST: {
+                SolDustEvent solDustEvent = (SolDustEvent) event;
+                json.colosseumSolDust = new Event.ColosseumSolDust();
+                switch (solDustEvent.getPattern()) {
+                    case TRIDENT_1:
+                        json.colosseumSolDust.pattern = Event.ColosseumSolDust.PATTERN_TRIDENT_1;
+                        break;
+                    case TRIDENT_2:
+                        json.colosseumSolDust.pattern = Event.ColosseumSolDust.PATTERN_TRIDENT_2;
+                        break;
+                    case SHIELD_1:
+                        json.colosseumSolDust.pattern = Event.ColosseumSolDust.PATTERN_SHIELD_1;
+                        break;
+                    case SHIELD_2:
+                        json.colosseumSolDust.pattern = Event.ColosseumSolDust.PATTERN_SHIELD_2;
+                        break;
+                }
+                if (solDustEvent.getDirection() != null) {
+                    switch (solDustEvent.getDirection()) {
+                        case NORTH:
+                            json.colosseumSolDust.direction = Event.ColosseumSolDust.DIRECTION_NORTH;
+                            break;
+                        case EAST:
+                            json.colosseumSolDust.direction = Event.ColosseumSolDust.DIRECTION_EAST;
+                            break;
+                        case SOUTH:
+                            json.colosseumSolDust.direction = Event.ColosseumSolDust.DIRECTION_SOUTH;
+                            break;
+                        case WEST:
+                            json.colosseumSolDust.direction = Event.ColosseumSolDust.DIRECTION_WEST;
+                            break;
+                    }
+                }
+                break;
+            }
+
+            case COLOSSEUM_SOL_GRAPPLE: {
+                SolGrappleEvent solGrappleEvent = (SolGrappleEvent) event;
+                json.colosseumSolGrapple = new Event.ColosseumSolGrapple();
+                json.colosseumSolGrapple.attackTick = solGrappleEvent.getAttackTick();
+                json.colosseumSolGrapple.target = solGrappleEvent.getTarget().getId();
+                switch (solGrappleEvent.getOutcome()) {
+                    case HIT:
+                        json.colosseumSolGrapple.outcome = Event.ColosseumSolGrapple.OUTCOME_HIT;
+                        break;
+                    case DEFEND:
+                        json.colosseumSolGrapple.outcome = Event.ColosseumSolGrapple.OUTCOME_DEFEND;
+                        break;
+                    case PARRY:
+                        json.colosseumSolGrapple.outcome = Event.ColosseumSolGrapple.OUTCOME_PARRY;
+                        break;
+                }
+                break;
+            }
+
+            case COLOSSEUM_SOL_POOLS: {
+                SolPoolsEvent solPoolsEvent = (SolPoolsEvent) event;
+                json.colosseumSolPools = new Event.ColosseumSolPools();
+                json.colosseumSolPools.pools = toCoordsList(solPoolsEvent.getPools());
+                break;
+            }
+
+            case COLOSSEUM_SOL_LASERS: {
+                SolLasersEvent solLasersEvent = (SolLasersEvent) event;
+                json.colosseumSolLasers = new Event.ColosseumSolLasers();
+                switch (solLasersEvent.getPhase()) {
+                    case SCAN:
+                        json.colosseumSolLasers.phase = Event.ColosseumSolLasers.PHASE_SCAN;
+                        break;
+                    case SHOT:
+                        json.colosseumSolLasers.phase = Event.ColosseumSolLasers.PHASE_SHOT;
+                        break;
+                }
                 break;
             }
 

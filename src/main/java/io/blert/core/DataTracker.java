@@ -323,6 +323,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
         return Location.getWorldLocation(client, object.getWorldLocation());
     }
 
+    protected WorldPoint getWorldLocation(@NonNull GraphicsObject object) {
+        WorldPoint wp = WorldPoint.fromLocal(client, object.getLocation());
+        return Location.getWorldLocation(client, wp);
+    }
+
     /**
      * Sends an event to the registered event handler, if any.
      */
