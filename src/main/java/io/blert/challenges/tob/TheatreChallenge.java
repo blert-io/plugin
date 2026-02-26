@@ -324,7 +324,10 @@ public class TheatreChallenge extends RecordableChallenge {
     @Override
     public void onVarbitChanged(VarbitChanged varbit) {
         if (varbit.getVarbitId() == Varbits.THEATRE_OF_BLOOD) {
-            if (getState().isInactive() && varbit.getValue() == TOB_VARBIT_RAID_STARTED) {
+            if (getState().isInactive() && varbit.getValue() == TOB_VARBIT_NO_PARTY) {
+                // Party was disbanded while in the lobby.
+                resetParty();
+            } else if (getState().isInactive() && varbit.getValue() == TOB_VARBIT_RAID_STARTED) {
                 // A raid start due to a varbit change usually means that the player is joining late, rejoining, or
                 // spectating. Party and mode information is not immediately available.
                 log.debug("Raid started via varbit change");
