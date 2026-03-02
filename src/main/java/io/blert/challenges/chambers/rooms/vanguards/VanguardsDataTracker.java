@@ -52,20 +52,11 @@ public class VanguardsDataTracker extends RoomDataTracker
     // Vanguards share the same HP varbit, but we can track which one was last damaged
     private static final int VANGUARD_HP_VARBIT = 6099;
     
-    // TODO: update when you finalize Vanguard animations from logging
     private static final int VANGUARD_SPAWN_ANIMATION = 7428;
-    private static final int VANGUARD_ANVIL_ANIMATION = 7475;
-    private static final int VANGUARD_STOMP_ANIMATION = 7491;
-    private static final int VANGUARD_AUTO_ANIMATION = 7492;
-    // Additional discovered animations
-    private static final int VANGUARD_UNKNOWN_7483 = 7483;
-    private static final int VANGUARD_UNKNOWN_7487 = 7487;
-    private static final int VANGUARD_UNKNOWN_7488 = 7488;
-    private static final int VANGUARD_UNKNOWN_7493 = 7493;
-    private static final int VANGUARD_UNKNOWN_7494 = 7494;
-    private static final int VANGUARD_UNKNOWN_7481 = 7481;
-    private static final int VANGUARD_UNKNOWN_7482 = 7482;
-    private static final int VANGUARD_UNKNOWN_7484 = 7484;
+    private static final int VANGUARD_MAGE_ANIMATION = 7436;
+    private static final int VANGUARD_MELEE_ANIMATION = 7441;
+    private static final int VANGUARD_RANGED_ANIMATION = 7446;
+    private static final int VANGUARD_HEAL_ANIMATION = 7431;
 
     // Track multiple vanguards using their NPC hash codes as keys
     private final Map<Integer, BasicTrackedNpc> vanguards = new HashMap<>();
@@ -373,30 +364,21 @@ public class VanguardsDataTracker extends RoomDataTracker
                         vanguardSpawnAnimationTicks.put(npc.hashCode(), getTick());
                         log.info("[Vanguard {}] Spawn animation detected at tick {}/{}", npc.getId(), getTick(), getTick() + getStartTick());
                         break;
-                    case VANGUARD_ANVIL_ANIMATION:
-                        // attackThisTick = NpcAttack.COX_VANGUARD_ANVIL;
-                        log.info("[Vanguard {}] Anvil animation detected at tick {}/{}", npc.getId(), getTick(), getTick() + getStartTick());
+                    case VANGUARD_MAGE_ANIMATION:
+                        attackThisTick = NpcAttack.COX_VANGS_MAGE;
+                        log.info("[Vanguard {}] Mage animation detected", npc.getId());
                         break;
-                    case VANGUARD_STOMP_ANIMATION:
-                        // attackThisTick = NpcAttack.COX_VANGUARD_STOMP;
-                        // log.info("[Vanguard {}] Stomp animation detected", npc.getId());
+                    case VANGUARD_MELEE_ANIMATION:
+                        attackThisTick = NpcAttack.COX_VANGS_MELEE;
+                        log.info("[Vanguard {}] Melee animation detected", npc.getId());
                         break;
-                    case VANGUARD_AUTO_ANIMATION:
-                        // attackThisTick = NpcAttack.COX_VANGUARD_AUTO;
-                        // log.info("[Vanguard {}] Auto attack animation detected", npc.getId());
+                    case VANGUARD_RANGED_ANIMATION:
+                        attackThisTick = NpcAttack.COX_VANGS_RANGED;
+                        log.info("[Vanguard {}] Ranged animation detected", npc.getId());
                         break;
-                    // Discovered animations - TODO: determine which attacks these represent
-                    case VANGUARD_UNKNOWN_7483:
-                    case VANGUARD_UNKNOWN_7487:
-                    case VANGUARD_UNKNOWN_7488:
-                    case VANGUARD_UNKNOWN_7493:
-                    case VANGUARD_UNKNOWN_7494:
-                    case VANGUARD_UNKNOWN_7481:
-                    case VANGUARD_UNKNOWN_7482:
-                    case VANGUARD_UNKNOWN_7484:
-                        // log.debug("[Vanguard {}] Known animation: {} at tick {}", npc.getId(), animation, getTick());
-                        // For now, treat as auto attacks until we identify specific attacks
-                        // attackThisTick = NpcAttack.COX_VANGUARD_AUTO;
+                    case VANGUARD_HEAL_ANIMATION:
+                        attackThisTick = NpcAttack.COX_VANGS_HEAL;
+                        log.info("[Vanguard {}] Heal animation detected", npc.getId());
                         break;
                     default:
                         // Only log truly unknown animations

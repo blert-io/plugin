@@ -46,18 +46,11 @@ public class MuttadilesDataTracker extends RoomDataTracker
     private static final int MUTTADILE_HP_VARBIT = 6099;
 
     // TODO: update when you finalize Muttadile animations from logging
-    private static final int MUTTADILE_ANVIL_ANIMATION = 7475;
-    private static final int MUTTADILE_STOMP_ANIMATION = 7491;
-    private static final int MUTTADILE_AUTO_ANIMATION = 7492;
-    // Additional discovered animations
-    private static final int MUTTADILE_UNKNOWN_7483 = 7483;
-    private static final int MUTTADILE_UNKNOWN_7487 = 7487;
-    private static final int MUTTADILE_UNKNOWN_7488 = 7488;
-    private static final int MUTTADILE_UNKNOWN_7493 = 7493;
-    private static final int MUTTADILE_UNKNOWN_7494 = 7494;
-    private static final int MUTTADILE_UNKNOWN_7481 = 7481;
-    private static final int MUTTADILE_UNKNOWN_7482 = 7482;
-    private static final int MUTTADILE_UNKNOWN_7484 = 7484;
+    private static final int MUTTADILE_MELEE_ANIMATION = 7420;
+    private static final int MUTTADILE_RANGE_ANIMATION = 7421;
+    private static final int LARGE_MUTTADILE_MAGE_ANIMATION = 7422;
+    private static final int LARGE_MUTTADILE_LAKE_ANIMATION = 7423;
+    private static final int LARGE_MUTTADILE_STOMP_ANIMATION = 7424;
 
     private @Nullable HpVarbitTrackedNpc smallMuttadile;
     private @Nullable HpVarbitTrackedNpc largeMuttadile;
@@ -390,21 +383,25 @@ public class MuttadilesDataTracker extends RoomDataTracker
             
             switch (animation)
             {
-                case MUTTADILE_ANVIL_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_MUTTADILE_ANVIL;
-                    log.info("[{} Muttadile] Anvil animation detected", muttType);
+                case MUTTADILE_MELEE_ANIMATION:
+                    attackThisTick = NpcAttack.COX_MUTTA_MELEE;
+                    log.info("[{} Muttadile] Melee animation detected", muttType);
                     break;
-                case MUTTADILE_STOMP_ANIMATION:
-                case MUTTADILE_AUTO_ANIMATION:
-                case MUTTADILE_UNKNOWN_7483:
-                case MUTTADILE_UNKNOWN_7487:
-                case MUTTADILE_UNKNOWN_7488:
-                case MUTTADILE_UNKNOWN_7493:
-                case MUTTADILE_UNKNOWN_7494:
-                case MUTTADILE_UNKNOWN_7481:
-                case MUTTADILE_UNKNOWN_7482:
-                case MUTTADILE_UNKNOWN_7484:
-                    // log.debug("[{} Muttadile] Known animation: {} at tick {}", muttType, animation, getTick());
+                case MUTTADILE_RANGE_ANIMATION:
+                    attackThisTick = NpcAttack.COX_MUTTA_RANGE;
+                    log.info("[{} Muttadile] Range animation detected", muttType);
+                    break;
+                case LARGE_MUTTADILE_MAGE_ANIMATION:
+                    attackThisTick = NpcAttack.COX_MUTTA_LARGE_MAGE;
+                    log.info("[{} Muttadile] Large mage animation detected", muttType);
+                    break;
+                case LARGE_MUTTADILE_LAKE_ANIMATION:
+                    attackThisTick = NpcAttack.COX_MUTTA_LARGE_LAKE;
+                    log.info("[{} Muttadile] Large lake animation detected", muttType);
+                    break;
+                case LARGE_MUTTADILE_STOMP_ANIMATION:
+                    attackThisTick = NpcAttack.COX_MUTTA_LARGE_STOMP;
+                    log.info("[{} Muttadile] Large stomp animation detected", muttType);
                     break;
                 default:
                     // Only log truly unknown animations

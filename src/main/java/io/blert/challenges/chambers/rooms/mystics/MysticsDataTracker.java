@@ -51,10 +51,8 @@ import java.util.Optional;
 public class MysticsDataTracker extends RoomDataTracker
 {
 
-    // TODO: update when you finalize Ice Demon animations from logging
-    // private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
-    // private static final int ICE_DEMON_STOMP_ANIMATION = ?;
-    // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
+    private static final int MYSTICS_MAGE_ANIMATION = 5528;
+    private static final int MYSTICS_MELEE_ANIMATION = 5487;
 
     private final Map<Integer, BasicTrackedNpc> Mystics = new HashMap<>(); // Track multiple Mystics by NPC ID
     private final Map<Integer, Boolean> targetedMystics = new HashMap<>(); // Track which Mystic IDs have been targeted
@@ -261,15 +259,14 @@ public class MysticsDataTracker extends RoomDataTracker
 
         switch (actor.getAnimation())
         {
-            // case ICE_DEMON_FREEZE_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_FREEZE;
-            //     break;
-            // case ICE_DEMON_STOMP_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_STOMP;
-            //     break;
-            // case ICE_DEMON_AUTO_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_AUTO;
-            //     break;
+            case MYSTICS_MAGE_ANIMATION:
+                attackThisTick = NpcAttack.COX_MYSTICS_MAGE;
+                log.info("[Mystics] Mage animation detected");
+                break;
+            case MYSTICS_MELEE_ANIMATION:
+                attackThisTick = NpcAttack.COX_MYSTICS_MELEE;
+                log.info("[Mystics] Melee animation detected");
+                break;
             default:
                 break;
         }
