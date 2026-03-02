@@ -48,17 +48,16 @@ public class TektonDataTracker extends RoomDataTracker
 
     // TODO: update when you finalize Tekton animations from logging
     private static final int TEKTON_ANVIL_ANIMATION = 7475;
-    private static final int TEKTON_STOMP_ANIMATION = 7491;
-    private static final int TEKTON_AUTO_ANIMATION = 7492;
     // Additional discovered animations
-    private static final int TEKTON_UNKNOWN_7483 = 7483;
-    private static final int TEKTON_UNKNOWN_7487 = 7487;
-    private static final int TEKTON_UNKNOWN_7488 = 7488;
-    private static final int TEKTON_UNKNOWN_7493 = 7493;
-    private static final int TEKTON_UNKNOWN_7494 = 7494;
-    private static final int TEKTON_UNKNOWN_7481 = 7481;
-    private static final int TEKTON_UNKNOWN_7482 = 7482;
-    private static final int TEKTON_UNKNOWN_7484 = 7484;
+    private static final int TEKTON_STAB_ANIMATION = 7482;
+    private static final int TEKTON_SLASH_ANIMATION = 7483;
+    private static final int TEKTON_HAMMER_ANIMATION = 7484;
+    private static final int TEKTON_ENRAGED_STAB_ANIMATION = 7493;
+    private static final int TEKTON_ENRAGED_SLASH_ANIMATION = 7494;
+    private static final int TEKTON_ENRAGED_HAMMER_ANIMATION = 7492;
+
+    private static final int TEKTON_LEFT_ANVIL_ANIMATION = 7474;
+    private static final int TEKTON_ENRAGED_LEFT_ANVIL_ANIMATION = 7487;
 
     private @Nullable HpVarbitTrackedNpc tekton;
     private @Nullable CoxNpc tektonCoxNpc; // Store CoxNpc reference for back-calculation
@@ -131,9 +130,11 @@ public class TektonDataTracker extends RoomDataTracker
                     getCoxChallenge().updateCombatLevelAndRescale(calculatedCombatLevel);
                     
                     // Update Tekton's base HP to the newly scaled value
-                    int newExpectedHp = tektonCoxNpc.getBaseHitpoints();
-                    currentTekton.setHitpoints(new Hitpoints(newExpectedHp, varbitValue));
-                    log.info("[Tekton] Updated: base HP {} current HP {}", newExpectedHp, varbitValue);
+                    if (tektonCoxNpc != null) {
+                        int newExpectedHp = tektonCoxNpc.getBaseHitpoints();
+                        currentTekton.setHitpoints(new Hitpoints(newExpectedHp, varbitValue));
+                        log.info("[Tekton] Updated: base HP {} current HP {}", newExpectedHp, varbitValue);
+                    }
                 }
                 
                 // Initialize previousVarbitValue from the first valid read
@@ -147,7 +148,7 @@ public class TektonDataTracker extends RoomDataTracker
                     // log.info("[Tekton HP] Healed: {} -> {} (+{}) at tick {}", previousVarbitValue, varbitValue, (varbitValue - previousVarbitValue), tick);
                     // setHealTick(tick);
                 } else {
-                    log.info("[Tekton HP] Damaged: {} -> {} (-{}) at tick {}/{}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick, getStartTick() + tick);
+                    // log.info("[Tekton HP] Damaged: {} -> {} (-{}) at tick {}/{}", previousVarbitValue, varbitValue, (previousVarbitValue - varbitValue), tick, getStartTick() + tick);
                 }
                 currentTekton.updateHitpointsFromVarbit(varbitValue);
             }
@@ -190,9 +191,11 @@ public class TektonDataTracker extends RoomDataTracker
                     
                     // Initialize previousVarbitValue on spawn (may not be accurate yet)
                     previousVarbitValue = client.getVarbitValue(TEKTON_HP_VARBIT);
+                    log.info("Initial Tekton HP varbit value on spawn: {}", previousVarbitValue);
                     
                     // Get expected scaled HP
                     int expectedHp = coxNpc.getBaseHitpoints();
+                    log.info("Initial Tekton expected HP value on spawn: {}", expectedHp);
                     
                     // Use expected HP for both base and current on spawn
                     // We'll verify and adjust on the first tick when varbit is reliable
@@ -261,42 +264,33 @@ public class TektonDataTracker extends RoomDataTracker
         final var currentTekton = tekton; // Capture for null safety
         if (currentTekton != null && actor == currentTekton.getNpc())
         {
-            // log.debug("[Tekton Animation] Animation: {} at tick {}", animation, getTick());
-            
             switch (animation)
             {
                 case TEKTON_ANVIL_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_TEKTON_ANVIL;
-                    // log.info("[Tekton] Anvil animation detected");
-                    // Note: Healing is now detected by NPC ID 7545, not animation
+                    attackThisTick = NpcAttack.COX_TEKTON_ANVIL;
+                    log.info("[Tekton] Anvil animation detected");
                     break;
-                case TEKTON_STOMP_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_TEKTON_STOMP;
-                    // log.info("[Tekton] Stomp animation detected");
+                case TEKTON_LEFT_ANVIL_ANIMATION:
+                case TEKTON_ENRAGED_LEFT_ANVIL_ANIMATION:
+                    attackThisTick = NpcAttack.COX_TEKTON_LEFT_ANVIL;
+                    log.info("[Tekton] Left anvil animation detected id: {}", animation);
                     break;
-                case TEKTON_AUTO_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_TEKTON_AUTO;
-                    // log.info("[Tekton] Auto attack animation detected");
+                case TEKTON_SLASH_ANIMATION:
+                case TEKTON_ENRAGED_SLASH_ANIMATION:
+                    attackThisTick = NpcAttack.COX_TEKTON_SLASH;
+                    log.info("[Tekton] Slash animation detected id: {}", animation);
                     break;
-                // Discovered animations - TODO: determine which attacks these represent
-                case TEKTON_UNKNOWN_7483:
-                case TEKTON_UNKNOWN_7487:
-                case TEKTON_UNKNOWN_7488:
-                case TEKTON_UNKNOWN_7493:
-                case TEKTON_UNKNOWN_7494:
-                case TEKTON_UNKNOWN_7481:
-                case TEKTON_UNKNOWN_7482:
-                case TEKTON_UNKNOWN_7484:
-                    // log.debug("[Tekton] Known animation: {} at tick {}", animation, getTick());
-                    // For now, treat as auto attacks until we identify specific attacks
-                    // attackThisTick = NpcAttack.COX_TEKTON_AUTO;
+                case TEKTON_HAMMER_ANIMATION:
+                case TEKTON_ENRAGED_HAMMER_ANIMATION:
+                    attackThisTick = NpcAttack.COX_TEKTON_HAMMER;
+                    log.info("[Tekton] Hammer animation detected id: {}", animation);
+                    break;
+                case TEKTON_STAB_ANIMATION:
+                case TEKTON_ENRAGED_STAB_ANIMATION:
+                    attackThisTick = NpcAttack.COX_TEKTON_STAB;
+                    log.info("[Tekton] Stab animation detected id: {}", animation);
                     break;
                 default:
-                    // Only log truly unknown animations
-                    if (animation != -1 && animation != 0)
-                    {
-                        // log.info("[Tekton] Unknown animation: {} at tick {}", animation, getTick());
-                    }
                     break;
             }
         }

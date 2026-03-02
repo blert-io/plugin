@@ -51,7 +51,8 @@ public class IceDemonDataTracker extends RoomDataTracker
 {
     // private static final int ICE_DEMON_HP_VARBIT = 6100;
     // TODO: update when you finalize Ice Demon animations from logging
-    private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
+    // private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
+    private static final int ICE_DEMON_MAGE_RANGE_ANIMATION = 69; // placeholder - needs verification
     // private static final int ICE_DEMON_STOMP_ANIMATION = ?;
     // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
 
@@ -189,15 +190,9 @@ public class IceDemonDataTracker extends RoomDataTracker
 
         switch (actor.getAnimation())
         {
-            case ICE_DEMON_FREEZE_ANIMATION:
-                attackThisTick = NpcAttack.COX_ICE_DEMON_FREEZE;
+            case ICE_DEMON_MAGE_RANGE_ANIMATION:
+                attackThisTick = NpcAttack.COX_ICE_DEMON_AUTO;
                 break;
-            // case ICE_DEMON_STOMP_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_STOMP;
-            //     break;
-            // case ICE_DEMON_AUTO_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_AUTO;
-            //     break;
             default:
                 break;
         }

@@ -45,19 +45,11 @@ public class VasaDataTracker extends RoomDataTracker
     // UPDATED: correct Vasa HP varbit based on dev-shell logging
     private static final int VASA_HP_VARBIT = 6099;
 
-    // TODO: update when you finalize Vasa animations from logging
-    private static final int VASA_ANVIL_ANIMATION = 7475;
-    private static final int VASA_STOMP_ANIMATION = 7491;
-    private static final int VASA_AUTO_ANIMATION = 7492;
-    // Additional discovered animations
-    private static final int VASA_UNKNOWN_7483 = 7483;
-    private static final int VASA_UNKNOWN_7487 = 7487;
-    private static final int VASA_UNKNOWN_7488 = 7488;
-    private static final int VASA_UNKNOWN_7493 = 7493;
-    private static final int VASA_UNKNOWN_7494 = 7494;
-    private static final int VASA_UNKNOWN_7481 = 7481;
-    private static final int VASA_UNKNOWN_7482 = 7482;
-    private static final int VASA_UNKNOWN_7484 = 7484;
+    private static final int VASA_SPAWN_ANIMATION = 7408;
+    private static final int VASA_TELEPORT_ANIMATION = 7409;
+    private static final int VASA_TELEPORT_BOMB_ANIMATION = 7410;
+    private static final int VASA_AT_CRYSTAL_ANIMATION = 7412;
+    private static final int VASA_LEAVES_CRYSTAL_ANIMATION = 7414;
 
     private @Nullable HpVarbitTrackedNpc vasa;
     private @Nullable NpcAttack attackThisTick = null;
@@ -267,31 +259,25 @@ public class VasaDataTracker extends RoomDataTracker
             
             switch (animation)
             {
-                case VASA_ANVIL_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_VASA_ANVIL;
-                    log.info("[Vasa] Anvil animation detected");
-                    // Note: Healing is now detected by NPC ID 7545, not animation
+                case VASA_SPAWN_ANIMATION:
+                    attackThisTick = NpcAttack.COX_VASA_SPAWN;
+                    log.info("[Vasa] Spawn animation detected");
                     break;
-                case VASA_STOMP_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_VASA_STOMP;
-                    // log.info("[Vasa] Stomp animation detected");
+                case VASA_TELEPORT_ANIMATION:
+                    attackThisTick = NpcAttack.COX_VASA_TELEPORT;
+                    log.info("[Vasa] Teleport animation detected");
                     break;
-                case VASA_AUTO_ANIMATION:
-                    // attackThisTick = NpcAttack.COX_VASA_AUTO;
-                    // log.info("[Vasa] Auto attack animation detected");
+                case VASA_TELEPORT_BOMB_ANIMATION:
+                    attackThisTick = NpcAttack.COX_VASA_TELEPORT_BOMBS;
+                    log.info("[Vasa] Teleport bomb animation detected");
                     break;
-                // Discovered animations - TODO: determine which attacks these represent
-                case VASA_UNKNOWN_7483:
-                case VASA_UNKNOWN_7487:
-                case VASA_UNKNOWN_7488:
-                case VASA_UNKNOWN_7493:
-                case VASA_UNKNOWN_7494:
-                case VASA_UNKNOWN_7481:
-                case VASA_UNKNOWN_7482:
-                case VASA_UNKNOWN_7484:
-                    // log.debug("[Vasa] Known animation: {} at tick {}", animation, getTick());
-                    // For now, treat as auto attacks until we identify specific attacks
-                    // attackThisTick = NpcAttack.COX_VASA_AUTO;
+                case VASA_AT_CRYSTAL_ANIMATION:
+                    attackThisTick = NpcAttack.COX_VASA_AT_CRYSTAL;
+                    log.info("[Vasa] At crystal animation detected");
+                    break;
+                case VASA_LEAVES_CRYSTAL_ANIMATION:
+                    attackThisTick = NpcAttack.COX_VASA_LEAVES_CRYSTAL;
+                    log.info("[Vasa] Leaves crystal animation detected");
                     break;
                 default:
                     // Only log truly unknown animations

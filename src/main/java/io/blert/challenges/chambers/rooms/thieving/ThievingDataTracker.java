@@ -52,6 +52,7 @@ public class ThievingDataTracker extends RoomDataTracker
     // private static final int CORRUPTED_SCAVENGER_HP_VARBIT = 6100;
     // TODO: update when you finalize Corrupted Scavenger animations from logging
     private static final int CORRUPTED_SCAVENGER_EAT_ANIMATION = 7496; // placeholder - needs verification
+    private static final int CORRUPTED_SCAVENGER_SLEEP_ANIMATION = 7497; // placeholder - needs verification
     // private static final int CORRUPTED_SCAVENGER_STOMP_ANIMATION = ?;
     // private static final int CORRUPTED_SCAVENGER_AUTO_ANIMATION = ?;
 
@@ -206,12 +207,10 @@ public class ThievingDataTracker extends RoomDataTracker
                 log.info("[Corrupted Scavenger] Eat animation detected at tick {}", getTick());
                 // attackThisTick = NpcAttack.COX_CORRUPTED_SCAVENGER_FREEZE;
                 break;
-            // case CORRUPTED_SCAVENGER_STOMP_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_CORRUPTED_SCAVENGER_STOMP;
-            //     break;
-            // case CORRUPTED_SCAVENGER_AUTO_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_CORRUPTED_SCAVENGER_AUTO;
-            //     break;
+            case CORRUPTED_SCAVENGER_SLEEP_ANIMATION:
+                log.info("[Corrupted Scavenger] Sleep animation detected at tick {}", getTick());
+                // attackThisTick = NpcAttack.COX_CORRUPTED_SCAVENGER_SLEEP;
+                break;
             default:
                 break;
         }

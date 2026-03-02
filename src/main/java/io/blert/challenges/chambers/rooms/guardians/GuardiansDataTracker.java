@@ -58,10 +58,8 @@ import java.util.Optional;
 public class GuardiansDataTracker extends RoomDataTracker
 {
 
-    // TODO: update when you finalize Ice Demon animations from logging
-    // private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
-    // private static final int ICE_DEMON_STOMP_ANIMATION = ?;
-    // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
+    private static final int GUARDIANS_SWIPE_ANIMATION = 1203;
+    private static final int GUARDIANS_ROCK_FALL_ANIMATION = 4278;
 
     private final Map<Integer, BasicTrackedNpc> guardians = new HashMap<>(); // Track Guardians by NPC ID (includes live and dead IDs)
     private final Map<Integer, Boolean> targetedGuardians = new HashMap<>(); // Track which Guardian IDs have been targeted
@@ -306,15 +304,14 @@ public class GuardiansDataTracker extends RoomDataTracker
 
         switch (actor.getAnimation())
         {
-            // case ICE_DEMON_FREEZE_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_FREEZE;
-            //     break;
-            // case ICE_DEMON_STOMP_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_STOMP;
-            //     break;
-            // case ICE_DEMON_AUTO_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_AUTO;
-            //     break;
+            case GUARDIANS_SWIPE_ANIMATION:
+                attackThisTick = NpcAttack.COX_GUARDIANS_SWIPE;
+                log.info("[Guardians] Swipe animation detected");
+                break;
+            case GUARDIANS_ROCK_FALL_ANIMATION:
+                attackThisTick = NpcAttack.COX_GUARDIANS_ROCK_FALL;
+                log.info("[Guardians] Rock fall animation detected");
+                break;
             default:
                 break;
         }

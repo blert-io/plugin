@@ -52,10 +52,10 @@ import java.util.Optional;
 public class ShamansDataTracker extends RoomDataTracker
 {
 
-    // TODO: update when you finalize Ice Demon animations from logging
-    // private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
-    // private static final int ICE_DEMON_STOMP_ANIMATION = ?;
-    // private static final int ICE_DEMON_AUTO_ANIMATION = ?;
+    private static final int SHAMANS_BARNEYS_ANIMATION = 7157;
+    private static final int SHAMANS_BLOB_ANIMATION = 7193;
+    private static final int SHAMANS_JUMP_ANIMATION = 7152;
+    private static final int SHAMANS_MELEE_ANIMATION = 7158;
 
     private final Map<Integer, BasicTrackedNpc> shamans = new HashMap<>(); // Track multiple Shamans by NPC ID
     private final Map<Integer, Boolean> targetedShamans = new HashMap<>(); // Track which Shaman IDs have been targeted
@@ -261,15 +261,22 @@ public class ShamansDataTracker extends RoomDataTracker
 
         switch (actor.getAnimation())
         {
-            // case ICE_DEMON_FREEZE_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_FREEZE;
-            //     break;
-            // case ICE_DEMON_STOMP_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_STOMP;
-            //     break;
-            // case ICE_DEMON_AUTO_ANIMATION:
-            //     attackThisTick = NpcAttack.COX_ICE_DEMON_AUTO;
-            //     break;
+            case SHAMANS_BARNEYS_ANIMATION:
+                attackThisTick = NpcAttack.COX_SHAMANS_BARNEYS;
+                log.info("[Shamans] Barneys animation detected");
+                break;
+            case SHAMANS_BLOB_ANIMATION:
+                attackThisTick = NpcAttack.COX_SHAMANS_BLOB;
+                log.info("[Shamans] Blob animation detected");
+                break;
+            case SHAMANS_JUMP_ANIMATION:
+                attackThisTick = NpcAttack.COX_SHAMANS_JUMP;
+                log.info("[Shamans] Jump animation detected");
+                break;
+            case SHAMANS_MELEE_ANIMATION:
+                attackThisTick = NpcAttack.COX_SHAMANS_MELEE;
+                log.info("[Shamans] Melee animation detected");
+                break;
             default:
                 break;
         }
