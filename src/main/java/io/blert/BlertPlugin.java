@@ -380,6 +380,20 @@ public class BlertPlugin extends Plugin {
         }
     }
 
+    @Subscribe
+    private void onItemSpawned(ItemSpawned event) {
+        if (activeChallenge != null) {
+            activeChallenge.onItemSpawned(event);
+        }
+    }
+
+    @Subscribe
+    private void onItemDespawned(ItemDespawned event) {
+        if (activeChallenge != null) {
+            activeChallenge.onItemDespawned(event);
+        }
+    }
+
     @Subscribe(priority = 10)
     private void onVarbitChanged(VarbitChanged event) {
         if (activeChallenge != null) {

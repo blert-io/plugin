@@ -320,6 +320,13 @@ public class JsonEventTranslator {
                 break;
             }
 
+            case VERZIK_DAWN_DROP: {
+                VerzikDawnDropEvent verzikDawnDropEvent = (VerzikDawnDropEvent) event;
+                json.verzikDawnDrop = new Event.VerzikDawnDrop();
+                json.verzikDawnDrop.dropped = verzikDawnDropEvent.isDropped();
+                break;
+            }
+
             case VERZIK_HEAL: {
                 VerzikHealEvent verzikHealEvent = (VerzikHealEvent) event;
                 json.verzikHeal = new Event.VerzikHeal();

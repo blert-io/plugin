@@ -400,6 +400,22 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
     }
 
     @Override
+    public void onItemSpawned(ItemSpawned event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onItemSpawned(event);
+        }
+    }
+
+    @Override
+    public void onItemDespawned(ItemDespawned event) {
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onItemDespawned(event);
+        }
+    }
+
+    @Override
     public void onVarbitChanged(VarbitChanged event) {
         DataTracker tracker = getActiveTracker();
         if (tracker != null) {

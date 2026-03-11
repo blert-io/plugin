@@ -44,6 +44,8 @@ public interface RuneliteEventHandler {
     default void onGraphicChanged(GraphicChanged event) {}
     default void onGraphicsObjectCreated(GraphicsObjectCreated event) {}
     default void onActorDeath(ActorDeath event) {}
+    default void onItemSpawned(ItemSpawned event) {}
+    default void onItemDespawned(ItemDespawned event) {}
     default void onVarbitChanged(VarbitChanged event) {}
     default void onScriptPreFired(ScriptPreFired event) {}
 }

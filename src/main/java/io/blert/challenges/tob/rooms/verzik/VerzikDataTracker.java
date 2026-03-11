@@ -80,6 +80,8 @@ public class VerzikDataTracker extends RoomDataTracker {
     private static final ImmutableSet<Integer> VERZIK_TORNADO_IDS = ImmutableSet.of(10863);
     private static final int VERZIK_YELLOW_OBJECT_ID = 1595;
 
+    private static final int DAWNBRINGER_ITEM_ID = 22516;
+
     private HpVarbitTrackedNpc verzik;
 
     private VerzikPhase phase;
@@ -581,6 +583,22 @@ public class VerzikDataTracker extends RoomDataTracker {
             // Hitsplats are tracked for P3 healing.
             hitsplatsThisTick.computeIfAbsent(event.getActor(), k -> new ArrayList<>())
                     .add(event.getHitsplat());
+        }
+    }
+
+    @Override
+    protected void onItemSpawn(ItemSpawned event) {
+        if (event.getItem().getId() == DAWNBRINGER_ITEM_ID
+                && verzik != null && TobNpc.isVerzikP1(verzik.getNpc().getId())) {
+            dispatchEvent(new VerzikDawnDropEvent(getTick(), getWorldLocation(event.getTile()), true));
+        }
+    }
+
+    @Override
+    protected void onItemDespawn(ItemDespawned event) {
+        if (event.getItem().getId() == DAWNBRINGER_ITEM_ID
+                && verzik != null && TobNpc.isVerzikP1(verzik.getNpc().getId())) {
+            dispatchEvent(new VerzikDawnDropEvent(getTick(), getWorldLocation(event.getTile()), false));
         }
     }
 

@@ -287,6 +287,24 @@ public abstract class DataTracker implements RuneliteEventHandler {
     }
 
     /**
+     * Implementation-specific equivalent of the {@code onItemSpawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onItemSpawn(ItemSpawned event) {
+    }
+
+    /**
+     * Implementation-specific equivalent of the {@code onItemDespawned} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onItemDespawn(ItemDespawned event) {
+    }
+
+    /**
      * Returns whether attacking the NPC with the given ID ignores the player's
      * attack cooldown.
      * Should be overriden by implementations which require special handling.
@@ -313,6 +331,10 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
     protected WorldPoint getWorldLocation(@NonNull TrackedNpc trackedNpc) {
         return getWorldLocation(trackedNpc.getNpc());
+    }
+
+    protected WorldPoint getWorldLocation(@NonNull Tile tile) {
+        return Location.getWorldLocation(client, tile.getWorldLocation());
     }
 
     protected WorldPoint getWorldLocation(@NonNull GameObject object) {
@@ -863,6 +885,20 @@ public abstract class DataTracker implements RuneliteEventHandler {
         }
 
         onDeath(event);
+    }
+
+    @Override
+    public final void onItemSpawned(ItemSpawned event) {
+        if (!terminating()) {
+            onItemSpawn(event);
+        }
+    }
+
+    @Override
+    public final void onItemDespawned(ItemDespawned event) {
+        if (!terminating()) {
+            onItemDespawn(event);
+        }
     }
 
     @Override

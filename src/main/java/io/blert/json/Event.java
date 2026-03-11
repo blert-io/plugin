@@ -59,6 +59,7 @@ public class Event {
     public VerzikBounce verzikBounce;
     public VerzikHeal verzikHeal;
     public VerzikDawn verzikDawn;
+    public VerzikDawnDrop verzikDawnDrop;
 
     // Colosseum event-specific fields
     public Integer handicap;
@@ -214,6 +215,10 @@ public class Event {
         public int attackTick;
         public int damage;
         public String player;
+    }
+
+    public static class VerzikDawnDrop {
+        public boolean dropped;
     }
 
     public static class MokhaiotlOrb {
