@@ -29,15 +29,16 @@ public enum SpawnType {
     SPLIT,
     WEST,
     SOUTH,
-    EAST;
+    EAST,
+    UNKNOWN;
 
-    private static final WorldPoint EAST_LANE_NORTH = new WorldPoint(3310, 4249, 0);
-    private static final WorldPoint EAST_LANE_SOUTH = new WorldPoint(3310, 4248, 0);
-    private static final WorldPoint EAST_LANE_SOUTHWEST = new WorldPoint(3309, 4248, 0);  // east bigs
-    private static final WorldPoint WEST_LANE_NORTH = new WorldPoint(3281, 4249, 0);
-    private static final WorldPoint WEST_LANE_SOUTH = new WorldPoint(3281, 4248, 0);
-    private static final WorldPoint SOUTH_LANE_WEST = new WorldPoint(3295, 4233, 0);
-    private static final WorldPoint SOUTH_LANE_EAST = new WorldPoint(3296, 4233, 0);
+    static final WorldPoint EAST_LANE_NORTH = new WorldPoint(3310, 4249, 0);
+    static final WorldPoint EAST_LANE_SOUTH = new WorldPoint(3310, 4248, 0);
+    static final WorldPoint EAST_LANE_SOUTHWEST = new WorldPoint(3309, 4248, 0);  // east bigs
+    static final WorldPoint WEST_LANE_NORTH = new WorldPoint(3281, 4249, 0);
+    static final WorldPoint WEST_LANE_SOUTH = new WorldPoint(3281, 4248, 0);
+    static final WorldPoint SOUTH_LANE_WEST = new WorldPoint(3295, 4233, 0);
+    static final WorldPoint SOUTH_LANE_EAST = new WorldPoint(3296, 4233, 0);
 
     public static SpawnType fromWorldPoint(WorldPoint point) {
         if (point.equals(EAST_LANE_NORTH) || point.equals(EAST_LANE_SOUTH) || point.equals(EAST_LANE_SOUTHWEST)) {
@@ -50,7 +51,7 @@ public enum SpawnType {
             return SOUTH;
         }
 
-        return SPLIT;
+        return UNKNOWN;
     }
 
     public boolean isSplit() {
@@ -58,6 +59,6 @@ public enum SpawnType {
     }
 
     public boolean isLaneSpawn() {
-        return !isSplit();
+        return this == WEST || this == SOUTH || this == EAST;
     }
 }
