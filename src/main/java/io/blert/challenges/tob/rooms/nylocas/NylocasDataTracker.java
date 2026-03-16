@@ -66,12 +66,12 @@ public class NylocasDataTracker extends RoomDataTracker {
 
     private int currentWave;
     private int nextWaveSpawnCheckTick;
-    private final int[] waveSpawnTicks = new int[LAST_NYLO_WAVE + 1];
     private int bossSpawnTick;
 
     private final Map<Integer, Nylo> nylosInRoom = new HashMap<>();
     private @Nullable NyloBoss nyloBoss = null;
     private final List<Nylo> bigDeathsThisTick = new ArrayList<>();
+    private final List<Nylo> laneSpawnsThisTick = new ArrayList<>();
 
     private static final ImmutableSet<Integer> NYLOCAS_PILLAR_NPC_IDS = ImmutableSet.of(
             NullNpcID.NULL_10790,
@@ -110,8 +110,12 @@ public class NylocasDataTracker extends RoomDataTracker {
         super.onTick();
         final int tick = getTick();
 
-        if (waveSpawnTicks[currentWave] == tick) {
-            dispatchEvent(NyloWaveEvent.spawn(tick, currentWave, roomNyloCount(), waveCap()));
+        if (!laneSpawnsThisTick.isEmpty()) {
+            OptionalInt wave = NyloWave.identifyWave(laneSpawnsThisTick, currentWave);
+            if (wave.isPresent()) {
+                handleWaveSpawn(tick, wave.getAsInt());
+            }
+            laneSpawnsThisTick.clear();
         }
 
         if (currentWave < LAST_NYLO_WAVE && tick == nextWaveSpawnCheckTick) {
@@ -122,6 +126,10 @@ public class NylocasDataTracker extends RoomDataTracker {
             log.debug("Stalled wave {} ({}/{})", currentWave, roomNyloCount(), waveCap());
             dispatchEvent(NyloWaveEvent.stall(tick, currentWave, roomNyloCount(), waveCap()));
         }
+
+        nylosInRoom.values().stream()
+                .filter(nylo -> nylo.getSpawnTick() == tick)
+                .forEach(nylo -> nylo.setWave(currentWave));
 
         assignParentsToSplits();
         bigDeathsThisTick.clear();
@@ -159,6 +167,8 @@ public class NylocasDataTracker extends RoomDataTracker {
             if (nyloBoss != null && nyloBoss.isPrince() && nyloBoss.getNpc().isDead()) {
                 despawnTrackedNpc(nyloBoss);
             }
+
+            currentWave = LAST_NYLO_WAVE;
 
             // Two spawn events are sent out for the Nylo king: one when it first drops down, and one when the fight
             // actually starts. Only generate a new room ID for the former.
@@ -267,21 +277,19 @@ public class NylocasDataTracker extends RoomDataTracker {
         final int tick = getTick();
 
         WorldPoint point = getWorldLocation(npc);
-        if (SpawnType.fromWorldPoint(point).isLaneSpawn()) {
-            if (waveSpawnTicks[currentWave] != tick) {
-                handleWaveSpawn(tick);
-            }
+        Nylo nylo = new Nylo(npc, tobNpc.get(), generateRoomId(npc), point, tick,
+                0, tobNpc.get().getBaseHitpoints(theatreChallenge.getScale()));
+        nylosInRoom.put(npc.hashCode(), nylo);
+
+        if (nylo.getSpawnType().isLaneSpawn()) {
+            laneSpawnsThisTick.add(nylo);
         }
 
-        Nylo nylo = new Nylo(npc, tobNpc.get(), generateRoomId(npc), point, tick,
-                currentWave, tobNpc.get().getBaseHitpoints(theatreChallenge.getScale()));
-        nylosInRoom.put(npc.hashCode(), nylo);
         return Optional.of(nylo);
     }
 
-    private void handleWaveSpawn(int tick) {
-        currentWave++;
-        waveSpawnTicks[currentWave] = tick;
+    private void handleWaveSpawn(int tick, int wave) {
+        currentWave = wave;
         if (currentWave < LAST_NYLO_WAVE) {
             if (isPrinceWave()) {
                 nextWaveSpawnCheckTick = tick + 4 * WAVE_TICK_CYCLE;
@@ -289,6 +297,8 @@ public class NylocasDataTracker extends RoomDataTracker {
                 nextWaveSpawnCheckTick = tick + NATURAL_STALLS[currentWave];
             }
         }
+
+        dispatchEvent(NyloWaveEvent.spawn(tick, currentWave, roomNyloCount(), waveCap()));
 
         if (currentWave == CAP_INCREASE_WAVE) {
             log.debug("Cap increase: {} ({})", tick, formattedRoomTime());
@@ -308,15 +318,30 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     private void assignParentsToSplits() {
-        // TODO(frolv): This could be made smarter in the case of overlapping big deaths by limiting each big to two
-        // splits and attempting a best fit algorithm.
         final int tick = getTick();
+
+        // Determine whether the nylo is a split, and if so, if it has an
+        // unambiguous parent. If no parent can be identified, leave the nylo as
+        // an UNKNOWN type.
         nylosInRoom.values().stream()
-                .filter(nylo -> nylo.getSpawnTick() == tick && nylo.isSplit())
-                .forEach(nylo -> bigDeathsThisTick.stream()
-                        .filter(big -> big.isPossibleParentOf(nylo))
-                        .findFirst()
-                        .ifPresent(nylo::setParent));
+                .filter(nylo -> nylo.getSpawnTick() == tick && !nylo.isLaneSpawn())
+                .forEach(nylo -> {
+                    Nylo parent = null;
+                    int possibleParents = 0;
+                    for (Nylo big : bigDeathsThisTick) {
+                        if (big.isPossibleParentOf(nylo)) {
+                            parent = big;
+                            possibleParents++;
+                        }
+                    }
+
+                    if (possibleParents == 1) {
+                        nylo.setSpawnType(SpawnType.SPLIT);
+                        nylo.setParent(parent);
+                    } else if (possibleParents > 1) {
+                        nylo.setSpawnType(SpawnType.SPLIT);
+                    }
+                });
     }
 
     private void checkCleanupComplete() {
