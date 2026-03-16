@@ -58,7 +58,6 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private static final int MAZE_RAG_GRAPHICS_OBJECT = 505;
     private static final int SOTE_ATTACK_SPEED = 5;
 
-    private final int[] mazeTicks = new int[]{-1, -1};
     private Maze maze = Maze.MAZE_66;
     private @Nullable NpcAttack attackThisTick = null;
     private int lastAttackTick = -1;
@@ -77,7 +76,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (sotetseg == null) {
-            client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isSotetseg(npc.getId())).findFirst().ifPresent(npc -> {
+            client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isAnySotetseg(npc.getId())).findFirst().ifPresent(npc -> {
                 TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
                 sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
                         new Hitpoints(tobNpc, theatreChallenge.getScale()));
@@ -85,7 +84,9 @@ public class SotetsegDataTracker extends RoomDataTracker {
             });
         }
 
-        inMaze = false;
+        if (sotetseg != null && TobNpc.isSotetsegIdle(sotetseg.getNpcId())) {
+            startMaze(getTick());
+        }
     }
 
     @Override
@@ -219,8 +220,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
             return;
         }
 
-        if (mazeTicks[maze.ordinal()] == -1) {
-            mazeTicks[maze.ordinal()] = tick;
+        if (!inMaze) {
             startMaze(tick);
         }
     }
@@ -280,6 +280,23 @@ public class SotetsegDataTracker extends RoomDataTracker {
     }
 
     private void startMaze(int tick) {
+        if (sotetseg != null) {
+            int hitpointsVarbit = getBossHitpointsVarbitValue();
+            // There are two cases here:
+            // 1. The maze procs normally during the fight. In this case, at the
+            //    time startMaze is called, the hitpoints varbit will reflect
+            //    the boss's actual health (which will be at or slightly above
+            //    666 on the first maze and 333 on the second).
+            // 2. A spectator joins the raid while the maze is in progress. Once
+            //    actually in the maze, the hitpoints varbit is locked at 2
+            //    during the first maze and 1 for the second, regardless of the
+            //    boss's health.
+            maze = (hitpointsVarbit > 500 || hitpointsVarbit == 2)
+                    ? Maze.MAZE_66
+                    : Maze.MAZE_33;
+            sotetseg.setDisableVarbitUpdates(true);
+        }
+
         log.debug("Sotetseg {} started on tick {} {}", maze, tick, formattedRoomTime());
         mazeTracker.reset();
         activeMazeTiles.clear();
@@ -288,10 +305,6 @@ public class SotetsegDataTracker extends RoomDataTracker {
         chosenPlayer = null;
 
         dispatchEvent(SoteMazeEvent.mazeProc(tick, maze));
-
-        if (sotetseg != null) {
-            sotetseg.setDisableVarbitUpdates(true);
-        }
     }
 
     private void finishMaze(int tick) {
