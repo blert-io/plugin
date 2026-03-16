@@ -26,13 +26,9 @@ package io.blert.challenges.tob.rooms.nylocas;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.TrackedNpc;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.NPC;
-import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 
 import javax.annotation.Nullable;
@@ -70,7 +66,8 @@ public class Nylo extends TrackedNpc {
     @Setter
     private @Nullable Nylo parent;
     @Getter
-    private final SpawnType spawnType;
+    @Setter(AccessLevel.PACKAGE)
+    private SpawnType spawnType;
     @Getter
     private final WorldPoint spawnPoint;
     @Getter
@@ -78,7 +75,8 @@ public class Nylo extends TrackedNpc {
     @Getter
     private Style style;
     @Getter
-    private final int wave;
+    @Setter(AccessLevel.PACKAGE)
+    private int wave;
     @Getter
     private final boolean big;
 
@@ -110,6 +108,10 @@ public class Nylo extends TrackedNpc {
         this.style = style;
     }
 
+    public boolean isLaneSpawn() {
+        return spawnType.isLaneSpawn();
+    }
+
     public boolean isSplit() {
         return spawnType == SpawnType.SPLIT;
     }
@@ -137,13 +139,22 @@ public class Nylo extends TrackedNpc {
      * @return {@code true} if this could be a parent of {@code other}.
      */
     public boolean isPossibleParentOf(Nylo other) {
-        if (!big || !other.isSplit() || deathTick != other.spawnTick) {
+        if (!big || other.isLaneSpawn() || deathTick != other.spawnTick) {
             return false;
         }
 
-        // Splits appear to spawn within a box of -1 to +2 tiles (inclusive) in both x and y directions around the
-        // southwest tile of their parent.
-        WorldArea areaToConsider = new WorldArea(deathPoint.getX() - 1, deathPoint.getY() - 1, 4, 4, 0);
-        return areaToConsider.contains(other.spawnPoint);
+        // Splits are observed to spawn within the 2x2 footprint of their dead parent
+        // plus two extensions: (-1, 0) and (2, 1) relative to the southwest tile of the parent.
+        // This is shown visually below, where B represents the parent big and S labels the
+        // two additional extension tiles.
+        //
+        // 1 |  .  B  B  S
+        // 0 |  S  B  B  .
+        // --+-------------
+        //   | -1  0  1  2
+        //
+        int dx = other.spawnPoint.getX() - deathPoint.getX();
+        int dy = other.spawnPoint.getY() - deathPoint.getY();
+        return (dy == 0 && dx >= -1 && dx <= 1) || (dy == 1 && dx >= 0 && dx <= 2);
     }
 }
