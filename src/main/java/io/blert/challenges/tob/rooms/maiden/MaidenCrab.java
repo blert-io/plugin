@@ -26,14 +26,13 @@ package io.blert.challenges.tob.rooms.maiden;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.TrackedNpc;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NonNull;
+import lombok.*;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
 
 import java.util.Optional;
 
+@Getter
 public class MaidenCrab extends TrackedNpc {
     @AllArgsConstructor
     @Getter
@@ -43,7 +42,10 @@ public class MaidenCrab extends TrackedNpc {
         private final boolean scuffed;
     }
 
-    private final Properties properties;
+    @Setter(AccessLevel.PACKAGE)
+    private CrabSpawn spawn;
+    private final Position position;
+    private final boolean scuffed;
 
     public enum Position {
         S1,
@@ -141,51 +143,41 @@ public class MaidenCrab extends TrackedNpc {
     private MaidenCrab(@NonNull NPC npc, TobNpc tobNpc, long roomId, CrabSpawn spawn,
                        Position position, boolean scuffed, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
-        this.properties = new Properties(spawn, position, scuffed);
+        this.spawn = spawn;
+        this.position = position;
+        this.scuffed = scuffed;
     }
 
     @Override
     public @NonNull TrackedNpc.Properties getProperties() {
-        return properties;
-    }
-
-    public CrabSpawn getSpawn() {
-        return properties.getSpawn();
-    }
-
-    public Position getPosition() {
-        return properties.getPosition();
-    }
-
-    public boolean isScuffed() {
-        return properties.isScuffed();
+        return new Properties(spawn, position, scuffed);
     }
 
     /**
      * Returns the location at which this crab spawns.
      */
     public WorldPoint getSpawnPoint() {
-        switch (properties.getPosition()) {
+        switch (position) {
             case S1:
-                return properties.isScuffed() ? S1_SCUFFED_SPAWN : S1_SPAWN;
+                return scuffed ? S1_SCUFFED_SPAWN : S1_SPAWN;
             case N1:
-                return properties.isScuffed() ? N1_SCUFFED_SPAWN : N1_SPAWN;
+                return scuffed ? N1_SCUFFED_SPAWN : N1_SPAWN;
             case S2:
-                return properties.isScuffed() ? S2_SCUFFED_SPAWN : S2_SPAWN;
+                return scuffed ? S2_SCUFFED_SPAWN : S2_SPAWN;
             case N2:
-                return properties.isScuffed() ? N2_SCUFFED_SPAWN : N2_SPAWN;
+                return scuffed ? N2_SCUFFED_SPAWN : N2_SPAWN;
             case S3:
-                return properties.isScuffed() ? S3_SCUFFED_SPAWN : S3_SPAWN;
+                return scuffed ? S3_SCUFFED_SPAWN : S3_SPAWN;
             case N3:
-                return properties.isScuffed() ? N3_SCUFFED_SPAWN : N3_SPAWN;
+                return scuffed ? N3_SCUFFED_SPAWN : N3_SPAWN;
             case S4_INNER:
-                return properties.isScuffed() ? S4_INNER_SCUFFED_SPAWN : S4_INNER_SPAWN;
+                return scuffed ? S4_INNER_SCUFFED_SPAWN : S4_INNER_SPAWN;
             case S4_OUTER:
-                return properties.isScuffed() ? S4_OUTER_SCUFFED_SPAWN : S4_OUTER_SPAWN;
+                return scuffed ? S4_OUTER_SCUFFED_SPAWN : S4_OUTER_SPAWN;
             case N4_INNER:
-                return properties.isScuffed() ? N4_INNER_SCUFFED_SPAWN : N4_INNER_SPAWN;
+                return scuffed ? N4_INNER_SCUFFED_SPAWN : N4_INNER_SPAWN;
             case N4_OUTER:
-                return properties.isScuffed() ? N4_OUTER_SCUFFED_SPAWN : N4_OUTER_SPAWN;
+                return scuffed ? N4_OUTER_SCUFFED_SPAWN : N4_OUTER_SPAWN;
         }
 
         return null;
