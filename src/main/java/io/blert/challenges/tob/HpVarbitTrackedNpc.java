@@ -36,11 +36,13 @@ import net.runelite.api.NPC;
 @Getter
 @Setter
 public class HpVarbitTrackedNpc extends BasicTrackedNpc {
+    private final TobNpc tobNpc;
     boolean disableVarbitUpdates;
 
     public HpVarbitTrackedNpc(@NonNull NPC npc, TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         super(npc, tobNpc, roomId, hitpoints);
         this.disableVarbitUpdates = false;
+        this.tobNpc = tobNpc;
     }
 
     public void updateHitpointsFromVarbit(int varbitValue) {

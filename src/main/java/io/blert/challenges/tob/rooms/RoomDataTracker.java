@@ -53,7 +53,7 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public abstract class RoomDataTracker extends DataTracker implements EventHandler {
-    private static int TOB_HITPOINTS_VARBIT = 6448;
+    private static final int TOB_HITPOINTS_VARBIT = 6448;
 
     protected final TheatreChallenge theatreChallenge;
 
@@ -247,6 +247,10 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
 
     protected String formattedRoomTime() {
         return Tick.asTimeString(getTick());
+    }
+
+    protected final int getBossHitpointsVarbitValue() {
+        return client.getVarbitValue(TOB_HITPOINTS_VARBIT);
     }
 
     private void checkForDeaths() {

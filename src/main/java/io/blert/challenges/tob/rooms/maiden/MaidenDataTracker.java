@@ -103,6 +103,10 @@ public class MaidenDataTracker extends RoomDataTracker {
             return;
         }
 
+        if (crabsSpawnedThisTick) {
+            markNewSpawn(tick);
+        }
+
         for (MaidenCrab crab : crabs.values()) {
             NPC crabNpc = crab.getNpc();
 
@@ -170,7 +174,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     @Override
     protected boolean onNpcDespawn(NpcDespawned despawned, TrackedNpc trackedNpc) {
         NPC npc = despawned.getNpc();
-        crabs.remove(npc.hashCode());
+        crabs.remove(npc.getIndex());
         // Every maiden NPC despawn is final.
         return true;
     }
@@ -200,10 +204,7 @@ public class MaidenDataTracker extends RoomDataTracker {
     }
 
     private Optional<MaidenCrab> handleMaidenCrabSpawn(NPC npc) {
-        if (!crabsSpawnedThisTick) {
-            markNewSpawn();
-            crabsSpawnedThisTick = true;
-        }
+        crabsSpawnedThisTick = true;
 
         WorldPoint spawnLocation = getWorldLocation(npc);
 
@@ -212,28 +213,31 @@ public class MaidenDataTracker extends RoomDataTracker {
         if (maybeCrab.isPresent()) {
             MaidenCrab maidenCrab = maybeCrab.get();
             log.debug("Crab position: {} scuffed: {}", maidenCrab.getPosition(), maidenCrab.isScuffed());
-            crabs.put(npc.hashCode(), maidenCrab);
+            crabs.put(npc.getIndex(), maidenCrab);
         }
 
         return maybeCrab;
     }
 
-    private void markNewSpawn() {
+    private void markNewSpawn(int tick) {
         if (maiden != null) {
-            // Correct the crab spawn based on Maiden's current hitpoints in case the room was started late.
-            // The percentage thresholds are set higher than the spawn in case Maiden has already healed when
-            // joining the room, but not high enough to be falsely triggered by a deep proc.
-            double hp = maiden.getHitpoints().percentage();
-            if (hp < 39.0) {
-                currentSpawn = CrabSpawn.THIRTIES;
-            } else if (hp < 59.0) {
+            // Correct the crab spawn based on Maiden's NPC ID in case the room
+            // was started late.
+            int idOffset = maiden.getNpc().getId() - maiden.getTobNpc().getId();
+            if (idOffset < 2) {
+                currentSpawn = CrabSpawn.SEVENTIES;
+            } else if (idOffset == 2) {
                 currentSpawn = CrabSpawn.FIFTIES;
             } else {
-                currentSpawn = CrabSpawn.SEVENTIES;
+                currentSpawn = CrabSpawn.THIRTIES;
             }
         }
 
-        spawnTicks[currentSpawn.ordinal()] = getTick();
-        log.debug("Maiden {} spawned on tick {} ({})", currentSpawn, getTick(), formattedRoomTime());
+        spawnTicks[currentSpawn.ordinal()] = tick;
+        log.debug("Maiden {} spawned on tick {} ({})", currentSpawn, tick, formattedRoomTime());
+
+        crabs.values().stream()
+                .filter(crab -> crab.getSpawnTick() == tick)
+                .forEach(crab -> crab.setSpawn(currentSpawn));
     }
 }
