@@ -37,6 +37,8 @@ public class AttackDefinition {
     public Projectile projectile;
     public List<Projectile> weaponProjectiles;
     public boolean continuousAnimation;
+    public Integer animationFrameMin;
+    public Integer animationFrameMax;
     public String category;
 
     public static class Projectile {
@@ -77,6 +79,8 @@ public class AttackDefinition {
                 cooldown,
                 projectileList,
                 continuousAnimation,
+                animationFrameMin != null ? animationFrameMin : 0,
+                animationFrameMax != null ? animationFrameMax : Integer.MAX_VALUE,
                 cat
         );
     }

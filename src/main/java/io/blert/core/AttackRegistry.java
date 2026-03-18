@@ -46,7 +46,7 @@ public class AttackRegistry {
         /**
          * Attacks that can be suppressed by continuous animations.
          */
-        private volatile List<AttackDefinition> suppressableAttacks;
+        private volatile List<AttackDefinition> suppressibleAttacks;
     }
 
     @Setter
@@ -69,6 +69,8 @@ public class AttackRegistry {
                 0,
                 null,
                 false,
+                Integer.MIN_VALUE,
+                Integer.MAX_VALUE,
                 AttackDefinition.Category.MELEE
         );
     }
@@ -171,7 +173,7 @@ public class AttackRegistry {
      * empty if none.
      */
     public Optional<AttackDefinition> findSuppressedAttack(int weaponId) {
-        for (AttackDefinition attack : state.suppressableAttacks) {
+        for (AttackDefinition attack : state.suppressibleAttacks) {
             if (attack.hasWeapon(weaponId)) {
                 return Optional.of(attack);
             }
