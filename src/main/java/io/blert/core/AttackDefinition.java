@@ -108,6 +108,18 @@ public class AttackDefinition {
     private final boolean continuousAnimation;
 
     /**
+     * Minimum animation frame (inclusive) on which this attack can be detected.
+     * Only meaningful for attacks with continuous animations. Must be nonnegative.
+     */
+    private final int animationFrameMin;
+
+    /**
+     * Maximum animation frame (inclusive) on which this attack can be detected.
+     * Only meaningful for attacks with continuous animations.
+     */
+    private final int animationFrameMax;
+
+    /**
      * Category of attack.
      */
     private final Category category;
@@ -119,7 +131,8 @@ public class AttackDefinition {
 
     public AttackDefinition(int protoId, String name, int[] weaponIds, int[] animationIds,
                             int cooldown, List<Projectile> projectiles,
-                            boolean continuousAnimation, Category category) {
+                            boolean continuousAnimation, int animationFrameMin,
+                            int animationFrameMax, Category category) {
         this.protoId = protoId;
         this.name = name;
         this.weaponIds = weaponIds;
@@ -127,8 +140,17 @@ public class AttackDefinition {
         this.cooldown = cooldown;
         this.projectiles = projectiles != null ? projectiles : Collections.emptyList();
         this.continuousAnimation = continuousAnimation;
+        this.animationFrameMin = Math.max(animationFrameMin, 0);
+        this.animationFrameMax = Math.max(animationFrameMax, 0);
         this.category = category;
         this.unknown = protoId == 0 || (name != null && name.startsWith("UNKNOWN"));
+    }
+
+    /**
+     * Returns whether the given animation frame is within the allowed range for this attack.
+     */
+    public boolean isFrameAllowed(int frame) {
+        return frame >= animationFrameMin && frame <= animationFrameMax;
     }
 
     /**
@@ -139,6 +161,18 @@ public class AttackDefinition {
      */
     public boolean is(int attackId) {
         return this.protoId == attackId;
+    }
+
+    /**
+     * Returns whether this attack uses the given animation.
+     */
+    public boolean hasAnimation(int animationId) {
+        for (int aid : animationIds) {
+            if (aid == animationId) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

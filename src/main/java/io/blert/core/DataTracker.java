@@ -584,13 +584,14 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
         final int tick = getTick();
         Optional<NPC> target = raider.getTarget();
+        boolean isNewAnimation = raider.getAnimationTick() == tick;
 
         boolean ignoreCooldown =
                 target.map(this::npcIgnoresCooldown).orElse(false);
 
         boolean mayHaveAttacked =
                 (ignoreCooldown || raider.isOffCooldownOn(tick)) &&
-                        (raider.getAnimationTick() == tick || raider.isBlowpiping() || raider.stoppedBlowpiping());
+                        (isNewAnimation || raider.isBlowpiping() || raider.stoppedBlowpiping());
         if (!mayHaveAttacked) {
             return;
         }
@@ -619,6 +620,10 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
         maybeAttack.ifPresent(attack -> {
             try {
+                if (!isNewAnimation && !attack.isFrameAllowed(player.getAnimationFrame())) {
+                    return;
+                }
+
                 AttackDefinition finalAttack = attack;
                 if (attack.hasProjectile()) {
                     finalAttack = adjustForProjectile(registry, attack, player, weaponId);

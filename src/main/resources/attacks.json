@@ -82,6 +82,7 @@
       "startCycleOffset": 32
     },
     "continuousAnimation": true,
+    "animationFrameMax": 2,
     "category": "RANGED"
   },
   {
@@ -95,6 +96,7 @@
       { "id": 2599, "startCycleOffset": 32, "weaponId": 28688 }
     ],
     "continuousAnimation": true,
+    "animationFrameMax": 2,
     "category": "RANGED"
   },
   {
@@ -357,6 +359,7 @@
     "animationIds": [12397],
     "cooldown": 3,
     "continuousAnimation": true,
+    "animationFrameMax": 5,
     "category": "MAGIC"
   },
   {
@@ -365,7 +368,6 @@
     "weaponIds": [31113],
     "animationIds": [12394],
     "cooldown": 5,
-    "continuousAnimation": true,
     "category": "MAGIC"
   },
   {

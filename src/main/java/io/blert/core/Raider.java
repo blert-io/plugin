@@ -71,7 +71,7 @@ public class Raider {
     @Getter
     private int deathTick;
 
-    private BlowpipeState blowpiping;
+    private BlowpipeState blowpiping = BlowpipeState.NOT_PIPING;
 
     private Item[] equipment = new Item[EquipmentSlot.values().length];
     @Getter
