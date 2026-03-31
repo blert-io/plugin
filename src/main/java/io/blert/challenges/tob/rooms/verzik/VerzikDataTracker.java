@@ -579,7 +579,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                     }
                 }
             }
-        } else if (phase != VerzikPhase.P3) {
+        } else if (phase == VerzikPhase.P3) {
             // Hitsplats are tracked for P3 healing.
             hitsplatsThisTick.computeIfAbsent(event.getActor(), k -> new ArrayList<>())
                     .add(event.getHitsplat());
