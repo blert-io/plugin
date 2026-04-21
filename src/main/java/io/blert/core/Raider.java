@@ -70,6 +70,8 @@ public class Raider {
     private boolean dead;
     @Getter
     private int deathTick;
+    @Setter
+    private boolean invulnerable;
 
     private BlowpipeState blowpiping = BlowpipeState.NOT_PIPING;
 
@@ -117,8 +119,15 @@ public class Raider {
     }
 
     public void setDead(int tick) {
-        this.dead = true;
-        this.deathTick = tick;
+        if (!invulnerable) {
+            this.dead = true;
+            this.deathTick = tick;
+        }
+    }
+
+    public void setAlive() {
+        this.dead = false;
+        this.deathTick = -1;
     }
 
     public boolean isOffCooldownOn(int tick) {
@@ -131,6 +140,7 @@ public class Raider {
     public void resetForNewRoom() {
         dead = false;
         deathTick = -1;
+        invulnerable = false;
         blowpiping = BlowpipeState.NOT_PIPING;
         equipment = new Item[EquipmentSlot.values().length];
         equipmentChangesThisTick.clear();

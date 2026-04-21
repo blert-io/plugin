@@ -260,8 +260,6 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
             if (!raider.isActive() && raider.isAlive()) {
                 // Disconnecting during a ToB room is considered a death.
                 raider.setDead(tick);
-                WorldPoint deathPoint = raider.getPlayer() != null ? getWorldLocation(raider.getPlayer()) : null;
-                dispatchEvent(new PlayerDeathEvent(getStage(), tick, deathPoint, raider.getUsername()));
             }
         });
 
@@ -276,15 +274,8 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
 
             // ToB orb health. 0 = hide, 1-27 = health percentage (0-100%), 30 = dead.
             int orbHealth = client.getVarbitValue(Varbits.THEATRE_OF_BLOOD_ORB1 + orb);
-            if (orbHealth == 30) {
-                if (raider.isDead()) {
-                    return;
-                }
-
+            if (orbHealth == 30 && !raider.isDead()) {
                 raider.setDead(tick);
-                if (raider.getPlayer() != null) {
-                    dispatchEvent(new PlayerDeathEvent(getStage(), tick, null, raider.getUsername()));
-                }
             }
         });
     }
