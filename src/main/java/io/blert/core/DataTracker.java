@@ -124,8 +124,15 @@ public abstract class DataTracker implements RuneliteEventHandler {
             log.error("Error during onTick for stage {}", stage, e);
         }
 
-        // Send out an update for every tracked NPC. This must be done after `onTick` to ensure any
-        // implementation-specific changes to the NPC are complete.
+        // Send out an update for every tracked NPC and commit player death events.
+        // This must be done after `onTick` to ensure any implementation-specific changes are complete.
+        for (Raider raider : challenge.getParty()) {
+            if (raider.getDeathTick() == getTick()) {
+                Player player = raider.getPlayer();
+                WorldPoint location = player != null ? getWorldLocation(player) : null;
+                dispatchEvent(new PlayerDeathEvent(getStage(), getTick(), location, raider.getUsername()));
+            }
+        }
         trackedNpcs.forEach(this::sendNpcUpdate);
     }
 
@@ -882,10 +889,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
         if (event.getActor() instanceof Player) {
             Raider raider = challenge.getRaider(event.getActor().getName());
             if (raider != null) {
-                int tick = getTick();
-                raider.setDead(tick);
-                dispatchEvent(new PlayerDeathEvent(
-                        getStage(), tick, getWorldLocation(event.getActor()), raider.getUsername()));
+                raider.setDead(getTick());
             }
         }
 

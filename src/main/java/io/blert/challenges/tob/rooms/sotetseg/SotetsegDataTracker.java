@@ -67,6 +67,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
     boolean inMaze = false;
     boolean isUnder = false;
     private String chosenPlayer = null;
+    private int invulnerableUntilTick = -1;
     private final Set<GroundObject> activeMazeTiles = new HashSet<>();
 
     public SotetsegDataTracker(TheatreChallenge manager, Client client) {
@@ -93,6 +94,15 @@ public class SotetsegDataTracker extends RoomDataTracker {
     protected void onTick() {
         super.onTick();
         final int tick = getTick();
+
+        if (invulnerableUntilTick != -1 && tick >= invulnerableUntilTick) {
+            for (Raider raider : theatreChallenge.getParty()) {
+                if (raider.isAlive()) {
+                    raider.setInvulnerable(false);
+                }
+            }
+            invulnerableUntilTick = -1;
+        }
 
         Player deathBallTarget = checkForDeathBall();
 
@@ -221,6 +231,20 @@ public class SotetsegDataTracker extends RoomDataTracker {
         }
 
         if (!inMaze) {
+            // If a player dies on the tick the maze procs, they will be saved,
+            // but the death event will still fire. Prevent the death from being
+            // processed on this tick and several after in case orbs varbits do
+            // something weird. Also, clear any deaths occurring on this tick
+            // in case that event fired first.
+            invulnerableUntilTick = tick + 4;
+            for (Raider raider : theatreChallenge.getParty()) {
+                if (raider.getDeathTick() == tick) {
+                    raider.setAlive();
+                }
+                if (raider.isAlive()) {
+                    raider.setInvulnerable(true);
+                }
+            }
             startMaze(tick);
         }
     }
