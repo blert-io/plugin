@@ -44,8 +44,6 @@ import java.util.Optional;
 /**
  * Tracks Lizardman Mystic room events, spawns, HP changes, and attacks with full lifecycle management.
  * Uses NPC health ratio/scale for HP tracking instead of varbits.
- * 
- * TODO: Add Mystic-specific attack animations when identified.
  */
 @Slf4j
 public class MysticsDataTracker extends RoomDataTracker
@@ -218,7 +216,6 @@ public class MysticsDataTracker extends RoomDataTracker
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
-    // TODO: Make sure this is also dependent on hp being 0 otherwise it can die off player screen and cause issues
     {
         NPC npc = despawned.getNpc();
         BasicTrackedNpc removedMystic = Mystics.remove(npc.getId());

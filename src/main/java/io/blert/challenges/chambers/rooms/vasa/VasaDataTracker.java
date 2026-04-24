@@ -42,7 +42,6 @@ import java.util.Optional;
 @Slf4j
 public class VasaDataTracker extends RoomDataTracker
 {
-    // UPDATED: correct Vasa HP varbit based on dev-shell logging
     private static final int VASA_HP_VARBIT = 6099;
 
     private static final int VASA_SPAWN_ANIMATION = 7408;

@@ -42,7 +42,6 @@ import java.util.Optional;
 @Slf4j
 public class VespulaDataTracker extends RoomDataTracker
 {
-    // UPDATED: correct Vespula HP varbit based on dev-shell logging
     private static final int VESPULA_HP_VARBIT = 6099;
 
     private @Nullable HpVarbitTrackedNpc vespula;

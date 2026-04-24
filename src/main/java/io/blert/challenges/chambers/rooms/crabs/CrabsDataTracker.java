@@ -44,8 +44,6 @@ import java.util.Optional;
 /**
  * Tracks Lizardman Mystic room events, spawns, HP changes, and attacks with full lifecycle management.
  * Uses NPC health ratio/scale for HP tracking instead of varbits.
- * 
- * TODO: Add Mystic-specific attack animations when identified.
  */
 @Slf4j
 public class CrabsDataTracker extends RoomDataTracker

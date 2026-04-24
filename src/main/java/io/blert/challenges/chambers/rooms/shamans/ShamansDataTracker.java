@@ -45,8 +45,6 @@ import java.util.Optional;
 /**
  * Tracks Lizardman Shaman room events, spawns, HP changes, and attacks with full lifecycle management.
  * Uses NPC health ratio/scale for HP tracking instead of varbits.
- * 
- * TODO: Add Shaman-specific attack animations when identified.
  */
 @Slf4j
 public class ShamansDataTracker extends RoomDataTracker
@@ -221,7 +219,6 @@ public class ShamansDataTracker extends RoomDataTracker
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
-    // TODO: Make sure this is also dependent on hp being 0 otherwise it can die off player screen and cause issues
     {
         NPC npc = despawned.getNpc();
         BasicTrackedNpc removedShaman = shamans.remove(npc.getId());
