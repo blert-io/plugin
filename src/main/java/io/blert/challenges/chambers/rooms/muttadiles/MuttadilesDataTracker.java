@@ -42,10 +42,8 @@ import java.util.Optional;
 @Slf4j
 public class MuttadilesDataTracker extends RoomDataTracker
 {
-    // UPDATED: correct Muttadile HP varbit based on dev-shell logging
     private static final int MUTTADILE_HP_VARBIT = 6099;
 
-    // TODO: update when you finalize Muttadile animations from logging
     private static final int MUTTADILE_MELEE_ANIMATION = 7420;
     private static final int MUTTADILE_RANGE_ANIMATION = 7421;
     private static final int LARGE_MUTTADILE_MAGE_ANIMATION = 7422;

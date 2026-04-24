@@ -43,14 +43,11 @@ import java.util.Optional;
 /**
  * Tracks Corrupted Scavenger room events, spawns, HP changes, and attacks with full lifecycle management.
  * Uses NPC health ratio/scale for HP tracking instead of varbits.
- * 
- * TODO: Add Corrupted Scavenger-specific attack animations when identified.
  */
 @Slf4j
 public class ThievingDataTracker extends RoomDataTracker
 {
     // private static final int CORRUPTED_SCAVENGER_HP_VARBIT = 6100;
-    // TODO: update when you finalize Corrupted Scavenger animations from logging
     private static final int CORRUPTED_SCAVENGER_EAT_ANIMATION = 7496; // placeholder - needs verification
     private static final int CORRUPTED_SCAVENGER_SLEEP_ANIMATION = 7497; // placeholder - needs verification
     // private static final int CORRUPTED_SCAVENGER_STOMP_ANIMATION = ?;

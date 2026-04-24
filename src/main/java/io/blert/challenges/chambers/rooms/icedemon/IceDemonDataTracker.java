@@ -43,14 +43,11 @@ import java.util.Optional;
 /**
  * Tracks Ice Demon room events, spawns, HP changes, and attacks with full lifecycle management.
  * Uses NPC health ratio/scale for HP tracking instead of varbits.
- * 
- * TODO: Add Ice Demon-specific attack animations when identified.
  */
 @Slf4j
 public class IceDemonDataTracker extends RoomDataTracker
 {
     // private static final int ICE_DEMON_HP_VARBIT = 6100;
-    // TODO: update when you finalize Ice Demon animations from logging
     // private static final int ICE_DEMON_FREEZE_ANIMATION = 7596; // placeholder - needs verification
     private static final int ICE_DEMON_MAGE_RANGE_ANIMATION = 69; // placeholder - needs verification
     // private static final int ICE_DEMON_STOMP_ANIMATION = ?;

@@ -43,10 +43,8 @@ import java.util.Optional;
 @Slf4j
 public class TektonDataTracker extends RoomDataTracker
 {
-    // UPDATED: correct Tekton HP varbit based on dev-shell logging
     private static final int TEKTON_HP_VARBIT = 6099;
 
-    // TODO: update when you finalize Tekton animations from logging
     private static final int TEKTON_ANVIL_ANIMATION = 7475;
     // Additional discovered animations
     private static final int TEKTON_STAB_ANIMATION = 7482;

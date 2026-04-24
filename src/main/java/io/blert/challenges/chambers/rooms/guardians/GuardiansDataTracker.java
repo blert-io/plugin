@@ -51,8 +51,6 @@ import java.util.Optional;
  * 
  * Only live Guardian IDs are tracked during spawn. Dead Guardian IDs persist but are ignored for HP updates
  * when they have HR=-1/-1 to prevent unnecessary processing.
- * 
- * TODO: Add Guardian-specific attack animations when identified.
  */
 @Slf4j
 public class GuardiansDataTracker extends RoomDataTracker
@@ -263,7 +261,6 @@ public class GuardiansDataTracker extends RoomDataTracker
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
-    // TODO: Make sure this is also dependent on hp being 0 otherwise it can die off player screen and cause issues
     {
         NPC npc = despawned.getNpc();
         BasicTrackedNpc removedGuardian = guardians.remove(npc.getId());
