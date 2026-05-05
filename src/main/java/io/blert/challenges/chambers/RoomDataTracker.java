@@ -52,8 +52,8 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         started = true;
         startTick = currentTick;
         
-        // Start the underlying DataTracker to enable event processing
-        start(-currentTick);
+        // Start with no offset so getTick() returns room-relative ticks (0-based for duration matching)
+        start();
         
         log.info("Started tracking room {} at tick {}", stage, startTick);
     }
@@ -65,7 +65,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         if (!started) return;
         endTick = currentTick;
         int duration = endTick - startTick;
-        finish(true, duration, false);
+        finish(true, duration, true);
         started = false;
         log.info("Finished room {} at tick {} with duration {}", stage, endTick, duration);
         // Don't dispatch an event - just finish tracking
@@ -76,7 +76,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         if (!started) return;
         endTick = currentTick;
         int duration = endTick - startTick;
-        finish(true, duration, false);
+        finish(true, duration, true);
         started = false;
         log.info("Finished Last room {} at tick {} with duration {}", stage, endTick, duration);
         // Don't dispatch an event - just finish tracking
@@ -125,7 +125,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         String stripped = Text.removeTags(chatMessage.getMessage());
         Matcher matcher = roomEndRegex.matcher(stripped);
         if (matcher.find()) {
-            finishRoom(getTick());
+            finishRoom(getStartTick() + getTick());
         }
     }
 
