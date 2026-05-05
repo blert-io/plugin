@@ -142,7 +142,9 @@ public class CoxChallenge extends RecordableChallenge {
 
         if (inRaid && !inInstance) {
             log.info("Detected raid exit: inInstance={}", inInstance);
-            endRaid();
+            if (getState() == ChallengeState.ACTIVE) {
+                endRaid(ChallengeState.INACTIVE);
+            }
             inRaid = false;
         } else if (!inRaid && inInstance) {
             log.info("Detected raid entry: inInstance={}", inInstance);
@@ -195,12 +197,20 @@ public class CoxChallenge extends RecordableChallenge {
             int currentTick2 = getTick();
             final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
             log.info("Last Room, currentTick(relative): {}, currentTick: {}, startTick: {}, endTick: {}", currentTick, currentTick2, startTick, endTick);
+            // finishLastRoom schedules StageUpdateEvent(COMPLETED) via invokeLater.
+            // endRaid must be delayed with its own invokeLater so it runs AFTER that
+            // StageUpdateEvent reaches the WebSocketEventHandler, otherwise CHALLENGE_END
+            // is sent to the server before the final stage update.
             tracker.finishLastRoom(currentTick);
 
             // Clean up the old tracker properly
             removeEventHandler(tracker);
             roomDataTracker = null;
-            endRaid();
+            getClientThread().invokeLater(() -> {
+                if (getState() == ChallengeState.ACTIVE) {
+                    endRaid(ChallengeState.COMPLETE);
+                }
+            });
             return;
         }
 
@@ -293,14 +303,19 @@ public class CoxChallenge extends RecordableChallenge {
         }
     }
 
-    private void endRaid() {
+    private void endRaid(ChallengeState completionState) {
         inRaid = false;
         setState(ChallengeState.ENDING);
         endTick = getRelativeTick();
-        dispatchEvent(new ChallengeEndEvent(reportedChallengeTime, endTick - startTick));
-        log.info("Chambers of Xeric raid ended at tick {}", endTick - startTick);
+        int overallTime = endTick - startTick;
+        log.info("Raid end detected at tick {} (end/relative tick: {}). Start Tick: {} ticks", getTick(), endTick, startTick);
+        // Use parsed completion time if available, otherwise fall back to measured overall time.
+        int challengeTime = reportedChallengeTime > 0 ? reportedChallengeTime : overallTime;
+        dispatchEvent(new ChallengeEndEvent(overallTime, overallTime));
+        log.info("Chambers of Xeric raid ended: challenge={}, overall={} ticks", challengeTime, overallTime);
         onTerminate();
-        // State is reset to INACTIVE in onTerminate()
+        // onTerminate() resets state to INACTIVE; override with the actual completion state.
+        setState(completionState);
     }
 
     private List<String> getPartyUsernames() {
