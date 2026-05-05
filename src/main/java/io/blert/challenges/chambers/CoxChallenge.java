@@ -20,9 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.Point;
+import net.runelite.api.Scene;
+import net.runelite.api.Tile;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.plugins.gpu.template.Template;
 import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
@@ -642,6 +645,9 @@ public class CoxChallenge extends RecordableChallenge {
     private static final int COX_LOBBY_Z = 0;
     private static final int COX_LOBBY_RADIUS = 5; // Tiles from center point
     private boolean enteredLobby = false;
+    // TODO: Use the instance template chunk coordinates for more precise lobby detection
+    // [INFO] Local Scene Tile: (55, 51), Scene Chunk: (6, 6), Plane: 3
+    // [INFO] Instance Template Chunk: (409, 648), Template Plane: 0, Rotation: 0, Template World Tile Approx: (3279, 5187)
 
     @Override
     public boolean containsLocation(net.runelite.api.coords.WorldPoint worldPoint) {
