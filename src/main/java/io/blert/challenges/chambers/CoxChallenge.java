@@ -18,12 +18,16 @@ import io.blert.events.ChallengeStartEvent;
 import io.blert.events.ChallengeEndEvent;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.GameObject;
+import net.runelite.api.Point;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,12 +41,6 @@ public class CoxChallenge extends RecordableChallenge {
             Pattern.compile("The raid has begun!.*");
     private static final Pattern RAID_COMPLETION_REGEX =
             Pattern.compile("Congratulations - your raid is complete!.*");
-    // private static final Pattern RAID_COMPLETION_REGEX =
-    //     Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
-    private static final Pattern ROOM_COMPLETE_REGEX =
-            Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
-    // private static final Pattern ROOM_COMPLETE_REGEX =
-    //     Pattern.compile("Congratulations - your raid is complete!.*");
     private static final Pattern FLOOR_COMPLETE_REGEX =
             Pattern.compile(".* level complete! Duration: .*");
     private static final Pattern MAP_LAYOUT_REGEX =
@@ -58,6 +56,12 @@ public class CoxChallenge extends RecordableChallenge {
     private boolean hitpointsScaled = false; // Track if we've already scaled the hitpoints
     private int maxCombatLevel = -1; // Cached max combat level for the party
     private int avgMiningLevel = -1; // Cached average mining level for the party
+
+    // Obstacle tracking for collision-flag room completion detection (dey0 methodology).
+    // Indexed by CoxRoomUtil room type constant; obstacleP[i] == -1 means not registered.
+    private final int[] obstacleP = new int[16];
+    private final int[] obstacleX = new int[16];
+    private final int[] obstacleY = new int[16];
 
     private static final List<Stage> COX_ROOM_ORDER = List.of(
         // Stage.COX_THIEVING,
@@ -132,6 +136,9 @@ public class CoxChallenge extends RecordableChallenge {
         for (CoxNpc npc : CoxNpc.values()) {
             npc.resetScaledHitpoints();
         }
+        Arrays.fill(obstacleP, -1);
+        Arrays.fill(obstacleX, -1);
+        Arrays.fill(obstacleY, -1);
         setState(ChallengeState.INACTIVE);
     }
 
@@ -143,7 +150,7 @@ public class CoxChallenge extends RecordableChallenge {
         if (inRaid && !inInstance) {
             log.info("Detected raid exit: inInstance={}", inInstance);
             if (getState() == ChallengeState.ACTIVE) {
-                endRaid(ChallengeState.INACTIVE);
+                endRaid(ChallengeState.COMPLETE);
             }
             inRaid = false;
         } else if (!inRaid && inInstance) {
@@ -156,12 +163,74 @@ public class CoxChallenge extends RecordableChallenge {
         if (roomDataTracker != null) {
             roomDataTracker.tick();
         }
+
+        // Poll collision flags to detect room completion (dey0 methodology).
+        if (getState() == ChallengeState.ACTIVE && roomDataTracker != null) {
+            Stage currentStage = roomDataTracker.getStage();
+            for (int i = 0; i < 16; i++) {
+                if (obstacleP[i] == -1) continue;
+                if (CoxRoomUtil.roomTypeToStage(i) != currentStage) continue;
+                int p = obstacleP[i];
+                int sceneX = obstacleX[i] - client.getTopLevelWorldView().getBaseX();
+                int sceneY = obstacleY[i] - client.getTopLevelWorldView().getBaseY();
+                if (p != client.getTopLevelWorldView().getPlane() || sceneX < 0 || sceneX >= 104 || sceneY < 0 || sceneY >= 104) {
+                    obstacleP[i] = -1;
+                    continue;
+                }
+                int flags = client.getTopLevelWorldView().getCollisionMaps()[p].getFlags()[sceneX][sceneY];
+                if ((flags & 0x100) == 0) {
+                    int completionTick = getRelativeTick();
+                    log.info("Room complete via collision flag: stage={}, tick={}", currentStage, completionTick);
+                    obstacleP[i] = -1;
+                    final RoomDataTracker tracker = roomDataTracker;
+                    tracker.finishRoom(completionTick);
+                    advanceToNextRoom(tracker, completionTick);
+                    break;
+                }
+            }
+        }
     }
 
     @Nullable
     @Override
     protected Stage getStage() {
         return roomDataTracker != null ? roomDataTracker.getStage() : null;
+    }
+
+    @Override
+    public void onGameObjectSpawned(GameObjectSpawned event) {
+        if (getState() == ChallengeState.ACTIVE && roomDataTracker != null) {
+            GameObject go = event.getGameObject();
+            switch (go.getId()) {
+                case 26209: // shamans / thieving / guardians
+                case 29741: // mystics
+                case 29749: // tightrope
+                case 29753: case 29754: case 29755: case 29756: case 29757: // crabs
+                case 29876: // ice demon
+                case 30016: // vasa
+                case 30017: // tekton / vanguards
+                case 30018: // muttadiles
+                case 30070: // vespula
+                    Point pt = go.getSceneMinLocation();
+                    int p = go.getPlane();
+                    int sceneX = pt.getX();
+                    int sceneY = pt.getY();
+                    int template = client.getTopLevelWorldView().getInstanceTemplateChunks()[p][sceneX / 8][sceneY / 8];
+                    int roomType = CoxRoomUtil.getRoomType(template);
+                    if (roomType < 16) {
+                        Stage expectedStage = CoxRoomUtil.roomTypeToStage(roomType);
+                        if (expectedStage != null && expectedStage == roomDataTracker.getStage()) {
+                            obstacleP[roomType] = p;
+                            obstacleX[roomType] = sceneX + client.getTopLevelWorldView().getBaseX();
+                            obstacleY[roomType] = sceneY + client.getTopLevelWorldView().getBaseY();
+                            log.debug("Registered obstacle for room type {} (stage {}) at world ({},{})",
+                                    roomType, expectedStage, obstacleX[roomType], obstacleY[roomType]);
+                        }
+                    }
+                    break;
+            }
+        }
+        super.onGameObjectSpawned(event);
     }
 
     @Override
@@ -221,47 +290,7 @@ public class CoxChallenge extends RecordableChallenge {
             final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
             tracker.finishRoom(currentTick);
             log.info("Finished floor at tick {}", currentTick);
-            removeEventHandler(tracker);
-            roomDataTracker = null;
-            // Delay starting the next room to ensure the finish event is dispatched first
-            Stage nextStage = getNextStage(tracker.getStage());
-            if (nextStage != null) {
-                final int tickForNextRoom = currentTick; // Capture tick for lambda
-                getClientThread().invokeLater(() -> {
-                    roomDataTracker = createRoomDataTracker(nextStage);
-                    final RoomDataTracker newTracker = roomDataTracker; // Capture new non-null value
-                    if (newTracker != null) {
-                        newTracker.startRoom(tickForNextRoom);
-                        log.info("Started tracking next room {} at tick {}", nextStage, tickForNextRoom);
-                    }
-                });
-            }
-        }
-
-        // Room complete (dispatch room event)
-        Matcher roomMatcher = ROOM_COMPLETE_REGEX.matcher(stripped);
-        if (roomMatcher.find() && roomDataTracker != null) {
-            int currentTick = getRelativeTick();
-            final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
-            tracker.finishRoom(currentTick);
-
-            // Clean up the old tracker properly
-            removeEventHandler(tracker);
-            roomDataTracker = null;
-
-            // Delay starting the next room to ensure the finish event is dispatched first
-            Stage nextStage = getNextStage(tracker.getStage());
-            if (nextStage != null) {
-                final int tickForNextRoom = currentTick; // Capture tick for lambda
-                getClientThread().invokeLater(() -> {
-                    roomDataTracker = createRoomDataTracker(nextStage);
-                    final RoomDataTracker newTracker = roomDataTracker; // Capture new non-null value
-                    if (newTracker != null) {
-                        newTracker.startRoom(tickForNextRoom);
-                        log.info("Started tracking next room {} at tick {}", nextStage, tickForNextRoom);
-                    }
-                });
-            }
+            advanceToNextRoom(tracker, currentTick);
         }
     }
 
@@ -275,12 +304,31 @@ public class CoxChallenge extends RecordableChallenge {
         return client.getTickCount() - raidStartTick;
     }
 
+    private void advanceToNextRoom(RoomDataTracker finishedTracker, int currentTick) {
+        removeEventHandler(finishedTracker);
+        roomDataTracker = null;
+        Stage nextStage = getNextStage(finishedTracker.getStage());
+        if (nextStage != null) {
+            getClientThread().invokeLater(() -> {
+                roomDataTracker = createRoomDataTracker(nextStage);
+                final RoomDataTracker newTracker = roomDataTracker;
+                if (newTracker != null) {
+                    newTracker.startRoom(currentTick);
+                    log.info("Started tracking next room {} at tick {}", nextStage, currentTick);
+                }
+            });
+        }
+    }
+
     private void startRaid() {
         inRaid = true;
         setState(ChallengeState.ACTIVE);
         raidStartTick = client.getTickCount();
         startTick = 0; // relative to raid start
-        
+        Arrays.fill(obstacleP, -1);
+        Arrays.fill(obstacleX, -1);
+        Arrays.fill(obstacleY, -1);
+
         // Add the local player to the party to ensure scale is at least 1
         addRaider(new Raider(client.getLocalPlayer(), true));
         
