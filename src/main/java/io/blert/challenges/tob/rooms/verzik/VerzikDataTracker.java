@@ -253,6 +253,10 @@ public class VerzikDataTracker extends RoomDataTracker {
             dispatchEvent(new VerzikRedsSpawnEvent(tick));
         }
 
+        if (verzik == null) {
+            return;
+        }
+
         if (tick == nextVerzikAttackTick - 1) {
             if (phase == VerzikPhase.P2) {
                 checkForBounceChances();
@@ -289,7 +293,7 @@ public class VerzikDataTracker extends RoomDataTracker {
             dispatchEvent(new VerzikYellowsEvent(tick, new ArrayList<>(currentYellows)));
         }
 
-        if (tick > phaseStartTick + 5 && verzik != null) {
+        if (tick > phaseStartTick + 5) {
             // After the phase has been active for several ticks, re-enable varbit updates.
             verzik.setDisableVarbitUpdates(false);
         }
@@ -402,8 +406,9 @@ public class VerzikDataTracker extends RoomDataTracker {
             dispatchEvent(new VerzikPhaseEvent(tick, VerzikPhase.P2));
         }
 
-        // Verzik despawns between phases, but it should not be counted as a final despawn until the end of the fight.
-        return trackedNpc == verzik && phase == VerzikPhase.P3;
+        // Verzik despawns between phases, but it should not be counted.
+        // Her final despawn is sent when she changes to her death ID.
+        return false;
     }
 
     @Override
@@ -429,6 +434,12 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             // A transition from P1 to P2 does not spawn a new NPC. Simply reset Verzik's HP to its P2 value.
             verzik.setHitpoints(new Hitpoints(tobNpc, theatreChallenge.getScale()));
+        }
+
+        if (TobNpc.isVerzikP3(beforeId) && tobNpc.isVerzikDeath() && verzik != null) {
+            despawnTrackedNpc(verzik);
+            verzik = null;
+            phase = VerzikPhase.IDLE;
         }
     }
 
