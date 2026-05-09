@@ -291,6 +291,8 @@ public class Raider {
 
         if (spell.isStall()) {
             activeStall = Pair.of(tick, spell);
+            animationId = -1;
+            animationTick = tick;
         }
 
         activeSpells.put(spell.getId(), tick + spell.getCooldown(matchedGraphicId));

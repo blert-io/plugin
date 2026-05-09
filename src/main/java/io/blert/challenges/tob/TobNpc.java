@@ -157,10 +157,15 @@ public enum TobNpc {
     VERZIK_P2_REGULAR(NpcID.VERZIK_PHASE2, 2, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
     VERZIK_P2_HARD(NpcID.VERZIK_PHASE2_HARD, 2, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
 
-    // Verzik P3, including death animation.
-    VERZIK_P3_ENTRY(NpcID.VERZIK_PHASE3_STORY, 2, ChallengeMode.TOB_ENTRY, 320),
-    VERZIK_P3_REGULAR(NpcID.VERZIK_PHASE3, 2, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
-    VERZIK_P3_HARD(NpcID.VERZIK_PHASE3_HARD, 2, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
+    // Verzik P3.
+    VERZIK_P3_ENTRY(NpcID.VERZIK_PHASE3_STORY, 1, ChallengeMode.TOB_ENTRY, 320),
+    VERZIK_P3_REGULAR(NpcID.VERZIK_PHASE3, 1, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
+    VERZIK_P3_HARD(NpcID.VERZIK_PHASE3_HARD, 1, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
+
+    // Verzik death animation.
+    VERZIK_DEATH_ENTRY(NpcID.VERZIK_DEATH_BAT_STORY, 1, ChallengeMode.TOB_ENTRY, 0),
+    VERZIK_DEATH_REGULAR(NpcID.VERZIK_DEATH_BAT, 1, ChallengeMode.TOB_REGULAR, 0),
+    VERZIK_DEATH_HARD(NpcID.VERZIK_DEATH_BAT_HARD, 1, ChallengeMode.TOB_HARD, 0),
 
     // Pillars at Verzik.
     VERZIK_PILLAR(NpcID.VERZIK_PILLAR_NPC, 1, ChallengeMode.NO_MODE, 0),
@@ -406,8 +411,17 @@ public enum TobNpc {
         return isVerzikP3(this.id);
     }
 
+    public static boolean isVerzikDeath(int id) {
+        return idMatches(id, VERZIK_DEATH_ENTRY, VERZIK_DEATH_REGULAR, VERZIK_DEATH_HARD);
+    }
+
+    public boolean isVerzikDeath() {
+        return isVerzikDeath(this.id);
+    }
+
     public static boolean isAnyVerzik(int id) {
-        return isVerzikIdle(id) || isVerzikP1(id) || isVerzikP1Transition(id) || isVerzikP2(id) || isVerzikP3(id);
+        return isVerzikIdle(id) || isVerzikP1(id) || isVerzikP1Transition(id)
+                || isVerzikP2(id) || isVerzikP3(id) || isVerzikDeath(id);
     }
 
     public boolean isAnyVerzik() {
