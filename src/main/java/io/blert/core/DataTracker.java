@@ -721,12 +721,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
         }
         trackedNpcs.add(trackedNpc);
 
-        if (notStarted()) {
-            // NPCs which spawn before the room begins must be reported immediately as the `onTick` handler
-            // is not yet active.
-            dispatchEvent(NpcEvent.spawn(getStage(), 0, getWorldLocation(trackedNpc), trackedNpc));
-        }
-
         challenge.updateMode(trackedNpc.getMode());
     }
 
