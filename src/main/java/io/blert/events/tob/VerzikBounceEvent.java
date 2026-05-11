@@ -70,7 +70,7 @@ public class VerzikBounceEvent extends TobEvent {
      */
     public VerzikBounceEvent(int tick, int playersInRange, int playersNotInRange) {
         super(EventType.VERZIK_BOUNCE, Room.VERZIK, tick, null);
-        this.attackTick = -1;
+        this.attackTick = tick;
         this.playersInRange = playersInRange;
         this.playersNotInRange = playersNotInRange;
         this.bouncedPlayer = null;
