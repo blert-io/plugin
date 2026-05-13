@@ -15,11 +15,6 @@ import net.runelite.api.Player;
 // import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
-import net.runelite.client.util.Text;
-
-// import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Tracks Chambers of Xeric room times and dispatches events to the Blert event handler.
@@ -27,7 +22,6 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 public abstract class RoomDataTracker extends DataTracker implements EventHandler {
-    private final Pattern roomEndRegex;
     private final Stage stage;
     private boolean started = false;
     private int startTick = 0;
@@ -40,8 +34,6 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     public RoomDataTracker(RecordableChallenge challenge, Stage stage, Client client) {
         super(challenge, client, stage);
         this.stage = stage;
-        this.roomEndRegex = Pattern.compile("(Combat room|Puzzle) `.*` complete! Duration: .*");
-        // this.roomEndRegex = Pattern.compile("Congratulations - your raid is complete!.*");
     }
 
     /**
@@ -122,11 +114,8 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
 
     @Override
     protected void onMessage(ChatMessage chatMessage) {
-        String stripped = Text.removeTags(chatMessage.getMessage());
-        Matcher matcher = roomEndRegex.matcher(stripped);
-        if (matcher.find()) {
-            finishRoom(getStartTick() + getTick());
-        }
+        // Room completion is now detected via collision flags in CoxChallenge.onTick()
+        // No chat message handling needed here
     }
 
     @Override
