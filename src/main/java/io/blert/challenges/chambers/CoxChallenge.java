@@ -20,12 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.Point;
-import net.runelite.api.Scene;
-import net.runelite.api.Tile;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.plugins.gpu.template.Template;
 import net.runelite.client.util.Text;
 
 import javax.annotation.Nullable;
@@ -142,11 +139,18 @@ public class CoxChallenge extends RecordableChallenge {
         Arrays.fill(obstacleP, -1);
         Arrays.fill(obstacleX, -1);
         Arrays.fill(obstacleY, -1);
+        currentLocation = null;
+        enteredLobby = false;
         setState(ChallengeState.INACTIVE);
     }
 
     @Override
     protected void onTick() {
+        // Update current location
+        if (client.getLocalPlayer() != null) {
+            updateCurrentLocation(client.getLocalPlayer().getWorldLocation());
+        }
+        
         // Only use instance check for inRaid logic (like CoxTimersPlugin)
         boolean inInstance = client.getTopLevelWorldView() != null && client.getTopLevelWorldView().isInstance();
 
@@ -180,12 +184,20 @@ public class CoxChallenge extends RecordableChallenge {
                     obstacleP[i] = -1;
                     continue;
                 }
-                int flags = client.getTopLevelWorldView().getCollisionMaps()[p].getFlags()[sceneX][sceneY];
+                var collisionMaps = client.getTopLevelWorldView().getCollisionMaps();
+                if (collisionMaps == null) {
+                    continue;
+                }
+                int flags = collisionMaps[p].getFlags()[sceneX][sceneY];
                 if ((flags & 0x100) == 0) {
                     int completionTick = getRelativeTick();
                     log.info("Room complete via collision flag: stage={}, tick={}", currentStage, completionTick);
                     obstacleP[i] = -1;
                     final RoomDataTracker tracker = roomDataTracker;
+                    if (tracker == null) {
+                        log.warn("Room completion detected but roomDataTracker is null");
+                        return;
+                    }
                     tracker.finishRoom(completionTick);
                     advanceToNextRoom(tracker, completionTick);
                     break;
@@ -203,6 +215,7 @@ public class CoxChallenge extends RecordableChallenge {
     @Override
     public void onGameObjectSpawned(GameObjectSpawned event) {
         if (getState() == ChallengeState.ACTIVE && roomDataTracker != null) {
+            final RoomDataTracker tracker = roomDataTracker;
             GameObject go = event.getGameObject();
             switch (go.getId()) {
                 case 26209: // shamans / thieving / guardians
@@ -222,7 +235,7 @@ public class CoxChallenge extends RecordableChallenge {
                     int roomType = CoxRoomUtil.getRoomType(template);
                     if (roomType < 16) {
                         Stage expectedStage = CoxRoomUtil.roomTypeToStage(roomType);
-                        if (expectedStage != null && expectedStage == roomDataTracker.getStage()) {
+                        if (expectedStage != null && expectedStage == tracker.getStage()) {
                             obstacleP[roomType] = p;
                             obstacleX[roomType] = sceneX + client.getTopLevelWorldView().getBaseX();
                             obstacleY[roomType] = sceneY + client.getTopLevelWorldView().getBaseY();
@@ -273,6 +286,10 @@ public class CoxChallenge extends RecordableChallenge {
             // endRaid must be delayed with its own invokeLater so it runs AFTER that
             // StageUpdateEvent reaches the WebSocketEventHandler, otherwise CHALLENGE_END
             // is sent to the server before the final stage update.
+            if (tracker == null) {
+                log.warn("Raid completion detected but roomDataTracker is null");
+                return;
+            }
             tracker.finishLastRoom(currentTick);
 
             // Clean up the old tracker properly
@@ -286,14 +303,20 @@ public class CoxChallenge extends RecordableChallenge {
             return;
         }
 
-        // Floor complete (dispatch floor event)
-        Matcher floorMatcher = FLOOR_COMPLETE_REGEX.matcher(stripped);
-        if (floorMatcher.find() && getState() == ChallengeState.ACTIVE) {
+        // Floor completion detection (like dey0's plugin)
+        Matcher floorCompleteMatcher = FLOOR_COMPLETE_REGEX.matcher(stripped);
+        if (floorCompleteMatcher.matches() && getState() == ChallengeState.ACTIVE) {
+            final RoomDataTracker tracker = roomDataTracker;
+            if (tracker == null) {
+                log.warn("Floor completion detected but roomDataTracker is null");
+                return;
+            }
+            
             int currentTick = getRelativeTick();
-            final RoomDataTracker tracker = roomDataTracker; // Capture non-null value
             tracker.finishRoom(currentTick);
-            log.info("Finished floor at tick {}", currentTick);
+            log.info("Finished floor at tick {} (detected via chat message)", currentTick);
             advanceToNextRoom(tracker, currentTick);
+            return;
         }
     }
 
@@ -357,11 +380,12 @@ public class CoxChallenge extends RecordableChallenge {
     private void endRaid(ChallengeState completionState) {
         inRaid = false;
         setState(ChallengeState.ENDING);
-        endTick = getRelativeTick();
+        endTick = getRelativeTick() - 1; // Adjust end tick to be the last tick of the raid, not the tick after completion message
         int overallTime = endTick - startTick;
         log.info("Raid end detected at tick {} (end/relative tick: {}). Start Tick: {} ticks", getTick(), endTick, startTick);
         // Use parsed completion time if available, otherwise fall back to measured overall time.
         int challengeTime = reportedChallengeTime > 0 ? reportedChallengeTime : overallTime;
+        log.info("Chambers of Xeric raid ended: challenge={}, overall={} ticks", challengeTime, overallTime);
         dispatchEvent(new ChallengeEndEvent(overallTime, overallTime));
         log.info("Chambers of Xeric raid ended: challenge={}, overall={} ticks", challengeTime, overallTime);
         onTerminate();
@@ -639,20 +663,57 @@ public class CoxChallenge extends RecordableChallenge {
     // Add methods for party management, room tracking, etc. as needed.
 
     private static final int COX_LOBBY_REGION_ID = 4919;
-    // COX lobby area coordinates (center point from Mount Quidamortem bank)
+    // Fallback coordinates (center point from Mount Quidamortem bank)
     private static final int COX_LOBBY_X = 1232;
     private static final int COX_LOBBY_Y = 3572;
     private static final int COX_LOBBY_Z = 0;
     private static final int COX_LOBBY_RADIUS = 5; // Tiles from center point
     private boolean enteredLobby = false;
-    // TODO: Use the instance template chunk coordinates for more precise lobby detection
-    // [INFO] Local Scene Tile: (55, 51), Scene Chunk: (6, 6), Plane: 3
-    // [INFO] Instance Template Chunk: (409, 648), Template Plane: 0, Rotation: 0, Template World Tile Approx: (3279, 5187)
+    
+    @Nullable
+    private CoxLocation currentLocation = null;
+
+    /**
+     * Gets the current location in the raid.
+     * 
+     * @return The current CoxLocation, or null if not in a valid COX location
+     */
+    @Nullable
+    public CoxLocation getCurrentLocation() {
+        return currentLocation;
+    }
+
+    /**
+     * Updates the current location based on the player's world point.
+     * Called automatically on tick.
+     * 
+     * @param worldPoint The player's current world point
+     */
+    private void updateCurrentLocation(net.runelite.api.coords.WorldPoint worldPoint) {
+        CoxLocation newLocation = CoxLocation.fromWorldPoint(client, worldPoint);
+        if (newLocation != currentLocation) {
+            CoxLocation oldLocation = currentLocation;
+            currentLocation = newLocation;
+            
+            if (currentLocation != null && oldLocation != null) {
+                log.debug("Location changed: {} -> {}", oldLocation, currentLocation);
+            }
+        }
+    }
 
     @Override
     public boolean containsLocation(net.runelite.api.coords.WorldPoint worldPoint) {
         if (!enteredLobby) {
-            // Check if player is in the COX lobby area
+            // Use CoxLocation for precise instance template chunk detection
+            CoxLocation location = CoxLocation.fromWorldPoint(client, worldPoint);
+            if (location != null && location != CoxLocation.UNKNOWN) {
+                enteredLobby = true;
+                currentLocation = location;
+                log.debug("Entered COX raid at location: {}", location);
+                return true;
+            }
+            
+            // Fallback to region-based detection for non-instance areas (outside lobby)
             int regionId = worldPoint.getRegionID();
             if (regionId == COX_LOBBY_REGION_ID) {
                 int dx = Math.abs(worldPoint.getX() - COX_LOBBY_X);
@@ -661,6 +722,8 @@ public class CoxChallenge extends RecordableChallenge {
                 
                 if (dz == 0 && dx <= COX_LOBBY_RADIUS && dy <= COX_LOBBY_RADIUS) {
                     enteredLobby = true;
+                    currentLocation = CoxLocation.LOBBY;
+                    log.debug("Entered COX raid at lobby (fallback detection)");
                     return true;
                 }
             }
