@@ -77,7 +77,6 @@ public class VerzikDataTracker extends RoomDataTracker {
     private static final int P3_ATTACKS_BEFORE_SPECIAL = 4;
 
     private static final ImmutableSet<Integer> VERZIK_WEB_IDS = ImmutableSet.of(8376, 10837, 10854);
-    private static final ImmutableSet<Integer> VERZIK_TORNADO_IDS = ImmutableSet.of(10863);
     private static final int VERZIK_YELLOW_OBJECT_ID = 1595;
 
     private static final int DAWNBRINGER_ITEM_ID = 22516;
@@ -105,7 +104,8 @@ public class VerzikDataTracker extends RoomDataTracker {
     private final Set<VerzikCrab> explodingCrabs = new HashSet<>();
     private final Set<BasicTrackedNpc> specialCrabs = new HashSet<>();
     private final List<WorldPoint> yellowPools = new ArrayList<>();
-    private final List<BasicTrackedNpc> tornadoes = new ArrayList<>();
+    // Map of tornado NPC index to the tornado, as indexes are stable across spawns.
+    private final Map<Integer, BasicTrackedNpc> tornadoes = new HashMap<>();
     private final Map<Player, Number> tornadoHealTicks = new HashMap<>();
     private final Map<Actor, List<Hitsplat>> hitsplatsThisTick =
             new HashMap<>();
@@ -375,9 +375,11 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         if (tobNpc.isVerzikTornado()) {
-            BasicTrackedNpc tornado = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+            BasicTrackedNpc existing = tornadoes.get(npc.getIndex());
+            long roomId = existing != null ? existing.getRoomId() : generateRoomId(npc);
+            BasicTrackedNpc tornado = new BasicTrackedNpc(npc, tobNpc, roomId,
                     new Hitpoints(tobNpc, theatreChallenge.getScale()));
-            tornadoes.add(tornado);
+            tornadoes.put(npc.getIndex(), tornado);
             return Optional.of(tornado);
         }
 
@@ -397,7 +399,10 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         if (TobNpc.isVerzikTornado(npc.getId())) {
-            return trackedNpc instanceof BasicTrackedNpc && tornadoes.remove(trackedNpc);
+            // A despawn event following hitting a player should not remove the
+            // tracked NPC as the same logical tornado (with the same NPC index)
+            // will reappear. Only fully despawn tornadoes at the end.
+            return false;
         }
 
         if (TobNpc.isVerzikP1(npc.getId())) {
@@ -440,6 +445,11 @@ public class VerzikDataTracker extends RoomDataTracker {
             despawnTrackedNpc(verzik);
             verzik = null;
             phase = VerzikPhase.IDLE;
+
+            for (TrackedNpc tornado : tornadoes.values()) {
+                despawnTrackedNpc(tornado);
+            }
+            tornadoes.clear();
         }
     }
 
