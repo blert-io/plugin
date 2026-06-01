@@ -1,0 +1,307 @@
+/*
+ * Copyright (c) 2023-2024 Alexei Frolov
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the “Software”), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package io.blert.challenges.chambers.rooms.mystics;
+
+import io.blert.challenges.chambers.CoxNpc;
+import io.blert.challenges.chambers.RoomDataTracker;
+import io.blert.core.BasicTrackedNpc;
+import io.blert.core.Hitpoints;
+import io.blert.core.NpcAttack;
+import io.blert.core.RecordableChallenge;
+import io.blert.core.Stage;
+import io.blert.core.TrackedNpc;
+import io.blert.events.NpcAttackEvent;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.*;
+import net.runelite.api.events.*;
+
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * Tracks Lizardman Mystic room events, spawns, HP changes, and attacks with full lifecycle management.
+ * Uses NPC health ratio/scale for HP tracking instead of varbits.
+ */
+@Slf4j
+public class MysticsDataTracker extends RoomDataTracker
+{
+
+    private static final int MYSTICS_MAGE_ANIMATION = 5528;
+    private static final int MYSTICS_MELEE_ANIMATION = 5487;
+
+    private final Map<Integer, BasicTrackedNpc> Mystics = new HashMap<>(); // Track multiple Mystics by NPC hash code
+    private final Map<Integer, Boolean> targetedMystics = new HashMap<>(); // Track which Mystic IDs have been targeted
+    private final Map<Integer, Boolean> attackedMystics = new HashMap<>(); // Track which Mystic IDs have been attacked
+    private @Nullable NpcAttack attackThisTick = null;
+    private @Nullable BasicTrackedNpc attackingMystic = null;
+    private int lastPlayerAnimation = -1; // Track player's last animation
+
+    public MysticsDataTracker(RecordableChallenge challenge, Stage stage, Client client)
+    {
+        super(challenge, stage, client);
+        log.info("[MysticsDataTracker] Initialized for stage {} with challenge scale {}", stage, challenge.getScale());
+    }
+
+    @Override
+    protected void onTick()
+    {
+        super.onTick();
+
+        final int tick = getTick();
+        
+        // Check player targeting
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer != null && localPlayer.getInteracting() instanceof NPC)
+        {
+            NPC targetedNpc = (NPC) localPlayer.getInteracting();
+            int npcId = targetedNpc.getId();
+            
+            // Check if this is a Mystic we're tracking and haven't logged targeting for yet
+            if (Mystics.containsKey(targetedNpc.hashCode()) && !targetedMystics.getOrDefault(targetedNpc.hashCode(), false))
+            {
+                targetedMystics.put(targetedNpc.hashCode(), true);
+                log.info("[Mystic Target] First time targeting Mystic id={} index={} at tick {}/{}",
+                    npcId, targetedNpc.getIndex(), tick, getStartTick() + tick);
+            }
+        }
+        
+        // Check player attacking (based on player animation)
+        if (localPlayer != null)
+        {
+            int currentAnimation = localPlayer.getAnimation();
+            
+            // Detect if player is performing an attack animation (not idle/moving)
+            if (currentAnimation != -1 && currentAnimation != lastPlayerAnimation)
+            {
+                Actor interacting = localPlayer.getInteracting();
+                if (interacting instanceof NPC)
+                {
+                    NPC attackedNpc = (NPC) interacting;
+                    int npcId = attackedNpc.getId();
+                    
+                    // Check if this is a Mystic we're tracking and haven't logged attacking for yet
+                    if (Mystics.containsKey(attackedNpc.hashCode()) && !attackedMystics.getOrDefault(attackedNpc.hashCode(), false))
+                    {
+                        attackedMystics.put(attackedNpc.hashCode(), true);
+                        log.info("[Mystic Attack] First time attacking Mystic id={} index={} with animation {} at tick {}/{}",
+                            npcId, attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
+                    }
+                }
+            }
+            
+            lastPlayerAnimation = currentAnimation;
+        }
+
+        // Update HP for all tracked Mystics
+        for (Map.Entry<Integer, BasicTrackedNpc> entry : Mystics.entrySet())
+        {
+            BasicTrackedNpc currentMystic = entry.getValue();
+            NPC npc = currentMystic.getNpc();
+            int ratio = npc.getHealthRatio();
+            int scale = npc.getHealthScale();
+            
+            // Use script's exact condition check
+            if (ratio > -1 && scale > 0)
+            {
+                int updatedHitpoints = (int) (currentMystic.getHitpoints().getBase() * (ratio / (double) scale));
+                int currentHitpoints = currentMystic.getHitpoints().getCurrent();
+                
+                // log.info("[Mystic HP] Current HP: {}, Calculated HP: {}, Diff: {}, Base HP: {}", 
+                //             currentHitpoints, updatedHitpoints, Math.abs(currentHitpoints - updatedHitpoints), currentMystic.getHitpoints().getBase());
+                
+                // Only update if there's a significant change (similar to varbit logic)
+                if (Math.abs(currentHitpoints - updatedHitpoints) > 0)
+                {
+                    Hitpoints newHitpoints = currentMystic.getHitpoints().update(updatedHitpoints);
+                    currentMystic.setHitpoints(newHitpoints);
+                    log.info(
+                        "[Mystic HP] NPC ID: {}, Damaged: {} -> {} (-{}), ratio {}/{} at tick {}/{}",
+                        npc.getId(),
+                        currentHitpoints, 
+                        updatedHitpoints, 
+                        Math.abs(currentHitpoints - updatedHitpoints),
+                        ratio,
+                        scale,
+                        tick,
+                        getStartTick() + tick
+                    );
+                }
+            }
+        }
+
+        if (attackThisTick != null && attackingMystic != null)
+        {
+            dispatchEvent(new NpcAttackEvent(
+                getStage(),
+                tick,
+                getWorldLocation(attackingMystic.getNpc()),
+                attackThisTick,
+                attackingMystic
+            ));
+        }
+
+        attackThisTick = null;
+        attackingMystic = null;
+    }
+
+    @Override
+    protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned spawned)
+    {
+        // Only track NPCs if this room tracker is still active - check this FIRST
+        if (terminating()) {
+            log.debug("[Mystics] Ignoring NPC spawn {} - room tracker is terminating", spawned.getNpc().getId());
+            return Optional.empty();
+        }
+        
+        NPC npc = spawned.getNpc();
+        int npcHash = npc.hashCode();
+        // Log all NPC spawns in Mystic room for debugging
+        // log.info("[Mystic Room] NPC spawned: id={}, name='{}'", npc.getId(), npc.getName());
+
+        // Check if this NPC ID corresponds to any Mystic variant
+        Optional<CoxNpc> coxNpcOpt = CoxNpc.withId(npc.getId());
+        if (coxNpcOpt.isPresent()) {
+            CoxNpc coxNpc = coxNpcOpt.get();
+            log.info("[Mystic Room] Found CoxNpc enum: {} for NPC id {}", coxNpc, npc.getId());
+            
+            // Check if it's any Mystic variant
+            if ((coxNpc == CoxNpc.SKELETAL_MYSTIC_1 || 
+                coxNpc == CoxNpc.SKELETAL_MYSTIC_2 || 
+                coxNpc == CoxNpc.SKELETAL_MYSTIC_3) 
+                && !Mystics.containsKey(npcHash)) {
+                
+                // Check if this specific NPC hash is already being tracked
+                BasicTrackedNpc newMystic = new BasicTrackedNpc(
+                    npc,
+                    coxNpc,
+                    generateRoomId(npc),
+                    new Hitpoints(coxNpc.getBaseHitpoints())
+                );
+                Mystics.put(npcHash, newMystic);
+                targetedMystics.put(npcHash, false); // Initialize targeting state
+                attackedMystics.put(npcHash, false); // Initialize attacking state
+                log.info("✓ Mystic instance created: id={}, enum={}, Total Mystics: {}", 
+                            npc.getId(), coxNpc, Mystics.size());
+                return Optional.of(newMystic);
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
+    {
+        NPC npc = despawned.getNpc();
+        int npcHash = npc.hashCode();
+        BasicTrackedNpc removedMystic = Mystics.remove(npcHash);
+        if (removedMystic != null)
+        {
+            targetedMystics.remove(npcHash); // Clean up targeting state
+            attackedMystics.remove(npcHash); // Clean up attacking state
+            log.info("[Mystic] Despawned NPC id={}. Remaining Mystics: {}, at tick {}/{}", npc.getId(), Mystics.size(), getTick(), getStartTick() + getTick());
+            if (Mystics.size() == 0) {
+                int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;
+                log.info("[Mystic Room] tick cycle: {}, finishing room at tick {}/{}", tick_cycle, getTick() + tick_cycle, getStartTick() + getTick() + tick_cycle);
+                
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    protected void onAnimation(AnimationChanged event)
+    {
+        Actor actor = event.getActor();
+        // Check if the animation is from any of our tracked Mystics
+        boolean isTrackedMystic = false;
+        for (BasicTrackedNpc Mystic : Mystics.values())
+        {
+            if (actor == Mystic.getNpc())
+            {
+                isTrackedMystic = true;
+                break;
+            }
+        }
+        
+        if (!isTrackedMystic)
+        {
+            return;
+        }
+
+        // Find which tracked Mystic is performing the animation
+        BasicTrackedNpc performingMystic = null;
+        for (BasicTrackedNpc Mystic : Mystics.values())
+        {
+            if (actor == Mystic.getNpc())
+            {
+                performingMystic = Mystic;
+                break;
+            }
+        }
+
+        switch (actor.getAnimation())
+        {
+            case MYSTICS_MAGE_ANIMATION:
+                attackThisTick = NpcAttack.COX_MYSTICS_MAGE;
+                attackingMystic = performingMystic;
+                log.info("[Mystics] Mage animation detected");
+                break;
+            case MYSTICS_MELEE_ANIMATION:
+                attackThisTick = NpcAttack.COX_MYSTICS_MELEE;
+                attackingMystic = performingMystic;
+                log.info("[Mystics] Melee animation detected");
+                break;
+            default:
+                break;
+        }
+    }
+
+    @Override
+    protected void onHitsplat(HitsplatApplied event)
+    {
+        if (event.getActor() instanceof NPC &&
+            event.getHitsplat().getHitsplatType() == HitsplatID.HEAL)
+        {
+            // Check if heal is on any of our tracked Mystics
+            for (BasicTrackedNpc Mystic : Mystics.values())
+            {
+                if (event.getActor() == Mystic.getNpc())
+                {
+                    setHealTick(getTick());
+                    log.info("[Mystic HP] Heal hitsplat detected on NPC id={} at tick {}", Mystic.getNpc().getId(), getHealTick());
+                    break;
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void onVarbit(VarbitChanged event)
+    {
+        // No longer using varbits for Mystic HP - using health ratio/scale instead
+    }
+}
