@@ -52,10 +52,11 @@ public class MysticsDataTracker extends RoomDataTracker
     private static final int MYSTICS_MAGE_ANIMATION = 5528;
     private static final int MYSTICS_MELEE_ANIMATION = 5487;
 
-    private final Map<Integer, BasicTrackedNpc> Mystics = new HashMap<>(); // Track multiple Mystics by NPC ID
+    private final Map<Integer, BasicTrackedNpc> Mystics = new HashMap<>(); // Track multiple Mystics by NPC hash code
     private final Map<Integer, Boolean> targetedMystics = new HashMap<>(); // Track which Mystic IDs have been targeted
     private final Map<Integer, Boolean> attackedMystics = new HashMap<>(); // Track which Mystic IDs have been attacked
     private @Nullable NpcAttack attackThisTick = null;
+    private @Nullable BasicTrackedNpc attackingMystic = null;
     private int lastPlayerAnimation = -1; // Track player's last animation
 
     public MysticsDataTracker(RecordableChallenge challenge, Stage stage, Client client)
@@ -79,9 +80,9 @@ public class MysticsDataTracker extends RoomDataTracker
             int npcId = targetedNpc.getId();
             
             // Check if this is a Mystic we're tracking and haven't logged targeting for yet
-            if (Mystics.containsKey(npcId) && !targetedMystics.getOrDefault(npcId, false))
+            if (Mystics.containsKey(targetedNpc.hashCode()) && !targetedMystics.getOrDefault(targetedNpc.hashCode(), false))
             {
-                targetedMystics.put(npcId, true);
+                targetedMystics.put(targetedNpc.hashCode(), true);
                 log.info("[Mystic Target] First time targeting Mystic id={} index={} at tick {}/{}",
                     npcId, targetedNpc.getIndex(), tick, getStartTick() + tick);
             }
@@ -102,9 +103,9 @@ public class MysticsDataTracker extends RoomDataTracker
                     int npcId = attackedNpc.getId();
                     
                     // Check if this is a Mystic we're tracking and haven't logged attacking for yet
-                    if (Mystics.containsKey(npcId) && !attackedMystics.getOrDefault(npcId, false))
+                    if (Mystics.containsKey(attackedNpc.hashCode()) && !attackedMystics.getOrDefault(attackedNpc.hashCode(), false))
                     {
-                        attackedMystics.put(npcId, true);
+                        attackedMystics.put(attackedNpc.hashCode(), true);
                         log.info("[Mystic Attack] First time attacking Mystic id={} index={} with animation {} at tick {}/{}",
                             npcId, attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
                     }
@@ -151,24 +152,19 @@ public class MysticsDataTracker extends RoomDataTracker
             }
         }
 
-        if (attackThisTick != null)
+        if (attackThisTick != null && attackingMystic != null)
         {
-            // Find which Mystic performed the attack (would need animation logic to determine this)
-            // For now, just dispatch for all Mystics as this needs attack animation detection
-            for (BasicTrackedNpc Mystic : Mystics.values())
-            {
-                dispatchEvent(new NpcAttackEvent(
-                    getStage(),
-                    tick,
-                    getWorldLocation(Mystic.getNpc()),
-                    attackThisTick,
-                    Mystic
-                ));
-                break; // Only dispatch once until we can identify which specific Mystic attacked
-            }
+            dispatchEvent(new NpcAttackEvent(
+                getStage(),
+                tick,
+                getWorldLocation(attackingMystic.getNpc()),
+                attackThisTick,
+                attackingMystic
+            ));
         }
 
         attackThisTick = null;
+        attackingMystic = null;
     }
 
     @Override
@@ -181,6 +177,7 @@ public class MysticsDataTracker extends RoomDataTracker
         }
         
         NPC npc = spawned.getNpc();
+        int npcHash = npc.hashCode();
         // Log all NPC spawns in Mystic room for debugging
         // log.info("[Mystic Room] NPC spawned: id={}, name='{}'", npc.getId(), npc.getName());
 
@@ -194,18 +191,18 @@ public class MysticsDataTracker extends RoomDataTracker
             if ((coxNpc == CoxNpc.SKELETAL_MYSTIC_1 || 
                 coxNpc == CoxNpc.SKELETAL_MYSTIC_2 || 
                 coxNpc == CoxNpc.SKELETAL_MYSTIC_3) 
-                && !Mystics.containsKey(npc.getId())) {
+                && !Mystics.containsKey(npcHash)) {
                 
-                // Check if this specific NPC ID is already being tracked
+                // Check if this specific NPC hash is already being tracked
                 BasicTrackedNpc newMystic = new BasicTrackedNpc(
                     npc,
                     coxNpc,
                     generateRoomId(npc),
                     new Hitpoints(coxNpc.getBaseHitpoints())
                 );
-                Mystics.put(npc.getId(), newMystic);
-                targetedMystics.put(npc.getId(), false); // Initialize targeting state
-                attackedMystics.put(npc.getId(), false); // Initialize attacking state
+                Mystics.put(npcHash, newMystic);
+                targetedMystics.put(npcHash, false); // Initialize targeting state
+                attackedMystics.put(npcHash, false); // Initialize attacking state
                 log.info("✓ Mystic instance created: id={}, enum={}, Total Mystics: {}", 
                             npc.getId(), coxNpc, Mystics.size());
                 return Optional.of(newMystic);
@@ -218,11 +215,12 @@ public class MysticsDataTracker extends RoomDataTracker
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
     {
         NPC npc = despawned.getNpc();
-        BasicTrackedNpc removedMystic = Mystics.remove(npc.getId());
+        int npcHash = npc.hashCode();
+        BasicTrackedNpc removedMystic = Mystics.remove(npcHash);
         if (removedMystic != null)
         {
-            targetedMystics.remove(npc.getId()); // Clean up targeting state
-            attackedMystics.remove(npc.getId()); // Clean up attacking state
+            targetedMystics.remove(npcHash); // Clean up targeting state
+            attackedMystics.remove(npcHash); // Clean up attacking state
             log.info("[Mystic] Despawned NPC id={}. Remaining Mystics: {}, at tick {}/{}", npc.getId(), Mystics.size(), getTick(), getStartTick() + getTick());
             if (Mystics.size() == 0) {
                 int tick_cycle = (4 - ((getStartTick() + getTick()) % 4)) % 4;
@@ -254,14 +252,27 @@ public class MysticsDataTracker extends RoomDataTracker
             return;
         }
 
+        // Find which tracked Mystic is performing the animation
+        BasicTrackedNpc performingMystic = null;
+        for (BasicTrackedNpc Mystic : Mystics.values())
+        {
+            if (actor == Mystic.getNpc())
+            {
+                performingMystic = Mystic;
+                break;
+            }
+        }
+
         switch (actor.getAnimation())
         {
             case MYSTICS_MAGE_ANIMATION:
                 attackThisTick = NpcAttack.COX_MYSTICS_MAGE;
+                attackingMystic = performingMystic;
                 log.info("[Mystics] Mage animation detected");
                 break;
             case MYSTICS_MELEE_ANIMATION:
                 attackThisTick = NpcAttack.COX_MYSTICS_MELEE;
+                attackingMystic = performingMystic;
                 log.info("[Mystics] Melee animation detected");
                 break;
             default:

@@ -55,10 +55,11 @@ public class ShamansDataTracker extends RoomDataTracker
     private static final int SHAMANS_JUMP_ANIMATION = 7152;
     private static final int SHAMANS_MELEE_ANIMATION = 7158;
 
-    private final Map<Integer, BasicTrackedNpc> shamans = new HashMap<>(); // Track multiple Shamans by NPC ID
+    private final Map<Integer, BasicTrackedNpc> shamans = new HashMap<>(); // Track multiple Shamans by NPC hash code
     private final Map<Integer, Boolean> targetedShamans = new HashMap<>(); // Track which Shaman IDs have been targeted
     private final Map<Integer, Boolean> attackedShamans = new HashMap<>(); // Track which Shaman IDs have been attacked
     private @Nullable NpcAttack attackThisTick = null;
+    private @Nullable BasicTrackedNpc attackingShaman = null;
     private int lastPlayerAnimation = -1; // Track player's last animation
 
     public ShamansDataTracker(RecordableChallenge challenge, Stage stage, Client client)
@@ -82,9 +83,9 @@ public class ShamansDataTracker extends RoomDataTracker
             int npcId = targetedNpc.getId();
             
             // Check if this is a Shaman we're tracking and haven't logged targeting for yet
-            if (shamans.containsKey(npcId) && !targetedShamans.getOrDefault(npcId, false))
+            if (shamans.containsKey(targetedNpc.hashCode()) && !targetedShamans.getOrDefault(targetedNpc.hashCode(), false))
             {
-                targetedShamans.put(npcId, true);
+                targetedShamans.put(targetedNpc.hashCode(), true);
                 log.info("[Shaman Target] First time targeting Shaman id={} index={} at tick {}/{}",
                     npcId, targetedNpc.getIndex(), tick, getStartTick() + tick);
             }
@@ -105,9 +106,9 @@ public class ShamansDataTracker extends RoomDataTracker
                     int npcId = attackedNpc.getId();
                     
                     // Check if this is a Shaman we're tracking and haven't logged attacking for yet
-                    if (shamans.containsKey(npcId) && !attackedShamans.getOrDefault(npcId, false))
+                    if (shamans.containsKey(attackedNpc.hashCode()) && !attackedShamans.getOrDefault(attackedNpc.hashCode(), false))
                     {
-                        attackedShamans.put(npcId, true);
+                        attackedShamans.put(attackedNpc.hashCode(), true);
                         log.info("[Shaman Attack] First time attacking Shaman id={} index={} with animation {} at tick {}/{}",
                             npcId, attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
                     }
@@ -154,24 +155,19 @@ public class ShamansDataTracker extends RoomDataTracker
             }
         }
 
-        if (attackThisTick != null)
+        if (attackThisTick != null && attackingShaman != null)
         {
-            // Find which Shaman performed the attack (would need animation logic to determine this)
-            // For now, just dispatch for all Shamans as this needs attack animation detection
-            for (BasicTrackedNpc shaman : shamans.values())
-            {
-                dispatchEvent(new NpcAttackEvent(
-                    getStage(),
-                    tick,
-                    getWorldLocation(shaman.getNpc()),
-                    attackThisTick,
-                    shaman
-                ));
-                break; // Only dispatch once until we can identify which specific Shaman attacked
-            }
+            dispatchEvent(new NpcAttackEvent(
+                getStage(),
+                tick,
+                getWorldLocation(attackingShaman.getNpc()),
+                attackThisTick,
+                attackingShaman
+            ));
         }
 
         attackThisTick = null;
+        attackingShaman = null;
     }
 
     @Override
@@ -184,6 +180,7 @@ public class ShamansDataTracker extends RoomDataTracker
         }
         
         NPC npc = spawned.getNpc();
+        int npcHash = npc.hashCode();
         // Log all NPC spawns in Shaman room for debugging
         // log.info("[Shaman Room] NPC spawned: id={}, name='{}'", npc.getId(), npc.getName());
 
@@ -195,7 +192,7 @@ public class ShamansDataTracker extends RoomDataTracker
             
             // Check if it's any Shaman variant
             if ((coxNpc == CoxNpc.LIZARDMAN_SHAMAN_1 || coxNpc == CoxNpc.LIZARDMAN_SHAMAN_2) 
-                    && !shamans.containsKey(npc.getId())) {
+                    && !shamans.containsKey(npcHash)) {
                 CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
                 BasicTrackedNpc newShaman = new BasicTrackedNpc(
                     npc,
@@ -203,9 +200,9 @@ public class ShamansDataTracker extends RoomDataTracker
                     generateRoomId(npc),
                     new Hitpoints(coxNpc.getBaseHitpoints())
                 );
-                shamans.put(npc.getId(), newShaman);
-                targetedShamans.put(npc.getId(), false); // Initialize targeting state
-                attackedShamans.put(npc.getId(), false); // Initialize attacking state
+                shamans.put(npcHash, newShaman);
+                targetedShamans.put(npcHash, false); // Initialize targeting state
+                attackedShamans.put(npcHash, false); // Initialize attacking state
                 String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
                 log.info("✓ Shaman tracked instance created: id={}, enum={}, base HP {} (scale={}) - Total Shamans: {}{}", 
                             npc.getId(), coxNpc, newShaman.getHitpoints().getBase(), getChallenge().getScale(), shamans.size(), modeStatus);
@@ -221,11 +218,12 @@ public class ShamansDataTracker extends RoomDataTracker
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
     {
         NPC npc = despawned.getNpc();
-        BasicTrackedNpc removedShaman = shamans.remove(npc.getId());
+        int npcHash = npc.hashCode();
+        BasicTrackedNpc removedShaman = shamans.remove(npcHash);
         if (removedShaman != null)
         {   
-            targetedShamans.remove(npc.getId()); // Clean up targeting state
-            attackedShamans.remove(npc.getId()); // Clean up attacking state
+            targetedShamans.remove(npcHash); // Clean up targeting state
+            attackedShamans.remove(npcHash); // Clean up attacking state
             log.info("[Shaman] Despawned NPC id={} at tick {}/{}. Remaining Shamans: {}", npc.getId(), getTick(), getTick() + getStartTick(), shamans.size());
             if (shamans.size() == 0)
             {
@@ -256,22 +254,37 @@ public class ShamansDataTracker extends RoomDataTracker
             return;
         }
 
+        // Find which tracked Shaman is performing the animation
+        BasicTrackedNpc performingShaman = null;
+        for (BasicTrackedNpc shaman : shamans.values())
+        {
+            if (actor == shaman.getNpc())
+            {
+                performingShaman = shaman;
+                break;
+            }
+        }
+
         switch (actor.getAnimation())
         {
             case SHAMANS_BARNEYS_ANIMATION:
                 attackThisTick = NpcAttack.COX_SHAMANS_BARNEYS;
+                attackingShaman = performingShaman;
                 log.info("[Shamans] Barneys animation detected");
                 break;
             case SHAMANS_BLOB_ANIMATION:
                 attackThisTick = NpcAttack.COX_SHAMANS_BLOB;
+                attackingShaman = performingShaman;
                 log.info("[Shamans] Blob animation detected");
                 break;
             case SHAMANS_JUMP_ANIMATION:
                 attackThisTick = NpcAttack.COX_SHAMANS_JUMP;
+                attackingShaman = performingShaman;
                 log.info("[Shamans] Jump animation detected");
                 break;
             case SHAMANS_MELEE_ANIMATION:
                 attackThisTick = NpcAttack.COX_SHAMANS_MELEE;
+                attackingShaman = performingShaman;
                 log.info("[Shamans] Melee animation detected");
                 break;
             default:

@@ -561,11 +561,11 @@ public class CoxChallenge extends RecordableChallenge {
         switch (stage) {
             case COX_TEKTON:
                 log.info("Creating TektonDataTracker for stage {}", stage);
-                RoomDataTracker tracker = new TektonDataTracker(this, stage, client);
+                RoomDataTracker tektonTracker = new TektonDataTracker(this, stage, client);
                 
-                addEventHandler(tracker);
+                addEventHandler(tektonTracker);
                 
-                return tracker;
+                return tektonTracker;
             case COX_CRABS:
                 log.info("Creating CrabsDataTracker for stage {}", stage);
                 RoomDataTracker crabsTracker = new CrabsDataTracker(this, stage, client);

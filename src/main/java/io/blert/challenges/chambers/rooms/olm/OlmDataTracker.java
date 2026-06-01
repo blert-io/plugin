@@ -62,9 +62,12 @@ public class OlmDataTracker extends RoomDataTracker
     private static final int OLM_UNKNOWN_7482 = 7482;
     private static final int OLM_UNKNOWN_7484 = 7484;
 
-    // Track multiple olms using their NPC hash codes as keys
-    private final Map<Integer, BasicTrackedNpc> olms = new HashMap<>();
+    private @Nullable BasicTrackedNpc olmHead = null;
+    private @Nullable BasicTrackedNpc olmMeleeHand = null;
+    private @Nullable BasicTrackedNpc olmMageHand = null;
+    
     private @Nullable NpcAttack attackThisTick = null;
+    private @Nullable BasicTrackedNpc attackingOlm = null;
     
     // Track which olm was last damaged to attribute varbit changes
     private @Nullable BasicTrackedNpc lastDamagedOlm = null;
@@ -104,7 +107,9 @@ public class OlmDataTracker extends RoomDataTracker
                     tick,
                     getStartTick() + tick
                 );
-                if (lastDamagedOlm.getNpc().getId() == 7554 && currentVarbitValue == 0 && !olmDeath)
+                // Detect Olm head death (HP reaches 0)
+                Optional<CoxNpc> olmType = CoxNpc.withId(lastDamagedOlm.getNpc().getId());
+                if (olmType.isPresent() && olmType.get() == CoxNpc.OLM_HEAD && currentVarbitValue == 0 && !olmDeath)
                 {
                     olmDeath = true;
                     log.info("[Olm {}] Detected death at tick {}/{}, expected raid end {}", 
@@ -124,24 +129,19 @@ public class OlmDataTracker extends RoomDataTracker
         lastVarbitValue = currentVarbitValue;
 
         // Process any attacks
-        if (attackThisTick != null)
+        if (attackThisTick != null && attackingOlm != null)
         {
-            // Find the olm that performed the attack (for now, just use the first one)
-            // TODO: Improve attack attribution when we have better animation data
-            for (BasicTrackedNpc olm : olms.values())
-            {
-                dispatchEvent(new NpcAttackEvent(
-                    getStage(),
-                    tick,
-                    getWorldLocation(olm.getNpc()),
-                    attackThisTick,
-                    olm
-                ));
-                break; // Only dispatch once per tick
-            }
+            dispatchEvent(new NpcAttackEvent(
+                getStage(),
+                tick,
+                getWorldLocation(attackingOlm.getNpc()),
+                attackThisTick,
+                attackingOlm
+            ));
         }
 
         attackThisTick = null;
+        attackingOlm = null;
     }
 
     @Override
@@ -193,126 +193,93 @@ public class OlmDataTracker extends RoomDataTracker
     
     private Optional<BasicTrackedNpc> createOlmTracker(NPC npc, CoxNpc coxNpc)
     {
-        log.info("[Olm] Creating tracker for Olm: id={}, type={}", npc.getId(), coxNpc);
+        CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
+        String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
         
-        // Check if we already have this specific NPC tracked
-        int npcHash = npc.hashCode();
+        // Get existing tracker and roomId if available (reuse roomId like Verzik does)
+        BasicTrackedNpc existingOlm = getOlmTracker(coxNpc);
+        long roomId = existingOlm != null ? existingOlm.getRoomId() : generateRoomId(npc);
         
-        // Check if this might be an ID transition from an existing Olm
-        BasicTrackedNpc existingOlm = findOlmByTransition(npc, coxNpc);
-        if (existingOlm != null)
+        BasicTrackedNpc newOlm = new BasicTrackedNpc(
+            npc,
+            coxNpc,
+            roomId,
+            new Hitpoints(coxNpc.getBaseHitpoints())
+        );
+        
+        // Set the tracker based on type
+        switch (coxNpc)
         {
-            log.info("[Olm] Detected ID transition: {} -> {} for existing Olm", 
-                        existingOlm.getNpc().getId(), npc.getId());
-            
-            // Update the existing tracker with new NPC reference and type
-            olms.remove(existingOlm.getNpc().hashCode());
-            
-            BasicTrackedNpc updatedOlm = new BasicTrackedNpc(
-                npc,
-                coxNpc,
-                existingOlm.getRoomId(), // Keep same room ID
-                existingOlm.getHitpoints() // Keep current HP
-            );
-            
-            olms.put(npcHash, updatedOlm);
-            
-            log.info("[Olm] Updated Olm tracker: old_id={}, new_id={}, type={}, hp={}",
-                        existingOlm.getNpc().getId(), npc.getId(), coxNpc, 
-                        updatedOlm.getHitpoints().getCurrent());
-            
-            return Optional.of(updatedOlm);
+            case OLM_HEAD:
+                olmHead = newOlm;
+                break;
+            case OLM_MELEE_HAND:
+                olmMeleeHand = newOlm;
+                break;
+            case OLM_MAGE_HAND:
+                olmMageHand = newOlm;
+                break;
         }
-
-        if (!olms.containsKey(npcHash))
+        
+        // Initialize varbit tracking on first olm spawn
+        if (existingOlm == null && olmHead == null && olmMeleeHand == null && olmMageHand == null)
         {
-            CoxChallenge coxChallenge = (CoxChallenge) getChallenge();
-            
-            BasicTrackedNpc newOlm = new BasicTrackedNpc(
-                npc,
-                coxNpc,
-                generateRoomId(npc),
-                new Hitpoints(coxNpc.getBaseHitpoints())
-            );
-            
-            olms.put(npcHash, newOlm);
-            String modeStatus = coxChallenge.isChallengeMode() ? " [Challenge Mode]" : " [Normal Mode]";
-            
-            // Initialize varbit tracking on first olm spawn
-            if (olms.size() == 1)
-            {
-                lastVarbitValue = client.getVarbitValue(OLM_HP_VARBIT);
-                log.info("[Olm] Initialized varbit tracking with value: {}", lastVarbitValue);
-            }
-            
-            log.info(
-                "✓ Olm {} tracked: id={}, HP {} {} - Total Olm: {}",
-                coxNpc.name(),
-                npc.getId(),
-                newOlm.getHitpoints().getBase(),
-                modeStatus,
-                olms.size()
-            );
-            
-            return Optional.of(newOlm);
+            lastVarbitValue = client.getVarbitValue(OLM_HP_VARBIT);
+            log.info("[Olm] Initialized varbit tracking with value: {}", lastVarbitValue);
         }
-        else
+        
+        log.info(
+            "✓ Olm {} {}: id={}, HP {}{}",
+            coxNpc.name(),
+            existingOlm != null ? "respawned" : "tracked",
+            npc.getId(),
+            newOlm.getHitpoints().getBase(),
+            modeStatus
+        );
+        
+        return Optional.of(newOlm);
+    }
+    
+    private BasicTrackedNpc getOlmTracker(CoxNpc coxNpc)
+    {
+        switch (coxNpc)
         {
-            log.debug("[Olm] Olm {} already tracked", coxNpc.name());
-            return Optional.of(olms.get(npcHash));
+            case OLM_HEAD:
+                return olmHead;
+            case OLM_MELEE_HAND:
+                return olmMeleeHand;
+            case OLM_MAGE_HAND:
+                return olmMageHand;
+            default:
+                return null;
         }
     }
     
-    /**
-     * Find an existing Olm that might be transitioning to a new ID
-     */
-    private BasicTrackedNpc findOlmByTransition(NPC newNpc, CoxNpc newType)
-    {
-        // If this is a transition from initial spawn (7525) to specific type
-        if (newType != CoxNpc.OLM_MELEE_HAND)
-        {
-            for (BasicTrackedNpc olm : olms.values())
-            {
-                // Look for an initial spawn (7525) that should transition
-                if (olm.getNpc().getId() == 7525)  // Check for initial spawn ID
-                {
-                    // Check if NPCs are at similar positions (indicating same entity)
-                    var oldPos = olm.getNpc().getWorldLocation();
-                    var newPos = newNpc.getWorldLocation();
-                    
-                    if (oldPos != null && newPos != null && oldPos.distanceTo(newPos) <= 2)
-                    {
-                        return olm;
-                    }
-                }
-            }
-        }
-        
-        return null;
-    }
+
 
     @Override
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
     {
         NPC npc = despawned.getNpc();
-        int npcHash = npc.hashCode();
-        log.info("[Olm] Despawned Olm NPC id={} at tick {}/{}. Remaining Olm: {}", 
-                     npc.getId(), getTick(), getStartTick() + getTick(), olms.size());
         
-        // Check if this NPC is one of our tracked olms
-        BasicTrackedNpc olm = olms.get(npcHash);
-        if (olm != null && npc == olm.getNpc())
+        if (olmHead != null && npc == olmHead.getNpc())
         {
-            // Remove the olm from our tracking
-            olms.remove(npcHash);
-            
-            log.info("[Olm] Despawned Olm NPC id={} at tick {}/{}. Remaining Olm: {}", 
-                     npc.getId(), getTick(), getStartTick() + getTick(), olms.size());
-            if (olms.size() == 0)
-            {
-                int crystalAnimation = 4;
-                log.info("[Olm] All Olm despawned expected room end {} animation detected", crystalAnimation + getTick());
-            }
+            log.info("[Olm] Head despawned (id={}) at tick {}/{}",
+                     npc.getId(), getTick(), getStartTick() + getTick());
+            return true;
+        }
+        
+        if (olmMeleeHand != null && npc == olmMeleeHand.getNpc())
+        {
+            log.info("[Olm] Melee hand despawned (id={}) at tick {}/{}",
+                     npc.getId(), getTick(), getStartTick() + getTick());
+            return true;
+        }
+        
+        if (olmMageHand != null && npc == olmMageHand.getNpc())
+        {
+            log.info("[Olm] Mage hand despawned (id={}) at tick {}/{}",
+                     npc.getId(), getTick(), getStartTick() + getTick());
             return true;
         }
         
@@ -329,7 +296,7 @@ public class OlmDataTracker extends RoomDataTracker
         if (actor instanceof NPC)
         {
             NPC npc = (NPC) actor;
-            BasicTrackedNpc olm = olms.get(npc.hashCode());
+            BasicTrackedNpc olm = findOlmByNpc(npc);
             
             if (olm != null)
             {
@@ -339,14 +306,17 @@ public class OlmDataTracker extends RoomDataTracker
                 {
                     case OLM_ANVIL_ANIMATION:
                         // attackThisTick = NpcAttack.COX_OLM_ANVIL;
+                        // attackingOlm = olm;
                         log.info("[Olm {}] Anvil animation detected", npc.getId());
                         break;
                     case OLM_STOMP_ANIMATION:
                         // attackThisTick = NpcAttack.COX_OLM_STOMP;
+                        // attackingOlm = olm;
                         // log.info("[Olm {}] Stomp animation detected", npc.getId());
                         break;
                     case OLM_AUTO_ANIMATION:
                         // attackThisTick = NpcAttack.COX_OLM_AUTO;
+                        // attackingOlm = olm;
                         // log.info("[Olm {}] Auto attack animation detected", npc.getId());
                         break;
                     // Discovered animations - TODO: determine which attacks these represent
@@ -380,7 +350,7 @@ public class OlmDataTracker extends RoomDataTracker
         if (event.getActor() instanceof NPC)
         {
             NPC npc = (NPC) event.getActor();
-            BasicTrackedNpc olm = olms.get(npc.hashCode());
+            BasicTrackedNpc olm = findOlmByNpc(npc);
             
             if (olm != null)
             {
@@ -422,5 +392,25 @@ public class OlmDataTracker extends RoomDataTracker
             
             setShouldUpdateHitpoints(true);
         }
+    }
+    
+    /**
+     * Find an Olm tracker by its NPC reference
+     */
+    private BasicTrackedNpc findOlmByNpc(NPC npc)
+    {
+        if (olmHead != null && olmHead.getNpc() == npc)
+        {
+            return olmHead;
+        }
+        if (olmMeleeHand != null && olmMeleeHand.getNpc() == npc)
+        {
+            return olmMeleeHand;
+        }
+        if (olmMageHand != null && olmMageHand.getNpc() == npc)
+        {
+            return olmMageHand;
+        }
+        return null;
     }
 }

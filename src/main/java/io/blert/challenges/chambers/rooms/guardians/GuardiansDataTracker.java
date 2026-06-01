@@ -59,10 +59,11 @@ public class GuardiansDataTracker extends RoomDataTracker
     private static final int GUARDIANS_SWIPE_ANIMATION = 1203;
     private static final int GUARDIANS_ROCK_FALL_ANIMATION = 4278;
 
-    private final Map<Integer, BasicTrackedNpc> guardians = new HashMap<>(); // Track Guardians by NPC ID (includes live and dead IDs)
+    private final Map<Integer, BasicTrackedNpc> guardians = new HashMap<>(); // Track Guardians by NPC hash code
     private final Map<Integer, Boolean> targetedGuardians = new HashMap<>(); // Track which Guardian IDs have been targeted
     private final Map<Integer, Boolean> attackedGuardians = new HashMap<>(); // Track which Guardian IDs have been attacked
     private @Nullable NpcAttack attackThisTick = null;
+    private @Nullable BasicTrackedNpc attackingGuardian = null;
     private int counter = 0; // Counter for room completion logging
     private int lastPlayerAnimation = -1; // Track player's last animation
 
@@ -87,9 +88,9 @@ public class GuardiansDataTracker extends RoomDataTracker
             int npcId = targetedNpc.getId();
             
             // Check if this is a Guardian we're tracking and haven't logged targeting for yet
-            if (guardians.containsKey(npcId) && !targetedGuardians.getOrDefault(npcId, false))
+            if (guardians.containsKey(targetedNpc.hashCode()) && !targetedGuardians.getOrDefault(targetedNpc.hashCode(), false))
             {
-                targetedGuardians.put(npcId, true);
+                targetedGuardians.put(targetedNpc.hashCode(), true);
                 log.info("[Guardian Target] First time targeting Guardian id={} index={} at tick {}/{}",
                     npcId, targetedNpc.getIndex(), tick, getStartTick() + tick);
             }
@@ -110,9 +111,9 @@ public class GuardiansDataTracker extends RoomDataTracker
                     int npcId = attackedNpc.getId();
                     
                     // Check if this is a Guardian we're tracking and haven't logged attacking for yet
-                    if (guardians.containsKey(npcId) && !attackedGuardians.getOrDefault(npcId, false))
+                    if (guardians.containsKey(attackedNpc.hashCode()) && !attackedGuardians.getOrDefault(attackedNpc.hashCode(), false))
                     {
-                        attackedGuardians.put(npcId, true);
+                        attackedGuardians.put(attackedNpc.hashCode(), true);
                         log.info("[Guardian Attack] First time attacking Guardian id={} index={} with animation {} at tick {}/{}",
                             npcId, attackedNpc.getIndex(), currentAnimation, tick, getStartTick() + tick);
                     }
@@ -194,24 +195,19 @@ public class GuardiansDataTracker extends RoomDataTracker
             }
         }
 
-        if (attackThisTick != null)
+        if (attackThisTick != null && attackingGuardian != null)
         {
-            // Find which Guardian performed the attack (would need animation logic to determine this)
-            // For now, just dispatch for all Guardians as this needs attack animation detection
-            for (BasicTrackedNpc Guardian : guardians.values())
-            {
-                dispatchEvent(new NpcAttackEvent(
-                    getStage(),
-                    tick,
-                    getWorldLocation(Guardian.getNpc()),
-                    attackThisTick,
-                    Guardian
-                ));
-                break; // Only dispatch once until we can identify which specific Guardian attacked
-            }
+            dispatchEvent(new NpcAttackEvent(
+                getStage(),
+                tick,
+                getWorldLocation(attackingGuardian.getNpc()),
+                attackThisTick,
+                attackingGuardian
+            ));
         }
 
         attackThisTick = null;
+        attackingGuardian = null;
     }
 
     @Override
@@ -224,6 +220,7 @@ public class GuardiansDataTracker extends RoomDataTracker
         }
         
         NPC npc = spawned.getNpc();
+        int npcHash = npc.hashCode();
         // Log all NPC spawns in Guardian room for debugging
         // log.info("[Guardian Room] NPC spawned: id={}, name='{}'", npc.getId(), npc.getName());
 
@@ -237,17 +234,17 @@ public class GuardiansDataTracker extends RoomDataTracker
             if (coxNpc == CoxNpc.GUARDIAN_1 || coxNpc == CoxNpc.GUARDIAN_2) {
                 
                 // Only track live Guardian IDs (7569, 7570), ignore dead IDs (7571, 7572)
-                if ((npc.getId() == 7569 || npc.getId() == 7570) && !guardians.containsKey(npc.getId())) {
-                    // Check if this specific NPC ID is already being tracked
+                if ((npc.getId() == 7569 || npc.getId() == 7570) && !guardians.containsKey(npcHash)) {
+                    // Check if this specific NPC hash is already being tracked
                     BasicTrackedNpc newGuardian = new BasicTrackedNpc(
                         npc,
                         coxNpc,
                         generateRoomId(npc),
                         new Hitpoints(coxNpc.getBaseHitpoints())
                     );
-                    guardians.put(npc.getId(), newGuardian);
-                    targetedGuardians.put(npc.getId(), false); // Initialize targeting state
-                    attackedGuardians.put(npc.getId(), false); // Initialize attacking state
+                    guardians.put(npcHash, newGuardian);
+                    targetedGuardians.put(npcHash, false); // Initialize targeting state
+                    attackedGuardians.put(npcHash, false); // Initialize attacking state
                     log.info("✓ Guardian tracked instance created: id={}, index={}, enum={}, base HP {} (scale={}) - Total Guardians: {}", 
                                 npc.getId(), npc.getIndex(), coxNpc, newGuardian.getHitpoints().getBase(), getChallenge().getScale(), guardians.size());
                     return Optional.of(newGuardian);
@@ -263,11 +260,12 @@ public class GuardiansDataTracker extends RoomDataTracker
     protected boolean onNpcDespawn(NpcDespawned despawned, @Nullable TrackedNpc trackedNpc)
     {
         NPC npc = despawned.getNpc();
-        BasicTrackedNpc removedGuardian = guardians.remove(npc.getId());
+        int npcHash = npc.hashCode();
+        BasicTrackedNpc removedGuardian = guardians.remove(npcHash);
         if (removedGuardian != null)
         {
-            targetedGuardians.remove(npc.getId()); // Clean up targeting state
-            attackedGuardians.remove(npc.getId()); // Clean up attacking state
+            targetedGuardians.remove(npcHash); // Clean up targeting state
+            attackedGuardians.remove(npcHash); // Clean up attacking state
             log.info("[Guardian] Despawned NPC id={} index={} – removed from tracking. Remaining Guardians: {}", npc.getId(), npc.getIndex(), guardians.size());
             if (guardians.size() == 0) {
                 log.info("[Guardian] All Guardians despawned at tick {}/{}", getTick(), getStartTick() + getTick());
@@ -283,18 +281,19 @@ public class GuardiansDataTracker extends RoomDataTracker
     protected void onAnimation(AnimationChanged event)
     {
         Actor actor = event.getActor();
-        // Check if the animation is from any of our tracked Guardians
-        boolean isTrackedGuardian = false;
+        
+        // Find which tracked Guardian is performing the animation
+        BasicTrackedNpc performingGuardian = null;
         for (BasicTrackedNpc Guardian : guardians.values())
         {
             if (actor == Guardian.getNpc())
             {
-                isTrackedGuardian = true;
+                performingGuardian = Guardian;
                 break;
             }
         }
         
-        if (!isTrackedGuardian)
+        if (performingGuardian == null)
         {
             return;
         }
@@ -303,10 +302,12 @@ public class GuardiansDataTracker extends RoomDataTracker
         {
             case GUARDIANS_SWIPE_ANIMATION:
                 attackThisTick = NpcAttack.COX_GUARDIANS_SWIPE;
+                attackingGuardian = performingGuardian;
                 log.info("[Guardians] Swipe animation detected");
                 break;
             case GUARDIANS_ROCK_FALL_ANIMATION:
                 attackThisTick = NpcAttack.COX_GUARDIANS_ROCK_FALL;
+                attackingGuardian = performingGuardian;
                 log.info("[Guardians] Rock fall animation detected");
                 break;
             default:

@@ -56,6 +56,7 @@ public class TightropeDataTracker extends RoomDataTracker
     private final Map<Integer, Boolean> targetedNpcs = new HashMap<>(); // Track which NPC hashes have been targeted
     private final Map<Integer, Boolean> attackedNpcs = new HashMap<>(); // Track which NPC hashes have been attacked
     private @Nullable NpcAttack attackThisTick = null;
+    private @Nullable BasicTrackedNpc attackingNpc = null;
     private int lastPlayerAnimation = -1; // Track player's last animation
 
     public TightropeDataTracker(RecordableChallenge challenge, Stage stage, Client client)
@@ -147,23 +148,19 @@ public class TightropeDataTracker extends RoomDataTracker
             }
         }
 
-        if (attackThisTick != null)
+        if (attackThisTick != null && attackingNpc != null)
         {
-            // Dispatch attack event for the attacking NPC
-            for (BasicTrackedNpc npc : tightropeNpcs.values())
-            {
-                dispatchEvent(new NpcAttackEvent(
-                    getStage(),
-                    tick,
-                    getWorldLocation(npc.getNpc()),
-                    attackThisTick,
-                    npc
-                ));
-                break; // Only dispatch once until we can identify which specific NPC attacked
-            }
+            dispatchEvent(new NpcAttackEvent(
+                getStage(),
+                tick,
+                getWorldLocation(attackingNpc.getNpc()),
+                attackThisTick,
+                attackingNpc
+            ));
         }
 
         attackThisTick = null;
+        attackingNpc = null;
     }
 
     @Override
@@ -251,14 +248,27 @@ public class TightropeDataTracker extends RoomDataTracker
             return;
         }
 
+        // Find which tracked NPC is performing the animation
+        BasicTrackedNpc performingNpc = null;
+        for (BasicTrackedNpc npc : tightropeNpcs.values())
+        {
+            if (actor == npc.getNpc())
+            {
+                performingNpc = npc;
+                break;
+            }
+        }
+
         switch (actor.getAnimation())
         {
             case DEATHLY_MAGE_ATTACK_ANIMATION:
                 attackThisTick = NpcAttack.COX_TIGHTROPE_MAGE;
+                attackingNpc = performingNpc;
                 log.info("[Tightrope] Deathly Mage attack animation detected ({})", DEATHLY_MAGE_ATTACK_ANIMATION);
                 break;
             case DEATHLY_RANGER_ATTACK_ANIMATION:
                 attackThisTick = NpcAttack.COX_TIGHTROPE_RANGE;
+                attackingNpc = performingNpc;
                 log.info("[Tightrope] Deathly Ranger attack animation detected ({})", DEATHLY_RANGER_ATTACK_ANIMATION);
                 break;
             default:
