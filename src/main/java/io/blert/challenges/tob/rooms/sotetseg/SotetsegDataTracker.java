@@ -159,7 +159,9 @@ public class SotetsegDataTracker extends RoomDataTracker {
             }
 
             if (isUnder && playerLocation.inSotetsegOverworld()) {
-                finishMaze(tick);
+                if (sotetseg != null && !TobNpc.isSotetsegIdle(sotetseg.getNpcId())) {
+                    finishMaze(tick);
+                }
             }
         }
     }
@@ -187,7 +189,10 @@ public class SotetsegDataTracker extends RoomDataTracker {
             if (sotetseg.getNpc().isDead()) {
                 sotetseg = null;
             }
-            return true;
+            // If the local player is sent to the underworld, Sotetseg disappears
+            // from their client, creating a false despawn event. Ignore despawns
+            // during maze phases.
+            return !inMaze;
         }
         return false;
     }
@@ -332,6 +337,10 @@ public class SotetsegDataTracker extends RoomDataTracker {
     }
 
     private void finishMaze(int tick) {
+        if (!inMaze) {
+            return;
+        }
+
         inMaze = false;
         isUnder = false;
         mazeTracker.finishMaze();
