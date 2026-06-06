@@ -76,6 +76,7 @@ public class Raider {
     private BlowpipeState blowpiping = BlowpipeState.NOT_PIPING;
 
     private Item[] equipment = new Item[EquipmentSlot.values().length];
+    private Item[] pendingEquipment = null;
     @Getter
     private final List<ItemDelta> equipmentChangesThisTick = new ArrayList<>();
 
@@ -143,6 +144,7 @@ public class Raider {
         invulnerable = false;
         blowpiping = BlowpipeState.NOT_PIPING;
         equipment = new Item[EquipmentSlot.values().length];
+        // Don't reset pending equipment as it challenge-level.
         equipmentChangesThisTick.clear();
         animationId = -1;
         animationTick = 0;
@@ -209,13 +211,7 @@ public class Raider {
             graphicsIds.put(spotAnim.getId(), spotAnim);
         }
 
-        equipmentChangesThisTick.clear();
-
-        if (localPlayer) {
-            updateEquipmentFromLocalPlayer(client);
-        } else {
-            updateEquipmentFromVisibleItems(client);
-        }
+        updateEquipment(client);
 
         Item newWeapon = equipment[EquipmentSlot.WEAPON.ordinal()];
 
@@ -311,6 +307,37 @@ public class Raider {
         }
     }
 
+    public void snapshotEquipmentChanges(Client client, PlayerComposition composition) {
+        pendingEquipment = snapshotFromComposition(client, composition);
+    }
+
+    private Item[] snapshotFromComposition(Client client,
+                                           PlayerComposition composition) {
+        Item[] snapshot = new Item[EquipmentSlot.values().length];
+        Arrays.stream(EquipmentSlot.values()).filter(slot -> slot.getKitType() != null).forEach(slot -> {
+            int id = composition.getEquipmentId(slot.getKitType());
+            if (id != -1) {
+                var comp = client.getItemDefinition(id);
+                snapshot[slot.ordinal()] = new Item(comp.getId(), 1);
+            } else {
+                snapshot[slot.ordinal()] = null;
+            }
+        });
+        return snapshot;
+    }
+
+    private void updateEquipment(Client client) {
+        equipmentChangesThisTick.clear();
+
+        if (localPlayer) {
+            updateEquipmentFromLocalPlayer(client);
+        } else {
+            updateEquipmentFromVisibleItems(client);
+        }
+
+        pendingEquipment = null;
+    }
+
     private void updateEquipmentFromLocalPlayer(Client client) {
         var equippedItems = client.getItemContainer(InventoryID.EQUIPMENT);
         if (equippedItems == null) {
@@ -355,16 +382,27 @@ public class Raider {
     }
 
     private void updateEquipmentFromVisibleItems(Client client) {
+        Item[] items;
+        if (pendingEquipment != null) {
+            items = pendingEquipment;
+        } else {
+            // Fall back to reading the composition iff no equipment events
+            // have been received and the current equipment is uninitialized.
+            if (Arrays.stream(equipment).allMatch(Objects::isNull)) {
+                items = snapshotFromComposition(client, Objects.requireNonNull(player).getPlayerComposition());
+            } else {
+                return;
+            }
+        }
+
         Arrays.stream(EquipmentSlot.values()).filter(slot -> slot.getKitType() != null).forEach(slot -> {
             Item previous = equipment[slot.ordinal()];
+            Item current = items[slot.ordinal()];
 
-            int id = Objects.requireNonNull(player).getPlayerComposition().getEquipmentId(slot.getKitType());
-            if (id != -1) {
-                var comp = client.getItemDefinition(id);
-
-                if (previous == null || previous.getId() != comp.getId()) {
-                    equipmentChangesThisTick.add(new ItemDelta(comp.getId(), 1, slot.ordinal(), true));
-                    equipment[slot.ordinal()] = new Item(comp.getId(), 1);
+            if (current != null) {
+                if (previous == null || previous.getId() != current.getId()) {
+                    equipmentChangesThisTick.add(new ItemDelta(current.getId(), 1, slot.ordinal(), true));
+                    equipment[slot.ordinal()] = current;
                 }
             } else if (previous != null) {
                 equipmentChangesThisTick.add(new ItemDelta(previous.getId(), previous.getQuantity(), slot.ordinal(), false));

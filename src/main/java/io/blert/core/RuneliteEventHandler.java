@@ -33,6 +33,7 @@ public interface RuneliteEventHandler {
     default void onNpcSpawned(NpcSpawned event) {}
     default void onNpcDespawned(NpcDespawned event) {}
     default void onNpcChanged(NpcChanged event) {}
+    default void onPlayerChanged(PlayerChanged event) {}
     default void onAnimationChanged(AnimationChanged event) {}
     default void onProjectileMoved(ProjectileMoved event) {}
     default void onChatMessage(ChatMessage event) {}
