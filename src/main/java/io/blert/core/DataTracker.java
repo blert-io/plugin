@@ -194,6 +194,15 @@ public abstract class DataTracker implements RuneliteEventHandler {
     }
 
     /**
+     * Implementation-specific equivalent of the {@code onPlayerChanged} Runelite event handler.
+     * Should be overriden by implementations which require special handling.
+     *
+     * @param event The event.
+     */
+    protected void onPlayerChange(PlayerChanged event) {
+    }
+
+    /**
      * Implementation-specific equivalent of the {@code onAnimationChanged} Runelite event handler.
      * Should be overriden by implementations which require special animation tracking.
      *
@@ -771,6 +780,13 @@ public abstract class DataTracker implements RuneliteEventHandler {
     public final void onNpcChanged(NpcChanged event) {
         if (!terminating()) {
             onNpcChange(event);
+        }
+    }
+
+    @Override
+    public final void onPlayerChanged(PlayerChanged event) {
+        if (!terminating()) {
+            onPlayerChange(event);
         }
     }
 

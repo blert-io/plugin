@@ -30,6 +30,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
+import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
@@ -65,7 +66,7 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
     @Getter
     private ChallengeState state = ChallengeState.INACTIVE;
 
-    private List<CompletableFuture<Status>> statusUpdateFutures = new ArrayList<>();
+    private final List<CompletableFuture<Status>> statusUpdateFutures = new ArrayList<>();
 
     @Getter
     @AllArgsConstructor(access = AccessLevel.PROTECTED)
@@ -308,6 +309,22 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
         DataTracker tracker = getActiveTracker();
         if (tracker != null) {
             tracker.onNpcChanged(event);
+        }
+    }
+
+    @Override
+    public void onPlayerChanged(PlayerChanged event) {
+        // Bypass the data tracker for equipment snapshots to catch changes
+        // occurring between stages.
+        Player player = event.getPlayer();
+        Raider raider = getRaider(player.getName());
+        if (raider != null) {
+            raider.snapshotEquipmentChanges(client, player.getPlayerComposition());
+        }
+
+        DataTracker tracker = getActiveTracker();
+        if (tracker != null) {
+            tracker.onPlayerChanged(event);
         }
     }
 

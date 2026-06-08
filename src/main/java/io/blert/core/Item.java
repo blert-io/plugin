@@ -31,4 +31,9 @@ import lombok.Getter;
 public class Item {
     private int id;
     private int quantity;
+
+    @Override
+    public String toString() {
+        return "Item{id=" + id + ", quantity=" + quantity + '}';
+    }
 }

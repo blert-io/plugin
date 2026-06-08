@@ -303,7 +303,14 @@ public class BlertPlugin extends Plugin {
         }
     }
 
-    @Subscribe
+    @Subscribe(priority = 111)  // Run before other plugins mutate player state
+    private void onPlayerChanged(PlayerChanged event) {
+        if (activeChallenge != null) {
+            activeChallenge.onPlayerChanged(event);
+        }
+    }
+
+    @Subscribe(priority = 111)  // Run before other plugins mutate player state
     private void onAnimationChanged(AnimationChanged event) {
         if (activeChallenge != null) {
             activeChallenge.onAnimationChanged(event);
