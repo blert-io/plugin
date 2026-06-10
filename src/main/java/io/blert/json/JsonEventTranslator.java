@@ -80,6 +80,10 @@ public class JsonEventTranslator {
                 player.name = playerUpdateEvent.getUsername();
                 player.offCooldownTick = playerUpdateEvent.getOffCooldownTick();
 
+                if (playerUpdateEvent.isSnapshot()) {
+                    player.snapshot = true;
+                }
+
                 playerUpdateEvent.getHitpoints().ifPresent(sl -> player.hitpoints = sl.getValue());
                 playerUpdateEvent.getPrayer().ifPresent(sl -> player.prayer = sl.getValue());
                 playerUpdateEvent.getAttack().ifPresent(sl -> player.attack = sl.getValue());

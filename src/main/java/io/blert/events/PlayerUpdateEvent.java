@@ -67,6 +67,9 @@ public class PlayerUpdateEvent extends Event {
     private @Nullable PrayerSet activePrayers = null;
 
     @Getter
+    private final boolean snapshot;
+
+    @Getter
     private List<ItemDelta> equipmentChangesThisTick;
     @Getter
     private int offCooldownTick = 0;
@@ -83,7 +86,8 @@ public class PlayerUpdateEvent extends Event {
     public static PlayerUpdateEvent fromRaider(Stage stage, int tick, WorldPoint point, Client client, Raider raider) {
         Source source = raider.isLocalPlayer() ? Source.PRIMARY : Source.SECONDARY;
 
-        PlayerUpdateEvent evt = new PlayerUpdateEvent(stage, tick, point, source, raider.getUsername());
+        PlayerUpdateEvent evt = new PlayerUpdateEvent(stage, tick, point,
+                source, raider.getUsername(), raider.isSnapshot());
         evt.equipmentChangesThisTick = raider.getEquipmentChangesThisTick();
         evt.offCooldownTick = raider.getOffCooldownTick();
 
@@ -123,10 +127,12 @@ public class PlayerUpdateEvent extends Event {
     }
 
 
-    private PlayerUpdateEvent(Stage stage, int tick, WorldPoint point, Source source, String username) {
+    private PlayerUpdateEvent(Stage stage, int tick, WorldPoint point,
+                              Source source, String username, boolean snapshot) {
         super(EventType.PLAYER_UPDATE, stage, tick, point);
         this.source = source;
         this.username = username;
+        this.snapshot = snapshot;
     }
 
     /**
