@@ -65,6 +65,9 @@ public class Raider {
     @Getter
     @Setter
     private boolean active;
+    private int lastUpdateTick = Integer.MIN_VALUE;
+    @Getter
+    private boolean snapshot;
 
     @Getter
     private boolean dead;
@@ -139,6 +142,8 @@ public class Raider {
      * Resets the player's state to what it should be on entry to a new room in the raid.
      */
     public void resetForNewRoom() {
+        lastUpdateTick = Integer.MIN_VALUE;
+        snapshot = true;
         dead = false;
         deathTick = -1;
         invulnerable = false;
@@ -211,7 +216,7 @@ public class Raider {
             graphicsIds.put(spotAnim.getId(), spotAnim);
         }
 
-        updateEquipment(client);
+        updateEquipment(client, tick);
 
         Item newWeapon = equipment[EquipmentSlot.WEAPON.ordinal()];
 
@@ -231,6 +236,8 @@ public class Raider {
                 blowpiping = BlowpipeState.STOPPED_PIPING;
             }
         }
+
+        lastUpdateTick = tick;
     }
 
     public void recordAttack(int tick, @NonNull AttackDefinition attack,
@@ -314,21 +321,26 @@ public class Raider {
 
     private Item[] snapshotFromComposition(Client client,
                                            PlayerComposition composition) {
-        Item[] snapshot = new Item[EquipmentSlot.values().length];
+        Item[] gearSnapshot = new Item[EquipmentSlot.values().length];
         Arrays.stream(EquipmentSlot.values()).filter(slot -> slot.getKitType() != null).forEach(slot -> {
             int id = composition.getEquipmentId(slot.getKitType());
             if (id != -1) {
                 var comp = client.getItemDefinition(id);
-                snapshot[slot.ordinal()] = new Item(comp.getId(), 1);
+                gearSnapshot[slot.ordinal()] = new Item(comp.getId(), 1);
             } else {
-                snapshot[slot.ordinal()] = null;
+                gearSnapshot[slot.ordinal()] = null;
             }
         });
-        return snapshot;
+        return gearSnapshot;
     }
 
-    private void updateEquipment(Client client) {
+    private void updateEquipment(Client client, int tick) {
         equipmentChangesThisTick.clear();
+
+        snapshot = lastUpdateTick != tick - 1;
+        if (snapshot) {
+            equipment = new Item[EquipmentSlot.values().length];
+        }
 
         if (localPlayer) {
             updateEquipmentFromLocalPlayer(client);

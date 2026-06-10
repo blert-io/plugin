@@ -97,6 +97,7 @@ public class Event {
         public List<Long> equipmentDeltas;
         public Long activePrayers;
         public int dataSource;
+        public Boolean snapshot;
 
         public static class EquippedItem {
             public int slot;
