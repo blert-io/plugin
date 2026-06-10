@@ -26,27 +26,62 @@ dependencies {
 group = 'io.blert'
 version = '0.9.11-RUNELITE'
 
-def getGitHash = { ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine 'git', 'rev-parse', 'HEAD'
-        standardOutput = stdout
+// The plugin hub's builder environment doesn't have a usable git binary,
+// so fall back to reading the commit hash directly from the .git directory.
+def readGitHashFromFile = { ->
+    def head = file('.git/HEAD')
+    if (!head.exists()) {
+        return 'unknown'
     }
-    return stdout.toString().trim()
+    def text = head.text.trim()
+    if (!text.startsWith('ref: ')) {
+        return text  // Detached HEAD holds the bare commit hash.
+    }
+    def refPath = text.substring(5)
+    def ref = file(".git/$refPath")
+    if (ref.exists()) {
+        return ref.text.trim()
+    }
+    def packedRefs = file('.git/packed-refs')
+    if (packedRefs.exists()) {
+        def line = packedRefs.readLines().find { it.endsWith(" $refPath") && !it.startsWith('#') }
+        if (line != null) {
+            return line.tokenize(' ')[0]
+        }
+    }
+    return 'unknown'
 }
 
-tasks.register('checkForLocalChanges', Exec) {
-    def outputStream = new ByteArrayOutputStream()
-    commandLine 'git', 'status', '--porcelain'
-    standardOutput = outputStream
-    ignoreExitValue = true
-
-    doLast {
-        def statusOutput = outputStream.toString().trim()
-        def modifiedLines = statusOutput.readLines().findAll { line ->
-            !line.startsWith('??')  // Ignore untracked files.
+def getGitHash = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', 'HEAD'
+            standardOutput = stdout
         }
-        ext.isClean = modifiedLines.isEmpty()
+        return stdout.toString().trim()
+    } catch (Exception ignored) {
+        return readGitHashFromFile()
+    }
+}
+
+tasks.register('checkForLocalChanges') {
+    doLast {
+        try {
+            def outputStream = new ByteArrayOutputStream()
+            exec {
+                commandLine 'git', 'status', '--porcelain'
+                standardOutput = outputStream
+                ignoreExitValue = true
+            }
+            def modifiedLines = outputStream.toString().trim().readLines().findAll { line ->
+                !line.startsWith('??')  // Ignore untracked files.
+            }
+            ext.isClean = modifiedLines.isEmpty()
+        } catch (Exception ignored) {
+            // Without a git binary, assume the working directory is clean.
+            ext.isClean = true
+        }
     }
 }
 
