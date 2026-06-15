@@ -661,7 +661,28 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
     }
 
+    private void sendMeleeIfChanced(int tick) {
+        if (unidentifiedVerzikAttackTick != -1) {
+            // No projectiles were recorded since the last Verzik
+            // attack. Check if it could have been a melee attack.
+            if (p3MeleeChanceTicks.contains(unidentifiedVerzikAttackTick)) {
+                dispatchEvent(new VerzikAttackStyleEvent(
+                        tick, VerzikAttackStyleEvent.Style.MELEE, unidentifiedVerzikAttackTick));
+            }
+            unidentifiedVerzikAttackTick = -1;
+        }
+    }
+
     private void handleVerzikAttack(int tick) {
+        if (getChallenge().getParty().stream().allMatch(Raider::isDead)) {
+            // Verzik attacks are inferred purely from tick cadence rather than
+            // animations. Stop sending them if every player has died.
+            if (phase == VerzikPhase.P3) {
+                sendMeleeIfChanced(tick);
+            }
+            return;
+        }
+
         Player target = null;
 
         switch (phase) {
@@ -703,15 +724,7 @@ public class VerzikDataTracker extends RoomDataTracker {
                 break;
 
             case P3:
-                if (unidentifiedVerzikAttackTick != -1) {
-                    // No projectiles were recorded since the last Verzik
-                    // attack. Check if it could have been a melee attack.
-                    if (p3MeleeChanceTicks.contains(unidentifiedVerzikAttackTick)) {
-                        dispatchEvent(new VerzikAttackStyleEvent(
-                                tick, VerzikAttackStyleEvent.Style.MELEE, unidentifiedVerzikAttackTick));
-                    }
-                    unidentifiedVerzikAttackTick = -1;
-                }
+                sendMeleeIfChanced(tick);
 
                 if (verzikAttacksUntilSpecial == 0) {
                     verzikAttacksUntilSpecial = P3_ATTACKS_BEFORE_SPECIAL;
