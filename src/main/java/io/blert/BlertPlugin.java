@@ -44,7 +44,6 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
@@ -69,9 +68,6 @@ public class BlertPlugin extends Plugin {
 
     @Inject
     private ClientThread clientThread;
-
-    @Inject
-    private EventBus eventBus;
 
     @Inject
     private ClientToolbar clientToolbar;
