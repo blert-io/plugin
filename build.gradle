@@ -24,7 +24,7 @@ dependencies {
 }
 
 group = 'io.blert'
-version = '0.9.11-RUNELITE'
+version = '0.9.12-RUNELITE'
 
 // The plugin hub's builder environment doesn't have a usable git binary,
 // so fall back to reading the commit hash directly from the .git directory.
