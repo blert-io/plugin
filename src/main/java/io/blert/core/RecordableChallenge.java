@@ -39,7 +39,6 @@ import net.runelite.client.util.Text;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
 
 @Slf4j
 public abstract class RecordableChallenge implements RuneliteEventHandler {
@@ -234,7 +233,7 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
         return state.inChallenge();
     }
 
-    public Future<Status> getStatus() {
+    public CompletableFuture<Status> getStatus() {
         if (state == ChallengeState.INACTIVE) {
             return CompletableFuture.completedFuture(null);
         }

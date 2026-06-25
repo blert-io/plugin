@@ -37,13 +37,17 @@ import okhttp3.OkHttpClient;
 
 import javax.inject.Inject;
 import javax.inject.Named;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 @Slf4j
 public class WebSocketManager {
     public static final String DEFAULT_BLERT_HOST = "https://blert.io";
     public static final String DEFAULT_SERVER_HOST = "wss://wave32.blert.io";
+
+    // Drain reconnects are spread over a short random delay so a draining
+    // instance's clients don't all reconnect at once.
+    private static final long RECONNECT_MIN_DELAY_MS = 500;
+    private static final long RECONNECT_MAX_DELAY_MS = 2500;
 
     @Inject
     private BlertPlugin plugin;
@@ -61,11 +65,14 @@ public class WebSocketManager {
     private ClientThread runeLiteClientThread;
 
     @Inject
+    private ScheduledExecutorService executor;
+
+    @Inject
     @Named("developerMode")
     boolean developerMode;
 
     @Getter(AccessLevel.MODULE)
-    private WebSocketClient wsClient;
+    private volatile WebSocketClient wsClient;
     @Getter
     private WebSocketEventHandler eventHandler;
 
@@ -106,6 +113,10 @@ public class WebSocketManager {
         }
 
         if (wsClient != null) {
+            // Detach the retiring client so it can no longer drive the outgoing handler.
+            wsClient.setTextMessageCallback(null);
+            wsClient.setDisconnectCallback(null);
+
             if (plugin != null && plugin.getSidePanel() != null) {
                 plugin.getSidePanel().updateConnectionState(BlertPluginPanel.ConnectionState.DISCONNECTED, null);
             }
@@ -125,7 +136,7 @@ public class WebSocketManager {
                 "runelite-%s%s", RuneLiteProperties.getVersion(), developerMode ? "-dev" : "");
         wsClient = new WebSocketClient(DEFAULT_SERVER_HOST, config.apiKey(), runeliteVersion, httpClient);
         WebSocketEventHandler newEventHandler = new WebSocketEventHandler(
-                plugin, wsClient, runeliteClient, runeLiteClientThread);
+                plugin, wsClient, runeliteClient, runeLiteClientThread, this::reconnect);
 
         if (plugin.getActiveChallenge() != null) {
             plugin.getActiveChallenge().removeEventHandler(eventHandler);
@@ -135,6 +146,18 @@ public class WebSocketManager {
         eventHandler = newEventHandler;
     }
 
+    private void reconnect() {
+        WebSocketClient draining = wsClient;
+        long delayMs = ThreadLocalRandom.current().nextLong(RECONNECT_MIN_DELAY_MS, RECONNECT_MAX_DELAY_MS);
+        executor.schedule(() -> {
+            // Only reconnect if the draining connection is still the live one.
+            if (draining != null && wsClient == draining && draining.isOpen()) {
+                log.info("Reconnecting to Blert in response to drain request");
+                open();
+            }
+        }, delayMs, TimeUnit.MILLISECONDS);
+    }
+
     public void onConfigChanged(ConfigChanged changed) {
         if (!changed.getGroup().equals("blert")) {
             return;
@@ -142,14 +165,8 @@ public class WebSocketManager {
 
         String key = changed.getKey();
         if (key.equals("apiKey")) {
-            new Thread(() -> {
-                plugin.getSidePanel().updateConnectionState(BlertPluginPanel.ConnectionState.DISCONNECTED, null);
-                try {
-                    open().get(10, java.util.concurrent.TimeUnit.SECONDS);
-                } catch (Exception e) {
-                    log.error("Failed to open WebSocket connection after API key change", e);
-                }
-            }).start();
+            plugin.getSidePanel().updateConnectionState(BlertPluginPanel.ConnectionState.DISCONNECTED, null);
+            open();
         }
     }
 }
