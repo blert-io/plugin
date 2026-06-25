@@ -206,6 +206,13 @@ public class WebSocketClient extends WebSocketListener {
     }
 
     @Override
+    @EverythingIsNonNull
+    public void onClosing(WebSocket webSocket, int code, String reason) {
+        log.info("Blert websocket {} closed by server: {} ({})", webSocket, code, reason);
+        webSocket.close(code, reason);
+    }
+
+    @Override
     public synchronized void onFailure(@NonNull WebSocket webSocket, @NonNull Throwable t, Response response) {
         // Capture previous state before modifying to properly notify listeners.
         State previousState = state;

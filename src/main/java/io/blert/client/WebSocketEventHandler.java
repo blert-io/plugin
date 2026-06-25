@@ -46,7 +46,6 @@ import javax.annotation.Nullable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -131,10 +130,13 @@ public class WebSocketEventHandler implements EventHandler {
     private final Client runeliteClient;
     private final ClientThread runeliteThread;
 
+    // Callback invoked when a reconnect is requested by the server.
+    private Runnable reconnectHandler;
+
     private int nextRequestId = 1;
     private int lastRequestId = -1;
     private final Timer requestTimeout = new Timer();
-    private Status status = Status.IDLE;
+    private volatile Status status = Status.IDLE;
 
     private Challenge currentChallenge = null;
     private @Nullable String challengeId = null;
@@ -142,15 +144,21 @@ public class WebSocketEventHandler implements EventHandler {
     private Instant serverShutdownTime = null;
     private boolean apiKeyUsernameMismatch = false;
 
+    // Set when the server asks this client to drain (reconnect to a different instance).
+    // While set, new challenges are refused and a reconnect is performed once idle.
+    private volatile boolean reconnectWhenIdle = false;
+
     private int currentTick = 0;
 
     /**
      * Constructs an event handler which will send and receive events over the provided websocket client.
      *
-     * @param webSocketClient Websocket client connected and authenticated to the Blert server.
+     * @param webSocketClient  Websocket client connected and authenticated to the Blert server.
+     * @param reconnectHandler Callback invoked to trigger a cooperative reconnect. Called once.
      */
     public WebSocketEventHandler(BlertPlugin plugin, WebSocketClient webSocketClient,
-                                 Client client, ClientThread runeliteThread) {
+                                 Client client, ClientThread runeliteThread,
+                                 Runnable reconnectHandler) {
         this.plugin = plugin;
         this.webSocketClient = webSocketClient;
         this.webSocketClient.setTextMessageCallback(this::handleJsonMessage);
@@ -158,6 +166,7 @@ public class WebSocketEventHandler implements EventHandler {
         this.eventBuffer = new EventBuffer();
         this.runeliteClient = client;
         this.runeliteThread = runeliteThread;
+        this.reconnectHandler = reconnectHandler;
     }
 
     @Override
@@ -235,6 +244,13 @@ public class WebSocketEventHandler implements EventHandler {
         if (pendingServerShutdown()) {
             sendGameMessage(
                     "<col=ef1020>This challenge will not be recorded due to scheduled Blert maintenance.</col>"
+            );
+            return;
+        }
+
+        if (reconnectWhenIdle) {
+            sendGameMessage(
+                    "<col=ef1020>This challenge will not be recorded due to Blert maintenance.</col>"
             );
             return;
         }
@@ -476,23 +492,32 @@ public class WebSocketEventHandler implements EventHandler {
                 handleChallengeStartResponse(serverMessage);
                 break;
 
-            case ServerMessage.TYPE_CHALLENGE_END_RESPONSE:
+            case ServerMessage.TYPE_CHALLENGE_END_RESPONSE: {
                 if (status != Status.CHALLENGE_ENDING || serverMessage.requestId == null ||
                         serverMessage.requestId != lastRequestId) {
                     log.warn("Received unexpected CHALLENGE_END_RESPONSE from server");
                     return;
                 }
+
+                // resetChallenge() may trigger a drain reconnect, so capture it first. When
+                // draining, the new instance sends fresh history on connect, making the local
+                // re-request redundant.
+                boolean draining = reconnectWhenIdle;
                 resetChallenge();
-                // TODO Make proper fix https://github.com/blert-io/plugin/issues/9
-                // delaying raid history request to allow backend update last challenge
-                requestTimeout.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        sendRaidHistoryRequest();
-                    }
-                }, DEFAULT_REQUEST_TIMEOUT_MS);
+
+                if (!draining) {
+                    // TODO Make proper fix https://github.com/blert-io/plugin/issues/9
+                    // delaying raid history request to allow backend update last challenge
+                    requestTimeout.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            sendRaidHistoryRequest();
+                        }
+                    }, DEFAULT_REQUEST_TIMEOUT_MS);
+                }
 
                 break;
+            }
 
             case ServerMessage.TYPE_SERVER_STATUS: {
                 var serverStatus = serverMessage.serverStatus;
@@ -688,12 +713,32 @@ public class WebSocketEventHandler implements EventHandler {
             }
 
             case ServerStatus.STATUS_SHUTDOWN_CANCELED: {
-                serverShutdownTime = null;
-                plugin.getSidePanel().setShutdownTime(null);
-                sendGameMessage(
-                        ChatMessageType.BROADCAST,
-                        "The scheduled Blert maintenance has been canceled. You may continue to record PvM challenges!"
-                );
+                // Only announce a cancellation if a shutdown was previously announced.
+                if (serverShutdownTime != null) {
+                    serverShutdownTime = null;
+                    plugin.getSidePanel().setShutdownTime(null);
+                    sendGameMessage(
+                            ChatMessageType.BROADCAST,
+                            "The scheduled Blert maintenance has been canceled. You may continue to record PvM challenges!"
+                    );
+                }
+
+                // Cancel a deferred drain only while recording, since no
+                // reconnect has been dispatched yet.
+                if (reconnectWhenIdle && status != Status.IDLE) {
+                    log.info("Server canceled drain");
+                    reconnectWhenIdle = false;
+                }
+                break;
+            }
+
+            case ServerStatus.STATUS_DRAINING: {
+                // The instance is draining for a graceful shutdown and wants this client to
+                // reconnect to a different instance once it is no longer recording. New challenges
+                // are refused in the meantime.
+                log.info("Server instance is draining; will reconnect when idle");
+                reconnectWhenIdle = true;
+                maybeReconnect();
                 break;
             }
 
@@ -805,10 +850,22 @@ public class WebSocketEventHandler implements EventHandler {
     private void setStatus(Status status) {
         this.status = status;
         plugin.getSidePanel().updateChallengeStatus(status, currentChallenge, challengeId);
+        maybeReconnect();
     }
 
     private boolean pendingServerShutdown() {
         return serverShutdownTime != null;
+    }
+
+    private boolean isPendingReconnect() {
+        return reconnectWhenIdle && status == Status.IDLE;
+    }
+
+    private void maybeReconnect() {
+        if (isPendingReconnect() && reconnectHandler != null) {
+            reconnectHandler.run();
+            reconnectHandler = null;
+        }
     }
 
     private void sendGameMessage(String message) {
@@ -851,7 +908,8 @@ public class WebSocketEventHandler implements EventHandler {
             return;
         }
 
-        if (plugin.getActiveChallenge() == null) {
+        RecordableChallenge activeChallenge = plugin.getActiveChallenge();
+        if (activeChallenge == null) {
             ServerMessage response = new ServerMessage();
             response.type = ServerMessage.TYPE_CHALLENGE_STATE_CONFIRMATION;
             response.activeChallengeId = message.activeChallengeId;
@@ -863,27 +921,10 @@ public class WebSocketEventHandler implements EventHandler {
 
         final WebSocketEventHandler self = this;
 
-        // Getting the challenge status is a blocking operation, so run it in a separate thread.
-        new Thread(() -> {
+        activeChallenge.getStatus().thenAccept(status -> {
             ServerMessage response = new ServerMessage();
             response.type = ServerMessage.TYPE_CHALLENGE_STATE_CONFIRMATION;
             response.activeChallengeId = message.activeChallengeId;
-
-            RecordableChallenge activeChallenge = plugin.getActiveChallenge();
-            if (activeChallenge == null) {
-                response.challengeStateConfirmation = new ChallengeStateConfirmation();
-                response.challengeStateConfirmation.isValid = false;
-                webSocketClient.sendTextMessage(plugin.getGson().toJson(response));
-                return;
-            }
-
-            RecordableChallenge.Status status = null;
-
-            try {
-                status = activeChallenge.getStatus().get();
-            } catch (InterruptedException | ExecutionException e) {
-                log.error("Failed to get challenge status", e);
-            }
 
             ChallengeStateConfirmation confirmationBuilder = new ChallengeStateConfirmation();
             confirmationBuilder.username = username;
@@ -918,9 +959,8 @@ public class WebSocketEventHandler implements EventHandler {
                     self.setStatus(Status.CHALLENGE_ACTIVE);
                     log.debug("Confirmed challenge state; rejoining challenge {}", self.challengeId);
                 }
-
             }
-        }).start();
+        });
     }
 
     private int getRequestId() {
