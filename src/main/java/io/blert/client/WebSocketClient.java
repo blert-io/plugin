@@ -118,11 +118,12 @@ public class WebSocketClient extends WebSocketListener {
                 .url(hostname)
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(apiKey))
                 .header("Sec-WebSocket-Protocol", "blert-json")
-                .header("Blert-Revision", BuildProperties.REVISION)
                 .header("Blert-Version", BuildProperties.VERSION)
+                .header("Blert-Revision", BuildProperties.revision())
+                .header("Blert-Jar-Hash", BuildProperties.jarHash())
                 .header("Blert-Runelite-Version", runeliteVersion);
 
-        for (String header : BuildProperties.CUSTOM_HEADERS) {
+        for (String header : BuildProperties.customHeaders()) {
             String[] parts = header.split("=", 2);
             if (parts.length == 2) {
                 request.header(parts[0], parts[1]);

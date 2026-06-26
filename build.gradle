@@ -6,6 +6,9 @@ repositories {
     mavenLocal()
     maven {
         url = 'https://repo.runelite.net'
+        content {
+            includeGroupByRegex("net\\.runelite.*")
+        }
     }
     mavenCentral()
 }
@@ -24,58 +27,53 @@ dependencies {
 }
 
 group = 'io.blert'
-version = '0.9.10'
+version = '0.9.12'
 
-def getGitHash = { ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine 'git', 'rev-parse', 'HEAD'
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
-}
+def generatedResourcesDir = layout.buildDirectory.dir('generated/blert/resources')
 
-tasks.register('checkForLocalChanges', Exec) {
-    def outputStream = new ByteArrayOutputStream()
-    commandLine 'git', 'status', '--porcelain'
-    standardOutput = outputStream
-    ignoreExitValue = true
-
-    doLast {
-        def statusOutput = outputStream.toString().trim()
-        def modifiedLines = statusOutput.readLines().findAll { line ->
-            !line.startsWith('??')  // Ignore untracked files.
+def gitShortHash = { ->
+    try {
+        def out = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', 'HEAD'
+            standardOutput = out
+            ignoreExitValue = true
         }
-        ext.isClean = modifiedLines.isEmpty()
+        def hash = out.toString().trim()
+        return hash.length() >= 8 ? hash.substring(0, 8) : 'unknown'
+    } catch (Exception ignored) {
+        return 'unknown'
     }
 }
 
-tasks.register('generateBuildProperties') {
-    dependsOn checkForLocalChanges
-    ext.outputDir = "$buildDir/generated/java"
-    inputs.property('version', version)
-    outputs.dir outputDir
+def getRev2 = { ->
+    try {
+        def out = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'status', '--porcelain'
+            standardOutput = out
+            ignoreExitValue = true
+        }
+        return out.toString().trim().readLines().any { !it.startsWith('??') }
+    } catch (Exception ignored) {
+        return false
+    }
+}
 
-    outputs.upToDateWhen { false }
-    outputs.cacheIf { false }
-
+tasks.register('generateLocalBuildProperties') {
+    def outputFile = generatedResourcesDir.get().file('blert-build.properties').asFile
+    outputs.file(outputFile)
+    outputs.upToDateWhen { false }  // git state can change without a source change
     doLast {
-        def customHeaders =
-                System.getenv('BLERT_CUSTOM_HEADERS')?.split(';')?.collect { "\"${it.trim()}\"" }?.join(', ') ?: ""
-
-        def rev2 = checkForLocalChanges.isClean ? 0 : 1
-        mkdir "$outputDir/io/blert"
-        file("$outputDir/io/blert/BuildProperties.java").text =
-                """|package io.blert;
-               |public class BuildProperties {
-               |    public static final String VERSION = "${version}";
-               |    public static final String REVISION = "${getGitHash()}:${rev2}";
-               |    public static final String[] CUSTOM_HEADERS = new String[]{${customHeaders}};
-               |}""".stripMargin()
+        def revision = gitShortHash() + (getRev2() ? ':1' : ':0')
+        def customHeaders = System.getenv('BLERT_CUSTOM_HEADERS') ?: ''
+        outputFile.parentFile.mkdirs()
+        outputFile.text = "revision=${revision}\njarHash=local\ncustomHeaders=${customHeaders}\n"
     }
 }
-compileJava.dependsOn generateBuildProperties
-sourceSets.main.java.srcDir generateBuildProperties.outputDir
+
+sourceSets.main.resources.srcDir generatedResourcesDir
+processResources.dependsOn generateLocalBuildProperties
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
