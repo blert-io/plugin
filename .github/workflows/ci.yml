@@ -38,3 +38,13 @@ jobs:
           name: test-results
           path: build/test-results/test/**/*.xml
           if-no-files-found: ignore
+
+  token-budget:
+    name: Auto-review token budget
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Estimate review token count
+        run: python3 tools/token-estimate.py --limit 200000 --warn 160000
