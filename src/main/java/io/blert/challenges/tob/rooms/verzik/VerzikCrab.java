@@ -44,7 +44,7 @@ public class VerzikCrab extends TrackedNpc {
         WEST,
         UNKNOWN,
         SOUTH_FAR,
-        CENTER,  // If Verzik is dragged.
+        CENTER, // If Verzik is dragged.
     }
 
     @AllArgsConstructor
@@ -61,8 +61,13 @@ public class VerzikCrab extends TrackedNpc {
         return properties;
     }
 
-    static VerzikCrab fromSpawnedNpc(@NonNull NPC npc, @NonNull TobNpc tobNpc, long roomId,
-                                     WorldPoint spawnPoint, int raidScale, VerzikPhase phase) {
+    static VerzikCrab fromSpawnedNpc(
+            @NonNull NPC npc,
+            @NonNull TobNpc tobNpc,
+            long roomId,
+            WorldPoint spawnPoint,
+            int raidScale,
+            VerzikPhase phase) {
         Spawn spawn;
 
         if (spawnPoint.equals(NORTH_SPAWN)) {
@@ -92,8 +97,13 @@ public class VerzikCrab extends TrackedNpc {
         return new VerzikCrab(npc, tobNpc, roomId, new Hitpoints(tobNpc, raidScale), phase, spawn);
     }
 
-    private VerzikCrab(@NonNull NPC npc, @NonNull TobNpc tobNpc,
-                       long roomId, Hitpoints hitpoints, VerzikPhase phase, Spawn spawn) {
+    private VerzikCrab(
+            @NonNull NPC npc,
+            @NonNull TobNpc tobNpc,
+            long roomId,
+            Hitpoints hitpoints,
+            VerzikPhase phase,
+            Spawn spawn) {
         super(npc, tobNpc, roomId, hitpoints);
         this.properties = new Properties(phase, spawn);
     }

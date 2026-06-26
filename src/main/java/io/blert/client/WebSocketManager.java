@@ -26,6 +26,9 @@ package io.blert.client;
 import io.blert.BlertConfig;
 import io.blert.BlertPlugin;
 import io.blert.BlertPluginPanel;
+import java.util.concurrent.*;
+import javax.inject.Inject;
+import javax.inject.Named;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -34,10 +37,6 @@ import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.events.ConfigChanged;
 import okhttp3.OkHttpClient;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import java.util.concurrent.*;
 
 @Slf4j
 public class WebSocketManager {
@@ -73,6 +72,7 @@ public class WebSocketManager {
 
     @Getter(AccessLevel.MODULE)
     private volatile WebSocketClient wsClient;
+
     @Getter
     private WebSocketEventHandler eventHandler;
 
@@ -132,11 +132,11 @@ public class WebSocketManager {
             return;
         }
 
-        String runeliteVersion = String.format(
-                "runelite-%s%s", RuneLiteProperties.getVersion(), developerMode ? "-dev" : "");
+        String runeliteVersion =
+                String.format("runelite-%s%s", RuneLiteProperties.getVersion(), developerMode ? "-dev" : "");
         wsClient = new WebSocketClient(DEFAULT_SERVER_HOST, config.apiKey(), runeliteVersion, httpClient);
-        WebSocketEventHandler newEventHandler = new WebSocketEventHandler(
-                plugin, wsClient, runeliteClient, runeLiteClientThread, this::reconnect);
+        WebSocketEventHandler newEventHandler =
+                new WebSocketEventHandler(plugin, wsClient, runeliteClient, runeLiteClientThread, this::reconnect);
 
         if (plugin.getActiveChallenge() != null) {
             plugin.getActiveChallenge().removeEventHandler(eventHandler);
@@ -149,13 +149,16 @@ public class WebSocketManager {
     private void reconnect() {
         WebSocketClient draining = wsClient;
         long delayMs = ThreadLocalRandom.current().nextLong(RECONNECT_MIN_DELAY_MS, RECONNECT_MAX_DELAY_MS);
-        executor.schedule(() -> {
-            // Only reconnect if the draining connection is still the live one.
-            if (draining != null && wsClient == draining && draining.isOpen()) {
-                log.info("Reconnecting to Blert in response to drain request");
-                open();
-            }
-        }, delayMs, TimeUnit.MILLISECONDS);
+        executor.schedule(
+                () -> {
+                    // Only reconnect if the draining connection is still the live one.
+                    if (draining != null && wsClient == draining && draining.isOpen()) {
+                        log.info("Reconnecting to Blert in response to drain request");
+                        open();
+                    }
+                },
+                delayMs,
+                TimeUnit.MILLISECONDS);
     }
 
     public void onConfigChanged(ConfigChanged changed) {

@@ -33,18 +33,17 @@ import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.tob.SoteMazeEvent;
 import io.blert.events.tob.SoteMazePathEvent;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.*;
-import net.runelite.client.util.Text;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.*;
+import net.runelite.client.util.Text;
 
 @Slf4j
 public class SotetsegDataTracker extends RoomDataTracker {
@@ -77,12 +76,15 @@ public class SotetsegDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (sotetseg == null) {
-            client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isAnySotetseg(npc.getId())).findFirst().ifPresent(npc -> {
-                TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
-                sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                        new Hitpoints(tobNpc, theatreChallenge.getScale()));
-                addTrackedNpc(sotetseg);
-            });
+            client.getTopLevelWorldView().npcs().stream()
+                    .filter(npc -> TobNpc.isAnySotetseg(npc.getId()))
+                    .findFirst()
+                    .ifPresent(npc -> {
+                        TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+                        sotetseg = new HpVarbitTrackedNpc(
+                                npc, tobNpc, generateRoomId(npc), new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                        addTrackedNpc(sotetseg);
+                    });
         }
 
         if (sotetseg != null && TobNpc.isSotetsegIdle(sotetseg.getNpcId())) {
@@ -111,14 +113,11 @@ public class SotetsegDataTracker extends RoomDataTracker {
             if (deathBallSpawnTick == tick) {
                 // A regular attack animation may have occurred at the same time as the death ball; the death ball
                 // should take priority.
-                String target = deathBallTarget != null
-                        ? deathBallTarget.getName()
-                        : null;
-                dispatchEvent(new NpcAttackEvent(getStage(), tick, point,
-                        NpcAttack.TOB_SOTE_DEATH_BALL, sotetseg, target));
+                String target = deathBallTarget != null ? deathBallTarget.getName() : null;
+                dispatchEvent(
+                        new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_SOTE_DEATH_BALL, sotetseg, target));
             } else {
-                dispatchEvent(new NpcAttackEvent(getStage(), tick, point,
-                        attackThisTick, sotetseg));
+                dispatchEvent(new NpcAttackEvent(getStage(), tick, point, attackThisTick, sotetseg));
             }
             lastAttackTick = tick;
             attackThisTick = null;
@@ -127,9 +126,8 @@ public class SotetsegDataTracker extends RoomDataTracker {
         if (inMaze) {
             Location playerLocation = Location.fromWorldPoint(getWorldLocation(client.getLocalPlayer()));
             if (playerLocation.inSotetsegOverworld() && !activeMazeTiles.isEmpty()) {
-                var activeTilePoints = activeMazeTiles.stream()
-                        .map(this::getWorldLocation)
-                        .collect(Collectors.toList());
+                var activeTilePoints =
+                        activeMazeTiles.stream().map(this::getWorldLocation).collect(Collectors.toList());
                 dispatchEvent(SoteMazePathEvent.overworldTiles(tick, maze, activeTilePoints));
             }
 
@@ -141,10 +139,9 @@ public class SotetsegDataTracker extends RoomDataTracker {
                         chosenPlayer = findMissingPlayer();
                     }
                 } else if (chosenPlayer == null && !activeMazeTiles.isEmpty()) {
-                    chosenPlayer = client.getTopLevelWorldView()
-                            .players()
-                            .stream()
-                            .filter(p -> Location.fromWorldPoint(getWorldLocation(p)).inSotetseg())
+                    chosenPlayer = client.getTopLevelWorldView().players().stream()
+                            .filter(p ->
+                                    Location.fromWorldPoint(getWorldLocation(p)).inSotetseg())
                             .map(p -> Objects.requireNonNull(p.getName()))
                             .findFirst()
                             .orElse(null);
@@ -176,8 +173,8 @@ public class SotetsegDataTracker extends RoomDataTracker {
                     if (sotetseg != null) {
                         sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, sotetseg.getRoomId(), sotetseg.getHitpoints());
                     } else {
-                        sotetseg = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                                new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                        sotetseg = new HpVarbitTrackedNpc(
+                                npc, tobNpc, generateRoomId(npc), new Hitpoints(tobNpc, theatreChallenge.getScale()));
                     }
                     return sotetseg;
                 });
@@ -199,7 +196,8 @@ public class SotetsegDataTracker extends RoomDataTracker {
 
     @Override
     protected void onNpcChange(NpcChanged changed) {
-        if (TobNpc.isSotetsegIdle(changed.getOld().getId()) && TobNpc.isSotetseg(changed.getNpc().getId())) {
+        if (TobNpc.isSotetsegIdle(changed.getOld().getId())
+                && TobNpc.isSotetseg(changed.getNpc().getId())) {
             if (getState() == State.NOT_STARTED) {
                 startRoom();
             } else {
@@ -320,9 +318,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
             //    actually in the maze, the hitpoints varbit is locked at 2
             //    during the first maze and 1 for the second, regardless of the
             //    boss's health.
-            maze = (hitpointsVarbit > 500 || hitpointsVarbit == 2)
-                    ? Maze.MAZE_66
-                    : Maze.MAZE_33;
+            maze = (hitpointsVarbit > 500 || hitpointsVarbit == 2) ? Maze.MAZE_66 : Maze.MAZE_33;
             sotetseg.setDisableVarbitUpdates(true);
         }
 
@@ -344,8 +340,7 @@ public class SotetsegDataTracker extends RoomDataTracker {
         inMaze = false;
         isUnder = false;
         mazeTracker.finishMaze();
-        log.debug("{} finished; pivots: {}, chosen: {}",
-                maze, mazeTracker.getPivots(), chosenPlayer);
+        log.debug("{} finished; pivots: {}, chosen: {}", maze, mazeTracker.getPivots(), chosenPlayer);
 
         if (mazeTracker.hasUnderworldPivots()) {
             dispatchEvent(SoteMazePathEvent.underworldPivots(getTick(), maze, mazeTracker.getUnderworldPivots()));
@@ -368,16 +363,12 @@ public class SotetsegDataTracker extends RoomDataTracker {
     }
 
     private String findMissingPlayer() {
-        Set<String> allPlayers =
-                theatreChallenge.getParty()
-                        .stream()
-                        .filter(Raider::isAlive)
-                        .map(r -> Text.standardize(r.getUsername()))
-                        .collect(Collectors.toSet());
+        Set<String> allPlayers = theatreChallenge.getParty().stream()
+                .filter(Raider::isAlive)
+                .map(r -> Text.standardize(r.getUsername()))
+                .collect(Collectors.toSet());
 
-        client.getTopLevelWorldView()
-                .players()
-                .forEach(p -> allPlayers.remove(Text.standardize(p.getName())));
+        client.getTopLevelWorldView().players().forEach(p -> allPlayers.remove(Text.standardize(p.getName())));
 
         if (allPlayers.isEmpty()) {
             return null;

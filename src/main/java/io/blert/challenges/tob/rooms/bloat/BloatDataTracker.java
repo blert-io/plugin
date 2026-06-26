@@ -23,7 +23,6 @@
 
 package io.blert.challenges.tob.rooms.bloat;
 
-import com.sun.tools.jconsole.JConsoleContext;
 import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
@@ -37,6 +36,9 @@ import io.blert.events.tob.BloatDownEvent;
 import io.blert.events.tob.BloatHandsEvent;
 import io.blert.events.tob.BloatUpEvent;
 import io.blert.util.Location;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -48,12 +50,7 @@ import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 @Slf4j
-
 public class BloatDataTracker extends RoomDataTracker {
     private static final int BLOAT_DOWN_ANIMATION = 8082;
     private static final int BLOAT_DOWN_CYCLE_TICKS = 32;
@@ -93,12 +90,15 @@ public class BloatDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (bloat == null) {
-            client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isBloat(npc.getId())).findFirst().ifPresent(npc -> {
-                TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
-                bloat = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                        new Hitpoints(tobNpc, theatreChallenge.getScale()));
-                addTrackedNpc(bloat);
-            });
+            client.getTopLevelWorldView().npcs().stream()
+                    .filter(npc -> TobNpc.isBloat(npc.getId()))
+                    .findFirst()
+                    .ifPresent(npc -> {
+                        TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+                        bloat = new HpVarbitTrackedNpc(
+                                npc, tobNpc, generateRoomId(npc), new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                        addTrackedNpc(bloat);
+                    });
         }
 
         if (bloat != null && bloat.getNpc().getAnimation() == BLOAT_DOWN_ANIMATION) {
@@ -146,8 +146,8 @@ public class BloatDataTracker extends RoomDataTracker {
                 .filter(tobNpc -> TobNpc.isBloat(tobNpc.getId()))
                 .map(tobNpc -> {
                     if (bloat == null) {
-                        bloat = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                                new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                        bloat = new HpVarbitTrackedNpc(
+                                npc, tobNpc, generateRoomId(npc), new Hitpoints(tobNpc, theatreChallenge.getScale()));
                     }
                     return bloat;
                 });

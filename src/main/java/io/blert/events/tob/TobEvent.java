@@ -26,10 +26,9 @@ package io.blert.events.tob;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.events.Event;
 import io.blert.events.EventType;
+import javax.annotation.Nullable;
 import lombok.NonNull;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
 
 public abstract class TobEvent extends Event {
     protected TobEvent(EventType type, @NonNull Room room, int tick, @Nullable WorldPoint point) {

@@ -25,11 +25,10 @@ package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.events.EventType;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
 public class MaidenBloodSplatsEvent extends TobEvent {
@@ -42,8 +41,7 @@ public class MaidenBloodSplatsEvent extends TobEvent {
 
     @Override
     protected String eventDataString() {
-        String splats = bloodSplats
-                .stream()
+        String splats = bloodSplats.stream()
                 .map(wp -> "(" + wp.getX() + "," + wp.getY() + ")")
                 .collect(Collectors.joining(","));
         return "blood_splats=[" + splats + ']';

@@ -26,10 +26,9 @@ package io.blert.events.tob;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.sotetseg.Maze;
 import io.blert.events.EventType;
-import lombok.Getter;
-
-import javax.annotation.Nullable;
 import java.util.Optional;
+import javax.annotation.Nullable;
+import lombok.Getter;
 
 @Getter
 public class SoteMazeEvent extends TobEvent {
@@ -40,8 +39,7 @@ public class SoteMazeEvent extends TobEvent {
         return new SoteMazeEvent(EventType.SOTE_MAZE_PROC, tick, maze, null);
     }
 
-    public static SoteMazeEvent mazeEnd(int tick, Maze maze,
-                                        @Nullable String chosen) {
+    public static SoteMazeEvent mazeEnd(int tick, Maze maze, @Nullable String chosen) {
         return new SoteMazeEvent(EventType.SOTE_MAZE_END, tick, maze, chosen);
     }
 

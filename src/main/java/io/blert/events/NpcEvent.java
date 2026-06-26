@@ -32,14 +32,19 @@ import net.runelite.api.coords.WorldPoint;
 public class NpcEvent extends Event {
     @Getter
     private final long roomId;
+
     @Getter
     private final int npcId;
+
     @Getter
     private final Hitpoints hitpoints;
+
     @Getter
     private final long prayers;
+
     @Getter
     private final TrackedNpc.Properties properties;
+
     private final boolean propertiesChanged;
 
     public static NpcEvent spawn(Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {

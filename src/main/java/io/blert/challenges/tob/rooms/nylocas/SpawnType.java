@@ -34,7 +34,7 @@ public enum SpawnType {
 
     static final WorldPoint EAST_LANE_NORTH = new WorldPoint(3310, 4249, 0);
     static final WorldPoint EAST_LANE_SOUTH = new WorldPoint(3310, 4248, 0);
-    static final WorldPoint EAST_LANE_SOUTHWEST = new WorldPoint(3309, 4248, 0);  // east bigs
+    static final WorldPoint EAST_LANE_SOUTHWEST = new WorldPoint(3309, 4248, 0); // east bigs
     static final WorldPoint WEST_LANE_NORTH = new WorldPoint(3281, 4249, 0);
     static final WorldPoint WEST_LANE_SOUTH = new WorldPoint(3281, 4248, 0);
     static final WorldPoint SOUTH_LANE_WEST = new WorldPoint(3295, 4233, 0);

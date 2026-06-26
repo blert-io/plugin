@@ -24,9 +24,8 @@
 package io.blert.events;
 
 import io.blert.core.Stage;
-import lombok.Getter;
-
 import java.util.Optional;
+import lombok.Getter;
 
 @Getter
 public class StageUpdateEvent extends Event {
@@ -46,8 +45,13 @@ public class StageUpdateEvent extends Event {
         this(stage, tick, status, false, Optional.empty(), false);
     }
 
-    public StageUpdateEvent(Stage stage, int tick, Status status, boolean accurate,
-                            Optional<Integer> inGameTicks, boolean gameTicksPrecise) {
+    public StageUpdateEvent(
+            Stage stage,
+            int tick,
+            Status status,
+            boolean accurate,
+            Optional<Integer> inGameTicks,
+            boolean gameTicksPrecise) {
         super(EventType.STAGE_UPDATE, stage, tick, null);
         this.status = status;
         this.accurate = accurate;

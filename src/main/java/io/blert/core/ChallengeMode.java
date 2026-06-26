@@ -23,9 +23,8 @@
 
 package io.blert.core;
 
-import lombok.Getter;
-
 import java.util.Optional;
+import lombok.Getter;
 
 public enum ChallengeMode {
     NO_MODE(0),
@@ -40,7 +39,6 @@ public enum ChallengeMode {
     TOA_ENTRY(30),
     TOA_NORMAL(31),
     TOA_EXPERT(32),
-
     ;
 
     @Getter

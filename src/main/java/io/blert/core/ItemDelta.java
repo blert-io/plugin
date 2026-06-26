@@ -83,6 +83,7 @@ public class ItemDelta {
     }
 
     public String toString() {
-        return "ItemDelta{id=" + getId() + ", quantity=" + getQuantity() + ", slot=" + getSlot() + ", added=" + isAdded() + "}";
+        return "ItemDelta{id=" + getId() + ", quantity=" + getQuantity() + ", slot=" + getSlot() + ", added="
+                + isAdded() + "}";
     }
 }

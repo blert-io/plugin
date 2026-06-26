@@ -36,6 +36,10 @@ import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.PlayerDeathEvent;
 import io.blert.util.Tick;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -46,11 +50,6 @@ import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.util.Text;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 @Slf4j
 public abstract class RoomDataTracker extends DataTracker implements EventHandler {
     private static final int TOB_HITPOINTS_VARBIT = 6448;
@@ -59,6 +58,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
 
     @Getter
     private final Room room;
+
     private final Pattern waveEndRegex;
 
     private final boolean startOnEntry;
@@ -70,10 +70,8 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         super(theatreChallenge, client, room.toStage());
         this.theatreChallenge = theatreChallenge;
         this.room = room;
-        this.waveEndRegex = Pattern.compile(
-                "Wave '" + room.waveName() + "' \\(\\w+ Mode\\) " +
-                        "complete!Duration: (" + Tick.TIME_STRING_REGEX + ")"
-        );
+        this.waveEndRegex = Pattern.compile("Wave '" + room.waveName() + "' \\(\\w+ Mode\\) " + "complete!Duration: ("
+                + Tick.TIME_STRING_REGEX + ")");
         this.startOnEntry = startOnEntry;
     }
 
@@ -135,7 +133,8 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         // The hitpoints varbit is delayed by up to 3 ticks, so don't update immediately following a heal as it may
         // undo the hitpoints added by the heal.
         if (shouldUpdateHitpoints && (healTick == -1 || tick - healTick > 3)) {
-            getTrackedNpcs().stream().filter(npc -> npc instanceof HpVarbitTrackedNpc)
+            getTrackedNpcs().stream()
+                    .filter(npc -> npc instanceof HpVarbitTrackedNpc)
                     .map(npc -> (HpVarbitTrackedNpc) npc)
                     .findFirst()
                     .ifPresent(npc -> npc.updateHitpointsFromVarbit(client.getVarbitValue(TOB_HITPOINTS_VARBIT)));
@@ -151,7 +150,8 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     public boolean playersAreInRoom() {
         return client.getTopLevelWorldView().players().stream()
                 .filter(player -> theatreChallenge.playerIsInChallenge(player.getName()))
-                .anyMatch(player -> Location.fromWorldPoint(getWorldLocation(player)).inRoom(room));
+                .anyMatch(player ->
+                        Location.fromWorldPoint(getWorldLocation(player)).inRoom(room));
     }
 
     /**
@@ -171,7 +171,6 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
                 trackedNpc.setHitpoints(Hitpoints.fromRatio(percent, tobNpc.getBaseHitpoints(scale)));
             }
         });
-
     }
 
     /**
@@ -185,8 +184,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
      *
      * @param event The event to handle.
      */
-    protected void onBlertEvent(Event event) {
-    }
+    protected void onBlertEvent(Event event) {}
 
     public void handleEvent(int clientTick, Event event) {
         if (!terminating()) {

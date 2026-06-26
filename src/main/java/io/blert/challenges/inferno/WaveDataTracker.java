@@ -26,6 +26,9 @@ package io.blert.challenges.inferno;
 import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.inferno.InfernoWaveStartEvent;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -35,10 +38,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.util.Text;
-
-import javax.annotation.Nullable;
-import java.util.Optional;
-import java.util.regex.Matcher;
 
 @Slf4j
 public class WaveDataTracker extends DataTracker {
@@ -72,15 +71,15 @@ public class WaveDataTracker extends DataTracker {
         // NPC spawn events are typically received before the wave start message,
         // so capture any NPCs that are already present.
         client.getTopLevelWorldView().npcs().stream().forEach(npc -> {
-            InfernoNpc.withId(npc.getId()).filter(inf -> !inf.isPillar()).ifPresent(infernoNpc ->
-                    addTrackedNpc(new BasicTrackedNpc(npc, generateRoomId(npc),
-                            new Hitpoints(infernoNpc.getHitpoints()))));
+            InfernoNpc.withId(npc.getId())
+                    .filter(inf -> !inf.isPillar())
+                    .ifPresent(infernoNpc -> addTrackedNpc(
+                            new BasicTrackedNpc(npc, generateRoomId(npc), new Hitpoints(infernoNpc.getHitpoints()))));
         });
     }
 
     @Override
-    protected void onTick() {
-    }
+    protected void onTick() {}
 
     @Override
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
@@ -110,8 +109,7 @@ public class WaveDataTracker extends DataTracker {
             return;
         }
 
-        Optional<InfernoNpc> maybeInfernoNpc =
-                InfernoNpc.withId(((NPC) actor).getId());
+        Optional<InfernoNpc> maybeInfernoNpc = InfernoNpc.withId(((NPC) actor).getId());
         if (maybeInfernoNpc.isEmpty()) {
             return;
         }
@@ -125,13 +123,10 @@ public class WaveDataTracker extends DataTracker {
         TrackedNpc trackedNpc = maybeNpc.get();
         int animation = actor.getAnimation();
 
-        infernoNpc.getAttack(animation).ifPresent(npcAttack -> dispatchEvent(new NpcAttackEvent(
-                getStage(),
-                getTick(),
-                getWorldLocation(trackedNpc),
-                npcAttack,
-                trackedNpc
-        )));
+        infernoNpc
+                .getAttack(animation)
+                .ifPresent(npcAttack -> dispatchEvent(new NpcAttackEvent(
+                        getStage(), getTick(), getWorldLocation(trackedNpc), npcAttack, trackedNpc)));
     }
 
     @Override

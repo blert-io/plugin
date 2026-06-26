@@ -24,11 +24,10 @@
 package io.blert.events;
 
 import io.blert.core.*;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
-import java.util.Optional;
 
 @Getter
 public class PlayerAttackEvent extends Event {
@@ -39,8 +38,15 @@ public class PlayerAttackEvent extends Event {
     private final long targetRoomId;
     private final int distanceToTarget;
 
-    public PlayerAttackEvent(Stage stage, int tick, WorldPoint playerPoint, AttackDefinition attack,
-                             @Nullable Item weapon, Raider raider, @Nullable TrackedNpc trackedNpc, int distanceToNpc) {
+    public PlayerAttackEvent(
+            Stage stage,
+            int tick,
+            WorldPoint playerPoint,
+            AttackDefinition attack,
+            @Nullable Item weapon,
+            Raider raider,
+            @Nullable TrackedNpc trackedNpc,
+            int distanceToNpc) {
         super(EventType.PLAYER_ATTACK, stage, tick, playerPoint);
         this.attack = attack;
         this.weapon = weapon;
@@ -70,4 +76,3 @@ public class PlayerAttackEvent extends Event {
         return sb.toString();
     }
 }
-

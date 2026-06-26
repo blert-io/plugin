@@ -37,14 +37,13 @@ import io.blert.events.tob.XarpusExhumedEvent;
 import io.blert.events.tob.XarpusPhaseEvent;
 import io.blert.events.tob.XarpusSplatEvent;
 import io.blert.util.Location;
+import java.util.*;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
-
-import javax.annotation.Nullable;
-import java.util.*;
 
 @Slf4j
 public class XarpusDataTracker extends RoomDataTracker {
@@ -101,12 +100,15 @@ public class XarpusDataTracker extends RoomDataTracker {
     @Override
     protected void onRoomStart() {
         if (xarpus == null) {
-            client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isAnyXarpus(npc.getId())).findFirst().ifPresent(npc -> {
-                TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
-                xarpus = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                        new Hitpoints(tobNpc, theatreChallenge.getScale()));
-                addTrackedNpc(xarpus);
-            });
+            client.getTopLevelWorldView().npcs().stream()
+                    .filter(npc -> TobNpc.isAnyXarpus(npc.getId()))
+                    .findFirst()
+                    .ifPresent(npc -> {
+                        TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+                        xarpus = new HpVarbitTrackedNpc(
+                                npc, tobNpc, generateRoomId(npc), new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                        addTrackedNpc(xarpus);
+                    });
         }
 
         phase = XarpusPhase.P1;
@@ -145,7 +147,10 @@ public class XarpusDataTracker extends RoomDataTracker {
         Optional<TobNpc> maybeXarpus = TobNpc.withId(npc.getId()).filter(TobNpc::isAnyXarpus);
         if (maybeXarpus.isPresent()) {
             if (xarpus == null) {
-                xarpus = new HpVarbitTrackedNpc(npc, maybeXarpus.get(), generateRoomId(npc),
+                xarpus = new HpVarbitTrackedNpc(
+                        npc,
+                        maybeXarpus.get(),
+                        generateRoomId(npc),
                         new Hitpoints(maybeXarpus.get(), theatreChallenge.getScale()));
             }
             return Optional.of(xarpus);
@@ -234,8 +239,7 @@ public class XarpusDataTracker extends RoomDataTracker {
                     getWorldLocation(groundObject),
                     exhumed.spawnTick,
                     exhumedHealAmount,
-                    exhumed.healTicks
-            ));
+                    exhumed.healTicks));
         }
     }
 
@@ -259,8 +263,7 @@ public class XarpusDataTracker extends RoomDataTracker {
                 return;
             }
 
-            exhumeds.entrySet()
-                    .stream()
+            exhumeds.entrySet().stream()
                     .filter(entry -> {
                         LocalPoint location = entry.getKey().getLocalLocation();
                         return location.getX() == projectile.getX1() && location.getY() == projectile.getY1();

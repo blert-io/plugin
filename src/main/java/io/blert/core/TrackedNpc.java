@@ -45,8 +45,7 @@ public abstract class TrackedNpc {
      * the implementation should call {@link TrackedNpc#setUpdatedProperties(boolean)} to indicate when the properties
      * have been changed.
      */
-    public abstract static class Properties {
-    }
+    public abstract static class Properties {}
 
     @Getter
     private final long roomId;

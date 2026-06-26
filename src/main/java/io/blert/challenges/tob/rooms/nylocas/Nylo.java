@@ -26,13 +26,12 @@ package io.blert.challenges.tob.rooms.nylocas;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.TrackedNpc;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
-import java.util.Optional;
 
 @Slf4j
 public class Nylo extends TrackedNpc {
@@ -65,27 +64,40 @@ public class Nylo extends TrackedNpc {
 
     @Setter
     private @Nullable Nylo parent;
+
     @Getter
     @Setter(AccessLevel.PACKAGE)
     private SpawnType spawnType;
+
     @Getter
     private final WorldPoint spawnPoint;
+
     @Getter
     private final int spawnTick;
+
     @Getter
     private Style style;
+
     @Getter
     @Setter(AccessLevel.PACKAGE)
     private int wave;
+
     @Getter
     private final boolean big;
 
     @Getter
     private WorldPoint deathPoint;
+
     private int deathTick;
 
-    public Nylo(@NonNull NPC npc, TobNpc tobNpc, long roomId, WorldPoint spawnPoint,
-                int spawnTick, int wave, int baseHitpoints) {
+    public Nylo(
+            @NonNull NPC npc,
+            TobNpc tobNpc,
+            long roomId,
+            WorldPoint spawnPoint,
+            int spawnTick,
+            int wave,
+            int baseHitpoints) {
         super(npc, tobNpc, roomId, new Hitpoints(baseHitpoints));
         this.parent = null;
         this.spawnType = SpawnType.fromWorldPoint(spawnPoint);

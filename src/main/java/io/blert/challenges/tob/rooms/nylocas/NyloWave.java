@@ -25,11 +25,10 @@ package io.blert.challenges.tob.rooms.nylocas;
 
 import com.google.common.collect.ImmutableMap;
 import io.blert.challenges.tob.TobNpc;
-import net.runelite.api.coords.WorldPoint;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.OptionalInt;
+import net.runelite.api.coords.WorldPoint;
 
 /**
  * Identifies Nylocas waves by their unique spawn composition.
@@ -52,37 +51,36 @@ import java.util.OptionalInt;
 class NyloWave {
     private static final char EMPTY = '_';
 
-    private static final ImmutableMap<String, int[]> WAVE_CANDIDATES =
-            new ImmutableMap.Builder<String, int[]>()
-                    .put("_i_ht_", new int[]{1})
-                    .put("t_i__h", new int[]{2})
-                    .put("_h_ti_", new int[]{3})
-                    .put("i_H__t", new int[]{4})
-                    .put("_h_iT_", new int[]{5})
-                    .put("I_t__h", new int[]{6})
-                    .put("_iTh__", new int[]{7})
-                    .put("t_i_H_", new int[]{8})
-                    .put("_h__T_", new int[]{9})
-                    .put("Tttttt", new int[]{10})
-                    .put("hhhhH_", new int[]{11})
-                    .put("iiI_ii", new int[]{12})
-                    .put("I_itht", new int[]{13})
-                    .put("T_thih", new int[]{14})
-                    .put("thH_ti", new int[]{15})
-                    .put("h_i__t", new int[]{16})
-                    .put("H_H_H_", new int[]{17, 19})
-                    .put("T_T_T_", new int[]{18})
-                    .put("I_H_I_", new int[]{20})
-                    .put("ttiihh", new int[]{21})
-                    .put("H_htI_", new int[]{22})
-                    .put("H_T_th", new int[]{23})
-                    .put("I_H_T_", new int[]{24})
-                    .put("H_T_I_", new int[]{25})
-                    .put("H_I_H_", new int[]{26, 27})
-                    .put("thhiti", new int[]{28, 31})
-                    .put("thI_ti", new int[]{29})
-                    .put("H_hiT_", new int[]{30})
-                    .build();
+    private static final ImmutableMap<String, int[]> WAVE_CANDIDATES = new ImmutableMap.Builder<String, int[]>()
+            .put("_i_ht_", new int[] {1})
+            .put("t_i__h", new int[] {2})
+            .put("_h_ti_", new int[] {3})
+            .put("i_H__t", new int[] {4})
+            .put("_h_iT_", new int[] {5})
+            .put("I_t__h", new int[] {6})
+            .put("_iTh__", new int[] {7})
+            .put("t_i_H_", new int[] {8})
+            .put("_h__T_", new int[] {9})
+            .put("Tttttt", new int[] {10})
+            .put("hhhhH_", new int[] {11})
+            .put("iiI_ii", new int[] {12})
+            .put("I_itht", new int[] {13})
+            .put("T_thih", new int[] {14})
+            .put("thH_ti", new int[] {15})
+            .put("h_i__t", new int[] {16})
+            .put("H_H_H_", new int[] {17, 19})
+            .put("T_T_T_", new int[] {18})
+            .put("I_H_I_", new int[] {20})
+            .put("ttiihh", new int[] {21})
+            .put("H_htI_", new int[] {22})
+            .put("H_T_th", new int[] {23})
+            .put("I_H_T_", new int[] {24})
+            .put("H_T_I_", new int[] {25})
+            .put("H_I_H_", new int[] {26, 27})
+            .put("thhiti", new int[] {28, 31})
+            .put("thI_ti", new int[] {29})
+            .put("H_hiT_", new int[] {30})
+            .build();
 
     /**
      * Identifies a wave by its lane spawn composition.

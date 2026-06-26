@@ -27,6 +27,11 @@ import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.colosseum.*;
 import io.blert.util.Tick;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -36,21 +41,17 @@ import net.runelite.api.events.*;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 @Slf4j
 public class WaveDataTracker extends DataTracker {
-    private final static String bossStartMessage = "Sol Heredit jumps down from his seat...";
+    private static final String bossStartMessage = "Sol Heredit jumps down from his seat...";
     private final String waveStartMessage;
     private final Pattern waveEndRegex;
 
     private final int ticksOnEntry;
+
     @Setter
     private Handicap handicap;
+
     @Setter
     private Handicap[] handicapOptions;
 
@@ -78,8 +79,7 @@ public class WaveDataTracker extends DataTracker {
             "Sol Heredit: I'LL BREAK YOUR BACK!", EquipmentSlot.CAPE,
             "Sol Heredit: I'LL TWIST YOUR HANDS OFF!", EquipmentSlot.GLOVES,
             "Sol Heredit: I'LL BREAK YOUR LEGS!", EquipmentSlot.LEGS,
-            "Sol Heredit: I'LL CUT YOUR FEET OFF!", EquipmentSlot.BOOTS
-    );
+            "Sol Heredit: I'LL CUT YOUR FEET OFF!", EquipmentSlot.BOOTS);
     private static final String GRAPPLE_DEFEND_MESSAGE = "You successfully defend from Sol Heredit's grapple!";
     private static final String GRAPPLE_PARRY_MESSAGE = "You perfectly parry Sol Heredit's grapple!";
 
@@ -94,8 +94,8 @@ public class WaveDataTracker extends DataTracker {
         super(challenge, client, waveToStage(wave));
 
         this.waveStartMessage = "Wave: " + wave;
-        this.waveEndRegex = Pattern.compile("Wave " + wave + " completed! " +
-                "Wave duration: (" + Tick.TIME_STRING_REGEX + ")");
+        this.waveEndRegex =
+                Pattern.compile("Wave " + wave + " completed! " + "Wave duration: (" + Tick.TIME_STRING_REGEX + ")");
         this.ticksOnEntry = ticksOnEntry;
     }
 
@@ -116,7 +116,9 @@ public class WaveDataTracker extends DataTracker {
     @Override
     protected boolean onNpcDespawn(NpcDespawned event, @Nullable TrackedNpc trackedNpc) {
         if (trackedNpc != null) {
-            if (ColosseumNpc.withId(trackedNpc.getNpc().getId()).map(ColosseumNpc::isHealingTotem).orElse(false)) {
+            if (ColosseumNpc.withId(trackedNpc.getNpc().getId())
+                    .map(ColosseumNpc::isHealingTotem)
+                    .orElse(false)) {
                 healingTotems.remove(trackedNpc.getNpc().getWorldLocation());
             }
             activeHeals.remove(trackedNpc.getNpc());
@@ -208,10 +210,14 @@ public class WaveDataTracker extends DataTracker {
             Optional<TrackedNpc> totem = getTrackedNpcs().getByNpc(activeHeal.getLeft());
             Optional<TrackedNpc> target = getTrackedNpcs().getByNpc((NPC) actor);
             if (totem.isPresent() && target.isPresent()) {
-                dispatchEvent(
-                        new TotemHealEvent(getStage(), getTick(), getWorldLocation(actor), totem.get(),
-                                target.get(), activeHeal.getRight(), hitsplat.getAmount())
-                );
+                dispatchEvent(new TotemHealEvent(
+                        getStage(),
+                        getTick(),
+                        getWorldLocation(actor),
+                        totem.get(),
+                        target.get(),
+                        activeHeal.getRight(),
+                        hitsplat.getAmount()));
             }
         }
     }
@@ -404,18 +410,27 @@ public class WaveDataTracker extends DataTracker {
     }
 
     private void sendReentryPoolsEvent() {
-        if (reentryPrimaryPoolsSpawned.isEmpty() && reentrySecondaryPoolsSpawned.isEmpty()
-                && reentryPrimaryPoolsDespawned.isEmpty() && reentrySecondaryPoolsDespawned.isEmpty()) {
+        if (reentryPrimaryPoolsSpawned.isEmpty()
+                && reentrySecondaryPoolsSpawned.isEmpty()
+                && reentryPrimaryPoolsDespawned.isEmpty()
+                && reentrySecondaryPoolsDespawned.isEmpty()) {
             return;
         }
 
-        List<WorldPoint> primarySpawned = reentryPrimaryPoolsSpawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
-        List<WorldPoint> secondarySpawned = reentrySecondaryPoolsSpawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
-        List<WorldPoint> primaryDespawned = reentryPrimaryPoolsDespawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
-        List<WorldPoint> secondaryDespawned = reentrySecondaryPoolsDespawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
+        List<WorldPoint> primarySpawned =
+                reentryPrimaryPoolsSpawned.stream().map(this::getWorldLocation).collect(Collectors.toList());
+        List<WorldPoint> secondarySpawned = reentrySecondaryPoolsSpawned.stream()
+                .map(this::getWorldLocation)
+                .collect(Collectors.toList());
+        List<WorldPoint> primaryDespawned = reentryPrimaryPoolsDespawned.stream()
+                .map(this::getWorldLocation)
+                .collect(Collectors.toList());
+        List<WorldPoint> secondaryDespawned = reentrySecondaryPoolsDespawned.stream()
+                .map(this::getWorldLocation)
+                .collect(Collectors.toList());
 
-        dispatchEvent(new ReentryPoolsEvent(getStage(), getTick(),
-                primarySpawned, secondarySpawned, primaryDespawned, secondaryDespawned));
+        dispatchEvent(new ReentryPoolsEvent(
+                getStage(), getTick(), primarySpawned, secondarySpawned, primaryDespawned, secondaryDespawned));
     }
 
     private void handleSolEvents() {
@@ -425,7 +440,8 @@ public class WaveDataTracker extends DataTracker {
         }
 
         NPC sol = getTrackedNpcs().stream()
-                .filter(trackedNpc -> ColosseumNpc.isSolHeredit(trackedNpc.getNpc().getId()))
+                .filter(trackedNpc ->
+                        ColosseumNpc.isSolHeredit(trackedNpc.getNpc().getId()))
                 .findFirst()
                 .map(TrackedNpc::getNpc)
                 .orElse(null);
@@ -488,7 +504,8 @@ public class WaveDataTracker extends DataTracker {
 
         if (solLaserGraphic != null) {
             SolLasersEvent.Phase phase = SOL_LASER_SCAN_GRAPHIC_OBJECT_IDS.contains(solLaserGraphic.getId())
-                    ? SolLasersEvent.Phase.SCAN : SolLasersEvent.Phase.SHOT;
+                    ? SolLasersEvent.Phase.SCAN
+                    : SolLasersEvent.Phase.SHOT;
             dispatchEvent(new SolLasersEvent(getTick(), phase));
         }
     }

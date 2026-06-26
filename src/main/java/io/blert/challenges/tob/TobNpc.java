@@ -25,11 +25,10 @@ package io.blert.challenges.tob;
 
 import com.google.common.collect.ImmutableMap;
 import io.blert.core.ChallengeMode;
-import lombok.Getter;
-import net.runelite.api.gameval.NpcID;
-
 import java.util.Arrays;
 import java.util.Optional;
+import lombok.Getter;
+import net.runelite.api.gameval.NpcID;
 
 /**
  * All known NPCs within the Theatre of Blood.
@@ -37,116 +36,116 @@ import java.util.Optional;
 public enum TobNpc {
     // Maiden boss.
     MAIDEN_ENTRY(10814, 6, ChallengeMode.TOB_ENTRY, 500),
-    MAIDEN_REGULAR(8360, 6, ChallengeMode.TOB_REGULAR, new int[]{2625, 3062, 3500}),
-    MAIDEN_HARD(10822, 6, ChallengeMode.TOB_HARD, new int[]{2625, 3062, 3500}),
+    MAIDEN_REGULAR(8360, 6, ChallengeMode.TOB_REGULAR, new int[] {2625, 3062, 3500}),
+    MAIDEN_HARD(10822, 6, ChallengeMode.TOB_HARD, new int[] {2625, 3062, 3500}),
 
     // Maiden red crab.
     MAIDEN_MATOMENOS_ENTRY(10820, 1, ChallengeMode.TOB_ENTRY, 16),
-    MAIDEN_MATOMENOS_REGULAR(8366, 1, ChallengeMode.TOB_REGULAR, new int[]{75, 87, 100}),
-    MAIDEN_MATOMENOS_HARD(10828, 1, ChallengeMode.TOB_HARD, new int[]{75, 87, 100}),
+    MAIDEN_MATOMENOS_REGULAR(8366, 1, ChallengeMode.TOB_REGULAR, new int[] {75, 87, 100}),
+    MAIDEN_MATOMENOS_HARD(10828, 1, ChallengeMode.TOB_HARD, new int[] {75, 87, 100}),
 
     // Maiden heat-seeking blood spawn.
     MAIDEN_BLOOD_SPAWN_ENTRY(10821, 1, ChallengeMode.TOB_ENTRY, 0),
-    MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, ChallengeMode.TOB_REGULAR, new int[]{90, 105, 120}),
-    MAIDEN_BLOOD_SPAWN_HARD(10829, 1, ChallengeMode.TOB_HARD, new int[]{90, 105, 120}),
+    MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, ChallengeMode.TOB_REGULAR, new int[] {90, 105, 120}),
+    MAIDEN_BLOOD_SPAWN_HARD(10829, 1, ChallengeMode.TOB_HARD, new int[] {90, 105, 120}),
 
     // Bloat.
     BLOAT_ENTRY(10812, 1, ChallengeMode.TOB_ENTRY, 320),
-    BLOAT_REGULAR(8359, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
-    BLOAT_HARD(10813, 1, ChallengeMode.TOB_HARD, new int[]{1800, 2100, 2400}),
+    BLOAT_REGULAR(8359, 1, ChallengeMode.TOB_REGULAR, new int[] {1500, 1750, 2000}),
+    BLOAT_HARD(10813, 1, ChallengeMode.TOB_HARD, new int[] {1800, 2100, 2400}),
 
     // Melee small nylos.
     NYLOCAS_ISCHYROS_SMALL_ENTRY(10774, 1, ChallengeMode.TOB_ENTRY, 2),
-    NYLOCAS_ISCHYROS_SMALL_REGULAR(8342, 1, ChallengeMode.TOB_REGULAR, new int[]{8, 9, 11}),
-    NYLOCAS_ISCHYROS_SMALL_HARD(10791, 1, ChallengeMode.TOB_HARD, new int[]{8, 9, 11}),
+    NYLOCAS_ISCHYROS_SMALL_REGULAR(8342, 1, ChallengeMode.TOB_REGULAR, new int[] {8, 9, 11}),
+    NYLOCAS_ISCHYROS_SMALL_HARD(10791, 1, ChallengeMode.TOB_HARD, new int[] {8, 9, 11}),
     NYLOCAS_ISCHYROS_SMALL_AGGRO_ENTRY(10780, 1, ChallengeMode.TOB_ENTRY, 2),
-    NYLOCAS_ISCHYROS_SMALL_AGRRO_REGULAR(8348, 1, ChallengeMode.TOB_REGULAR, new int[]{8, 9, 11}),
-    NYLOCAS_ISCHYROS_SMALL_AGGRO_HARD(10797, 1, ChallengeMode.TOB_HARD, new int[]{8, 9, 11}),
+    NYLOCAS_ISCHYROS_SMALL_AGRRO_REGULAR(8348, 1, ChallengeMode.TOB_REGULAR, new int[] {8, 9, 11}),
+    NYLOCAS_ISCHYROS_SMALL_AGGRO_HARD(10797, 1, ChallengeMode.TOB_HARD, new int[] {8, 9, 11}),
 
     // Melee big nylos.
     NYLOCAS_ISCHYROS_BIG_ENTRY(10777, 1, ChallengeMode.TOB_ENTRY, 3),
-    NYLOCAS_ISCHYROS_BIG_REGULAR(8345, 1, ChallengeMode.TOB_REGULAR, new int[]{16, 19, 22}),
-    NYLOCAS_ISCHYROS_BIG_HARD(10794, 1, ChallengeMode.TOB_HARD, new int[]{16, 19, 22}),
+    NYLOCAS_ISCHYROS_BIG_REGULAR(8345, 1, ChallengeMode.TOB_REGULAR, new int[] {16, 19, 22}),
+    NYLOCAS_ISCHYROS_BIG_HARD(10794, 1, ChallengeMode.TOB_HARD, new int[] {16, 19, 22}),
     NYLOCAS_ISCHYROS_BIG_AGGRO_ENTRY(10783, 1, ChallengeMode.TOB_ENTRY, 3),
-    NYLOCAS_ISCHYROS_BIG_AGGRO_REGULAR(8351, 1, ChallengeMode.TOB_REGULAR, new int[]{16, 19, 22}),
-    NYLOCAS_ISCHYROS_BIG_AGGRO_HARD(10800, 1, ChallengeMode.TOB_HARD, new int[]{16, 19, 22}),
+    NYLOCAS_ISCHYROS_BIG_AGGRO_REGULAR(8351, 1, ChallengeMode.TOB_REGULAR, new int[] {16, 19, 22}),
+    NYLOCAS_ISCHYROS_BIG_AGGRO_HARD(10800, 1, ChallengeMode.TOB_HARD, new int[] {16, 19, 22}),
 
     // Range small nylos.
     NYLOCAS_TOXOBOLOS_SMALL_ENTRY(10775, 1, ChallengeMode.TOB_ENTRY, 2),
-    NYLOCAS_TOXOBOLOS_SMALL_REGULAR(8343, 1, ChallengeMode.TOB_REGULAR, new int[]{8, 9, 11}),
-    NYLOCAS_TOXOBOLOS_SMALL_HARD(10792, 1, ChallengeMode.TOB_HARD, new int[]{8, 9, 11}),
+    NYLOCAS_TOXOBOLOS_SMALL_REGULAR(8343, 1, ChallengeMode.TOB_REGULAR, new int[] {8, 9, 11}),
+    NYLOCAS_TOXOBOLOS_SMALL_HARD(10792, 1, ChallengeMode.TOB_HARD, new int[] {8, 9, 11}),
     NYLOCAS_TOXOBOLOS_SMALL_AGGRO_ENTRY(10781, 1, ChallengeMode.TOB_ENTRY, 2),
-    NYLOCAS_TOXOBOLOS_SMALL_AGRRO_REGULAR(8349, 1, ChallengeMode.TOB_REGULAR, new int[]{8, 9, 11}),
-    NYLOCAS_TOXOBOLOS_SMALL_AGGRO_HARD(10798, 1, ChallengeMode.TOB_HARD, new int[]{8, 9, 11}),
+    NYLOCAS_TOXOBOLOS_SMALL_AGRRO_REGULAR(8349, 1, ChallengeMode.TOB_REGULAR, new int[] {8, 9, 11}),
+    NYLOCAS_TOXOBOLOS_SMALL_AGGRO_HARD(10798, 1, ChallengeMode.TOB_HARD, new int[] {8, 9, 11}),
 
     // Range big nylos.
     NYLOCAS_TOXOBOLOS_BIG_ENTRY(10778, 1, ChallengeMode.TOB_ENTRY, 3),
-    NYLOCAS_TOXOBOLOS_BIG_REGULAR(8346, 1, ChallengeMode.TOB_REGULAR, new int[]{16, 19, 22}),
-    NYLOCAS_TOXOBOLOS_BIG_HARD(10795, 1, ChallengeMode.TOB_HARD, new int[]{16, 19, 22}),
+    NYLOCAS_TOXOBOLOS_BIG_REGULAR(8346, 1, ChallengeMode.TOB_REGULAR, new int[] {16, 19, 22}),
+    NYLOCAS_TOXOBOLOS_BIG_HARD(10795, 1, ChallengeMode.TOB_HARD, new int[] {16, 19, 22}),
     NYLOCAS_TOXOBOLOS_BIG_AGGRO_ENTRY(10784, 1, ChallengeMode.TOB_ENTRY, 3),
-    NYLOCAS_TOXOBOLOS_BIG_AGGRO_REGULAR(8352, 1, ChallengeMode.TOB_REGULAR, new int[]{16, 19, 22}),
-    NYLOCAS_TOXOBOLOS_BIG_AGGRO_HARD(10801, 1, ChallengeMode.TOB_HARD, new int[]{16, 19, 22}),
+    NYLOCAS_TOXOBOLOS_BIG_AGGRO_REGULAR(8352, 1, ChallengeMode.TOB_REGULAR, new int[] {16, 19, 22}),
+    NYLOCAS_TOXOBOLOS_BIG_AGGRO_HARD(10801, 1, ChallengeMode.TOB_HARD, new int[] {16, 19, 22}),
 
     // Mage small nylos.
     NYLOCAS_HAGIOS_SMALL_ENTRY(10776, 1, ChallengeMode.TOB_ENTRY, 2),
-    NYLOCAS_HAGIOS_SMALL_REGULAR(8344, 1, ChallengeMode.TOB_REGULAR, new int[]{8, 9, 11}),
-    NYLOCAS_HAGIOS_SMALL_HARD(10793, 1, ChallengeMode.TOB_HARD, new int[]{8, 9, 11}),
+    NYLOCAS_HAGIOS_SMALL_REGULAR(8344, 1, ChallengeMode.TOB_REGULAR, new int[] {8, 9, 11}),
+    NYLOCAS_HAGIOS_SMALL_HARD(10793, 1, ChallengeMode.TOB_HARD, new int[] {8, 9, 11}),
     NYLOCAS_HAGIOS_SMALL_AGGRO_ENTRY(10782, 1, ChallengeMode.TOB_ENTRY, 2),
-    NYLOCAS_HAGIOS_SMALL_AGRRO_REGULAR(8350, 1, ChallengeMode.TOB_REGULAR, new int[]{8, 9, 11}),
-    NYLOCAS_HAGIOS_SMALL_AGGRO_HARD(10799, 1, ChallengeMode.TOB_HARD, new int[]{8, 9, 11}),
+    NYLOCAS_HAGIOS_SMALL_AGRRO_REGULAR(8350, 1, ChallengeMode.TOB_REGULAR, new int[] {8, 9, 11}),
+    NYLOCAS_HAGIOS_SMALL_AGGRO_HARD(10799, 1, ChallengeMode.TOB_HARD, new int[] {8, 9, 11}),
 
     // Mage big nylos.
     NYLOCAS_HAGIOS_BIG_ENTRY(10779, 1, ChallengeMode.TOB_ENTRY, 3),
-    NYLOCAS_HAGIOS_BIG_REGULAR(8347, 1, ChallengeMode.TOB_REGULAR, new int[]{16, 19, 22}),
-    NYLOCAS_HAGIOS_BIG_HARD(10796, 1, ChallengeMode.TOB_HARD, new int[]{16, 19, 22}),
+    NYLOCAS_HAGIOS_BIG_REGULAR(8347, 1, ChallengeMode.TOB_REGULAR, new int[] {16, 19, 22}),
+    NYLOCAS_HAGIOS_BIG_HARD(10796, 1, ChallengeMode.TOB_HARD, new int[] {16, 19, 22}),
     NYLOCAS_HAGIOS_BIG_AGGRO_ENTRY(10785, 1, ChallengeMode.TOB_ENTRY, 3),
-    NYLOCAS_HAGIOS_BIG_AGGRO_REGULAR(8353, 1, ChallengeMode.TOB_REGULAR, new int[]{16, 19, 22}),
-    NYLOCAS_HAGIOS_BIG_AGGRO_HARD(10802, 1, ChallengeMode.TOB_HARD, new int[]{16, 19, 22}),
+    NYLOCAS_HAGIOS_BIG_AGGRO_REGULAR(8353, 1, ChallengeMode.TOB_REGULAR, new int[] {16, 19, 22}),
+    NYLOCAS_HAGIOS_BIG_AGGRO_HARD(10802, 1, ChallengeMode.TOB_HARD, new int[] {16, 19, 22}),
 
     // HMT nylo prince.
-    NYLOCAS_PRINKIPAS(10803, 4, ChallengeMode.TOB_HARD, new int[]{300, 350, 400}),
+    NYLOCAS_PRINKIPAS(10803, 4, ChallengeMode.TOB_HARD, new int[] {300, 350, 400}),
 
     // Nylo king.
     NYLOCAS_VASILIAS_ENTRY(10787, 4, ChallengeMode.TOB_ENTRY, 360),
-    NYLOCAS_VASILIAS_REGULAR(8354, 4, ChallengeMode.TOB_REGULAR, new int[]{1875, 2187, 2500}),
-    NYLOCAS_VASILIAS_HARD(10807, 4, ChallengeMode.TOB_HARD, new int[]{1875, 2187, 2500}),
+    NYLOCAS_VASILIAS_REGULAR(8354, 4, ChallengeMode.TOB_REGULAR, new int[] {1875, 2187, 2500}),
+    NYLOCAS_VASILIAS_HARD(10807, 4, ChallengeMode.TOB_HARD, new int[] {1875, 2187, 2500}),
 
     // Inactive Sotetseg (prior to room entry or during maze).
     SOTETSEG_IDLE_ENTRY(10864, 1, ChallengeMode.TOB_ENTRY, 560),
-    SOTETSEG_IDLE_REGULAR(8387, 1, ChallengeMode.TOB_REGULAR, new int[]{3000, 3500, 4000}),
-    SOTETSEG_IDLE_HARD(10867, 1, ChallengeMode.TOB_HARD, new int[]{3000, 3500, 4000}),
+    SOTETSEG_IDLE_REGULAR(8387, 1, ChallengeMode.TOB_REGULAR, new int[] {3000, 3500, 4000}),
+    SOTETSEG_IDLE_HARD(10867, 1, ChallengeMode.TOB_HARD, new int[] {3000, 3500, 4000}),
 
     // Main Sotetseg boss.
     SOTETSEG_ENTRY(10865, 1, ChallengeMode.TOB_ENTRY, 560),
-    SOTETSEG_REGULAR(8388, 1, ChallengeMode.TOB_REGULAR, new int[]{3000, 3500, 4000}),
-    SOTETSEG_HARD(10868, 1, ChallengeMode.TOB_HARD, new int[]{3000, 3500, 4000}),
+    SOTETSEG_REGULAR(8388, 1, ChallengeMode.TOB_REGULAR, new int[] {3000, 3500, 4000}),
+    SOTETSEG_HARD(10868, 1, ChallengeMode.TOB_HARD, new int[] {3000, 3500, 4000}),
 
     // Inactive Xarpus prior to room entry.
     XARPUS_IDLE_ENTRY(10766, 1, ChallengeMode.TOB_ENTRY, 680),
-    XARPUS_IDLE_REGULAR(8338, 1, ChallengeMode.TOB_REGULAR, new int[]{3810, 4445, 5080}),
-    XARPUS_IDLE_HARD(10770, 1, ChallengeMode.TOB_HARD, new int[]{4500, 5250, 6000}),
+    XARPUS_IDLE_REGULAR(8338, 1, ChallengeMode.TOB_REGULAR, new int[] {3810, 4445, 5080}),
+    XARPUS_IDLE_HARD(10770, 1, ChallengeMode.TOB_HARD, new int[] {4500, 5250, 6000}),
 
     // Xarpus healing during P1 exhumes.
     XARPUS_P1_ENTRY(10767, 1, ChallengeMode.TOB_ENTRY, 680),
-    XARPUS_P1_REGULAR(8339, 1, ChallengeMode.TOB_REGULAR, new int[]{3810, 4445, 5080}),
-    XARPUS_P1_HARD(10771, 1, ChallengeMode.TOB_HARD, new int[]{4500, 5250, 6000}),
+    XARPUS_P1_REGULAR(8339, 1, ChallengeMode.TOB_REGULAR, new int[] {3810, 4445, 5080}),
+    XARPUS_P1_HARD(10771, 1, ChallengeMode.TOB_HARD, new int[] {4500, 5250, 6000}),
 
     // Xarpus main phase and post-screech.
     XARPUS_ENTRY(10768, 1, ChallengeMode.TOB_ENTRY, 680),
-    XARPUS_REGULAR(8340, 1, ChallengeMode.TOB_REGULAR, new int[]{3810, 4445, 5080}),
-    XARPUS_HARD(10772, 1, ChallengeMode.TOB_HARD, new int[]{4500, 5250, 6000}),
+    XARPUS_REGULAR(8340, 1, ChallengeMode.TOB_REGULAR, new int[] {3810, 4445, 5080}),
+    XARPUS_HARD(10772, 1, ChallengeMode.TOB_HARD, new int[] {4500, 5250, 6000}),
 
     // Verzik sitting at her throne prior to combat.
     VERZIK_IDLE_ENTRY(NpcID.VERZIK_INITIAL_STORY, 1, ChallengeMode.TOB_ENTRY, 240),
-    VERZIK_IDLE_REGULAR(NpcID.VERZIK_INITIAL, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
-    VERZIK_IDLE_REGULAR_QS(NpcID.VERZIK_INITIAL_QUICKSTART, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
-    VERZIK_IDLE_HARD(NpcID.VERZIK_INITIAL_HARD, 1, ChallengeMode.TOB_HARD, new int[]{1500, 1750, 2000}),
-    VERZIK_IDLE_HARD_QS(NpcID.VERZIK_INITIAL_HARD_QUICKSTART, 1, ChallengeMode.TOB_HARD, new int[]{1500, 1750, 2000}),
+    VERZIK_IDLE_REGULAR(NpcID.VERZIK_INITIAL, 1, ChallengeMode.TOB_REGULAR, new int[] {1500, 1750, 2000}),
+    VERZIK_IDLE_REGULAR_QS(NpcID.VERZIK_INITIAL_QUICKSTART, 1, ChallengeMode.TOB_REGULAR, new int[] {1500, 1750, 2000}),
+    VERZIK_IDLE_HARD(NpcID.VERZIK_INITIAL_HARD, 1, ChallengeMode.TOB_HARD, new int[] {1500, 1750, 2000}),
+    VERZIK_IDLE_HARD_QS(NpcID.VERZIK_INITIAL_HARD_QUICKSTART, 1, ChallengeMode.TOB_HARD, new int[] {1500, 1750, 2000}),
 
     // Verzik P1.
     VERZIK_P1_ENTRY(NpcID.VERZIK_PHASE1_STORY, 1, ChallengeMode.TOB_ENTRY, 240),
-    VERZIK_P1_REGULAR(NpcID.VERZIK_PHASE1, 1, ChallengeMode.TOB_REGULAR, new int[]{1500, 1750, 2000}),
-    VERZIK_P1_HARD(NpcID.VERZIK_PHASE1_HARD, 1, ChallengeMode.TOB_HARD, new int[]{1500, 1750, 2000}),
+    VERZIK_P1_REGULAR(NpcID.VERZIK_PHASE1, 1, ChallengeMode.TOB_REGULAR, new int[] {1500, 1750, 2000}),
+    VERZIK_P1_HARD(NpcID.VERZIK_PHASE1_HARD, 1, ChallengeMode.TOB_HARD, new int[] {1500, 1750, 2000}),
 
     VERZIK_P1_TRANSITION_ENTRY(NpcID.VERZIK_PHASE1_TO2_TRANSITION_STORY, 1, ChallengeMode.TOB_ENTRY, 0),
     VERZIK_P1_TRANSITION_REGULAR(NpcID.VERZIK_PHASE1_TO2_TRANSITION, 1, ChallengeMode.TOB_REGULAR, 0),
@@ -154,13 +153,13 @@ public enum TobNpc {
 
     // Verzik P2, including the transition to P3.
     VERZIK_P2_ENTRY(NpcID.VERZIK_PHASE2_STORY, 2, ChallengeMode.TOB_ENTRY, 320),
-    VERZIK_P2_REGULAR(NpcID.VERZIK_PHASE2, 2, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
-    VERZIK_P2_HARD(NpcID.VERZIK_PHASE2_HARD, 2, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
+    VERZIK_P2_REGULAR(NpcID.VERZIK_PHASE2, 2, ChallengeMode.TOB_REGULAR, new int[] {2437, 2843, 3250}),
+    VERZIK_P2_HARD(NpcID.VERZIK_PHASE2_HARD, 2, ChallengeMode.TOB_HARD, new int[] {2437, 2843, 3250}),
 
     // Verzik P3.
     VERZIK_P3_ENTRY(NpcID.VERZIK_PHASE3_STORY, 1, ChallengeMode.TOB_ENTRY, 320),
-    VERZIK_P3_REGULAR(NpcID.VERZIK_PHASE3, 1, ChallengeMode.TOB_REGULAR, new int[]{2437, 2843, 3250}),
-    VERZIK_P3_HARD(NpcID.VERZIK_PHASE3_HARD, 1, ChallengeMode.TOB_HARD, new int[]{2437, 2843, 3250}),
+    VERZIK_P3_REGULAR(NpcID.VERZIK_PHASE3, 1, ChallengeMode.TOB_REGULAR, new int[] {2437, 2843, 3250}),
+    VERZIK_P3_HARD(NpcID.VERZIK_PHASE3_HARD, 1, ChallengeMode.TOB_HARD, new int[] {2437, 2843, 3250}),
 
     // Verzik death animation.
     VERZIK_DEATH_ENTRY(NpcID.VERZIK_DEATH_BAT_STORY, 1, ChallengeMode.TOB_ENTRY, 0),
@@ -189,21 +188,23 @@ public enum TobNpc {
 
     // Red crabs at Verzik.
     VERZIK_MATOMENOS_ENTRY(10845, 1, ChallengeMode.TOB_ENTRY, 0),
-    VERZIK_MATOMENOS_REGULAR(8385, 1, ChallengeMode.TOB_REGULAR, new int[]{150, 175, 200}),
-    VERZIK_MATOMENOS_HARD(10862, 1, ChallengeMode.TOB_HARD, new int[]{150, 175, 200}),
+    VERZIK_MATOMENOS_REGULAR(8385, 1, ChallengeMode.TOB_REGULAR, new int[] {150, 175, 200}),
+    VERZIK_MATOMENOS_HARD(10862, 1, ChallengeMode.TOB_HARD, new int[] {150, 175, 200}),
 
     // Tornadoes at Verzik.
     VERZIK_TORNADO_ENTRY(10846, 1, ChallengeMode.TOB_ENTRY, 0),
     VERZIK_TORNADO_REGULAR(8386, 1, ChallengeMode.TOB_REGULAR, 0),
     VERZIK_TORNADO_HARD(10863, 1, ChallengeMode.TOB_HARD, 0),
-
     ;
 
     @Getter
     private final int id;
+
     private final int idRange;
+
     @Getter
     private final ChallengeMode mode;
+
     private final int[] hitpointsByScale;
 
     private static final ImmutableMap<Integer, TobNpc> npcsById;
@@ -235,11 +236,11 @@ public enum TobNpc {
         this.id = id;
         this.idRange = idRange;
         this.mode = mode;
-        this.hitpointsByScale = new int[]{hitpoints, hitpoints, hitpoints};
+        this.hitpointsByScale = new int[] {hitpoints, hitpoints, hitpoints};
     }
 
     TobNpc(int id, ChallengeMode mode) {
-        this(id, 1, mode, new int[]{0, 0, 0});
+        this(id, 1, mode, new int[] {0, 0, 0});
     }
 
     public boolean hasId(int id) {
@@ -268,12 +269,20 @@ public enum TobNpc {
 
     public static boolean isNylocasIschyrosSmall(int id) {
         return idMatches(id, NYLOCAS_ISCHYROS_SMALL_ENTRY, NYLOCAS_ISCHYROS_SMALL_REGULAR, NYLOCAS_ISCHYROS_SMALL_HARD)
-                || idMatches(id, NYLOCAS_ISCHYROS_SMALL_AGGRO_ENTRY, NYLOCAS_ISCHYROS_SMALL_AGRRO_REGULAR, NYLOCAS_ISCHYROS_SMALL_AGGRO_HARD);
+                || idMatches(
+                        id,
+                        NYLOCAS_ISCHYROS_SMALL_AGGRO_ENTRY,
+                        NYLOCAS_ISCHYROS_SMALL_AGRRO_REGULAR,
+                        NYLOCAS_ISCHYROS_SMALL_AGGRO_HARD);
     }
 
     public static boolean isNylocasIschyrosBig(int id) {
         return idMatches(id, NYLOCAS_ISCHYROS_BIG_ENTRY, NYLOCAS_ISCHYROS_BIG_REGULAR, NYLOCAS_ISCHYROS_BIG_HARD)
-                || idMatches(id, NYLOCAS_ISCHYROS_BIG_AGGRO_ENTRY, NYLOCAS_ISCHYROS_BIG_AGGRO_REGULAR, NYLOCAS_ISCHYROS_BIG_AGGRO_HARD);
+                || idMatches(
+                        id,
+                        NYLOCAS_ISCHYROS_BIG_AGGRO_ENTRY,
+                        NYLOCAS_ISCHYROS_BIG_AGGRO_REGULAR,
+                        NYLOCAS_ISCHYROS_BIG_AGGRO_HARD);
     }
 
     public static boolean isNylocasIschyros(int id) {
@@ -281,13 +290,25 @@ public enum TobNpc {
     }
 
     public static boolean isNylocasToxobolosSmall(int id) {
-        return idMatches(id, NYLOCAS_TOXOBOLOS_SMALL_ENTRY, NYLOCAS_TOXOBOLOS_SMALL_REGULAR, NYLOCAS_TOXOBOLOS_SMALL_HARD)
-                || idMatches(id, NYLOCAS_TOXOBOLOS_SMALL_AGGRO_ENTRY, NYLOCAS_TOXOBOLOS_SMALL_AGRRO_REGULAR, NYLOCAS_TOXOBOLOS_SMALL_AGGRO_HARD);
+        return idMatches(
+                        id,
+                        NYLOCAS_TOXOBOLOS_SMALL_ENTRY,
+                        NYLOCAS_TOXOBOLOS_SMALL_REGULAR,
+                        NYLOCAS_TOXOBOLOS_SMALL_HARD)
+                || idMatches(
+                        id,
+                        NYLOCAS_TOXOBOLOS_SMALL_AGGRO_ENTRY,
+                        NYLOCAS_TOXOBOLOS_SMALL_AGRRO_REGULAR,
+                        NYLOCAS_TOXOBOLOS_SMALL_AGGRO_HARD);
     }
 
     public static boolean isNylocasToxobolosBig(int id) {
         return idMatches(id, NYLOCAS_TOXOBOLOS_BIG_ENTRY, NYLOCAS_TOXOBOLOS_BIG_REGULAR, NYLOCAS_TOXOBOLOS_BIG_HARD)
-                || idMatches(id, NYLOCAS_TOXOBOLOS_BIG_AGGRO_ENTRY, NYLOCAS_TOXOBOLOS_BIG_AGGRO_REGULAR, NYLOCAS_TOXOBOLOS_BIG_AGGRO_HARD);
+                || idMatches(
+                        id,
+                        NYLOCAS_TOXOBOLOS_BIG_AGGRO_ENTRY,
+                        NYLOCAS_TOXOBOLOS_BIG_AGGRO_REGULAR,
+                        NYLOCAS_TOXOBOLOS_BIG_AGGRO_HARD);
     }
 
     public static boolean isNylocasToxobolos(int id) {
@@ -296,12 +317,20 @@ public enum TobNpc {
 
     public static boolean isNylocasHagiosSmall(int id) {
         return idMatches(id, NYLOCAS_HAGIOS_SMALL_ENTRY, NYLOCAS_HAGIOS_SMALL_REGULAR, NYLOCAS_HAGIOS_SMALL_HARD)
-                || idMatches(id, NYLOCAS_HAGIOS_SMALL_AGGRO_ENTRY, NYLOCAS_HAGIOS_SMALL_AGRRO_REGULAR, NYLOCAS_HAGIOS_SMALL_AGGRO_HARD);
+                || idMatches(
+                        id,
+                        NYLOCAS_HAGIOS_SMALL_AGGRO_ENTRY,
+                        NYLOCAS_HAGIOS_SMALL_AGRRO_REGULAR,
+                        NYLOCAS_HAGIOS_SMALL_AGGRO_HARD);
     }
 
     public static boolean isNylocasHagiosBig(int id) {
         return idMatches(id, NYLOCAS_HAGIOS_BIG_ENTRY, NYLOCAS_HAGIOS_BIG_REGULAR, NYLOCAS_HAGIOS_BIG_HARD)
-                || idMatches(id, NYLOCAS_HAGIOS_BIG_AGGRO_ENTRY, NYLOCAS_HAGIOS_BIG_AGGRO_REGULAR, NYLOCAS_HAGIOS_BIG_AGGRO_HARD);
+                || idMatches(
+                        id,
+                        NYLOCAS_HAGIOS_BIG_AGGRO_ENTRY,
+                        NYLOCAS_HAGIOS_BIG_AGGRO_REGULAR,
+                        NYLOCAS_HAGIOS_BIG_AGGRO_HARD);
     }
 
     public static boolean isNylocasHagios(int id) {
@@ -323,8 +352,10 @@ public enum TobNpc {
     public static boolean isDroppingNyloBoss(int id) {
         // The base ID of each Nylo boss is the NPC ID of it dropping from the ceiling, so do a strict check agsinst
         // those, ignoring the ID range.
-        return id == NYLOCAS_PRINKIPAS.id || id == NYLOCAS_VASILIAS_ENTRY.id
-                || id == NYLOCAS_VASILIAS_REGULAR.id || id == NYLOCAS_VASILIAS_HARD.id;
+        return id == NYLOCAS_PRINKIPAS.id
+                || id == NYLOCAS_VASILIAS_ENTRY.id
+                || id == NYLOCAS_VASILIAS_REGULAR.id
+                || id == NYLOCAS_VASILIAS_HARD.id;
     }
 
     public static boolean isSotetsegIdle(int id) {
@@ -372,7 +403,13 @@ public enum TobNpc {
     }
 
     public static boolean isVerzikIdle(int id) {
-        return idMatches(id, VERZIK_IDLE_ENTRY, VERZIK_IDLE_REGULAR, VERZIK_IDLE_REGULAR_QS, VERZIK_IDLE_HARD, VERZIK_IDLE_HARD_QS);
+        return idMatches(
+                id,
+                VERZIK_IDLE_ENTRY,
+                VERZIK_IDLE_REGULAR,
+                VERZIK_IDLE_REGULAR_QS,
+                VERZIK_IDLE_HARD,
+                VERZIK_IDLE_HARD_QS);
     }
 
     public boolean isVerzikIdle() {
@@ -420,8 +457,12 @@ public enum TobNpc {
     }
 
     public static boolean isAnyVerzik(int id) {
-        return isVerzikIdle(id) || isVerzikP1(id) || isVerzikP1Transition(id)
-                || isVerzikP2(id) || isVerzikP3(id) || isVerzikDeath(id);
+        return isVerzikIdle(id)
+                || isVerzikP1(id)
+                || isVerzikP1Transition(id)
+                || isVerzikP2(id)
+                || isVerzikP3(id)
+                || isVerzikDeath(id);
     }
 
     public boolean isAnyVerzik() {

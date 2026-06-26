@@ -31,8 +31,7 @@ import net.runelite.api.NPC;
  * A tracked NPC without any special properties, existing as a simple wrapper around a Runelite NPC.
  */
 public class BasicTrackedNpc extends TrackedNpc {
-    public static class EmptyProperties extends TrackedNpc.Properties {
-    }
+    public static class EmptyProperties extends TrackedNpc.Properties {}
 
     public BasicTrackedNpc(@NonNull NPC npc, long roomId, Hitpoints hitpoints) {
         super(npc, roomId, hitpoints);
