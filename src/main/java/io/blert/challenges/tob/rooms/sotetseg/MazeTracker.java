@@ -24,12 +24,11 @@
 package io.blert.challenges.tob.rooms.sotetseg;
 
 import com.google.common.collect.ImmutableList;
+import java.util.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import org.apache.commons.lang3.tuple.Pair;
-
-import java.util.*;
 
 @Getter
 @Slf4j
@@ -69,7 +68,8 @@ public class MazeTracker {
                 }
 
                 final Pair<Integer, Integer> step = path[index++];
-                return new WorldPoint(origin.getX() + step.getLeft(), origin.getY() + step.getRight(), origin.getPlane());
+                return new WorldPoint(
+                        origin.getX() + step.getLeft(), origin.getY() + step.getRight(), origin.getPlane());
             }
         }
 
@@ -160,8 +160,7 @@ public class MazeTracker {
             //   o x E
             //   o x o
             //   S x o
-            new InfillPath(2, 2, Pair.of(0, 0), Pair.of(1, 0), Pair.of(1, 1), Pair.of(1, 2), Pair.of(2, 2))
-    );
+            new InfillPath(2, 2, Pair.of(0, 0), Pair.of(1, 0), Pair.of(1, 1), Pair.of(1, 2), Pair.of(2, 2)));
 
     // Infill paths starting from points on pivot rows. Pivot rows only contain a single point, so the infill paths
     // cannot move horizontally on rows 0 or 2.
@@ -215,15 +214,13 @@ public class MazeTracker {
             //   o o E
             //   x x x
             //   S o o
-            new InfillPath(2, 2, Pair.of(0, 0), Pair.of(0, 1), Pair.of(1, 1), Pair.of(2, 1), Pair.of(2, 2))
-    );
+            new InfillPath(2, 2, Pair.of(0, 0), Pair.of(0, 1), Pair.of(1, 1), Pair.of(2, 1), Pair.of(2, 2)));
 
     private final List<WorldPoint> overworldPoints = new ArrayList<>();
     private final List<WorldPoint> underworldPivots = new ArrayList<>();
     private final Set<WorldPoint> raggedPoints = new HashSet<>();
 
-    public MazeTracker() {
-    }
+    public MazeTracker() {}
 
     public void addPotentialOverworldPoint(WorldPoint point) {
         if (overworldPoints.contains(point)) {

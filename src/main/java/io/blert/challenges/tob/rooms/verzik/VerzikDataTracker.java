@@ -35,6 +35,9 @@ import io.blert.events.EventType;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.PlayerAttackEvent;
 import io.blert.events.tob.*;
+import java.util.*;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -42,10 +45,6 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import org.apache.commons.lang3.tuple.Pair;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.*;
 
 @Slf4j
 public class VerzikDataTracker extends RoomDataTracker {
@@ -107,8 +106,7 @@ public class VerzikDataTracker extends RoomDataTracker {
     // Map of tornado NPC index to the tornado, as indexes are stable across spawns.
     private final Map<Integer, BasicTrackedNpc> tornadoes = new HashMap<>();
     private final Map<Player, Number> tornadoHealTicks = new HashMap<>();
-    private final Map<Actor, List<Hitsplat>> hitsplatsThisTick =
-            new HashMap<>();
+    private final Map<Actor, List<Hitsplat>> hitsplatsThisTick = new HashMap<>();
     private final List<Player> p2BounceChances = new ArrayList<>();
     private int p2LastBounce;
 
@@ -121,6 +119,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         private int untilZap;
         private int untilPurple;
         private boolean foundAttack;
+
         @Getter
         private Player target;
 
@@ -158,9 +157,8 @@ public class VerzikDataTracker extends RoomDataTracker {
 
             if (attack != null) {
                 foundAttack = true;
-                this.target = projectile.getTargetActor() instanceof Player
-                        ? (Player) projectile.getTargetActor()
-                        : null;
+                this.target =
+                        projectile.getTargetActor() instanceof Player ? (Player) projectile.getTargetActor() : null;
             }
 
             return attack;
@@ -207,23 +205,26 @@ public class VerzikDataTracker extends RoomDataTracker {
 
     @Override
     protected void onRoomStart() {
-        client.getTopLevelWorldView().npcs().stream().filter(npc -> TobNpc.isAnyVerzik(npc.getId())).findFirst().ifPresent(npc -> {
-            TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
+        client.getTopLevelWorldView().npcs().stream()
+                .filter(npc -> TobNpc.isAnyVerzik(npc.getId()))
+                .findFirst()
+                .ifPresent(npc -> {
+                    TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
 
-            if (verzik == null) {
-                verzik = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                        new Hitpoints(tobNpc, theatreChallenge.getScale()));
-                addTrackedNpc(verzik);
-            }
+                    if (verzik == null) {
+                        verzik = new HpVarbitTrackedNpc(
+                                npc, tobNpc, generateRoomId(npc), new Hitpoints(tobNpc, theatreChallenge.getScale()));
+                        addTrackedNpc(verzik);
+                    }
 
-            if (tobNpc.isVerzikP1()) {
-                startVerzikPhase(VerzikPhase.P1, getTick(), true);
-            } else if (tobNpc.isVerzikP2()) {
-                startVerzikPhase(VerzikPhase.P2, getTick(), true);
-            } else if (tobNpc.isVerzikP3()) {
-                startVerzikPhase(VerzikPhase.P3, getTick(), true);
-            }
-        });
+                    if (tobNpc.isVerzikP1()) {
+                        startVerzikPhase(VerzikPhase.P1, getTick(), true);
+                    } else if (tobNpc.isVerzikP2()) {
+                        startVerzikPhase(VerzikPhase.P2, getTick(), true);
+                    } else if (tobNpc.isVerzikP3()) {
+                        startVerzikPhase(VerzikPhase.P3, getTick(), true);
+                    }
+                });
         phaseStartTick = 0;
     }
 
@@ -318,7 +319,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         if (npc.getId() == NpcID.SUPPORTING_PILLAR) {
-            BasicTrackedNpc pillar = new BasicTrackedNpc(npc, TobNpc.VERZIK_PILLAR, generateRoomId(npc), new Hitpoints(0));
+            BasicTrackedNpc pillar =
+                    new BasicTrackedNpc(npc, TobNpc.VERZIK_PILLAR, generateRoomId(npc), new Hitpoints(0));
             pillars.add(pillar);
             return Optional.of(pillar);
         }
@@ -326,7 +328,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         if (npc.getId() == NpcID.COLLAPSING_PILLAR) {
             // Find the pillar that collapsed and despawn it.
             pillars.stream()
-                    .filter(pillar -> npc.getWorldArea().contains2D(pillar.getNpc().getWorldLocation()))
+                    .filter(pillar ->
+                            npc.getWorldArea().contains2D(pillar.getNpc().getWorldLocation()))
                     .findFirst()
                     .ifPresent(collapsed -> {
                         pillars.remove(collapsed);
@@ -357,8 +360,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
 
         if (tobNpc.isVerzikAthanatos()) {
-            BasicTrackedNpc purpleCrab = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                    new Hitpoints(tobNpc, theatreChallenge.getScale()));
+            BasicTrackedNpc purpleCrab = new BasicTrackedNpc(
+                    npc, tobNpc, generateRoomId(npc), new Hitpoints(tobNpc, theatreChallenge.getScale()));
             specialCrabs.add(purpleCrab);
             return Optional.of(purpleCrab);
         }
@@ -368,8 +371,8 @@ public class VerzikDataTracker extends RoomDataTracker {
                 startNewRedsPhase(tick);
             }
 
-            BasicTrackedNpc crab = new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
-                    new Hitpoints(tobNpc, theatreChallenge.getScale()));
+            BasicTrackedNpc crab = new BasicTrackedNpc(
+                    npc, tobNpc, generateRoomId(npc), new Hitpoints(tobNpc, theatreChallenge.getScale()));
             specialCrabs.add(crab);
             return Optional.of(crab);
         }
@@ -377,8 +380,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         if (tobNpc.isVerzikTornado()) {
             BasicTrackedNpc existing = tornadoes.get(npc.getIndex());
             long roomId = existing != null ? existing.getRoomId() : generateRoomId(npc);
-            BasicTrackedNpc tornado = new BasicTrackedNpc(npc, tobNpc, roomId,
-                    new Hitpoints(tobNpc, theatreChallenge.getScale()));
+            BasicTrackedNpc tornado =
+                    new BasicTrackedNpc(npc, tobNpc, roomId, new Hitpoints(tobNpc, theatreChallenge.getScale()));
             tornadoes.put(npc.getIndex(), tornado);
             return Optional.of(tornado);
         }
@@ -566,9 +569,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         if (player.hasSpotAnim(P2_BOUNCE_GRAPHIC)) {
             if (p2LastBounce >= tick - 3) {
                 int chances = p2BounceChances.size();
-                dispatchEvent(new VerzikBounceEvent(tick, p2LastBounce, chances,
-                        theatreChallenge.getLivingRaiderCount() - chances,
-                        player));
+                dispatchEvent(new VerzikBounceEvent(
+                        tick, p2LastBounce, chances, theatreChallenge.getLivingRaiderCount() - chances, player));
             }
             p2LastBounce = -1;
             p2BounceChances.clear();
@@ -586,15 +588,12 @@ public class VerzikDataTracker extends RoomDataTracker {
                     int attackTick = pair.getLeft().intValue();
 
                     if (attackTick >= getTick() - 4) {
-                        dispatchEvent(
-                                new VerzikDawnEvent(
-                                        getTick(),
-                                        getWorldLocation(verzik),
-                                        attackTick,
-                                        hitsplat.getAmount(),
-                                        pair.getRight()
-                                )
-                        );
+                        dispatchEvent(new VerzikDawnEvent(
+                                getTick(),
+                                getWorldLocation(verzik),
+                                attackTick,
+                                hitsplat.getAmount(),
+                                pair.getRight()));
                         iter.remove();
                         break;
                     }
@@ -602,7 +601,8 @@ public class VerzikDataTracker extends RoomDataTracker {
             }
         } else if (phase == VerzikPhase.P3) {
             // Hitsplats are tracked for P3 healing.
-            hitsplatsThisTick.computeIfAbsent(event.getActor(), k -> new ArrayList<>())
+            hitsplatsThisTick
+                    .computeIfAbsent(event.getActor(), k -> new ArrayList<>())
                     .add(event.getHitsplat());
         }
     }
@@ -610,7 +610,8 @@ public class VerzikDataTracker extends RoomDataTracker {
     @Override
     protected void onItemSpawn(ItemSpawned event) {
         if (event.getItem().getId() == DAWNBRINGER_ITEM_ID
-                && verzik != null && TobNpc.isVerzikP1(verzik.getNpc().getId())) {
+                && verzik != null
+                && TobNpc.isVerzikP1(verzik.getNpc().getId())) {
             dispatchEvent(new VerzikDawnDropEvent(getTick(), getWorldLocation(event.getTile()), true));
         }
     }
@@ -618,7 +619,8 @@ public class VerzikDataTracker extends RoomDataTracker {
     @Override
     protected void onItemDespawn(ItemDespawned event) {
         if (event.getItem().getId() == DAWNBRINGER_ITEM_ID
-                && verzik != null && TobNpc.isVerzikP1(verzik.getNpc().getId())) {
+                && verzik != null
+                && TobNpc.isVerzikP1(verzik.getNpc().getId())) {
             dispatchEvent(new VerzikDawnDropEvent(getTick(), getWorldLocation(event.getTile()), false));
         }
     }
@@ -655,8 +657,7 @@ public class VerzikDataTracker extends RoomDataTracker {
         boolean isMeleeDistance = verzikArea.isInMeleeDistance(tank.getWorldLocation());
         boolean isUnderVerzik = verzikArea.contains(tank.getWorldLocation());
         if (isMeleeDistance && !isUnderVerzik) {
-            log.debug("Player {} chanced a melee on tick {} ({})",
-                    tank.getName(), getTick(), formattedRoomTime());
+            log.debug("Player {} chanced a melee on tick {} ({})", tank.getName(), getTick(), formattedRoomTime());
             p3MeleeChanceTicks.add(nextVerzikAttackTick);
         }
     }
@@ -694,8 +695,7 @@ public class VerzikDataTracker extends RoomDataTracker {
             case P2:
                 if (nextVerzikAttack == null && tick != redCrabsTick) {
                     for (Projectile projectile : client.getProjectiles()) {
-                        NpcAttack maybeAttack =
-                                p2AttackTracker.checkProjectile(projectile);
+                        NpcAttack maybeAttack = p2AttackTracker.checkProjectile(projectile);
                         if (maybeAttack != null) {
                             nextVerzikAttack = maybeAttack;
                             break;
@@ -708,8 +708,8 @@ public class VerzikDataTracker extends RoomDataTracker {
                     p2AttackTracker.trackAttack(nextVerzikAttack);
                     if (nextVerzikAttack != NpcAttack.TOB_VERZIK_P2_BOUNCE) {
                         int chances = p2BounceChances.size();
-                        dispatchEvent(new VerzikBounceEvent(tick, chances,
-                                theatreChallenge.getLivingRaiderCount() - chances));
+                        dispatchEvent(new VerzikBounceEvent(
+                                tick, chances, theatreChallenge.getLivingRaiderCount() - chances));
                         p2BounceChances.clear();
                         p2LastBounce = -1;
                     }
@@ -737,7 +737,8 @@ public class VerzikDataTracker extends RoomDataTracker {
                             // ticks total.
                             // TODO(frolv): `unidentifiedVerzikAttackTick` is deliberately not set here, as the green
                             // ball projectile seems to hide the regular attack projectiles. Investigate this further.
-                            dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_VERZIK_P3_BALL, verzik));
+                            dispatchEvent(
+                                    new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_VERZIK_P3_BALL, verzik));
                             nextSpecial = nextSpecial.next();
                             verzikAttacksUntilSpecial += 1;
                             nextVerzikAttackTick += P3_GREEN_BALL_TICK_DELAY - attackSpeed();
@@ -783,11 +784,10 @@ public class VerzikDataTracker extends RoomDataTracker {
         if (nextVerzikAttack != null && verzik != null) {
             WorldPoint location = getWorldLocation(verzik);
             if (target != null) {
-                dispatchEvent(new NpcAttackEvent(
-                        getStage(), tick, location, nextVerzikAttack, verzik, target.getName()));
+                dispatchEvent(
+                        new NpcAttackEvent(getStage(), tick, location, nextVerzikAttack, verzik, target.getName()));
             } else {
-                dispatchEvent(new NpcAttackEvent(
-                        getStage(), tick, location, nextVerzikAttack, verzik));
+                dispatchEvent(new NpcAttackEvent(getStage(), tick, location, nextVerzikAttack, verzik));
             }
         }
 

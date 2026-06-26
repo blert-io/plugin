@@ -24,11 +24,10 @@
 package io.blert.json;
 
 import io.blert.events.EventHandler;
+import java.util.*;
+import javax.annotation.Nullable;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.annotation.Nullable;
-import java.util.*;
 
 /**
  * An event handler which converts events to their corresponding JSON representation.

@@ -63,8 +63,10 @@ public enum Prayer {
 
     @Getter(AccessLevel.MODULE)
     private final int prayerBook;
+
     @Getter(AccessLevel.MODULE)
     private final int id;
+
     @Getter
     private final net.runelite.api.Prayer runelitePrayer;
 

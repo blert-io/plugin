@@ -35,8 +35,7 @@ public class VerzikDawnEvent extends TobEvent {
     private final int damage;
     private final String player;
 
-    public VerzikDawnEvent(int tick, WorldPoint point,
-                           int attackTick, int damage, @NonNull String player) {
+    public VerzikDawnEvent(int tick, WorldPoint point, int attackTick, int damage, @NonNull String player) {
         super(EventType.VERZIK_DAWN, Room.VERZIK, tick, point);
         this.attackTick = attackTick;
         this.damage = damage;
@@ -45,8 +44,6 @@ public class VerzikDawnEvent extends TobEvent {
 
     @Override
     protected String eventDataString() {
-        return "attackTick=" + attackTick +
-                ", damage=" + damage +
-                ", player=" + player;
+        return "attackTick=" + attackTick + ", damage=" + damage + ", player=" + player;
     }
 }

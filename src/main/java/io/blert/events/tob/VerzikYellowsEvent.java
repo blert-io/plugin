@@ -2,11 +2,10 @@ package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.events.EventType;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
 public class VerzikYellowsEvent extends TobEvent {
@@ -19,8 +18,7 @@ public class VerzikYellowsEvent extends TobEvent {
 
     @Override
     public String eventDataString() {
-        String yellows = this.yellows
-                .stream()
+        String yellows = this.yellows.stream()
                 .map(wp -> "(" + wp.getX() + "," + wp.getY() + ")")
                 .collect(Collectors.joining(","));
         return "yellows=[" + yellows + ']';

@@ -36,22 +36,20 @@ import io.blert.core.TrackedNpc;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.tob.MaidenBloodSplatsEvent;
 import io.blert.events.tob.MaidenCrabLeakEvent;
+import java.util.*;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 
-import javax.annotation.Nullable;
-import java.util.*;
-
 @Slf4j
-
 public class MaidenDataTracker extends RoomDataTracker {
-    private final static int MAIDEN_BLOODSPLAT_GRAPHIC_ID = 1579;
-    private final static int MAIDEN_BLOOD_TRAIL_OBJECT_ID = 32984;
+    private static final int MAIDEN_BLOODSPLAT_GRAPHIC_ID = 1579;
+    private static final int MAIDEN_BLOOD_TRAIL_OBJECT_ID = 32984;
 
-    private final static int MAIDEN_BLOOD_THROW_ANIMATION = 8091;
-    private final static int MAIDEN_AUTO_ANIMATION = 8092;
+    private static final int MAIDEN_BLOOD_THROW_ANIMATION = 8091;
+    private static final int MAIDEN_AUTO_ANIMATION = 8092;
 
     private CrabSpawn currentSpawn = CrabSpawn.SEVENTIES;
     private final int[] spawnTicks = new int[3];
@@ -110,13 +108,15 @@ public class MaidenDataTracker extends RoomDataTracker {
         for (MaidenCrab crab : crabs.values()) {
             NPC crabNpc = crab.getNpc();
 
-            if (!crabNpc.isDead() && crabNpc.getWorldArea().distanceTo2D(maiden.getNpc().getWorldArea()) <= 1) {
+            if (!crabNpc.isDead()
+                    && crabNpc.getWorldArea().distanceTo2D(maiden.getNpc().getWorldArea()) <= 1) {
                 dispatchEvent(new MaidenCrabLeakEvent(tick, getWorldLocation(crabNpc), crab));
             }
         }
 
         if (attackThisTick != null) {
-            dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(maiden.getNpc()), attackThisTick, maiden));
+            dispatchEvent(
+                    new NpcAttackEvent(getStage(), tick, getWorldLocation(maiden.getNpc()), attackThisTick, maiden));
         }
 
         crabsSpawnedThisTick = false;
@@ -153,7 +153,10 @@ public class MaidenDataTracker extends RoomDataTracker {
             if (TobNpc.isMaiden(tobNpc.getId())) {
                 if (maiden == null) {
                     startRoom();
-                    maiden = new HpVarbitTrackedNpc(npc, tobNpc, generateRoomId(npc),
+                    maiden = new HpVarbitTrackedNpc(
+                            npc,
+                            tobNpc,
+                            generateRoomId(npc),
                             new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getScale())));
                 }
                 return Optional.of(maiden);
@@ -198,8 +201,11 @@ public class MaidenDataTracker extends RoomDataTracker {
     }
 
     private Optional<TrackedNpc> handleMaidenBloodSpawnSpawn(NPC npc) {
-        return TobNpc.withId(npc.getId()).map(tobNpc ->
-                new BasicTrackedNpc(npc, tobNpc, generateRoomId(npc),
+        return TobNpc.withId(npc.getId())
+                .map(tobNpc -> new BasicTrackedNpc(
+                        npc,
+                        tobNpc,
+                        generateRoomId(npc),
                         new Hitpoints(tobNpc.getBaseHitpoints(theatreChallenge.getScale()))));
     }
 

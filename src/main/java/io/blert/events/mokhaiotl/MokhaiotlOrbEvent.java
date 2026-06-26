@@ -26,7 +26,8 @@ public class MokhaiotlOrbEvent extends Event {
 
     @Override
     protected String eventDataString() {
-        return String.format("source=%s, sourcePoint=%s, style=%s, startTick=%d, endTick=%d",
+        return String.format(
+                "source=%s, sourcePoint=%s, style=%s, startTick=%d, endTick=%d",
                 source, sourcePoint, style, startTick, endTick);
     }
 }

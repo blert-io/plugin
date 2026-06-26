@@ -30,23 +30,42 @@ import net.runelite.api.events.*;
  */
 public interface RuneliteEventHandler {
     default void onGameStateChanged(GameStateChanged event) {}
+
     default void onNpcSpawned(NpcSpawned event) {}
+
     default void onNpcDespawned(NpcDespawned event) {}
+
     default void onNpcChanged(NpcChanged event) {}
+
     default void onPlayerChanged(PlayerChanged event) {}
+
     default void onAnimationChanged(AnimationChanged event) {}
+
     default void onProjectileMoved(ProjectileMoved event) {}
+
     default void onChatMessage(ChatMessage event) {}
+
     default void onHitsplatApplied(HitsplatApplied event) {}
+
     default void onGameObjectSpawned(GameObjectSpawned event) {}
+
     default void onGameObjectDespawned(GameObjectDespawned event) {}
+
     default void onGroundObjectSpawned(GroundObjectSpawned event) {}
+
     default void onGroundObjectDespawned(GroundObjectDespawned event) {}
+
     default void onGraphicChanged(GraphicChanged event) {}
+
     default void onGraphicsObjectCreated(GraphicsObjectCreated event) {}
+
     default void onActorDeath(ActorDeath event) {}
+
     default void onItemSpawned(ItemSpawned event) {}
+
     default void onItemDespawned(ItemDespawned event) {}
+
     default void onVarbitChanged(VarbitChanged event) {}
+
     default void onScriptPreFired(ScriptPreFired event) {}
 }

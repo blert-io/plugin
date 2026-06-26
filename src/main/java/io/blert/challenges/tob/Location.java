@@ -28,7 +28,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 
 public enum Location {
-    ELSEWHERE,  // Anywhere but TOB (why?)
+    ELSEWHERE, // Anywhere but TOB (why?)
     LOBBY,
     MAIDEN_INSTANCE,
     MAIDEN_ROOM,
@@ -200,7 +200,11 @@ public enum Location {
     }
 
     public boolean isInstance() {
-        return this == MAIDEN_INSTANCE || this == BLOAT_INSTANCE || this == NYLOCAS_INSTANCE
-                || this == SOTETSEG_INSTANCE || this == XARPUS_INSTANCE || this == VERZIK_INSTANCE;
+        return this == MAIDEN_INSTANCE
+                || this == BLOAT_INSTANCE
+                || this == NYLOCAS_INSTANCE
+                || this == SOTETSEG_INSTANCE
+                || this == XARPUS_INSTANCE
+                || this == VERZIK_INSTANCE;
     }
 }

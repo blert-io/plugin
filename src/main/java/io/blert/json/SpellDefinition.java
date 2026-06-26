@@ -44,23 +44,24 @@ public class SpellDefinition {
     public io.blert.core.SpellDefinition toCore() {
         List<io.blert.core.SpellDefinition.Graphic> graphicList = graphics != null
                 ? graphics.stream()
-                    .map(g -> new io.blert.core.SpellDefinition.Graphic(g.id, g.durationTicks, g.maxFrame))
-                    .collect(Collectors.toList())
+                        .map(g -> new io.blert.core.SpellDefinition.Graphic(g.id, g.durationTicks, g.maxFrame))
+                        .collect(Collectors.toList())
                 : Collections.emptyList();
 
         List<io.blert.core.SpellDefinition.Graphic> targetGraphicList = targetGraphics != null
                 ? targetGraphics.stream()
-                    .map(g -> new io.blert.core.SpellDefinition.Graphic(g.id, g.durationTicks, g.maxFrame))
-                    .collect(Collectors.toList())
+                        .map(g -> new io.blert.core.SpellDefinition.Graphic(g.id, g.durationTicks, g.maxFrame))
+                        .collect(Collectors.toList())
                 : Collections.emptyList();
 
         return new io.blert.core.SpellDefinition(
                 id,
                 name,
-                animationIds != null ? animationIds.stream().mapToInt(Integer::intValue).toArray() : new int[0],
+                animationIds != null
+                        ? animationIds.stream().mapToInt(Integer::intValue).toArray()
+                        : new int[0],
                 graphicList,
                 targetGraphicList,
-                stallTicks
-        );
+                stallTicks);
     }
 }

@@ -23,11 +23,10 @@
 
 package io.blert.core;
 
+import javax.annotation.Nullable;
 import lombok.Getter;
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.kit.KitType;
-
-import javax.annotation.Nullable;
 
 public enum EquipmentSlot {
     // KitType represents an item slot that is visibly rendered on players, so they do not map 1:1 to equipment slots.
@@ -47,14 +46,14 @@ public enum EquipmentSlot {
 
     @Getter
     private final int inventorySlotIndex;
+
     @Getter
     private final @Nullable KitType kitType;
+
     @Getter
     private final int id;
 
-    EquipmentSlot(EquipmentInventorySlot runeliteSlot,
-                  @Nullable KitType kitType,
-                  int id) {
+    EquipmentSlot(EquipmentInventorySlot runeliteSlot, @Nullable KitType kitType, int id) {
         this.inventorySlotIndex = runeliteSlot.getSlotIdx();
         this.kitType = kitType;
         this.id = id;

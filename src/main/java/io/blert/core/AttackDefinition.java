@@ -25,10 +25,6 @@ package io.blert.core;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,6 +33,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 @Getter
 @Slf4j
@@ -129,10 +128,17 @@ public class AttackDefinition {
      */
     private final boolean unknown;
 
-    public AttackDefinition(int protoId, String name, int[] weaponIds, int[] animationIds,
-                            int cooldown, List<Projectile> projectiles,
-                            boolean continuousAnimation, int animationFrameMin,
-                            int animationFrameMax, Category category) {
+    public AttackDefinition(
+            int protoId,
+            String name,
+            int[] weaponIds,
+            int[] animationIds,
+            int cooldown,
+            List<Projectile> projectiles,
+            boolean continuousAnimation,
+            int animationFrameMin,
+            int animationFrameMax,
+            Category category) {
         this.protoId = protoId;
         this.name = name;
         this.weaponIds = weaponIds;
@@ -227,11 +233,8 @@ public class AttackDefinition {
      */
     public static List<AttackDefinition> loadFromJson(Gson gson, InputStream inputStream) throws IOException {
         try (Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            List<io.blert.json.AttackDefinition> jsonDefs = gson.fromJson(
-                    r,
-                    new TypeToken<List<io.blert.json.AttackDefinition>>() {
-                    }.getType()
-            );
+            List<io.blert.json.AttackDefinition> jsonDefs =
+                    gson.fromJson(r, new TypeToken<List<io.blert.json.AttackDefinition>>() {}.getType());
             return jsonDefs.stream().map(io.blert.json.AttackDefinition::toCore).collect(Collectors.toList());
         }
     }

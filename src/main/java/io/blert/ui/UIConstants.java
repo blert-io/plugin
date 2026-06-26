@@ -2,7 +2,6 @@ package io.blert.ui;
 
 import java.awt.Color;
 import java.awt.Font;
-
 import net.runelite.client.ui.ColorScheme;
 
 public class UIConstants {
@@ -22,5 +21,4 @@ public class UIConstants {
     public static final Font FONT_REGULAR = new Font("SansSerif", Font.PLAIN, 12);
     public static final Font FONT_SMALL = new Font("SansSerif", Font.PLAIN, 11);
     public static final Font FONT_SMALLEST = new Font("SansSerif", Font.PLAIN, 10);
-
 }

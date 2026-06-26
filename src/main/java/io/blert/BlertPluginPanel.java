@@ -23,6 +23,8 @@
 
 package io.blert;
 
+import static io.blert.ui.UIConstants.*;
+
 import io.blert.client.WebSocketEventHandler;
 import io.blert.client.WebSocketManager;
 import io.blert.core.Challenge;
@@ -30,16 +32,6 @@ import io.blert.core.ChallengeMode;
 import io.blert.core.Stage;
 import io.blert.json.PastChallenge;
 import io.blert.ui.*;
-import joptsimple.internal.Strings;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.ui.PluginPanel;
-import net.runelite.client.util.LinkBrowser;
-import org.apache.commons.lang3.time.DurationFormatUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
-import javax.annotation.Nullable;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
@@ -49,8 +41,15 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import static io.blert.ui.UIConstants.*;
+import javax.annotation.Nullable;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import joptsimple.internal.Strings;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.util.LinkBrowser;
+import org.apache.commons.lang3.time.DurationFormatUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
 public class BlertPluginPanel extends PluginPanel {
@@ -151,7 +150,8 @@ public class BlertPluginPanel extends PluginPanel {
             if (connectionState == ConnectionState.CONNECTED) {
                 serverStatusLabel.setText("✔ Blert server is online");
                 serverStatusLabel.setForeground(TEXT_MUTED);
-            } else if (connectionState != ConnectionState.REJECTED && connectionState != ConnectionState.UNSUPPORTED_VERSION) {
+            } else if (connectionState != ConnectionState.REJECTED
+                    && connectionState != ConnectionState.UNSUPPORTED_VERSION) {
                 serverStatusLabel.setText("");
             }
         } else {
@@ -181,10 +181,7 @@ public class BlertPluginPanel extends PluginPanel {
     }
 
     public void updateChallengeStatus(
-            WebSocketEventHandler.Status status,
-            @Nullable Challenge challenge,
-            @Nullable String challengeId
-    ) {
+            WebSocketEventHandler.Status status, @Nullable Challenge challenge, @Nullable String challengeId) {
         SwingUtilities.invokeLater(() -> {
             synchronized (this) {
                 this.challengeStatus = status;
@@ -328,7 +325,9 @@ public class BlertPluginPanel extends PluginPanel {
         card.add(Box.createVerticalStrut(4));
         if (showButton) {
             card.add(connectButton);
-        } else if (!hasApiKey && connectionState != ConnectionState.CONNECTED && connectionState != ConnectionState.CONNECTING) {
+        } else if (!hasApiKey
+                && connectionState != ConnectionState.CONNECTED
+                && connectionState != ConnectionState.CONNECTING) {
             card.add(configHint);
         }
     }
@@ -428,8 +427,8 @@ public class BlertPluginPanel extends PluginPanel {
         String title = (currentChallenge != null) ? currentChallenge.getName() : "Unknown Raid";
         Color statusColor = ACCENT_GREEN;
 
-        if (challengeStatus == WebSocketEventHandler.Status.CHALLENGE_STARTING ||
-                challengeStatus == WebSocketEventHandler.Status.CHALLENGE_ENDING) {
+        if (challengeStatus == WebSocketEventHandler.Status.CHALLENGE_STARTING
+                || challengeStatus == WebSocketEventHandler.Status.CHALLENGE_ENDING) {
             statusColor = ACCENT_YELLOW;
         }
 
@@ -462,15 +461,13 @@ public class BlertPluginPanel extends PluginPanel {
         JScrollPane scrollPane = new JScrollPane(
                 recentRecordingsContainer,
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-        );
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
         scrollPane.setBorder(null);
         scrollPane.setViewportBorder(null);
         scrollPane.getViewport().setBackground(BG_BASE);
         scrollPane.getVerticalScrollBar().setUI(new ThinScrollBarUI());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-
 
         scrollPane.setPreferredSize(new Dimension(0, 0));
 
@@ -513,13 +510,13 @@ public class BlertPluginPanel extends PluginPanel {
                         challenge.challengeTicks,
                         timeAgo,
                         statusInfo.getRight(),
-                        challenge.party != null ? challenge.party : new ArrayList<>()
-                );
+                        challenge.party != null ? challenge.party : new ArrayList<>());
 
                 item.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mousePressed(MouseEvent e) {
-                        LinkBrowser.browse(challengeUrl(Objects.requireNonNull(Challenge.fromId(challenge.challenge)), challenge.id));
+                        LinkBrowser.browse(challengeUrl(
+                                Objects.requireNonNull(Challenge.fromId(challenge.challenge)), challenge.id));
                     }
                 });
 

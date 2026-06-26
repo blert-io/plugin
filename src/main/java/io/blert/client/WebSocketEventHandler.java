@@ -32,6 +32,11 @@ import io.blert.core.Stage;
 import io.blert.events.*;
 import io.blert.events.Event;
 import io.blert.json.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import joptsimple.internal.Strings;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -41,12 +46,6 @@ import net.runelite.api.GameState;
 import net.runelite.client.callback.ClientThread;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.DurationFormatUtils;
-
-import javax.annotation.Nullable;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * An {@code EventHandler} implementation that transmits received events to a Blert server through a websocket.
@@ -90,13 +89,7 @@ public class WebSocketEventHandler implements EventHandler {
          */
         ChallengeStartAttempt retry(int newRequestId) {
             return new ChallengeStartAttempt(
-                    newRequestId,
-                    request,
-                    challenge,
-                    remainingRetries - 1,
-                    queuedEvents,
-                    pendingEndEvent
-            );
+                    newRequestId, request, challenge, remainingRetries - 1, queuedEvents, pendingEndEvent);
         }
 
         boolean canRetry() {
@@ -156,9 +149,12 @@ public class WebSocketEventHandler implements EventHandler {
      * @param webSocketClient  Websocket client connected and authenticated to the Blert server.
      * @param reconnectHandler Callback invoked to trigger a cooperative reconnect. Called once.
      */
-    public WebSocketEventHandler(BlertPlugin plugin, WebSocketClient webSocketClient,
-                                 Client client, ClientThread runeliteThread,
-                                 Runnable reconnectHandler) {
+    public WebSocketEventHandler(
+            BlertPlugin plugin,
+            WebSocketClient webSocketClient,
+            Client client,
+            ClientThread runeliteThread,
+            Runnable reconnectHandler) {
         this.plugin = plugin;
         this.webSocketClient = webSocketClient;
         this.webSocketClient.setTextMessageCallback(this::handleJsonMessage);
@@ -243,23 +239,19 @@ public class WebSocketEventHandler implements EventHandler {
     private void startChallenge(ChallengeStartEvent event) {
         if (pendingServerShutdown()) {
             sendGameMessage(
-                    "<col=ef1020>This challenge will not be recorded due to scheduled Blert maintenance.</col>"
-            );
+                    "<col=ef1020>This challenge will not be recorded due to scheduled Blert maintenance.</col>");
             return;
         }
 
         if (reconnectWhenIdle) {
-            sendGameMessage(
-                    "<col=ef1020>This challenge will not be recorded due to Blert maintenance.</col>"
-            );
+            sendGameMessage("<col=ef1020>This challenge will not be recorded due to Blert maintenance.</col>");
             return;
         }
 
         if (apiKeyUsernameMismatch) {
             sendGameMessage(
-                    "<col=ef1020>This challenge will not be recorded as this API key is linked to a different OSRS account. " +
-                            "If you changed your display name, please update it on the Blert website.</col>"
-            );
+                    "<col=ef1020>This challenge will not be recorded as this API key is linked to a different OSRS account. "
+                            + "If you changed your display name, please update it on the Blert website.</col>");
             return;
         }
 
@@ -280,8 +272,7 @@ public class WebSocketEventHandler implements EventHandler {
         event.getStage().map(Stage::getId).ifPresent(s -> challengeStartRequest.stage = s);
 
         // Create a new attempt to track the challenge start request and queued events.
-        currentStartAttempt = new ChallengeStartAttempt(
-                getRequestId(), challengeStartRequest, event.getChallenge());
+        currentStartAttempt = new ChallengeStartAttempt(getRequestId(), challengeStartRequest, event.getChallenge());
         this.currentChallenge = event.getChallenge();
 
         setStatus(Status.CHALLENGE_STARTING);
@@ -301,12 +292,14 @@ public class WebSocketEventHandler implements EventHandler {
         webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
 
         // Schedule timeout with linear backoff.
-        requestTimeout.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                handleChallengeStartTimeout(attempt);
-            }
-        }, attempt.getTimeoutMs());
+        requestTimeout.schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        handleChallengeStartTimeout(attempt);
+                    }
+                },
+                attempt.getTimeoutMs());
     }
 
     /**
@@ -321,7 +314,8 @@ public class WebSocketEventHandler implements EventHandler {
         if (attempt.canRetry()) {
             ChallengeStartAttempt retryAttempt = attempt.retry(getRequestId());
             currentStartAttempt = retryAttempt;
-            log.warn("Challenge start request timed out; retrying ({} retries remaining)",
+            log.warn(
+                    "Challenge start request timed out; retrying ({} retries remaining)",
                     retryAttempt.remainingRetries);
             sendChallengeStartRequest(retryAttempt);
         } else {
@@ -361,14 +355,16 @@ public class WebSocketEventHandler implements EventHandler {
         setStatus(Status.CHALLENGE_ENDING);
         webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
 
-        requestTimeout.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if (status == Status.CHALLENGE_ENDING && lastRequestId == requestId) {
-                    resetChallenge();
-                }
-            }
-        }, DEFAULT_REQUEST_TIMEOUT_MS);
+        requestTimeout.schedule(
+                new TimerTask() {
+                    @Override
+                    public void run() {
+                        if (status == Status.CHALLENGE_ENDING && lastRequestId == requestId) {
+                            resetChallenge();
+                        }
+                    }
+                },
+                DEFAULT_REQUEST_TIMEOUT_MS);
     }
 
     void updateChallenge(@Nullable ChallengeUpdateEvent challenge, @Nullable StageUpdateEvent stage) {
@@ -473,10 +469,8 @@ public class WebSocketEventHandler implements EventHandler {
                 plugin.getSidePanel().setShutdownTime(null);
 
                 if (serverMessage.user != null) {
-                    plugin.getSidePanel().updateConnectionState(
-                            BlertPluginPanel.ConnectionState.CONNECTED,
-                            serverMessage.user.name
-                    );
+                    plugin.getSidePanel()
+                            .updateConnectionState(BlertPluginPanel.ConnectionState.CONNECTED, serverMessage.user.name);
                     sendRaidHistoryRequest();
                 } else {
                     log.warn("Received invalid connection response from server");
@@ -493,8 +487,9 @@ public class WebSocketEventHandler implements EventHandler {
                 break;
 
             case ServerMessage.TYPE_CHALLENGE_END_RESPONSE: {
-                if (status != Status.CHALLENGE_ENDING || serverMessage.requestId == null ||
-                        serverMessage.requestId != lastRequestId) {
+                if (status != Status.CHALLENGE_ENDING
+                        || serverMessage.requestId == null
+                        || serverMessage.requestId != lastRequestId) {
                     log.warn("Received unexpected CHALLENGE_END_RESPONSE from server");
                     return;
                 }
@@ -508,12 +503,14 @@ public class WebSocketEventHandler implements EventHandler {
                 if (!draining) {
                     // TODO Make proper fix https://github.com/blert-io/plugin/issues/9
                     // delaying raid history request to allow backend update last challenge
-                    requestTimeout.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            sendRaidHistoryRequest();
-                        }
-                    }, DEFAULT_REQUEST_TIMEOUT_MS);
+                    requestTimeout.schedule(
+                            new TimerTask() {
+                                @Override
+                                public void run() {
+                                    sendRaidHistoryRequest();
+                                }
+                            },
+                            DEFAULT_REQUEST_TIMEOUT_MS);
                 }
 
                 break;
@@ -536,21 +533,19 @@ public class WebSocketEventHandler implements EventHandler {
 
             case ServerMessage.TYPE_ATTACK_DEFINITIONS:
                 if (serverMessage.attackDefinitions != null) {
-                    plugin.getAttackRegistry().updateFromServer(
-                            serverMessage.attackDefinitions.stream()
+                    plugin.getAttackRegistry()
+                            .updateFromServer(serverMessage.attackDefinitions.stream()
                                     .map(io.blert.json.AttackDefinition::toCore)
-                                    .collect(Collectors.toList())
-                    );
+                                    .collect(Collectors.toList()));
                 }
                 break;
 
             case ServerMessage.TYPE_SPELL_DEFINITIONS:
                 if (serverMessage.spellDefinitions != null) {
-                    plugin.getSpellRegistry().updateFromServer(
-                            serverMessage.spellDefinitions.stream()
+                    plugin.getSpellRegistry()
+                            .updateFromServer(serverMessage.spellDefinitions.stream()
                                     .map(io.blert.json.SpellDefinition::toCore)
-                                    .collect(Collectors.toList())
-                    );
+                                    .collect(Collectors.toList()));
                 }
                 break;
 
@@ -589,8 +584,8 @@ public class WebSocketEventHandler implements EventHandler {
             case ErrorData.TYPE_USERNAME_MISMATCH:
                 sendGameMessage(
                         ChatMessageType.GAMEMESSAGE,
-                        "<col=ef1020>This Blert API key is linked a different OSRS account. " +
-                                "If you changed your display name, please go update it on the Blert website.</col>");
+                        "<col=ef1020>This Blert API key is linked a different OSRS account. "
+                                + "If you changed your display name, please go update it on the Blert website.</col>");
                 apiKeyUsernameMismatch = true;
                 // Abandon any pending challenge start since this account can't record.
                 if (currentStartAttempt != null) {
@@ -622,9 +617,9 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private void handleChallengeStartResponse(ServerMessage serverMessage) {
-        if (status != Status.CHALLENGE_STARTING ||
-                serverMessage.requestId == null ||
-                serverMessage.requestId != lastRequestId) {
+        if (status != Status.CHALLENGE_STARTING
+                || serverMessage.requestId == null
+                || serverMessage.requestId != lastRequestId) {
             log.warn("Received unexpected CHALLENGE_START_RESPONSE from server");
             return;
         }
@@ -638,7 +633,8 @@ public class WebSocketEventHandler implements EventHandler {
             setStatus(Status.IDLE);
 
             if (serverMessage.error != null && serverMessage.error.message != null) {
-                sendGameMessage(ChatMessageType.GAMEMESSAGE, "<col=ef1020>[Blert] " + serverMessage.error.message + "</col>");
+                sendGameMessage(
+                        ChatMessageType.GAMEMESSAGE, "<col=ef1020>[Blert] " + serverMessage.error.message + "</col>");
             }
             return;
         }
@@ -695,10 +691,9 @@ public class WebSocketEventHandler implements EventHandler {
                     plugin.getSidePanel().setShutdownTime(serverShutdownTime);
 
                     String shutdownMessage = String.format(
-                            "Blert's servers will go offline for maintenance in %s." +
-                                    "<br>Visit Blert's Discord server for status updates.",
-                            DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss")
-                    );
+                            "Blert's servers will go offline for maintenance in %s."
+                                    + "<br>Visit Blert's Discord server for status updates.",
+                            DurationFormatUtils.formatDuration(timeUntilShutdown.toMillis(), "HH:mm:ss"));
 
                     sendGameMessage(ChatMessageType.BROADCAST, shutdownMessage);
                 }
@@ -719,8 +714,7 @@ public class WebSocketEventHandler implements EventHandler {
                     plugin.getSidePanel().setShutdownTime(null);
                     sendGameMessage(
                             ChatMessageType.BROADCAST,
-                            "The scheduled Blert maintenance has been canceled. You may continue to record PvM challenges!"
-                    );
+                            "The scheduled Blert maintenance has been canceled. You may continue to record PvM challenges!");
                 }
 
                 // Cancel a deferred drain only while recording, since no
@@ -903,8 +897,8 @@ public class WebSocketEventHandler implements EventHandler {
 
         String username = player.getName() != null ? player.getName().toLowerCase() : null;
         if (!Objects.equals(stateToConfirm.username, username)) {
-            log.warn("Received confirmation request for {} but current player is {}",
-                    stateToConfirm.username, username);
+            log.warn(
+                    "Received confirmation request for {} but current player is {}", stateToConfirm.username, username);
             return;
         }
 
@@ -932,15 +926,16 @@ public class WebSocketEventHandler implements EventHandler {
             boolean isValid = false;
 
             if (status != null) {
-                Set<String> party = status.getParty().stream().map(String::toLowerCase).collect(Collectors.toSet());
+                Set<String> party =
+                        status.getParty().stream().map(String::toLowerCase).collect(Collectors.toSet());
                 Set<String> partyToConfirm = stateToConfirm.party != null
                         ? stateToConfirm.party.stream().map(String::toLowerCase).collect(Collectors.toSet())
                         : Collections.emptySet();
 
-                isValid = status.getChallenge().getId() == stateToConfirm.challenge &&
-                        status.getStage() != null &&
-                        status.getStage().getId() >= stateToConfirm.stage &&
-                        party.equals(partyToConfirm);
+                isValid = status.getChallenge().getId() == stateToConfirm.challenge
+                        && status.getStage() != null
+                        && status.getStage().getId() >= stateToConfirm.stage
+                        && party.equals(partyToConfirm);
 
                 if (!party.contains(username)) {
                     confirmationBuilder.spectator = true;

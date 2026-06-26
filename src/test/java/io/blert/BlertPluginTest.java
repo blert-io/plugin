@@ -23,10 +23,9 @@
 
 package io.blert;
 
+import java.util.Arrays;
 import net.runelite.client.RuneLite;
 import net.runelite.client.externalplugins.ExternalPluginManager;
-
-import java.util.Arrays;
 
 public class BlertPluginTest {
     public static void main(String[] args) throws Exception {

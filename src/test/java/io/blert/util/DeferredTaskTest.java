@@ -23,9 +23,8 @@
 
 package io.blert.util;
 
-import junit.framework.TestCase;
-
 import java.util.concurrent.atomic.AtomicBoolean;
+import junit.framework.TestCase;
 
 public class DeferredTaskTest extends TestCase {
 
@@ -42,16 +41,16 @@ public class DeferredTaskTest extends TestCase {
     public void testCancel() {
         AtomicBoolean complete = new AtomicBoolean(false);
         DeferredTask task = new DeferredTask(() -> complete.set(true), 5);
-        task.tick();  // 4
+        task.tick(); // 4
         assertFalse(complete.get());
-        task.tick();  // 3
+        task.tick(); // 3
         assertFalse(complete.get());
-        task.tick();  // 2
+        task.tick(); // 2
         assertFalse(complete.get());
-        task.tick();  // 1
+        task.tick(); // 1
         assertFalse(complete.get());
         task.cancel();
-        task.tick();  // 0
+        task.tick(); // 0
         assertFalse(complete.get());
     }
 
@@ -59,22 +58,22 @@ public class DeferredTaskTest extends TestCase {
         AtomicBoolean complete = new AtomicBoolean(false);
         DeferredTask task = new DeferredTask(() -> complete.set(true), 3);
 
-        task.tick();  // 2
+        task.tick(); // 2
         assertFalse(complete.get());
-        task.tick();  // 1
+        task.tick(); // 1
         assertFalse(complete.get());
 
         task.reset(3);
-        task.tick();  // 2
+        task.tick(); // 2
         assertFalse(complete.get());
-        task.tick();  // 1
+        task.tick(); // 1
         assertFalse(complete.get());
-        task.tick();  // 0
+        task.tick(); // 0
         assertTrue(complete.get());
 
         complete.set(false);
         task.reset(1);
-        task.tick();  // 0
+        task.tick(); // 0
         assertTrue(complete.get());
     }
 }

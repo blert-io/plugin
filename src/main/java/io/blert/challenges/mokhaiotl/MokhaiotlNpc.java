@@ -1,8 +1,7 @@
 package io.blert.challenges.mokhaiotl;
 
-import lombok.Getter;
-
 import java.util.Optional;
+import lombok.Getter;
 
 @Getter
 public enum MokhaiotlNpc {

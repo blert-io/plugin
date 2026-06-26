@@ -1,25 +1,23 @@
 package io.blert.ui;
 
+import static io.blert.ui.UIConstants.*;
+
 import com.google.common.base.Strings;
 import io.blert.util.Tick;
-
-import javax.annotation.Nullable;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
-
-import static io.blert.ui.UIConstants.*;
+import javax.annotation.Nullable;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
 public class FeedItem extends JPanel {
     private final Color accentColor;
     private boolean isHovered = false;
 
-    public FeedItem(String title, String mode,
-                    int ticks, @Nullable String timestamp,
-                    Color accent, List<String> party) {
+    public FeedItem(
+            String title, String mode, int ticks, @Nullable String timestamp, Color accent, List<String> party) {
         this.accentColor = accent;
         setOpaque(false);
         setLayout(new BorderLayout(0, 4));
@@ -52,8 +50,7 @@ public class FeedItem extends JPanel {
         });
     }
 
-    private static JPanel getTitlePanel(String title, String mode, int ticks,
-                                        @Nullable String timestamp) {
+    private static JPanel getTitlePanel(String title, String mode, int ticks, @Nullable String timestamp) {
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
 

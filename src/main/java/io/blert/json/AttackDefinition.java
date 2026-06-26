@@ -74,14 +74,17 @@ public class AttackDefinition {
         return new io.blert.core.AttackDefinition(
                 protoId,
                 name,
-                weaponIds != null ? weaponIds.stream().mapToInt(Integer::intValue).toArray() : new int[0],
-                animationIds != null ? animationIds.stream().mapToInt(Integer::intValue).toArray() : new int[0],
+                weaponIds != null
+                        ? weaponIds.stream().mapToInt(Integer::intValue).toArray()
+                        : new int[0],
+                animationIds != null
+                        ? animationIds.stream().mapToInt(Integer::intValue).toArray()
+                        : new int[0],
                 cooldown,
                 projectileList,
                 continuousAnimation,
                 animationFrameMin != null ? animationFrameMin : 0,
                 animationFrameMax != null ? animationFrameMax : Integer.MAX_VALUE,
-                cat
-        );
+                cat);
     }
 }

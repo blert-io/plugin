@@ -3,11 +3,10 @@ package io.blert.events.mokhaiotl;
 import io.blert.core.Stage;
 import io.blert.events.Event;
 import io.blert.events.EventType;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
 public class MokhaiotlShockwaveEvent extends Event {
@@ -20,8 +19,7 @@ public class MokhaiotlShockwaveEvent extends Event {
 
     @Override
     protected String eventDataString() {
-        return "shockwaveTiles=" + shockwaveTiles.stream()
-                .map(WorldPoint::toString)
-                .collect(Collectors.joining(","));
+        return "shockwaveTiles="
+                + shockwaveTiles.stream().map(WorldPoint::toString).collect(Collectors.joining(","));
     }
 }

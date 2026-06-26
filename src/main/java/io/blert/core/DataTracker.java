@@ -26,6 +26,9 @@ package io.blert.core;
 import io.blert.events.*;
 import io.blert.util.Location;
 import io.blert.util.Tick;
+import java.util.List;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -35,10 +38,6 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 public abstract class DataTracker implements RuneliteEventHandler {
@@ -65,6 +64,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
     private final SpecialAttackTracker specialAttackTracker = new SpecialAttackTracker(this::onSpecialAttack);
 
     private int startClientTick;
+
     @Getter
     private int totalTicks;
 
@@ -160,8 +160,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onGameState(GameStateChanged event) {
-    }
+    protected void onGameState(GameStateChanged event) {}
 
     /**
      * Event handler invoked when a new NPC spawns. If the spawned NPC should be tracked and have its data reported,
@@ -190,8 +189,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onNpcChange(NpcChanged event) {
-    }
+    protected void onNpcChange(NpcChanged event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onPlayerChanged} Runelite event handler.
@@ -199,8 +197,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onPlayerChange(PlayerChanged event) {
-    }
+    protected void onPlayerChange(PlayerChanged event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onAnimationChanged} Runelite event handler.
@@ -208,8 +205,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The animation event.
      */
-    protected void onAnimation(AnimationChanged event) {
-    }
+    protected void onAnimation(AnimationChanged event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onProjectileMoved} Runelite event handler.
@@ -217,8 +213,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onProjectile(ProjectileMoved event) {
-    }
+    protected void onProjectile(ProjectileMoved event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onChatMessage} Runelite event handler.
@@ -226,8 +221,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onMessage(ChatMessage event) {
-    }
+    protected void onMessage(ChatMessage event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onHitsplatApplied} Runelite event handler.
@@ -235,8 +229,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param hitsplatApplied The hitsplat event.
      */
-    protected void onHitsplat(HitsplatApplied hitsplatApplied) {
-    }
+    protected void onHitsplat(HitsplatApplied hitsplatApplied) {}
 
     /**
      * Implementation-specific equivalent of the {@code onGameObjectSpawned} Runelite event handler.
@@ -244,8 +237,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onGameObjectSpawn(GameObjectSpawned event) {
-    }
+    protected void onGameObjectSpawn(GameObjectSpawned event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onGameObjectDespawned} Runelite event handler.
@@ -253,8 +245,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onGameObjectDespawn(GameObjectDespawned event) {
-    }
+    protected void onGameObjectDespawn(GameObjectDespawned event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onGroundObjectSpawned} Runelite event handler.
@@ -262,8 +253,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onGroundObjectSpawn(GroundObjectSpawned event) {
-    }
+    protected void onGroundObjectSpawn(GroundObjectSpawned event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onGroundObjectDespawned} Runelite event handler.
@@ -271,8 +261,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onGroundObjectDespawn(GroundObjectDespawned event) {
-    }
+    protected void onGroundObjectDespawn(GroundObjectDespawned event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onGraphicChanged}
@@ -281,8 +270,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onGraphicChange(GraphicChanged event) {
-    }
+    protected void onGraphicChange(GraphicChanged event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onGraphicsObjectCreated} Runelite event handler.
@@ -290,8 +278,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
-    }
+    protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onActorDeath} Runelite event handler.
@@ -299,8 +286,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onDeath(ActorDeath event) {
-    }
+    protected void onDeath(ActorDeath event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onItemSpawned} Runelite event handler.
@@ -308,8 +294,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onItemSpawn(ItemSpawned event) {
-    }
+    protected void onItemSpawn(ItemSpawned event) {}
 
     /**
      * Implementation-specific equivalent of the {@code onItemDespawned} Runelite event handler.
@@ -317,8 +302,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onItemDespawn(ItemDespawned event) {
-    }
+    protected void onItemDespawn(ItemDespawned event) {}
 
     /**
      * Returns whether attacking the NPC with the given ID ignores the player's
@@ -338,8 +322,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
      *
      * @param event The event.
      */
-    protected void onVarbit(VarbitChanged event) {
-    }
+    protected void onVarbit(VarbitChanged event) {}
 
     protected WorldPoint getWorldLocation(@NonNull Actor actor) {
         return Location.getWorldLocation(client, actor.getWorldLocation());
@@ -438,20 +421,27 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
         if (inGameStageTicks != -1) {
             if (inGameStageTicks != lastRecordedRoomTick) {
-                log.warn("Stage {} completion time mismatch: in-game room ticks = {}, recorded ticks = {}",
-                        stage, inGameStageTicks, lastRecordedRoomTick);
+                log.warn(
+                        "Stage {} completion time mismatch: in-game room ticks = {}, recorded ticks = {}",
+                        stage,
+                        inGameStageTicks,
+                        lastRecordedRoomTick);
                 accurate = false;
                 totalTicks = inGameStageTicks;
             } else {
                 accurate = true;
             }
         } else {
-            log.debug("Stage {} finished in {} unconfirmed ticks ({})",
-                    stage, lastRecordedRoomTick, Tick.asTimeString(lastRecordedRoomTick));
+            log.debug(
+                    "Stage {} finished in {} unconfirmed ticks ({})",
+                    stage,
+                    lastRecordedRoomTick,
+                    Tick.asTimeString(lastRecordedRoomTick));
             accurate = false;
         }
 
-        boolean spectator = !challenge.playerIsInChallenge(client.getLocalPlayer().getName());
+        boolean spectator =
+                !challenge.playerIsInChallenge(client.getLocalPlayer().getName());
         boolean isWipe = challenge.getParty().stream().allMatch(Raider::isDead);
 
         if (spectator && !completion && !isWipe) {
@@ -461,11 +451,12 @@ public abstract class DataTracker implements RuneliteEventHandler {
             log.info("Stage {} finished, status: {}", stage, status);
 
             Optional<Integer> gameTicks = inGameStageTicks == -1 ? Optional.empty() : Optional.of(inGameStageTicks);
-            Runnable dispatch = () -> challenge.dispatchEvent(
-                    new StageUpdateEvent(getStage(), lastRecordedRoomTick, status, accurate, gameTicks, gameTicksPrecise));
+            Runnable dispatch = () -> challenge.dispatchEvent(new StageUpdateEvent(
+                    getStage(), lastRecordedRoomTick, status, accurate, gameTicks, gameTicksPrecise));
 
             if (waitToDispatch) {
-                // Don't send the final room status immediately; allow other pending subscribers to run and dispatch their
+                // Don't send the final room status immediately; allow other pending subscribers to run and dispatch
+                // their
                 // own events first.
                 clientThread.invokeLater(dispatch);
             } else {
@@ -570,9 +561,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
         List<SpellDefinition> candidates = spellRegistry.getTargetedSpellsByAnimation(raider.getAnimationId());
         for (SpellDefinition targetedCandidate : candidates) {
-            boolean interactingHasGraphic = targetedCandidate
-                    .getTargetGraphics()
-                    .stream()
+            boolean interactingHasGraphic = targetedCandidate.getTargetGraphics().stream()
                     .anyMatch(g -> {
                         for (var spotAnim : interacting.getSpotAnims()) {
                             if (spotAnim.getId() == g.getId() && spotAnim.getFrame() <= g.getMaxFrame()) {
@@ -602,12 +591,10 @@ public abstract class DataTracker implements RuneliteEventHandler {
         Optional<NPC> target = raider.getTarget();
         boolean isNewAnimation = raider.getAnimationTick() == tick;
 
-        boolean ignoreCooldown =
-                target.map(this::npcIgnoresCooldown).orElse(false);
+        boolean ignoreCooldown = target.map(this::npcIgnoresCooldown).orElse(false);
 
-        boolean mayHaveAttacked =
-                (ignoreCooldown || raider.isOffCooldownOn(tick)) &&
-                        (isNewAnimation || raider.isBlowpiping() || raider.stoppedBlowpiping());
+        boolean mayHaveAttacked = (ignoreCooldown || raider.isOffCooldownOn(tick))
+                && (isNewAnimation || raider.isBlowpiping() || raider.stoppedBlowpiping());
         if (!mayHaveAttacked) {
             return;
         }
@@ -648,9 +635,10 @@ public abstract class DataTracker implements RuneliteEventHandler {
                 raider.recordAttack(tick, finalAttack, ignoreCooldown);
 
                 TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
-                int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea())).orElse(-1);
-                dispatchEvent(new PlayerAttackEvent(getStage(), tick, point, finalAttack, weapon.orElse(null),
-                        raider, roomTarget, distanceToNpc));
+                int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea()))
+                        .orElse(-1);
+                dispatchEvent(new PlayerAttackEvent(
+                        getStage(), tick, point, finalAttack, weapon.orElse(null), raider, roomTarget, distanceToNpc));
             } catch (Exception e) {
                 log.error("Error processing attack {} for {} on tick {}", attack, raider.getUsername(), tick, e);
             }
@@ -668,18 +656,14 @@ public abstract class DataTracker implements RuneliteEventHandler {
      * @return A modified attack definition if a distinguishing projectile is
      * found, or the original attack definition otherwise.
      */
-    private AttackDefinition adjustForProjectile(AttackRegistry registry,
-                                                 AttackDefinition attack,
-                                                 Player player,
-                                                 int weaponId) {
-        List<AttackDefinition> possibleAttacks =
-                registry.allWithAnimations(attack.getAnimationIds());
+    private AttackDefinition adjustForProjectile(
+            AttackRegistry registry, AttackDefinition attack, Player player, int weaponId) {
+        List<AttackDefinition> possibleAttacks = registry.allWithAnimations(attack.getAnimationIds());
 
         for (Projectile p : client.getProjectiles()) {
             for (AttackDefinition candidate : possibleAttacks) {
                 AttackDefinition.Projectile expectedProjectile = candidate.getProjectileForWeapon(weaponId);
-                if (expectedProjectile != null &&
-                        projectileMatches(p, expectedProjectile, player)) {
+                if (expectedProjectile != null && projectileMatches(p, expectedProjectile, player)) {
                     return candidate;
                 }
             }
@@ -688,16 +672,13 @@ public abstract class DataTracker implements RuneliteEventHandler {
         return attack;
     }
 
-    private boolean projectileMatches(Projectile p,
-                                      AttackDefinition.Projectile projectile,
-                                      Player player) {
+    private boolean projectileMatches(Projectile p, AttackDefinition.Projectile projectile, Player player) {
         if (p.getId() != projectile.getId()) {
             return false;
         }
 
         WorldPoint origin = Location.getWorldLocation(client, p.getSourcePoint());
-        boolean originatesFromPlayer =
-                origin == null || origin.distanceTo2D(getWorldLocation(player)) == 0;
+        boolean originatesFromPlayer = origin == null || origin.distanceTo2D(getWorldLocation(player)) == 0;
         boolean startCycleMatches = p.getStartCycle() - client.getGameCycle() == projectile.getStartCycleOffset();
 
         return originatesFromPlayer && startCycleMatches;
@@ -745,7 +726,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
     private void onSpecialAttack(SpecialAttackTracker.SpecialAttack spec) {
         var weapon = client.getItemDefinition(spec.getWeapon().getId());
-        log.debug("Hit a {} with {} on {}", spec.getDamage(), weapon.getName(), spec.getTarget().getName());
+        log.debug(
+                "Hit a {} with {} on {}",
+                spec.getDamage(),
+                weapon.getName(),
+                spec.getTarget().getName());
     }
 
     public final void onGameStateChanged(GameStateChanged event) {

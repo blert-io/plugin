@@ -24,13 +24,12 @@
 package io.blert.events;
 
 import io.blert.core.*;
+import java.util.List;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Optional;
 
 @Getter
 public class PlayerUpdateEvent extends Event {
@@ -71,6 +70,7 @@ public class PlayerUpdateEvent extends Event {
 
     @Getter
     private List<ItemDelta> equipmentChangesThisTick;
+
     @Getter
     private int offCooldownTick = 0;
 
@@ -86,8 +86,8 @@ public class PlayerUpdateEvent extends Event {
     public static PlayerUpdateEvent fromRaider(Stage stage, int tick, WorldPoint point, Client client, Raider raider) {
         Source source = raider.isLocalPlayer() ? Source.PRIMARY : Source.SECONDARY;
 
-        PlayerUpdateEvent evt = new PlayerUpdateEvent(stage, tick, point,
-                source, raider.getUsername(), raider.isSnapshot());
+        PlayerUpdateEvent evt =
+                new PlayerUpdateEvent(stage, tick, point, source, raider.getUsername(), raider.isSnapshot());
         evt.equipmentChangesThisTick = raider.getEquipmentChangesThisTick();
         evt.offCooldownTick = raider.getOffCooldownTick();
 
@@ -126,9 +126,8 @@ public class PlayerUpdateEvent extends Event {
         return evt;
     }
 
-
-    private PlayerUpdateEvent(Stage stage, int tick, WorldPoint point,
-                              Source source, String username, boolean snapshot) {
+    private PlayerUpdateEvent(
+            Stage stage, int tick, WorldPoint point, Source source, String username, boolean snapshot) {
         super(EventType.PLAYER_UPDATE, stage, tick, point);
         this.source = source;
         this.username = username;

@@ -24,12 +24,11 @@
 package io.blert.events;
 
 import io.blert.core.Stage;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import joptsimple.internal.Strings;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
-import java.util.Optional;
 
 public abstract class Event {
     private final @Getter EventType type;
@@ -67,7 +66,11 @@ public abstract class Event {
         string.append(", tick=").append(tick);
         string.append(", coords=");
         if (coords != null) {
-            string.append('(').append(coords.getX()).append(',').append(coords.getY()).append(')');
+            string.append('(')
+                    .append(coords.getX())
+                    .append(',')
+                    .append(coords.getY())
+                    .append(')');
         } else {
             string.append("null");
         }

@@ -24,12 +24,11 @@
 package io.blert.core;
 
 import com.google.gson.Gson;
+import java.io.InputStream;
+import java.util.*;
 import lombok.AllArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.InputStream;
-import java.util.*;
 
 @Slf4j
 public class AttackRegistry {
@@ -64,15 +63,14 @@ public class AttackRegistry {
         unknownAttack = new AttackDefinition(
                 UNKNOWN_PROTO_ID,
                 "UNKNOWN",
-                new int[]{-1},
-                new int[]{-1},
+                new int[] {-1},
+                new int[] {-1},
                 0,
                 null,
                 false,
                 Integer.MIN_VALUE,
                 Integer.MAX_VALUE,
-                AttackDefinition.Category.MELEE
-        );
+                AttackDefinition.Category.MELEE);
     }
 
     /**
@@ -111,7 +109,9 @@ public class AttackRegistry {
 
         for (AttackDefinition def : definitions) {
             for (int animationId : def.getAnimationIds()) {
-                newByAnimationId.computeIfAbsent(animationId, k -> new ArrayList<>()).add(def);
+                newByAnimationId
+                        .computeIfAbsent(animationId, k -> new ArrayList<>())
+                        .add(def);
             }
 
             if (def.isContinuousAnimation()) {

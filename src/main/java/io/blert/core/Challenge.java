@@ -23,9 +23,8 @@
 
 package io.blert.core;
 
-import lombok.Getter;
-
 import javax.annotation.Nullable;
+import lombok.Getter;
 
 public enum Challenge {
     TOB("Theatre of Blood", 1),

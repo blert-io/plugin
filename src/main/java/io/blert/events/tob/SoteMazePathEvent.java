@@ -27,12 +27,11 @@ import io.blert.challenges.tob.rooms.sotetseg.Maze;
 import io.blert.core.Stage;
 import io.blert.events.Event;
 import io.blert.events.EventType;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
 public class SoteMazePathEvent extends Event {
@@ -71,11 +70,13 @@ public class SoteMazePathEvent extends Event {
 
     @Override
     protected String eventDataString() {
-        return "maze=" + maze + ", mazeTiles=" + Arrays.toString(mazeRelativePoints().toArray());
+        return "maze=" + maze + ", mazeTiles="
+                + Arrays.toString(mazeRelativePoints().toArray());
     }
 
     private static WorldPoint toMazeRelativePoint(TileType tileType, WorldPoint point) {
-        WorldPoint start = tileType == TileType.UNDERWORLD_PIVOTS ? Maze.UNDERWORLD_MAZE_START : Maze.OVERWORLD_MAZE_START;
+        WorldPoint start =
+                tileType == TileType.UNDERWORLD_PIVOTS ? Maze.UNDERWORLD_MAZE_START : Maze.OVERWORLD_MAZE_START;
         return new WorldPoint(point.getX() - start.getX(), point.getY() - start.getY(), point.getPlane());
     }
 }

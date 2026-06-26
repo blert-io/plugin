@@ -26,10 +26,9 @@ package io.blert.events.colosseum;
 import io.blert.core.Stage;
 import io.blert.events.Event;
 import io.blert.events.EventType;
+import java.util.List;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-
-import java.util.List;
 
 @Getter
 public class ReentryPoolsEvent extends Event {
@@ -44,8 +43,7 @@ public class ReentryPoolsEvent extends Event {
             List<WorldPoint> primaryPoolsSpawned,
             List<WorldPoint> secondaryPoolsSpawned,
             List<WorldPoint> primaryPoolsDespawned,
-            List<WorldPoint> secondaryPoolsDespawned
-    ) {
+            List<WorldPoint> secondaryPoolsDespawned) {
         super(EventType.COLOSSEUM_REENTRY_POOLS, stage, tick, null);
         this.primaryPoolsSpawned = primaryPoolsSpawned;
         this.secondaryPoolsSpawned = secondaryPoolsSpawned;
@@ -57,10 +55,17 @@ public class ReentryPoolsEvent extends Event {
     protected String eventDataString() {
         return String.format(
                 "primary_pools_spawned=%s, secondary_pools_spawned=%s, primary_pools_despawned=%s, secondary_pools_despawned=%s",
-                primaryPoolsSpawned.stream().map(WorldPoint::toString).collect(java.util.stream.Collectors.joining(", ")),
-                secondaryPoolsSpawned.stream().map(WorldPoint::toString).collect(java.util.stream.Collectors.joining(", ")),
-                primaryPoolsDespawned.stream().map(WorldPoint::toString).collect(java.util.stream.Collectors.joining(", ")),
-                secondaryPoolsDespawned.stream().map(WorldPoint::toString).collect(java.util.stream.Collectors.joining(", "))
-        );
+                primaryPoolsSpawned.stream()
+                        .map(WorldPoint::toString)
+                        .collect(java.util.stream.Collectors.joining(", ")),
+                secondaryPoolsSpawned.stream()
+                        .map(WorldPoint::toString)
+                        .collect(java.util.stream.Collectors.joining(", ")),
+                primaryPoolsDespawned.stream()
+                        .map(WorldPoint::toString)
+                        .collect(java.util.stream.Collectors.joining(", ")),
+                secondaryPoolsDespawned.stream()
+                        .map(WorldPoint::toString)
+                        .collect(java.util.stream.Collectors.joining(", ")));
     }
 }

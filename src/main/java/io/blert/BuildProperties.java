@@ -26,7 +26,6 @@ package io.blert;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-
 import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.externalplugins.PluginHubManifest;
 
@@ -42,8 +41,7 @@ public final class BuildProperties {
 
     private static final Properties LOCAL_BUILD = loadLocalBuild();
 
-    private BuildProperties() {
-    }
+    private BuildProperties() {}
 
     /** Short hash of the commit from which this jar was built. */
     public static String revision() {

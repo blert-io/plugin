@@ -6,18 +6,17 @@ import io.blert.events.NpcAttackEvent;
 import io.blert.events.mokhaiotl.*;
 import io.blert.util.Location;
 import io.blert.util.Tick;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.*;
-import net.runelite.client.util.Text;
-
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.*;
+import net.runelite.client.util.Text;
 
 @Slf4j
 public class DelveDataTracker extends DataTracker {
@@ -37,16 +36,16 @@ public class DelveDataTracker extends DataTracker {
     private static final Set<Number> SHOCKWAVE_GRAPHICS_IDs = ImmutableSet.of(3405, 3406, 3407);
     private static final int RACECAR_TARGET_GRAPHICS_ID = 3415;
 
-    private static final int[] HITPOINTS_BY_DELVE = new int[]{
-            -1,  // 1-indexed
-            525, // Delve 1
-            550, // Delve 2
-            575, // Delve 3
-            600, // Delve 4
-            625, // Delve 5
-            650, // Delve 6
-            650, // Delve 7
-            675, // Delve 8+
+    private static final int[] HITPOINTS_BY_DELVE = new int[] {
+        -1, // 1-indexed
+        525, // Delve 1
+        550, // Delve 2
+        575, // Delve 3
+        600, // Delve 4
+        625, // Delve 5
+        650, // Delve 6
+        650, // Delve 7
+        675, // Delve 8+
     };
     private static final int SHIELD_HITPOINTS = 500;
 
@@ -83,11 +82,11 @@ public class DelveDataTracker extends DataTracker {
         super(challenge, client, delveToStage(delve));
         this.delve = delve;
         if (delve > 8) {
-            this.delveEndRegex = Pattern.compile(
-                    "Delve level: 8\\+ \\(" + delve + "\\) duration: (" + Tick.TIME_STRING_REGEX + ")");
+            this.delveEndRegex =
+                    Pattern.compile("Delve level: 8\\+ \\(" + delve + "\\) duration: (" + Tick.TIME_STRING_REGEX + ")");
         } else {
-            this.delveEndRegex = Pattern.compile(
-                    "Delve level: " + delve + " duration: (" + Tick.TIME_STRING_REGEX + ")");
+            this.delveEndRegex =
+                    Pattern.compile("Delve level: " + delve + " duration: (" + Tick.TIME_STRING_REGEX + ")");
         }
         this.unidentifiedAttackTick = -1;
         this.lastRacecarTick = -1;
@@ -145,11 +144,13 @@ public class DelveDataTracker extends DataTracker {
                     .map(this::getWorldLocation)
                     .collect(Collectors.toList());
             List<WorldPoint> rocksSpawned = toWorldPoints.apply(rocksAndSplatsSpawnedThisTick, ROCK_GAME_OBJECT_ID);
-            List<WorldPoint> splatsSpawned = toWorldPoints.apply(rocksAndSplatsSpawnedThisTick, ACID_BLOOD_GAME_OBJECT_ID);
+            List<WorldPoint> splatsSpawned =
+                    toWorldPoints.apply(rocksAndSplatsSpawnedThisTick, ACID_BLOOD_GAME_OBJECT_ID);
             List<WorldPoint> rocksDespawned = toWorldPoints.apply(rocksAndSplatsDespawnedThisTick, ROCK_GAME_OBJECT_ID);
-            List<WorldPoint> splatsDespawned = toWorldPoints.apply(rocksAndSplatsDespawnedThisTick, ACID_BLOOD_GAME_OBJECT_ID);
-            dispatchEvent(new MokhaiotlObjectsEvent(getStage(), tick,
-                    rocksSpawned, rocksDespawned, splatsSpawned, splatsDespawned));
+            List<WorldPoint> splatsDespawned =
+                    toWorldPoints.apply(rocksAndSplatsDespawnedThisTick, ACID_BLOOD_GAME_OBJECT_ID);
+            dispatchEvent(new MokhaiotlObjectsEvent(
+                    getStage(), tick, rocksSpawned, rocksDespawned, splatsSpawned, splatsDespawned));
         }
 
         while (!healsThisTick.isEmpty()) {
@@ -163,9 +164,8 @@ public class DelveDataTracker extends DataTracker {
         }
 
         if (!shockwaveLocationsThisTick.isEmpty()) {
-            boolean isSlam =
-                    mokhaiotl.getNpc().getId() == MokhaiotlNpc.MOKHAIOTL_BURROWED.getId()
-                            || lastRacecarTick >= tick - 12;
+            boolean isSlam = mokhaiotl.getNpc().getId() == MokhaiotlNpc.MOKHAIOTL_BURROWED.getId()
+                    || lastRacecarTick >= tick - 12;
             NpcAttack attack = isSlam ? NpcAttack.MOKHAIOTL_SLAM : NpcAttack.MOKHAIOTL_SHOCKWAVE;
             dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(mokhaiotl), attack, mokhaiotl));
             dispatchEvent(new MokhaiotlShockwaveEvent(getStage(), tick, new ArrayList<>(shockwaveLocationsThisTick)));
@@ -238,8 +238,7 @@ public class DelveDataTracker extends DataTracker {
             WorldPoint mokhaiotlCenter = new WorldPoint(
                     mokhaiotlSouthwest.getX() + mokhaiotlSize / 2,
                     mokhaiotlSouthwest.getY() + mokhaiotlSize / 2,
-                    mokhaiotlSouthwest.getPlane()
-            );
+                    mokhaiotlSouthwest.getPlane());
 
             if (getWorldLocation(larva).equals(mokhaiotlCenter)) {
                 larvaeLeakedThisTick.add(trackedNpc);
@@ -346,12 +345,10 @@ public class DelveDataTracker extends DataTracker {
         }
 
         if (elapsed == 0 && mokhaiotl != null && mokhaiotl.getNpc() != null) {
-            boolean fromMokhaiotl =
-                    mokhaiotl.getNpc().getWorldArea().contains(projectile.getSourcePoint());
+            boolean fromMokhaiotl = mokhaiotl.getNpc().getWorldArea().contains(projectile.getSourcePoint());
 
             if (fromMokhaiotl && unidentifiedAttackTick != -1) {
-                dispatchEvent(new MokhaiotlAttackStyleEvent(
-                        getStage(), getTick(), style, unidentifiedAttackTick));
+                dispatchEvent(new MokhaiotlAttackStyleEvent(getStage(), getTick(), style, unidentifiedAttackTick));
                 unidentifiedAttackTick = -1;
             }
         } else if (projectile.getRemainingCycles() <= 3) {
@@ -432,12 +429,9 @@ public class DelveDataTracker extends DataTracker {
             }
 
             if (!activeOrbs.containsKey(projectile)) {
-                boolean fromMokhaiotl =
-                        mokhaiotl.getNpc().getWorldArea().contains(projectile.getSourcePoint());
+                boolean fromMokhaiotl = mokhaiotl.getNpc().getWorldArea().contains(projectile.getSourcePoint());
 
-                Orb.Source source = fromMokhaiotl
-                        ? Orb.Source.MOKHAIOTL
-                        : Orb.Source.BALL;
+                Orb.Source source = fromMokhaiotl ? Orb.Source.MOKHAIOTL : Orb.Source.BALL;
                 activeOrbs.put(projectile, new Orb(projectile, source, tick));
             }
         }

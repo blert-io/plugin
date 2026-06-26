@@ -12,7 +12,7 @@ public enum MokhaiotlLocation {
     DELVE_DEEP;
 
     private static final int CAVERN_REGION_ID = 5268;
-    private static final int DELVE_REGION_ID = 5269;  // Delve 1 and lobby area
+    private static final int DELVE_REGION_ID = 5269; // Delve 1 and lobby area
     private static final int DELVE_MID_REGION_ID = 13668; // Delves 2-5
     private static final int DELVE_DEEP_REGION_ID = 14180; // Delves 6+
 

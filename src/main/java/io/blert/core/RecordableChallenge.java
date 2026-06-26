@@ -24,6 +24,9 @@
 package io.blert.core;
 
 import io.blert.events.*;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -36,14 +39,11 @@ import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.Text;
 
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-
 @Slf4j
 public abstract class RecordableChallenge implements RuneliteEventHandler {
     @Getter
     private final Challenge challenge;
+
     @Getter
     private @NonNull ChallengeMode challengeMode;
 
@@ -77,12 +77,11 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
 
         @Override
         public String toString() {
-            return "Status(" +
-                    "challenge=" + challenge +
-                    ", mode=" + mode +
-                    ", stage=" + stage +
-                    ", party=" + party +
-                    ')';
+            return "Status(" + "challenge="
+                    + challenge + ", mode="
+                    + mode + ", stage="
+                    + stage + ", party="
+                    + party + ')';
         }
     }
 
