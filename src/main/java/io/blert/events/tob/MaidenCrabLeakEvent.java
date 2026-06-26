@@ -52,6 +52,7 @@ public class MaidenCrabLeakEvent extends NpcEvent {
 
     @Override
     protected String eventDataString() {
-        return "crab_leak=(crab=" + getSpawn() + ' ' + getPosition() + ", hp=" + getHitpoints().getCurrent() + ')';
+        return "crab_leak=(crab=" + getSpawn() + ' ' + getPosition() + ", hp="
+                + getHitpoints().getCurrent() + ')';
     }
 }

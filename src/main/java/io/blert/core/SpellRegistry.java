@@ -24,16 +24,15 @@
 package io.blert.core;
 
 import com.google.gson.Gson;
-import lombok.AllArgsConstructor;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
+import lombok.AllArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class SpellRegistry {
@@ -62,8 +61,7 @@ public class SpellRegistry {
         }
 
         try {
-            List<SpellDefinition> loaded =
-                    SpellDefinition.loadFromJson(gson, stream);
+            List<SpellDefinition> loaded = SpellDefinition.loadFromJson(gson, stream);
             updateDefinitions(loaded);
             log.info("Loaded {} bundled spell definitions", loaded.size());
         } catch (Exception e) {
@@ -79,8 +77,7 @@ public class SpellRegistry {
      */
     public void updateFromServer(List<SpellDefinition> definitions) {
         updateDefinitions(definitions);
-        log.info("Updated spell registry with {} definitions from server",
-                definitions.size());
+        log.info("Updated spell registry with {} definitions from server", definitions.size());
     }
 
     /**
@@ -94,7 +91,9 @@ public class SpellRegistry {
         for (SpellDefinition spell : newDefinitions) {
             for (int animId : spell.getAnimationIds()) {
                 if (spell.isTargeted()) {
-                    newTargetedByAnimation.computeIfAbsent(animId, k -> new ArrayList<>()).add(spell);
+                    newTargetedByAnimation
+                            .computeIfAbsent(animId, k -> new ArrayList<>())
+                            .add(spell);
                 } else {
                     newByAnimation.put(animId, spell);
                 }
@@ -104,11 +103,7 @@ public class SpellRegistry {
             }
         }
 
-        this.state = new State(
-                newByAnimation,
-                newByGraphic,
-                newTargetedByAnimation
-        );
+        this.state = new State(newByAnimation, newByGraphic, newTargetedByAnimation);
     }
 
     /**

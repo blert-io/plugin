@@ -2,11 +2,10 @@ package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.events.EventType;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
 public class BloatHandsEvent extends TobEvent {
@@ -27,8 +26,7 @@ public class BloatHandsEvent extends TobEvent {
 
     @Override
     public String eventDataString() {
-        String hands = this.hands
-                .stream()
+        String hands = this.hands.stream()
                 .map(wp -> "(" + wp.getX() + "," + wp.getY() + ")")
                 .collect(Collectors.joining(","));
         return "hands=[" + hands + ']';

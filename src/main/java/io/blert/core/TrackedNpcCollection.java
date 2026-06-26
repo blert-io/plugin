@@ -23,20 +23,18 @@
 
 package io.blert.core;
 
-import lombok.NonNull;
-import net.runelite.api.NPC;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Optional;
+import lombok.NonNull;
+import net.runelite.api.NPC;
 
 public class TrackedNpcCollection implements Collection<TrackedNpc> {
     private final HashMap<Long, TrackedNpc> byRoomId = new HashMap<>();
     private final HashMap<Integer, TrackedNpc> byNpc = new HashMap<>();
 
-    public TrackedNpcCollection() {
-    }
+    public TrackedNpcCollection() {}
 
     public Optional<TrackedNpc> getByRoomId(long roomId) {
         return Optional.ofNullable(byRoomId.get(roomId));

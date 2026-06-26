@@ -24,6 +24,8 @@
 package io.blert.core;
 
 import com.google.common.collect.ImmutableSet;
+import java.util.*;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -31,9 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.client.game.ItemVariationMapping;
 import org.apache.commons.lang3.tuple.Pair;
-
-import javax.annotation.Nullable;
-import java.util.*;
 
 /**
  * A player in a PvM challenge.
@@ -59,20 +58,25 @@ public class Raider {
     @Getter
     @Setter
     private @Nullable Player player;
+
     @Getter
     private final boolean localPlayer;
 
     @Getter
     @Setter
     private boolean active;
+
     private int lastUpdateTick = Integer.MIN_VALUE;
+
     @Getter
     private boolean snapshot;
 
     @Getter
     private boolean dead;
+
     @Getter
     private int deathTick;
+
     @Setter
     private boolean invulnerable;
 
@@ -80,11 +84,13 @@ public class Raider {
 
     private Item[] equipment = new Item[EquipmentSlot.values().length];
     private Item[] pendingEquipment = null;
+
     @Getter
     private final List<ItemDelta> equipmentChangesThisTick = new ArrayList<>();
 
     @Getter
     private int animationId;
+
     @Getter
     private int animationTick;
 
@@ -92,6 +98,7 @@ public class Raider {
 
     @Getter
     private @Nullable AttackDefinition lastAttack;
+
     @Getter
     private int offCooldownTick;
 
@@ -101,6 +108,7 @@ public class Raider {
      * distinguish a repeated use.
      */
     private final Map<Integer, Integer> activeSpells = new HashMap<>();
+
     private @Nullable Pair<Integer, SpellDefinition> activeStall;
 
     @Getter
@@ -266,8 +274,8 @@ public class Raider {
      * @param matchedGraphicId The graphic ID that matched, or null if matched via animation.
      * @return The spell if it was recorded, or null if it was filtered out (e.g., stale graphic).
      */
-    public @Nullable SpellDefinition tryRecordSpell(int tick, @NonNull SpellDefinition spell,
-                                                    @Nullable Integer matchedGraphicId) {
+    public @Nullable SpellDefinition tryRecordSpell(
+            int tick, @NonNull SpellDefinition spell, @Nullable Integer matchedGraphicId) {
         boolean viaAnimation = matchedGraphicId == null && spell.hasAnimation(animationId) && animationTick == tick;
 
         // A new animation is a reliable indicator for a new spell, so ignore the graphic cooldown.
@@ -318,18 +326,19 @@ public class Raider {
         pendingEquipment = snapshotFromComposition(client, composition);
     }
 
-    private Item[] snapshotFromComposition(Client client,
-                                           PlayerComposition composition) {
+    private Item[] snapshotFromComposition(Client client, PlayerComposition composition) {
         Item[] gearSnapshot = new Item[EquipmentSlot.values().length];
-        Arrays.stream(EquipmentSlot.values()).filter(slot -> slot.getKitType() != null).forEach(slot -> {
-            int id = composition.getEquipmentId(slot.getKitType());
-            if (id != -1) {
-                var comp = client.getItemDefinition(id);
-                gearSnapshot[slot.ordinal()] = new Item(comp.getId(), 1);
-            } else {
-                gearSnapshot[slot.ordinal()] = null;
-            }
-        });
+        Arrays.stream(EquipmentSlot.values())
+                .filter(slot -> slot.getKitType() != null)
+                .forEach(slot -> {
+                    int id = composition.getEquipmentId(slot.getKitType());
+                    if (id != -1) {
+                        var comp = client.getItemDefinition(id);
+                        gearSnapshot[slot.ordinal()] = new Item(comp.getId(), 1);
+                    } else {
+                        gearSnapshot[slot.ordinal()] = null;
+                    }
+                });
         return gearSnapshot;
     }
 
@@ -368,7 +377,8 @@ public class Raider {
                 if (quiverAmmoId <= 0) {
                     continue;
                 }
-                item = new net.runelite.api.Item(quiverAmmoId, client.getVarpValue(VarPlayer.DIZANAS_QUIVER_ITEM_COUNT));
+                item = new net.runelite.api.Item(
+                        quiverAmmoId, client.getVarpValue(VarPlayer.DIZANAS_QUIVER_ITEM_COUNT));
             } else {
                 item = equippedItems.getItem(slot.getInventorySlotIndex());
             }
@@ -387,7 +397,8 @@ public class Raider {
                 }
                 equipment[slot.ordinal()] = new Item(item.getId(), item.getQuantity());
             } else if (previous != null) {
-                equipmentChangesThisTick.add(new ItemDelta(previous.getId(), previous.getQuantity(), slot.ordinal(), false));
+                equipmentChangesThisTick.add(
+                        new ItemDelta(previous.getId(), previous.getQuantity(), slot.ordinal(), false));
                 equipment[slot.ordinal()] = null;
             }
         }
@@ -401,26 +412,30 @@ public class Raider {
             // Fall back to reading the composition iff no equipment events
             // have been received and the current equipment is uninitialized.
             if (Arrays.stream(equipment).allMatch(Objects::isNull)) {
-                items = snapshotFromComposition(client, Objects.requireNonNull(player).getPlayerComposition());
+                items = snapshotFromComposition(
+                        client, Objects.requireNonNull(player).getPlayerComposition());
             } else {
                 return;
             }
         }
 
-        Arrays.stream(EquipmentSlot.values()).filter(slot -> slot.getKitType() != null).forEach(slot -> {
-            Item previous = equipment[slot.ordinal()];
-            Item current = items[slot.ordinal()];
+        Arrays.stream(EquipmentSlot.values())
+                .filter(slot -> slot.getKitType() != null)
+                .forEach(slot -> {
+                    Item previous = equipment[slot.ordinal()];
+                    Item current = items[slot.ordinal()];
 
-            if (current != null) {
-                if (previous == null || previous.getId() != current.getId()) {
-                    equipmentChangesThisTick.add(new ItemDelta(current.getId(), 1, slot.ordinal(), true));
-                    equipment[slot.ordinal()] = current;
-                }
-            } else if (previous != null) {
-                equipmentChangesThisTick.add(new ItemDelta(previous.getId(), previous.getQuantity(), slot.ordinal(), false));
-                equipment[slot.ordinal()] = null;
-            }
-        });
+                    if (current != null) {
+                        if (previous == null || previous.getId() != current.getId()) {
+                            equipmentChangesThisTick.add(new ItemDelta(current.getId(), 1, slot.ordinal(), true));
+                            equipment[slot.ordinal()] = current;
+                        }
+                    } else if (previous != null) {
+                        equipmentChangesThisTick.add(
+                                new ItemDelta(previous.getId(), previous.getQuantity(), slot.ordinal(), false));
+                        equipment[slot.ordinal()] = null;
+                    }
+                });
     }
 
     private void clearActiveStall() {

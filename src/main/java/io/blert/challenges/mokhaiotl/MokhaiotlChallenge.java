@@ -28,6 +28,11 @@ import io.blert.events.ChallengeEndEvent;
 import io.blert.events.ChallengeStartEvent;
 import io.blert.util.Location;
 import io.blert.util.Tick;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
@@ -35,12 +40,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
-
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class MokhaiotlChallenge extends RecordableChallenge {
@@ -112,11 +111,12 @@ public class MokhaiotlChallenge extends RecordableChallenge {
     @Override
     public void onChatMessage(ChatMessage event) {
         if (!getState().isInactive()) {
-            Matcher matcher =
-                    MokhaiotlChallenge.MOKHAIOTL_END_REGEX.matcher(Text.removeTags(event.getMessage()));
+            Matcher matcher = MokhaiotlChallenge.MOKHAIOTL_END_REGEX.matcher(Text.removeTags(event.getMessage()));
             if (matcher.find()) {
                 try {
-                    reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                    reportedChallengeTicks = Tick.fromTimeString(matcher.group(1))
+                            .map(Pair::getLeft)
+                            .orElse(-1);
                 } catch (Exception e) {
                     reportedChallengeTicks = -1;
                 }
@@ -126,7 +126,8 @@ public class MokhaiotlChallenge extends RecordableChallenge {
     }
 
     void updateChallengeState() {
-        WorldPoint playerLocation = Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
+        WorldPoint playerLocation =
+                Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
         if (playerLocation == null) {
             return;
         }

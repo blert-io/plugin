@@ -26,11 +26,10 @@ package io.blert.events.colosseum;
 import io.blert.core.Stage;
 import io.blert.events.Event;
 import io.blert.events.EventType;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
 public class SolPoolsEvent extends Event {
@@ -44,8 +43,6 @@ public class SolPoolsEvent extends Event {
     @Override
     protected String eventDataString() {
         return String.format(
-                "pools=%s",
-                pools.stream().map(WorldPoint::toString).collect(Collectors.joining(", "))
-        );
+                "pools=%s", pools.stream().map(WorldPoint::toString).collect(Collectors.joining(", ")));
     }
 }

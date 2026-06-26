@@ -26,11 +26,10 @@ package io.blert.events.mokhaiotl;
 import io.blert.core.Stage;
 import io.blert.events.Event;
 import io.blert.events.EventType;
-import lombok.Getter;
-import net.runelite.api.coords.WorldPoint;
-
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
+import net.runelite.api.coords.WorldPoint;
 
 @Getter
 public class MokhaiotlObjectsEvent extends Event {
@@ -45,8 +44,7 @@ public class MokhaiotlObjectsEvent extends Event {
             List<WorldPoint> rocksSpawned,
             List<WorldPoint> rocksDespawned,
             List<WorldPoint> splatsSpawned,
-            List<WorldPoint> splatsDespawned
-    ) {
+            List<WorldPoint> splatsDespawned) {
         super(EventType.MOKHAIOTL_OBJECTS, stage, tick, null);
         this.rocksSpawned = rocksSpawned;
         this.rocksDespawned = rocksDespawned;
@@ -56,11 +54,11 @@ public class MokhaiotlObjectsEvent extends Event {
 
     @Override
     protected String eventDataString() {
-        return String.format("rocks_spawned=%s, rocks_despawned=%s, splats_spawned=%s, splats_despawned=%s",
+        return String.format(
+                "rocks_spawned=%s, rocks_despawned=%s, splats_spawned=%s, splats_despawned=%s",
                 rocksSpawned.stream().map(WorldPoint::toString).collect(Collectors.joining(", ")),
                 rocksDespawned.stream().map(WorldPoint::toString).collect(Collectors.joining(", ")),
                 splatsSpawned.stream().map(WorldPoint::toString).collect(Collectors.joining(", ")),
-                splatsDespawned.stream().map(WorldPoint::toString).collect(Collectors.joining(", "))
-        );
+                splatsDespawned.stream().map(WorldPoint::toString).collect(Collectors.joining(", ")));
     }
 }

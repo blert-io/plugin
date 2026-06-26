@@ -23,11 +23,10 @@
 
 package io.blert.util;
 
+import javax.annotation.Nullable;
 import net.runelite.api.Client;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
 
 public class Location {
     @Nullable

@@ -29,6 +29,11 @@ import io.blert.events.ChallengeStartEvent;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
 import io.blert.util.Tick;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -41,12 +46,6 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nullable;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 @Slf4j
 public class InfernoChallenge extends RecordableChallenge {
     private static final int INFERNO_REGION_ID = 9043;
@@ -56,8 +55,7 @@ public class InfernoChallenge extends RecordableChallenge {
     private static final int MOR_UL_REK_NORTHEAST_REGION_ID = 10064;
 
     private static final String WAVE_1_START_MESSAGE = "Wave: 1";
-    static final Pattern INFERNO_END_REGEX =
-            Pattern.compile("Duration: (" + Tick.TIME_STRING_REGEX + ")");
+    static final Pattern INFERNO_END_REGEX = Pattern.compile("Duration: (" + Tick.TIME_STRING_REGEX + ")");
     // The inferno timer begins 6 seconds (10 ticks) before the first wave.
     private static final int WAVE_1_TIME_OFFSET_TICKS = 10;
 
@@ -102,11 +100,11 @@ public class InfernoChallenge extends RecordableChallenge {
 
     @Override
     public boolean containsLocation(WorldPoint worldPoint) {
-        return worldPoint.getRegionID() == INFERNO_REGION_ID ||
-                worldPoint.getRegionID() == MOR_UL_REK_SOUTHWEST_REGION_ID ||
-                worldPoint.getRegionID() == MOR_UL_REK_NORTHWEST_REGION_ID ||
-                worldPoint.getRegionID() == MOR_UL_REK_SOUTHEAST_REGION_ID ||
-                worldPoint.getRegionID() == MOR_UL_REK_NORTHEAST_REGION_ID;
+        return worldPoint.getRegionID() == INFERNO_REGION_ID
+                || worldPoint.getRegionID() == MOR_UL_REK_SOUTHWEST_REGION_ID
+                || worldPoint.getRegionID() == MOR_UL_REK_NORTHWEST_REGION_ID
+                || worldPoint.getRegionID() == MOR_UL_REK_SOUTHEAST_REGION_ID
+                || worldPoint.getRegionID() == MOR_UL_REK_NORTHEAST_REGION_ID;
     }
 
     @Override
@@ -166,18 +164,18 @@ public class InfernoChallenge extends RecordableChallenge {
         if (!getState().isInactive()) {
             String stripped = Text.removeTags(event.getMessage());
             if (stripped.equals(WAVE_1_START_MESSAGE)) {
-                challengeStartTick =
-                        client.getTickCount() - WAVE_1_TIME_OFFSET_TICKS;
+                challengeStartTick = client.getTickCount() - WAVE_1_TIME_OFFSET_TICKS;
             } else {
                 Matcher matcher = INFERNO_END_REGEX.matcher(stripped);
                 if (matcher.find()) {
                     try {
-                        reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                        reportedChallengeTicks = Tick.fromTimeString(matcher.group(1))
+                                .map(Pair::getLeft)
+                                .orElse(-1);
                     } catch (Exception e) {
                         reportedChallengeTicks = -1;
                     }
-                    deferredTask =
-                            new DeferredTask(() -> finishInferno(ChallengeState.COMPLETE), 3);
+                    deferredTask = new DeferredTask(() -> finishInferno(ChallengeState.COMPLETE), 3);
                 }
             }
         }
@@ -188,8 +186,7 @@ public class InfernoChallenge extends RecordableChallenge {
     public void onNpcSpawned(NpcSpawned event) {
         NPC npc = event.getNpc();
         if (npc.getId() == InfernoNpc.ROCKY_SUPPORT.getId()) {
-            Pillar pillar = new Pillar(npc, npc.getIndex(),
-                    Location.getWorldLocation(client, npc.getWorldLocation()));
+            Pillar pillar = new Pillar(npc, npc.getIndex(), Location.getWorldLocation(client, npc.getWorldLocation()));
             switch (pillar.getLocation()) {
                 case WEST:
                     westPillar = pillar;
@@ -220,7 +217,8 @@ public class InfernoChallenge extends RecordableChallenge {
     }
 
     private void updateChallengeState() {
-        WorldPoint playerLocation = Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
+        WorldPoint playerLocation =
+                Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
         if (playerLocation == null) {
             return;
         }

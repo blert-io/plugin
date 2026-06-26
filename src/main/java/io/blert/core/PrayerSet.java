@@ -23,12 +23,11 @@
 
 package io.blert.core;
 
-import lombok.Getter;
-import lombok.NonNull;
-
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import lombok.Getter;
+import lombok.NonNull;
 
 /**
  * Represents a set of prayers that can be activated.
@@ -119,7 +118,7 @@ public class PrayerSet implements Set<Prayer> {
 
     @Override
     public boolean containsAll(@NonNull Collection<?> collection) {
-        return collection.stream().anyMatch(this::contains);
+        return collection.stream().allMatch(this::contains);
     }
 
     @Override

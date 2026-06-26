@@ -39,9 +39,14 @@ public class TotemHealEvent extends Event {
     private final int targetNpcId;
     private final long targetRoomId;
 
-    public TotemHealEvent(Stage stage, int tick, WorldPoint coords,
-                          TrackedNpc source, TrackedNpc target,
-                          int startTick, int healAmount) {
+    public TotemHealEvent(
+            Stage stage,
+            int tick,
+            WorldPoint coords,
+            TrackedNpc source,
+            TrackedNpc target,
+            int startTick,
+            int healAmount) {
         super(EventType.COLOSSEUM_TOTEM_HEAL, stage, tick, coords);
         this.startTick = startTick;
         this.healAmount = healAmount;
@@ -53,7 +58,7 @@ public class TotemHealEvent extends Event {
 
     @Override
     protected String eventDataString() {
-        return "source=" + sourceRoomId + ", target=" + targetRoomId
-                + ", startTick=" + startTick + ", healAmount=" + healAmount;
+        return "source=" + sourceRoomId + ", target=" + targetRoomId + ", startTick=" + startTick + ", healAmount="
+                + healAmount;
     }
 }

@@ -29,6 +29,12 @@ import io.blert.events.ChallengeStartEvent;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
 import io.blert.util.Tick;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldArea;
@@ -38,17 +44,9 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 @Slf4j
 public final class ColosseumChallenge extends RecordableChallenge {
-    final static Pattern COLOSSEUM_END_REGEX = Pattern.compile(
-            "Colosseum duration: (" + Tick.TIME_STRING_REGEX + ")");
+    static final Pattern COLOSSEUM_END_REGEX = Pattern.compile("Colosseum duration: (" + Tick.TIME_STRING_REGEX + ")");
 
     private static final int COLOSSEUM_REGION_ID = 7216;
     private static final int COLOSSEUM_LOBBY_REGION_ID = 7316;
@@ -140,19 +138,22 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
             if (getState() == ChallengeState.ACTIVE) {
                 stateChangeCooldown = true;
-                deferredTask = new DeferredTask(() -> {
-                    stateChangeCooldown = false;
+                deferredTask = new DeferredTask(
+                        () -> {
+                            stateChangeCooldown = false;
 
-                    if (!waveHandicapOptions.isEmpty()) {
-                        // The debuff selection varbit stores the index of the selected debuff option, starting from 1.
-                        int selectedDebuffIndex = client.getVarbitValue(HANDICAP_SELECTION_VARBIT_ID) - 1;
-                        Handicap selectedHandicap = waveHandicapOptions.get(selectedDebuffIndex);
-                        if (waveDataTracker != null) {
-                            waveDataTracker.setHandicapOptions(waveHandicapOptions.toArray(new Handicap[3]));
-                            waveDataTracker.setHandicap(selectedHandicap);
-                        }
-                    }
-                }, 3);
+                            if (!waveHandicapOptions.isEmpty()) {
+                                // The debuff selection varbit stores the index of the selected debuff option, starting
+                                // from 1.
+                                int selectedDebuffIndex = client.getVarbitValue(HANDICAP_SELECTION_VARBIT_ID) - 1;
+                                Handicap selectedHandicap = waveHandicapOptions.get(selectedDebuffIndex);
+                                if (waveDataTracker != null) {
+                                    waveDataTracker.setHandicapOptions(waveHandicapOptions.toArray(new Handicap[3]));
+                                    waveDataTracker.setHandicap(selectedHandicap);
+                                }
+                            }
+                        },
+                        3);
             }
         }
         super.onNpcDespawned(event);
@@ -175,7 +176,9 @@ public final class ColosseumChallenge extends RecordableChallenge {
             Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(Text.removeTags(event.getMessage()));
             if (matcher.find()) {
                 try {
-                    reportedChallengeTicks = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                    reportedChallengeTicks = Tick.fromTimeString(matcher.group(1))
+                            .map(Pair::getLeft)
+                            .orElse(-1);
                 } catch (Exception e) {
                     reportedChallengeTicks = -1;
                 }
@@ -198,7 +201,8 @@ public final class ColosseumChallenge extends RecordableChallenge {
     }
 
     private void checkColosseumState() {
-        WorldPoint playerLocation = Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
+        WorldPoint playerLocation =
+                Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
         if (playerLocation == null) {
             return;
         }

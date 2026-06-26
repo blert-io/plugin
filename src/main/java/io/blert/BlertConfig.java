@@ -23,30 +23,23 @@
 
 package io.blert;
 
+import javax.annotation.Nullable;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 
-import javax.annotation.Nullable;
-
 @ConfigGroup("blert")
 public interface BlertConfig extends Config {
-    @ConfigSection(
-            name = "General",
-            description = "Blert plugin settings",
-            position = 1
-    )
+    @ConfigSection(name = "General", description = "Blert plugin settings", position = 1)
     String GENERAL_SECTION = "general";
-
 
     @ConfigItem(
             keyName = "apiKey",
             name = "Blert API key",
             description = "Token to access the blert API",
             position = 1,
-            section = GENERAL_SECTION
-    )
+            section = GENERAL_SECTION)
     default @Nullable String apiKey() {
         return null;
     }

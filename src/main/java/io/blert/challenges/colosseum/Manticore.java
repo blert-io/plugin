@@ -26,19 +26,18 @@ package io.blert.challenges.colosseum;
 import io.blert.core.BasicTrackedNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import net.runelite.api.NPC;
 
-import javax.annotation.Nullable;
-
 public class Manticore extends BasicTrackedNpc {
-    public final static int LOADING_ANIMATION = 10868;
-    public final static int ATTACK_ANIMATION = 10869;
+    public static final int LOADING_ANIMATION = 10868;
+    public static final int ATTACK_ANIMATION = 10869;
 
-    private final static int MAGE_PROJECTILE = 2681;
-    private final static int RANGE_PROJECTILE = 2683;
-    private final static int MELEE_PROJECTILE = 2685;
+    private static final int MAGE_PROJECTILE = 2681;
+    private static final int RANGE_PROJECTILE = 2683;
+    private static final int MELEE_PROJECTILE = 2685;
 
     enum Style {
         MAGE,

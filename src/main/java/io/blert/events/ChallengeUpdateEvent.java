@@ -24,10 +24,9 @@
 package io.blert.events;
 
 import io.blert.core.ChallengeMode;
-import lombok.Getter;
-
-import javax.annotation.Nullable;
 import java.util.List;
+import javax.annotation.Nullable;
+import lombok.Getter;
 
 @Getter
 public class ChallengeUpdateEvent extends Event {

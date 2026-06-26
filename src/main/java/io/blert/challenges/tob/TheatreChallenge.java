@@ -36,6 +36,13 @@ import io.blert.events.ChallengeStartEvent;
 import io.blert.events.StageUpdateEvent;
 import io.blert.util.DeferredTask;
 import io.blert.util.Tick;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
@@ -50,16 +57,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
-import javax.annotation.Nullable;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 @Slf4j
-
 public class TheatreChallenge extends RecordableChallenge {
     private static final int TOB_ROOM_STATUS_VARBIT = 6447;
     private static final int TOB_PARTY_LIST_COMPONENT_ID = 1835020;
@@ -70,8 +68,8 @@ public class TheatreChallenge extends RecordableChallenge {
 
     private static final Pattern RAID_ENTRY_REGEX_1P =
             Pattern.compile("You enter the Theatre of Blood \\((\\w+) Mode\\)\\.\\.\\.");
-    private static final Pattern RAID_ENTRY_REGEX_3P =
-            Pattern.compile("(.+) has entered the Theatre of Blood \\((\\w+) Mode\\). Step inside to join (her|him|them)\\.\\.\\.");
+    private static final Pattern RAID_ENTRY_REGEX_3P = Pattern.compile(
+            "(.+) has entered the Theatre of Blood \\((\\w+) Mode\\). Step inside to join (her|him|them)\\.\\.\\.");
     private static final Pattern RAID_COMPLETION_CHALLENGE_REGEX =
             Pattern.compile("^.+Theatre of Blood completion time: (" + Tick.TIME_STRING_REGEX + ").*");
     private static final Pattern RAID_COMPLETION_OVERALL_REGEX =
@@ -81,6 +79,7 @@ public class TheatreChallenge extends RecordableChallenge {
     private boolean locationChangedThisTick = false;
 
     private RoomState roomState = RoomState.INACTIVE;
+
     @Nullable
     RoomDataTracker roomDataTracker = null;
 
@@ -209,10 +208,12 @@ public class TheatreChallenge extends RecordableChallenge {
             // (Some players may take longer to load in, thanks Jagex!) Therefore, wait a few ticks before starting.
             // This value is arbitrary and may need to be adjusted.
             final int TICKS_TO_DELAY_ORB_CHECK = 5;
-            deferredTask = new DeferredTask(() -> {
-                initializePartyFromOrbs();
-                startRaid();
-            }, TICKS_TO_DELAY_ORB_CHECK);
+            deferredTask = new DeferredTask(
+                    () -> {
+                        initializePartyFromOrbs();
+                        startRaid();
+                    },
+                    TICKS_TO_DELAY_ORB_CHECK);
         } else {
             deferredTask = new DeferredTask(this::startRaid, 1);
         }
@@ -264,7 +265,8 @@ public class TheatreChallenge extends RecordableChallenge {
 
     private void endRaid(ChallengeState state, int overallTime) {
         final int challengeTime = reportedChallengeTime;
-        log.info("Raid completed; challenge {}, overall {}",
+        log.info(
+                "Raid completed; challenge {}, overall {}",
                 challengeTime == -1 ? "unknown" : Tick.asTimeString(reportedChallengeTime),
                 overallTime == -1 ? "unknown" : Tick.asTimeString(overallTime));
 
@@ -376,7 +378,8 @@ public class TheatreChallenge extends RecordableChallenge {
                 Matcher matcher = RAID_ENTRY_REGEX_1P.matcher(stripped);
                 if (matcher.matches()) {
                     log.debug("Raid started via 1p chat message (mode: {})", matcher.group(1));
-                    queueRaidStart(ChallengeMode.parseTob(matcher.group(1)).orElse(ChallengeMode.NO_MODE),
+                    queueRaidStart(
+                            ChallengeMode.parseTob(matcher.group(1)).orElse(ChallengeMode.NO_MODE),
                             getParty().isEmpty());
                     super.onChatMessage(message);
                     return;
@@ -384,8 +387,12 @@ public class TheatreChallenge extends RecordableChallenge {
 
                 matcher = RAID_ENTRY_REGEX_3P.matcher(stripped);
                 if (matcher.matches()) {
-                    log.debug("Raid started via 3p chat message (leader: {} mode: {})", matcher.group(1), matcher.group(2));
-                    queueRaidStart(ChallengeMode.parseTob(matcher.group(2)).orElse(ChallengeMode.NO_MODE),
+                    log.debug(
+                            "Raid started via 3p chat message (leader: {} mode: {})",
+                            matcher.group(1),
+                            matcher.group(2));
+                    queueRaidStart(
+                            ChallengeMode.parseTob(matcher.group(2)).orElse(ChallengeMode.NO_MODE),
                             getParty().isEmpty());
                 }
                 super.onChatMessage(message);
@@ -394,12 +401,14 @@ public class TheatreChallenge extends RecordableChallenge {
 
             Matcher matcher = RAID_COMPLETION_CHALLENGE_REGEX.matcher(stripped);
             if (matcher.matches()) {
-                reportedChallengeTime = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                reportedChallengeTime =
+                        Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
             }
 
             matcher = RAID_COMPLETION_OVERALL_REGEX.matcher(stripped);
             if (matcher.matches()) {
-                int overallTime = Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
+                int overallTime =
+                        Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);
                 queueRaidEnd(ChallengeState.COMPLETE, overallTime);
             }
         }
@@ -421,7 +430,8 @@ public class TheatreChallenge extends RecordableChallenge {
         Arrays.stream(tobPartyWidget.getText().split("<br>"))
                 .filter(s -> !s.equals("-"))
                 .map((name) -> Text.sanitize(name).replace(" (R)", ""))
-                .forEach(s -> addRaider(new Raider(s, s.equals(client.getLocalPlayer().getName()))));
+                .forEach(s ->
+                        addRaider(new Raider(s, s.equals(client.getLocalPlayer().getName()))));
     }
 
     private void initializePartyFromOrbs() {

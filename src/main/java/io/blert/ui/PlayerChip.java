@@ -16,7 +16,6 @@ import java.awt.event.MouseEvent;
 import java.nio.charset.StandardCharsets;
 import javax.swing.JLabel;
 import javax.swing.border.EmptyBorder;
-
 import net.runelite.client.util.LinkBrowser;
 
 public class PlayerChip extends JLabel {
@@ -47,10 +46,8 @@ public class PlayerChip extends JLabel {
             @Override
             public void mousePressed(MouseEvent e) {
                 try {
-                    String encoded = java.net.URLEncoder.encode(
-                            username,
-                            StandardCharsets.UTF_8
-                    ).replace("+", "%20");
+                    String encoded = java.net.URLEncoder.encode(username, StandardCharsets.UTF_8)
+                            .replace("+", "%20");
                     LinkBrowser.browse("https://blert.io/players/" + encoded);
                 } catch (Exception ignored) {
                 }

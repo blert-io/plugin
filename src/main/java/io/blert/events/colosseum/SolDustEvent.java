@@ -26,10 +26,9 @@ package io.blert.events.colosseum;
 import io.blert.core.Stage;
 import io.blert.events.Event;
 import io.blert.events.EventType;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
 
 @Getter
 public class SolDustEvent extends Event {
@@ -48,11 +47,11 @@ public class SolDustEvent extends Event {
     }
 
     private final Pattern pattern;
+
     @Nullable
     private final Direction direction;
 
-    public SolDustEvent(int tick, WorldPoint point, Pattern pattern,
-                        @Nullable Direction direction) {
+    public SolDustEvent(int tick, WorldPoint point, Pattern pattern, @Nullable Direction direction) {
         super(EventType.COLOSSEUM_SOL_DUST, Stage.COLOSSEUM_WAVE_12, tick, point);
         this.pattern = pattern;
         this.direction = direction;

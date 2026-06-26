@@ -24,15 +24,14 @@
 package io.blert.challenges.colosseum;
 
 import io.blert.core.NpcAttack;
+import java.util.Optional;
 import lombok.Getter;
 import org.apache.commons.lang3.tuple.Pair;
-
-import java.util.Optional;
 
 public enum ColosseumNpc {
     JAGUAR_WARRIOR(12810, 125, Pair.of(10847, NpcAttack.COLOSSEUM_JAGUAR_AUTO)),
     SERPENT_SHAMAN(12811, 125, Pair.of(10859, NpcAttack.COLOSSEUM_SHAMAN_AUTO)),
-    MINOTAUR(new int[]{12812, 12813}, 225, Pair.of(10843, NpcAttack.COLOSSEUM_MINOTAUR_AUTO)),
+    MINOTAUR(new int[] {12812, 12813}, 225, Pair.of(10843, NpcAttack.COLOSSEUM_MINOTAUR_AUTO)),
     FREMENNIK_ARCHER(12814, 50, Pair.of(10850, NpcAttack.COLOSSEUM_ARCHER_AUTO)),
     FREMENNIK_SEER(12815, 50, Pair.of(10853, NpcAttack.COLOSSEUM_SEER_AUTO)),
     FREMENNIK_BERSERKER(12816, 50, Pair.of(10856, NpcAttack.COLOSSEUM_BERSERKER_AUTO)),
@@ -40,8 +39,7 @@ public enum ColosseumNpc {
             12817,
             220,
             Pair.of(10892, NpcAttack.COLOSSEUM_JAVELIN_AUTO),
-            Pair.of(10893, NpcAttack.COLOSSEUM_JAVELIN_TOSS)
-    ),
+            Pair.of(10893, NpcAttack.COLOSSEUM_JAVELIN_TOSS)),
     MANTICORE(12818, 250),
     SHOCKWAVE_COLOSSUS(12819, 125, Pair.of(10903, NpcAttack.COLOSSEUM_SHOCKWAVE_AUTO)),
     SOL_HEREDIT(
@@ -50,17 +48,18 @@ public enum ColosseumNpc {
             Pair.of(10883, NpcAttack.COLOSSEUM_HEREDIT_THRUST),
             Pair.of(10884, NpcAttack.COLOSSEUM_HEREDIT_BREAK),
             Pair.of(10885, NpcAttack.COLOSSEUM_HEREDIT_SLAM),
-            Pair.of(10887, NpcAttack.COLOSSEUM_HEREDIT_COMBO)
-    ),
-    BEE_SWARM(12823, 0),  // Deliberately ignoring hitpoints as they're not meaningful.
+            Pair.of(10887, NpcAttack.COLOSSEUM_HEREDIT_COMBO)),
+    BEE_SWARM(12823, 0), // Deliberately ignoring hitpoints as they're not meaningful.
     LASER_PRISM(12824, 0),
     HEALING_TOTEM(12825, 1),
     SOLARFLARE(12826, 0),
     ;
 
     private final int[] ids;
+
     @Getter
     private final int hitpoints;
+
     private final Pair<Integer, NpcAttack>[] attacks;
 
     public static Optional<ColosseumNpc> withId(int id) {
@@ -97,7 +96,7 @@ public enum ColosseumNpc {
 
     @SafeVarargs
     ColosseumNpc(int id, int hitpoints, Pair<Integer, NpcAttack>... attacks) {
-        this.ids = new int[]{id};
+        this.ids = new int[] {id};
         this.hitpoints = hitpoints;
         this.attacks = attacks;
     }

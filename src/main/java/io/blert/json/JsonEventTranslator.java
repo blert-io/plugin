@@ -37,14 +37,13 @@ import io.blert.events.colosseum.*;
 import io.blert.events.inferno.InfernoWaveStartEvent;
 import io.blert.events.mokhaiotl.*;
 import io.blert.events.tob.*;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.WorldPoint;
 
 @Slf4j
 public class JsonEventTranslator {
@@ -223,9 +222,7 @@ public class JsonEventTranslator {
             case SOTE_MAZE_PROC:
             case SOTE_MAZE_END: {
                 SoteMazeEvent mazeEvent = (SoteMazeEvent) event;
-                int maze = mazeEvent.getMaze() == Maze.MAZE_66
-                        ? Event.SoteMaze.MAZE_66
-                        : Event.SoteMaze.MAZE_33;
+                int maze = mazeEvent.getMaze() == Maze.MAZE_66 ? Event.SoteMaze.MAZE_66 : Event.SoteMaze.MAZE_33;
                 json.soteMaze = new Event.SoteMaze();
                 json.soteMaze.maze = maze;
                 mazeEvent.getChosenPlayer().ifPresent(p -> json.soteMaze.chosenPlayer = p);
@@ -234,10 +231,9 @@ public class JsonEventTranslator {
 
             case SOTE_MAZE_PATH: {
                 SoteMazePathEvent mazePathEvent = (SoteMazePathEvent) event;
-                int maze = mazePathEvent.getMaze() == Maze.MAZE_66
-                        ? Event.SoteMaze.MAZE_66
-                        : Event.SoteMaze.MAZE_33;
-                var coords = mazePathEvent.mazeRelativePoints()
+                int maze = mazePathEvent.getMaze() == Maze.MAZE_66 ? Event.SoteMaze.MAZE_66 : Event.SoteMaze.MAZE_33;
+                var coords = mazePathEvent
+                        .mazeRelativePoints()
                         .map(JsonEventTranslator::worldPointToCoords)
                         .collect(Collectors.toList());
 
@@ -278,8 +274,7 @@ public class JsonEventTranslator {
                 json.xarpusSplat = new Event.XarpusSplat();
                 json.xarpusSplat.source = xarpusSplatEvent.getSource().getId();
                 if (xarpusSplatEvent.getBounceFrom() != null) {
-                    json.xarpusSplat.bounceFrom =
-                            worldPointToCoords(xarpusSplatEvent.getBounceFrom());
+                    json.xarpusSplat.bounceFrom = worldPointToCoords(xarpusSplatEvent.getBounceFrom());
                 }
                 break;
             }
@@ -341,10 +336,9 @@ public class JsonEventTranslator {
             case COLOSSEUM_HANDICAP_CHOICE: {
                 HandicapChoiceEvent handicapChoiceEvent = (HandicapChoiceEvent) event;
                 json.handicap = handicapChoiceEvent.getHandicap().getId();
-                json.handicapOptions =
-                        Arrays.stream(handicapChoiceEvent.getHandicapOptions())
-                                .map(Handicap::getId)
-                                .collect(Collectors.toList());
+                json.handicapOptions = Arrays.stream(handicapChoiceEvent.getHandicapOptions())
+                        .map(Handicap::getId)
+                        .collect(Collectors.toList());
                 break;
             }
 
@@ -365,8 +359,7 @@ public class JsonEventTranslator {
             case COLOSSEUM_REENTRY_POOLS: {
                 ReentryPoolsEvent reentryPoolsEvent = (ReentryPoolsEvent) event;
                 json.colosseumReentryPools = new Event.ColosseumReentryPools();
-                json.colosseumReentryPools.primarySpawned =
-                        toCoordsList(reentryPoolsEvent.getPrimaryPoolsSpawned());
+                json.colosseumReentryPools.primarySpawned = toCoordsList(reentryPoolsEvent.getPrimaryPoolsSpawned());
                 json.colosseumReentryPools.primaryDespawned =
                         toCoordsList(reentryPoolsEvent.getPrimaryPoolsDespawned());
                 json.colosseumReentryPools.secondarySpawned =
@@ -455,7 +448,8 @@ public class JsonEventTranslator {
             case MOKHAIOTL_ATTACK_STYLE: {
                 MokhaiotlAttackStyleEvent mokhaiotlAttackStyleEvent = (MokhaiotlAttackStyleEvent) event;
                 json.mokhaiotlAttackStyle = new Event.AttackStyle();
-                json.mokhaiotlAttackStyle.style = mokhaiotlAttackStyleEvent.getStyle().ordinal();
+                json.mokhaiotlAttackStyle.style =
+                        mokhaiotlAttackStyleEvent.getStyle().ordinal();
                 json.mokhaiotlAttackStyle.npcAttackTick = mokhaiotlAttackStyleEvent.getAttackTick();
                 break;
             }
@@ -464,8 +458,7 @@ public class JsonEventTranslator {
                 MokhaiotlOrbEvent mokhaiotlOrbEvent = (MokhaiotlOrbEvent) event;
                 json.mokhaiotlOrb = new Event.MokhaiotlOrb();
                 json.mokhaiotlOrb.source = mokhaiotlOrbEvent.getSource().getId();
-                json.mokhaiotlOrb.sourcePoint =
-                        worldPointToCoords(mokhaiotlOrbEvent.getSourcePoint());
+                json.mokhaiotlOrb.sourcePoint = worldPointToCoords(mokhaiotlOrbEvent.getSourcePoint());
                 json.mokhaiotlOrb.style = mokhaiotlOrbEvent.getStyle().getId();
                 json.mokhaiotlOrb.startTick = mokhaiotlOrbEvent.getStartTick();
                 json.mokhaiotlOrb.endTick = mokhaiotlOrbEvent.getEndTick();
@@ -475,14 +468,10 @@ public class JsonEventTranslator {
             case MOKHAIOTL_OBJECTS: {
                 MokhaiotlObjectsEvent mokhaiotlObjectsEvent = (MokhaiotlObjectsEvent) event;
                 json.mokhaiotlObjects = new Event.MokhaiotlObjects();
-                json.mokhaiotlObjects.rocksSpawned =
-                        toCoordsList(mokhaiotlObjectsEvent.getRocksSpawned());
-                json.mokhaiotlObjects.splatsDespawned =
-                        toCoordsList(mokhaiotlObjectsEvent.getSplatsDespawned());
-                json.mokhaiotlObjects.rocksDespawned =
-                        toCoordsList(mokhaiotlObjectsEvent.getRocksDespawned());
-                json.mokhaiotlObjects.splatsSpawned =
-                        toCoordsList(mokhaiotlObjectsEvent.getSplatsSpawned());
+                json.mokhaiotlObjects.rocksSpawned = toCoordsList(mokhaiotlObjectsEvent.getRocksSpawned());
+                json.mokhaiotlObjects.splatsDespawned = toCoordsList(mokhaiotlObjectsEvent.getSplatsDespawned());
+                json.mokhaiotlObjects.rocksDespawned = toCoordsList(mokhaiotlObjectsEvent.getRocksDespawned());
+                json.mokhaiotlObjects.splatsSpawned = toCoordsList(mokhaiotlObjectsEvent.getSplatsSpawned());
                 break;
             }
 
@@ -497,8 +486,7 @@ public class JsonEventTranslator {
             case MOKHAIOTL_SHOCKWAVE: {
                 MokhaiotlShockwaveEvent mokhaiotlShockwaveEvent = (MokhaiotlShockwaveEvent) event;
                 json.mokhaiotlShockwave = new Event.MokhaiotlShockwave();
-                json.mokhaiotlShockwave.tiles =
-                        toCoordsList(mokhaiotlShockwaveEvent.getShockwaveTiles());
+                json.mokhaiotlShockwave.tiles = toCoordsList(mokhaiotlShockwaveEvent.getShockwaveTiles());
                 break;
             }
 
@@ -518,9 +506,7 @@ public class JsonEventTranslator {
     }
 
     private static List<Coords> toCoordsList(List<WorldPoint> points) {
-        return points.stream()
-                .map(JsonEventTranslator::worldPointToCoords)
-                .collect(Collectors.toList());
+        return points.stream().map(JsonEventTranslator::worldPointToCoords).collect(Collectors.toList());
     }
 
     private static Coords worldPointToCoords(WorldPoint point) {

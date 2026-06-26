@@ -2,10 +2,9 @@ package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.events.EventType;
+import java.util.List;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-
-import java.util.List;
 
 @Getter
 public class XarpusExhumedEvent extends TobEvent {
@@ -22,8 +21,6 @@ public class XarpusExhumedEvent extends TobEvent {
 
     @Override
     public String eventDataString() {
-        return "spawnTick=" + spawnTick +
-                ", healAmount=" + healAmount +
-                ", healTicks=" + healTicks;
+        return "spawnTick=" + spawnTick + ", healAmount=" + healAmount + ", healTicks=" + healTicks;
     }
 }

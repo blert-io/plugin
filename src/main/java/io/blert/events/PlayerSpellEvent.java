@@ -27,10 +27,9 @@ import io.blert.core.Raider;
 import io.blert.core.SpellDefinition;
 import io.blert.core.Stage;
 import io.blert.core.TrackedNpc;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
 
 @Getter
 public class PlayerSpellEvent extends Event {
@@ -41,8 +40,15 @@ public class PlayerSpellEvent extends Event {
     private final int targetNpcId;
     private final long targetNpcRoomId;
 
-    private PlayerSpellEvent(Stage stage, int tick, WorldPoint playerPoint, SpellDefinition spell,
-                             Raider raider, @Nullable String targetPlayer, int targetNpcId, long targetNpcRoomId) {
+    private PlayerSpellEvent(
+            Stage stage,
+            int tick,
+            WorldPoint playerPoint,
+            SpellDefinition spell,
+            Raider raider,
+            @Nullable String targetPlayer,
+            int targetNpcId,
+            long targetNpcRoomId) {
         super(EventType.PLAYER_SPELL, stage, tick, playerPoint);
         this.spell = spell;
         this.username = raider.getUsername();
@@ -51,20 +57,20 @@ public class PlayerSpellEvent extends Event {
         this.targetNpcRoomId = targetNpcRoomId;
     }
 
-    public static PlayerSpellEvent withNoTarget(Stage stage, int tick, WorldPoint playerPoint,
-                                                SpellDefinition spell, Raider raider) {
+    public static PlayerSpellEvent withNoTarget(
+            Stage stage, int tick, WorldPoint playerPoint, SpellDefinition spell, Raider raider) {
         return new PlayerSpellEvent(stage, tick, playerPoint, spell, raider, null, -1, 0);
     }
 
-    public static PlayerSpellEvent withPlayerTarget(Stage stage, int tick, WorldPoint playerPoint,
-                                                    SpellDefinition spell, Raider raider, String targetPlayer) {
+    public static PlayerSpellEvent withPlayerTarget(
+            Stage stage, int tick, WorldPoint playerPoint, SpellDefinition spell, Raider raider, String targetPlayer) {
         return new PlayerSpellEvent(stage, tick, playerPoint, spell, raider, targetPlayer, -1, 0);
     }
 
-    public static PlayerSpellEvent withNpcTarget(Stage stage, int tick, WorldPoint playerPoint,
-                                                 SpellDefinition spell, Raider raider, TrackedNpc targetNpc) {
-        return new PlayerSpellEvent(stage, tick, playerPoint, spell, raider, null,
-                targetNpc.getNpcId(), targetNpc.getRoomId());
+    public static PlayerSpellEvent withNpcTarget(
+            Stage stage, int tick, WorldPoint playerPoint, SpellDefinition spell, Raider raider, TrackedNpc targetNpc) {
+        return new PlayerSpellEvent(
+                stage, tick, playerPoint, spell, raider, null, targetNpc.getNpcId(), targetNpc.getRoomId());
     }
 
     public boolean hasNpcTarget() {

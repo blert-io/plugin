@@ -25,6 +25,7 @@ package io.blert.core;
 
 import com.google.common.collect.ImmutableSet;
 import io.blert.challenges.tob.TobNpc;
+import java.util.function.Consumer;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,10 +34,7 @@ import net.runelite.api.Item;
 import net.runelite.api.ItemID;
 import net.runelite.api.NPC;
 
-import java.util.function.Consumer;
-
 @Slf4j
-
 public class SpecialAttackTracker {
     NPC specTarget = null;
     Item specWeapon = null;
@@ -55,10 +53,7 @@ public class SpecialAttackTracker {
     final Consumer<SpecialAttack> specCallback;
 
     static final ImmutableSet<Integer> TRACKED_SPECIAL_WEAPONS = ImmutableSet.of(
-            ItemID.DRAGON_WARHAMMER,
-            ItemID.DRAGON_WARHAMMER_CR,
-            ItemID.BANDOS_GODSWORD,
-            ItemID.BANDOS_GODSWORD_OR);
+            ItemID.DRAGON_WARHAMMER, ItemID.DRAGON_WARHAMMER_CR, ItemID.BANDOS_GODSWORD, ItemID.BANDOS_GODSWORD_OR);
 
     public SpecialAttackTracker(Consumer<SpecialAttack> specCallback) {
         this.specCallback = specCallback;

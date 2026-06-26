@@ -2,10 +2,9 @@ package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.events.EventType;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
-
-import javax.annotation.Nullable;
 
 @Getter
 public class XarpusSplatEvent extends TobEvent {

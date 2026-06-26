@@ -25,9 +25,6 @@ package io.blert.core;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import lombok.Getter;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,6 +33,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import lombok.Getter;
 
 /**
  * Definition of a player spell (utility spells, not combat).
@@ -64,8 +63,13 @@ public class SpellDefinition {
 
     private final int defaultCooldown;
 
-    public SpellDefinition(int id, String name, int[] animationIds, List<Graphic> graphics,
-                           List<Graphic> targetGraphics, int stallTicks) {
+    public SpellDefinition(
+            int id,
+            String name,
+            int[] animationIds,
+            List<Graphic> graphics,
+            List<Graphic> targetGraphics,
+            int stallTicks) {
         this.id = id;
         this.name = name;
         this.animationIds = animationIds != null ? animationIds : new int[0];
@@ -73,10 +77,8 @@ public class SpellDefinition {
         this.targetGraphics = targetGraphics != null ? targetGraphics : Collections.emptyList();
         this.stallTicks = stallTicks;
 
-        int maxCasterCooldown = this.graphics.stream()
-                .mapToInt(Graphic::getDurationTicks)
-                .max()
-                .orElse(0);
+        int maxCasterCooldown =
+                this.graphics.stream().mapToInt(Graphic::getDurationTicks).max().orElse(0);
         int maxTargetCooldown = this.targetGraphics.stream()
                 .mapToInt(Graphic::getDurationTicks)
                 .max()
@@ -132,14 +134,10 @@ public class SpellDefinition {
     /**
      * Loads spell definitions from a JSON input stream.
      */
-    public static List<SpellDefinition> loadFromJson(Gson gson,
-                                                     InputStream inputStream) throws IOException {
+    public static List<SpellDefinition> loadFromJson(Gson gson, InputStream inputStream) throws IOException {
         try (Reader r = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
-            List<io.blert.json.SpellDefinition> jsonDefs = gson.fromJson(
-                    r,
-                    new TypeToken<List<io.blert.json.SpellDefinition>>() {
-                    }.getType()
-            );
+            List<io.blert.json.SpellDefinition> jsonDefs =
+                    gson.fromJson(r, new TypeToken<List<io.blert.json.SpellDefinition>>() {}.getType());
             return jsonDefs.stream().map(io.blert.json.SpellDefinition::toCore).collect(Collectors.toList());
         }
     }

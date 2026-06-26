@@ -23,14 +23,12 @@
 
 package io.blert.util;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class Tick {
     public static final int MILLISECONDS_PER_TICK = 600;
-    public static final String TIME_STRING_REGEX =
-            "(\\d+:)?\\d{1,2}:\\d{2}(\\.\\d{2})?";
+    public static final String TIME_STRING_REGEX = "(\\d+:)?\\d{1,2}:\\d{2}(\\.\\d{2})?";
 
     /**
      * Convert a number of ticks to a human-readable time string.
@@ -96,8 +94,7 @@ public class Tick {
 
         boolean precise = true;
 
-        int milliseconds =
-                hours * 60 * 60 * 1000 + minutes * 60 * 1000 + seconds * 1000;
+        int milliseconds = hours * 60 * 60 * 1000 + minutes * 60 * 1000 + seconds * 1000;
         if (secondsAndCentiseconds.length == 2) {
             int centiseconds = Integer.parseInt(secondsAndCentiseconds[1]);
             milliseconds += centiseconds * 10;

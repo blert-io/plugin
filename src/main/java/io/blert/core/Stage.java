@@ -23,12 +23,10 @@
 
 package io.blert.core;
 
-import lombok.Getter;
-
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
+import javax.annotation.Nullable;
+import lombok.Getter;
 
 public enum Stage {
     TOB_MAIDEN(10),

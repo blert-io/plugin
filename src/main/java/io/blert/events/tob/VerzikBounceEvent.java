@@ -25,18 +25,18 @@ package io.blert.events.tob;
 
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.events.EventType;
+import java.util.Optional;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import net.runelite.api.Player;
-
-import javax.annotation.Nullable;
-import java.util.Optional;
 
 @Getter
 public class VerzikBounceEvent extends TobEvent {
     private final int attackTick;
     private final int playersInRange;
     private final int playersNotInRange;
+
     @Nullable
     private final String bouncedPlayer;
 
@@ -49,11 +49,8 @@ public class VerzikBounceEvent extends TobEvent {
      * @param playersNotInRange Number of players not in range of Verzik
      * @param bouncedPlayer     Player who was bounced by Verzik
      */
-    public VerzikBounceEvent(int tick,
-                             int attackTick,
-                             int playersInRange,
-                             int playersNotInRange,
-                             @NonNull Player bouncedPlayer) {
+    public VerzikBounceEvent(
+            int tick, int attackTick, int playersInRange, int playersNotInRange, @NonNull Player bouncedPlayer) {
         super(EventType.VERZIK_BOUNCE, Room.VERZIK, tick, null);
         this.attackTick = attackTick;
         this.playersInRange = playersInRange;
@@ -82,8 +79,8 @@ public class VerzikBounceEvent extends TobEvent {
 
     @Override
     protected String eventDataString() {
-        return String.format("attackTick=%d, playersInRange=%d, playersNotInRange=%d, bouncedPlayer=%s",
-                attackTick, playersInRange, playersNotInRange,
-                bouncedPlayer != null ? bouncedPlayer : "(none)");
+        return String.format(
+                "attackTick=%d, playersInRange=%d, playersNotInRange=%d, bouncedPlayer=%s",
+                attackTick, playersInRange, playersNotInRange, bouncedPlayer != null ? bouncedPlayer : "(none)");
     }
 }

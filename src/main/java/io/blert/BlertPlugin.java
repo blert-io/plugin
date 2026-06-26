@@ -35,6 +35,11 @@ import io.blert.core.RecordableChallenge;
 import io.blert.core.SpellRegistry;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -52,16 +57,8 @@ import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
 
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
-
 @Slf4j
-@PluginDescriptor(
-        name = "Blert"
-)
+@PluginDescriptor(name = "Blert")
 public class BlertPlugin extends Plugin {
     @Inject
     private Client client;
@@ -84,6 +81,7 @@ public class BlertPlugin extends Plugin {
 
     @Getter
     private BlertPluginPanel sidePanel;
+
     private NavigationButton sidePanelButton;
 
     @Getter
@@ -93,6 +91,7 @@ public class BlertPlugin extends Plugin {
     private final SpellRegistry spellRegistry = new SpellRegistry();
 
     private final List<RecordableChallenge> challenges = new ArrayList<>();
+
     @Getter
     private @Nullable RecordableChallenge activeChallenge = null;
 
@@ -139,7 +138,12 @@ public class BlertPlugin extends Plugin {
 
         sidePanel = new BlertPluginPanel(config, websocketManager);
         final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/blert.png");
-        sidePanelButton = NavigationButton.builder().tooltip("Blert").priority(6).icon(icon).panel(sidePanel).build();
+        sidePanelButton = NavigationButton.builder()
+                .tooltip("Blert")
+                .priority(6)
+                .icon(icon)
+                .panel(sidePanel)
+                .build();
         clientToolbar.addNavigation(sidePanelButton);
         sidePanel.startPanel();
 
@@ -205,11 +209,13 @@ public class BlertPlugin extends Plugin {
 
             // If the player was not already logged in, notify the server that they have.
             if (!loginState.isLoggedIn()) {
-                deferredTask = new DeferredTask(() -> {
-                    if (websocketManager.getEventHandler() != null) {
-                        websocketManager.getEventHandler().updateGameState(GameState.LOGGED_IN);
-                    }
-                }, 3);
+                deferredTask = new DeferredTask(
+                        () -> {
+                            if (websocketManager.getEventHandler() != null) {
+                                websocketManager.getEventHandler().updateGameState(GameState.LOGGED_IN);
+                            }
+                        },
+                        3);
             }
 
             loginState = loginState.logIn();
@@ -237,9 +243,12 @@ public class BlertPlugin extends Plugin {
      * Updates the active challenge based on the player's game location.
      */
     private void updateActiveChallenge() {
-        WorldPoint playerLocation = Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
+        WorldPoint playerLocation =
+                Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
 
-        var maybeChallenge = challenges.stream().filter(c -> c.containsLocation(playerLocation)).findFirst();
+        var maybeChallenge = challenges.stream()
+                .filter(c -> c.containsLocation(playerLocation))
+                .findFirst();
         if (enabled && maybeChallenge.isPresent()) {
             RecordableChallenge challenge = maybeChallenge.get();
             if (activeChallenge == challenge) {
@@ -299,14 +308,14 @@ public class BlertPlugin extends Plugin {
         }
     }
 
-    @Subscribe(priority = 111)  // Run before other plugins mutate player state
+    @Subscribe(priority = 111) // Run before other plugins mutate player state
     private void onPlayerChanged(PlayerChanged event) {
         if (activeChallenge != null) {
             activeChallenge.onPlayerChanged(event);
         }
     }
 
-    @Subscribe(priority = 111)  // Run before other plugins mutate player state
+    @Subscribe(priority = 111) // Run before other plugins mutate player state
     private void onAnimationChanged(AnimationChanged event) {
         if (activeChallenge != null) {
             activeChallenge.onAnimationChanged(event);

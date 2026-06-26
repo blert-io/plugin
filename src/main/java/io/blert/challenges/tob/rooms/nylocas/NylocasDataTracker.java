@@ -36,6 +36,8 @@ import io.blert.events.NpcAttackEvent;
 import io.blert.events.tob.NyloBossSpawnEvent;
 import io.blert.events.tob.NyloCleanupEndEvent;
 import io.blert.events.tob.NyloWaveEvent;
+import java.util.*;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
@@ -47,17 +49,13 @@ import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
-import javax.annotation.Nullable;
-import java.util.*;
-
 @Slf4j
-
 public class NylocasDataTracker extends RoomDataTracker {
     private static final int CAP_INCREASE_WAVE = 20;
     private static final int LAST_NYLO_WAVE = 31;
     private static final int WAVE_TICK_CYCLE = 4;
-    private static final int[] NATURAL_STALLS = new int[]{
-            0, 4, 4, 4, 4, 16, 4, 12, 4, 12, 8, 8, 8, 8, 8, 8, 4, 12, 8, 12, 16, 8, 12, 8, 8, 8, 4, 8, 4, 4, 4,
+    private static final int[] NATURAL_STALLS = new int[] {
+        0, 4, 4, 4, 4, 16, 4, 12, 4, 12, 8, 8, 8, 8, 8, 8, 4, 12, 8, 12, 16, 8, 12, 8, 8, 8, 4, 8, 4, 4, 4,
     };
 
     private static final int NYLO_BOSS_MAGE_ANIMATION = 7989;
@@ -73,10 +71,8 @@ public class NylocasDataTracker extends RoomDataTracker {
     private final List<Nylo> bigDeathsThisTick = new ArrayList<>();
     private final List<Nylo> laneSpawnsThisTick = new ArrayList<>();
 
-    private static final ImmutableSet<Integer> NYLOCAS_PILLAR_NPC_IDS = ImmutableSet.of(
-            NullNpcID.NULL_10790,
-            NullNpcID.NULL_8358,
-            NullNpcID.NULL_10811);
+    private static final ImmutableSet<Integer> NYLOCAS_PILLAR_NPC_IDS =
+            ImmutableSet.of(NullNpcID.NULL_10790, NullNpcID.NULL_8358, NullNpcID.NULL_10811);
 
     public NylocasDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.NYLOCAS);
@@ -102,8 +98,7 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     @Override
-    protected void onRoomStart() {
-    }
+    protected void onRoomStart() {}
 
     @Override
     protected void onTick() {
@@ -277,8 +272,14 @@ public class NylocasDataTracker extends RoomDataTracker {
         final int tick = getTick();
 
         WorldPoint point = getWorldLocation(npc);
-        Nylo nylo = new Nylo(npc, tobNpc.get(), generateRoomId(npc), point, tick,
-                0, tobNpc.get().getBaseHitpoints(theatreChallenge.getScale()));
+        Nylo nylo = new Nylo(
+                npc,
+                tobNpc.get(),
+                generateRoomId(npc),
+                point,
+                tick,
+                0,
+                tobNpc.get().getBaseHitpoints(theatreChallenge.getScale()));
         nylosInRoom.put(npc.hashCode(), nylo);
 
         if (nylo.getSpawnType().isLaneSpawn()) {
@@ -345,7 +346,8 @@ public class NylocasDataTracker extends RoomDataTracker {
     }
 
     private void checkCleanupComplete() {
-        boolean princeAlive = nyloBoss != null && nyloBoss.isPrince() && !nyloBoss.getNpc().isDead();
+        boolean princeAlive =
+                nyloBoss != null && nyloBoss.isPrince() && !nyloBoss.getNpc().isDead();
         if (currentWave == LAST_NYLO_WAVE && nylosInRoom.isEmpty() && !princeAlive) {
             dispatchEvent(new NyloCleanupEndEvent(getTick()));
             log.debug("Cleanup: {} ({})", getTick(), formattedRoomTime());
