@@ -118,8 +118,12 @@ public class NylocasDataTracker extends RoomDataTracker {
             // it means that the next wave did not spawn when expected, i.e. a stall occurred.
             nextWaveSpawnCheckTick += WAVE_TICK_CYCLE;
 
-            log.debug("Stalled wave {} ({}/{})", currentWave, roomNyloCount(), waveCap());
-            dispatchEvent(NyloWaveEvent.stall(tick, currentWave, roomNyloCount(), waveCap()));
+            // A stall only happens when the room is at the nylo cap; avoid
+            // emitting phantom stall events if under it.
+            if (roomNyloCount() >= waveCap()) {
+                log.debug("Stalled wave {} ({}/{})", currentWave, roomNyloCount(), waveCap());
+                dispatchEvent(NyloWaveEvent.stall(tick, currentWave, roomNyloCount(), waveCap()));
+            }
         }
 
         nylosInRoom.values().stream()
