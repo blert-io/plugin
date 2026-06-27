@@ -42,9 +42,82 @@ jobs:
   token-budget:
     name: Auto-review token budget
     runs-on: ubuntu-latest
+    # Read-only: this job runs the PR's own copy of the estimate script, so it
+    # must never hold a write-scoped token. The comment is posted by a separate
+    # job (token-comment) that does not check out or execute any PR code.
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Estimate review token count
+        if: github.event_name != 'pull_request'
         run: python3 tools/token-estimate.py --limit 200000 --warn 160000
+
+      - name: Checkout base for comparison
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+
+      - name: Estimate review token delta
+        if: github.event_name == 'pull_request'
+        run: |
+          # Measure both trees with this branch's copy of the script so a change
+          # to the ratio or comment stripper can't manufacture a phantom delta.
+          python3 tools/token-estimate.py base/src/main/java \
+            --limit 200000 --warn 160000 --json "$RUNNER_TEMP/base.json"
+          python3 tools/token-estimate.py \
+            --limit 200000 --warn 160000 \
+            --compare "$RUNNER_TEMP/base.json" --md token-delta.md
+
+      - name: Upload token delta report
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: token-delta
+          path: token-delta.md
+          if-no-files-found: error
+
+  token-comment:
+    name: Comment token delta on PR
+    needs: token-budget
+    runs-on: ubuntu-latest
+    # Runs only on same-repo PRs. Holds the write token but checks out no PR
+    # code; its only input is the report artifact, consumed as a comment body.
+    if: ${{ github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository }}
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Download token delta report
+        uses: actions/download-artifact@v7
+        with:
+          name: token-delta
+
+      - name: Upsert sticky comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- blert-token-budget -->';
+            const body = marker + '\n' + fs.readFileSync('token-delta.md', 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(
+              github.rest.issues.listComments, { owner, repo, issue_number });
+            // Match only our own prior comment.
+            const prev = comments.find(c =>
+              c.user?.login === 'github-actions[bot]' && c.body?.includes(marker));
+            if (prev) {
+              await github.rest.issues.updateComment(
+                { owner, repo, comment_id: prev.id, body });
+            } else {
+              await github.rest.issues.createComment(
+                { owner, repo, issue_number, body });
+            }
