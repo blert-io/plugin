@@ -10,9 +10,10 @@
 # tokenizers (4.35 chars/token for this codebase's stripped Java).
 
 import argparse
-from pathlib import Path
+import json
 import os
 import sys
+from pathlib import Path
 
 IN_GHA = os.environ.get("GITHUB_ACTIONS") == "true"
 
@@ -32,6 +33,12 @@ def parse_args():
                    help="fail at or above this estimate; disabled by default")
     p.add_argument("--ratio", type=float, default=float(os.environ.get("BLERT_CHARS_PER_TOKEN", "4.35")),
                    help="chars-per-token calibration ratio (default: 4.35)")
+    p.add_argument("--json", type=Path, default=None, metavar="PATH",
+                   help="dump the raw estimate as JSON to PATH and exit")
+    p.add_argument("--compare", type=Path, default=None, metavar="PATH",
+                   help="baseline JSON (from --json) to render deltas against")
+    p.add_argument("--md", type=Path, default=None, metavar="PATH",
+                   help="also write a Markdown report to PATH")
     return p.parse_args()
 
 
@@ -81,47 +88,107 @@ def area_of(rel):
     return "io/blert"
 
 
-def main(args):
+def collect(root):
+    """Scan a source root, returning (per-area stripped chars, total, file count)."""
     areas, total_chars, files = {}, 0, 0
-    for p in args.root.rglob("*.java"):
+    for p in root.rglob("*.java"):
         code = strip_comments(p.read_text(encoding="utf-8"))
         chars = len(code)
         total_chars += chars
         files += 1
-        area = area_of(p.relative_to(args.root))
+        area = area_of(p.relative_to(root))
         areas[area] = areas.get(area, 0) + chars
+    return areas, total_chars, files
 
+
+def signed(n):
+    """Render a delta with an explicit sign: +1,234 / -567 / ±0."""
+    return f"{n:+,}" if n else "±0"
+
+
+def main(args):
+    areas, total_chars, files = collect(args.root)
     est = round(total_chars / args.ratio)
     pct = est / args.limit * 100
 
+    if args.json:
+        args.json.write_text(json.dumps({
+            "est": est, "files": files, "total_chars": total_chars,
+            "ratio": args.ratio, "areas": areas,
+        }))
+        # --json is a pure data dump to capture a baseline for later --compare.
+        # It writes nothing else.
+        return 0
+
+    base = json.loads(args.compare.read_text()) if args.compare else None
+    base_areas = base["areas"] if base else {}
+    # Measure the baseline with the current ratio so a ratio change never
+    # shows up as a phantom delta.
+    base_est = round(base["total_chars"] / args.ratio) if base else None
+    delta = est - base_est if base else None
+
+    def tok(ch):
+        return round(ch / args.ratio)
+
+    if base is not None:
+        # Compare mode: only surface areas that actually moved, largest first.
+        dmap = {a: tok(areas.get(a, 0)) - tok(base_areas.get(a, 0))
+                for a in set(areas) | set(base_areas)}
+        rows = sorted((a for a, dd in dmap.items() if dd), key=lambda a: -abs(dmap[a]))
+    else:
+        rows = sorted(areas, key=lambda a: -areas[a])
+
+    # Console report
+    head = f"Estimated auto-review tokens: ~{est:,} / {args.limit:,} ({pct:.0f}%)"
+    if base is not None:
+        head += f"   {signed(delta)} vs baseline (~{base_est:,})"
     lines = [
-        f"Estimated auto-review tokens: ~{est:,} / {args.limit:,} ({pct:.0f}%)",
+        head,
         f"  files: {files}",
         f"  stripped chars: {total_chars:,}",
         f"  ratio: {args.ratio} chars/tok",
         f"  warn at {args.warn:,}" +
         (f", fail at {args.fail:,}" if args.fail else ", fail disabled"),
         "",
-        "  by area:",
+        "  by area (changes only):" if base is not None else "  by area:",
     ]
-    for area, ch in sorted(areas.items(), key=lambda x: -x[1]):
-        lines.append(f"    {round(ch / args.ratio):>7,}  {area}")
-    report = "\n".join(lines)
-    print(report)
+    if base is not None and not rows:
+        lines.append("    (no per-area changes)")
+    for area in rows:
+        row = f"    {tok(areas.get(area, 0)):>7,}  {area}"
+        if base is not None:
+            row += f"   {signed(dmap[area])}"
+        lines.append(row)
+    print("\n".join(lines))
+
+    # Markdown (job summary and/or PR comment body)
+    bar = "🟥" if est >= args.warn else "🟩"
+    md = [f"### {bar} Auto-review token estimate: ~{est:,} / {args.limit:,} ({pct:.0f}%)", ""]
+    if base is not None:
+        arrow = "🔺" if delta > 0 else "🔻" if delta < 0 else "▬"
+        md += [f"**{arrow} {signed(delta)} tokens vs base** (was ~{base_est:,})", ""]
+        if rows:
+            md += ["| area | est. tokens | Δ vs base |", "|---|--:|--:|"]
+            for area in rows:
+                md.append(f"| {area} | {tok(areas.get(area, 0)):,} | {signed(dmap[area])} |")
+        else:
+            md.append("_No per-area changes._")
+    else:
+        md += ["| area | est. tokens |", "|---|--:|"]
+        for area in rows:
+            md.append(f"| {area} | {tok(areas[area]):,} |")
+    report_md = "\n".join(md) + "\n"
 
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a") as fh:
-            bar = "🟥" if est >= args.warn else "🟩"
-            fh.write(f"### {bar} Auto-review token estimate: ~"
-                     f"{est:,} / {args.limit:,} ({pct:.0f}%)\n\n")
-            fh.write("| area | est. tokens |\n|---|--:|\n")
-            for area, ch in sorted(areas.items(), key=lambda x: -x[1]):
-                fh.write(f"| {area} | {round(ch / args.ratio):,} |\n")
+            fh.write(report_md)
+    if args.md:
+        args.md.write_text(report_md)
 
     msg = (
         f"Plugin is ~{est:,} estimated tokens ({pct:.0f}% "
-        "of the {args.limit} auto-review limit)."
+        f"of the {args.limit:,} auto-review limit)."
     )
     if args.fail and est >= args.fail:
         print(f"::error::{msg}" if IN_GHA else f"\nERROR: {msg}")
