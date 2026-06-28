@@ -33,10 +33,6 @@ public enum MokhaiotlLocation {
         }
     }
 
-    public boolean inCavern() {
-        return this == CAVERN || this == LOBBY;
-    }
-
     public boolean inMokhaiotl() {
         return this == DELVE_1 || this == DELVE_MID || this == DELVE_DEEP;
     }

@@ -54,10 +54,6 @@ public enum SpawnType {
         return UNKNOWN;
     }
 
-    public boolean isSplit() {
-        return this == SPLIT;
-    }
-
     public boolean isLaneSpawn() {
         return this == WEST || this == SOUTH || this == EAST;
     }

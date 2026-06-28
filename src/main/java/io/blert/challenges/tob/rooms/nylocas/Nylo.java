@@ -26,7 +26,6 @@ package io.blert.challenges.tob.rooms.nylocas;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.TrackedNpc;
-import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -122,14 +121,6 @@ public class Nylo extends TrackedNpc {
 
     public boolean isLaneSpawn() {
         return spawnType.isLaneSpawn();
-    }
-
-    public boolean isSplit() {
-        return spawnType == SpawnType.SPLIT;
-    }
-
-    public Optional<Nylo> getParent() {
-        return Optional.ofNullable(parent);
     }
 
     /**

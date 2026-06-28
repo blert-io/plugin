@@ -183,19 +183,11 @@ public class Event {
     }
 
     public static class XarpusSplat {
-        public static final int SOURCE_UNKNOWN = 0;
-        public static final int SOURCE_XARPUS = 1;
-        public static final int SOURCE_BOUNCE = 2;
-
         public int source;
         public Coords bounceFrom;
     }
 
     public static class AttackStyle {
-        public static final int STYLE_MELEE = 0;
-        public static final int STYLE_RANGE = 1;
-        public static final int STYLE_MAGE = 2;
-
         public int style;
         public int npcAttackTick;
     }
@@ -223,10 +215,6 @@ public class Event {
     }
 
     public static class MokhaiotlOrb {
-        public static final int SOURCE_UNKNOWN = 0;
-        public static final int SOURCE_MOKHAIOTL = 1;
-        public static final int SOURCE_BALL = 2;
-
         public int source;
         public Coords sourcePoint;
         public int style;

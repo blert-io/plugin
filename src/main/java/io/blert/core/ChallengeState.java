@@ -54,10 +54,6 @@ public enum ChallengeState {
         return this == INACTIVE;
     }
 
-    public boolean hasStarted() {
-        return this == ACTIVE || this == ENDING || this == COMPLETE;
-    }
-
     public boolean inChallenge() {
         return !isInactive();
     }

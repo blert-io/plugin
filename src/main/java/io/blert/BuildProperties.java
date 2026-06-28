@@ -68,10 +68,6 @@ public final class BuildProperties {
         return raw.isEmpty() ? new String[0] : raw.split(";");
     }
 
-    public static String summary() {
-        return String.format("version=%s revision=%s jarHash=%s", VERSION, revision(), jarHash());
-    }
-
     private static Properties loadLocalBuild() {
         Properties props = new Properties();
         try (InputStream in = BuildProperties.class.getResourceAsStream("/blert-build.properties")) {

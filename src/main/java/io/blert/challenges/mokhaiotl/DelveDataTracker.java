@@ -34,7 +34,6 @@ public class DelveDataTracker extends DataTracker {
     private static final int ROCK_GAME_OBJECT_ID = 57286;
 
     private static final Set<Number> SHOCKWAVE_GRAPHICS_IDs = ImmutableSet.of(3405, 3406, 3407);
-    private static final int RACECAR_TARGET_GRAPHICS_ID = 3415;
 
     private static final int[] HITPOINTS_BY_DELVE = new int[] {
         -1, // 1-indexed
