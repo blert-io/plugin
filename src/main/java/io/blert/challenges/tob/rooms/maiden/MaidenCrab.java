@@ -159,36 +159,6 @@ public class MaidenCrab extends TrackedNpc {
         return new Properties(spawn, position, scuffed);
     }
 
-    /**
-     * Returns the location at which this crab spawns.
-     */
-    public WorldPoint getSpawnPoint() {
-        switch (position) {
-            case S1:
-                return scuffed ? S1_SCUFFED_SPAWN : S1_SPAWN;
-            case N1:
-                return scuffed ? N1_SCUFFED_SPAWN : N1_SPAWN;
-            case S2:
-                return scuffed ? S2_SCUFFED_SPAWN : S2_SPAWN;
-            case N2:
-                return scuffed ? N2_SCUFFED_SPAWN : N2_SPAWN;
-            case S3:
-                return scuffed ? S3_SCUFFED_SPAWN : S3_SPAWN;
-            case N3:
-                return scuffed ? N3_SCUFFED_SPAWN : N3_SPAWN;
-            case S4_INNER:
-                return scuffed ? S4_INNER_SCUFFED_SPAWN : S4_INNER_SPAWN;
-            case S4_OUTER:
-                return scuffed ? S4_OUTER_SCUFFED_SPAWN : S4_OUTER_SPAWN;
-            case N4_INNER:
-                return scuffed ? N4_INNER_SCUFFED_SPAWN : N4_INNER_SPAWN;
-            case N4_OUTER:
-                return scuffed ? N4_OUTER_SCUFFED_SPAWN : N4_OUTER_SPAWN;
-        }
-
-        return null;
-    }
-
     private static final WorldPoint N1_SPAWN = new WorldPoint(3173, 4456, 0);
     private static final WorldPoint N1_SCUFFED_SPAWN = new WorldPoint(3174, 4457, 0);
     private static final WorldPoint N2_SPAWN = new WorldPoint(3177, 4456, 0);

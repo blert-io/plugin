@@ -36,10 +36,6 @@ public class TrackedNpcCollection implements Collection<TrackedNpc> {
 
     public TrackedNpcCollection() {}
 
-    public Optional<TrackedNpc> getByRoomId(long roomId) {
-        return Optional.ofNullable(byRoomId.get(roomId));
-    }
-
     public Optional<TrackedNpc> getByNpc(NPC npc) {
         return Optional.ofNullable(byNpc.get(npc.hashCode()));
     }

@@ -26,12 +26,5 @@ package io.blert.challenges.tob.rooms.maiden;
 public enum CrabSpawn {
     SEVENTIES,
     FIFTIES,
-    THIRTIES;
-
-    public CrabSpawn next() {
-        if (this == SEVENTIES) {
-            return FIFTIES;
-        }
-        return THIRTIES;
-    }
+    THIRTIES
 }

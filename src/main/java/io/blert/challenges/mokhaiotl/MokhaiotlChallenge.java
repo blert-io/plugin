@@ -43,7 +43,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
 public class MokhaiotlChallenge extends RecordableChallenge {
-    private static final int MOKHAIOTL_BURROW_OBJECT_ID = 57285;
     private static final Pattern MOKHAIOTL_END_REGEX =
             Pattern.compile("Delve level 1 - 8 duration: (" + Tick.TIME_STRING_REGEX + ")");
 

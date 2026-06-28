@@ -187,10 +187,6 @@ public class Raider {
         return Optional.ofNullable(equipment[slot.ordinal()]);
     }
 
-    public boolean hasGraphic(int graphicId) {
-        return graphicsIds.containsKey(graphicId);
-    }
-
     public Set<Integer> getGraphicIds() {
         return graphicsIds.keySet();
     }

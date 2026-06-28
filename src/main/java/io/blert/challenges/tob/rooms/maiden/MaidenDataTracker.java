@@ -52,7 +52,6 @@ public class MaidenDataTracker extends RoomDataTracker {
     private static final int MAIDEN_AUTO_ANIMATION = 8092;
 
     private CrabSpawn currentSpawn = CrabSpawn.SEVENTIES;
-    private final int[] spawnTicks = new int[3];
     private boolean crabsSpawnedThisTick = false;
 
     private @Nullable HpVarbitTrackedNpc maiden;
@@ -239,7 +238,6 @@ public class MaidenDataTracker extends RoomDataTracker {
             }
         }
 
-        spawnTicks[currentSpawn.ordinal()] = tick;
         log.debug("Maiden {} spawned on tick {} ({})", currentSpawn, tick, formattedRoomTime());
 
         crabs.values().stream()

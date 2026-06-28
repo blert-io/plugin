@@ -68,7 +68,7 @@ public class AttackDefinition {
     public enum Category {
         MELEE,
         RANGED,
-        MAGIC;
+        MAGIC,
     }
 
     /**
@@ -167,18 +167,6 @@ public class AttackDefinition {
      */
     public boolean is(int attackId) {
         return this.protoId == attackId;
-    }
-
-    /**
-     * Returns whether this attack uses the given animation.
-     */
-    public boolean hasAnimation(int animationId) {
-        for (int aid : animationIds) {
-            if (aid == animationId) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
