@@ -297,32 +297,6 @@ public class MazeTracker {
         }
     }
 
-    public boolean hasOverworldMaze() {
-        if (overworldPoints.size() != 8) {
-            return false;
-        }
-
-        for (int i = 0; i < 8; i++) {
-            final int expectedY = Maze.OVERWORLD_MAZE_START.getY() + i * 2;
-            if (overworldPoints.get(i).getY() != expectedY) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public void debugPrintMaze() {
-        Set<WorldPoint> points = new HashSet<>(overworldPoints);
-        for (int y = Maze.OVERWORLD_MAZE_START.getY() + Maze.HEIGHT - 1; y >= Maze.OVERWORLD_MAZE_START.getY(); y--) {
-            StringBuilder sb = new StringBuilder();
-            for (int x = Maze.OVERWORLD_MAZE_START.getX(); x < Maze.OVERWORLD_MAZE_START.getX() + Maze.WIDTH; x++) {
-                sb.append(points.contains(new WorldPoint(x, y, 0)) ? "X " : "o ");
-            }
-            log.info(sb.toString());
-        }
-    }
-
     public boolean hasOverworldPivots() {
         return !overworldPoints.isEmpty();
     }

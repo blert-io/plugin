@@ -239,10 +239,6 @@ public enum TobNpc {
         this.hitpointsByScale = new int[] {hitpoints, hitpoints, hitpoints};
     }
 
-    TobNpc(int id, ChallengeMode mode) {
-        this(id, 1, mode, new int[] {0, 0, 0});
-    }
-
     public boolean hasId(int id) {
         return id >= this.id && id < this.id + this.idRange;
     }

@@ -62,7 +62,6 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     private final Pattern waveEndRegex;
 
     private final boolean startOnEntry;
-    private boolean startingTickAccurate;
     private boolean shouldUpdateHitpoints;
     private int healTick = -1;
 
@@ -79,22 +78,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         this(theatreChallenge, client, room, false);
     }
 
-    /**
-     * Begins tracking data for the room.
-     */
     public void startRoom() {
-        startRoom(0, true);
-    }
-
-    /**
-     * Begins tracking data for the room, assuming that the starting tick is not correct (possibly because the room was
-     * already in progress).
-     */
-    public void startRoomInaccurate() {
-        startRoom(0, false);
-    }
-
-    private void startRoom(int tickOffset, boolean accurate) {
         if (getState() != State.NOT_STARTED) {
             return;
         }
@@ -108,7 +92,6 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
             dispatchEvent(new ChallengeUpdateEvent(theatreChallenge.getChallengeMode(), party));
         }
 
-        startingTickAccurate = accurate;
         onRoomStart();
     }
 

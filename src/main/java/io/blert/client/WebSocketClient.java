@@ -152,17 +152,6 @@ public class WebSocketClient extends WebSocketListener {
         }
     }
 
-    /**
-     * Sends a binary message through the open websocket.
-     *
-     * @param message The binary message to send.
-     */
-    public void sendMessage(byte[] message) {
-        if (isOpen()) {
-            socket.send(okio.ByteString.of(message));
-        }
-    }
-
     @Override
     @EverythingIsNonNull
     public synchronized void onOpen(WebSocket webSocket, Response response) {

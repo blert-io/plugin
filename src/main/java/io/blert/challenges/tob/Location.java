@@ -198,13 +198,4 @@ public enum Location {
     public boolean inVerzik() {
         return this == VERZIK_ROOM;
     }
-
-    public boolean isInstance() {
-        return this == MAIDEN_INSTANCE
-                || this == BLOAT_INSTANCE
-                || this == NYLOCAS_INSTANCE
-                || this == SOTETSEG_INSTANCE
-                || this == XARPUS_INSTANCE
-                || this == VERZIK_INSTANCE;
-    }
 }

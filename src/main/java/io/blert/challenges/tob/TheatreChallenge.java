@@ -166,7 +166,7 @@ public class TheatreChallenge extends RecordableChallenge {
 
             if (roomDataTracker.notStarted() && roomState.isActive() && roomDataTracker.playersAreInRoom()) {
                 // The room may already be active when entered (e.g. as a spectator); start its tracker.
-                roomDataTracker.startRoomInaccurate();
+                roomDataTracker.startRoom();
                 log.debug("Room {} started via activity check", roomDataTracker.getRoom());
             }
 
@@ -352,14 +352,14 @@ public class TheatreChallenge extends RecordableChallenge {
         int roomStatus = client.getVarbitValue(TOB_ROOM_STATUS_VARBIT);
         var state = RoomState.fromVarbit(roomStatus);
         if (state.isEmpty()) {
-            log.error("Unknown value for room status varbit: " + varbit.getValue());
+            log.error("Unknown value for room status varbit: {}", varbit.getValue());
             return;
         }
 
         RoomState previousState = roomState;
         roomState = state.get();
         if (previousState != roomState) {
-            log.debug("Room status changed from " + previousState + " to " + roomState);
+            log.debug("Room status changed from {} to {}", previousState, roomState);
         }
 
         super.onVarbitChanged(varbit);

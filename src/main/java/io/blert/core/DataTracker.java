@@ -61,8 +61,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Setter(AccessLevel.PROTECTED)
     private State state;
 
-    private final SpecialAttackTracker specialAttackTracker = new SpecialAttackTracker(this::onSpecialAttack);
-
     private int startClientTick;
 
     @Getter
@@ -113,7 +111,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
         }
 
         updatePlayers();
-        specialAttackTracker.processPendingSpecial();
 
         challenge.getParty().forEach(this::checkForPlayerActions);
 
@@ -723,15 +720,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
         return npc.getIndex();
     }
 
-    private void onSpecialAttack(SpecialAttackTracker.SpecialAttack spec) {
-        var weapon = client.getItemDefinition(spec.getWeapon().getId());
-        log.debug(
-                "Hit a {} with {} on {}",
-                spec.getDamage(),
-                weapon.getName(),
-                spec.getTarget().getName());
-    }
-
     public final void onGameStateChanged(GameStateChanged event) {
         if (terminating()) {
             return;
@@ -815,9 +803,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
         Actor target = hitsplatApplied.getActor();
         Hitsplat hitsplat = hitsplatApplied.getHitsplat();
-        if (hitsplat.isMine() && target != client.getLocalPlayer()) {
-            specialAttackTracker.recordHitsplat((NPC) target, hitsplat, client.getTickCount());
-        }
 
         if (target instanceof NPC) {
             trackedNpcs.getByNpc((NPC) target).ifPresent(trackedNpc -> {
@@ -908,31 +893,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
     public final void onVarbitChanged(VarbitChanged varbitChanged) {
         if (getState() != State.IN_PROGRESS) {
             return;
-        }
-
-        if (varbitChanged.getVarpId() == VarPlayer.SPECIAL_ATTACK_PERCENT) {
-            int percent = varbitChanged.getValue();
-            int oldPercent = specialAttackTracker.updateSpecialPercent(percent);
-            if (oldPercent != -1 && percent >= oldPercent) {
-                // This is a special attack regen, not drain. Ignore it.
-                return;
-            }
-
-            int specTick = client.getTickCount();
-            clientThread.invokeLater(() -> {
-                Actor target = client.getLocalPlayer().getInteracting();
-                if (target instanceof NPC) {
-                    var equipment = client.getItemContainer(InventoryID.EQUIPMENT);
-                    if (equipment == null) {
-                        return;
-                    }
-
-                    net.runelite.api.Item weapon = equipment.getItem(EquipmentInventorySlot.WEAPON.getSlotIdx());
-                    if (weapon != null) {
-                        specialAttackTracker.recordSpecialUsed((NPC) target, weapon, specTick);
-                    }
-                }
-            });
         }
 
         onVarbit(varbitChanged);
