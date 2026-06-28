@@ -62,7 +62,8 @@ public class NpcEvent extends Event {
     protected NpcEvent(EventType type, Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
         super(type, stage, tick, point);
         this.roomId = trackedNpc.getRoomId();
-        this.npcId = trackedNpc.getNpcId();
+        // Omit an unknown NPC ID. The server should carry forward the last known one for this room ID.
+        this.npcId = Math.max(trackedNpc.getNpcId(), 0);
         this.hitpoints = trackedNpc.getHitpoints();
         this.prayers = trackedNpc.getActivePrayers().getValue();
         this.properties = trackedNpc.getProperties();
