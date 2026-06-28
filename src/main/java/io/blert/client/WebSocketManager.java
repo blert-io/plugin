@@ -146,9 +146,10 @@ public class WebSocketManager {
         eventHandler = newEventHandler;
     }
 
-    private void reconnect() {
+    private void reconnect(boolean immediate) {
         WebSocketClient draining = wsClient;
-        long delayMs = ThreadLocalRandom.current().nextLong(RECONNECT_MIN_DELAY_MS, RECONNECT_MAX_DELAY_MS);
+        long delayMs =
+                immediate ? 0 : ThreadLocalRandom.current().nextLong(RECONNECT_MIN_DELAY_MS, RECONNECT_MAX_DELAY_MS);
         executor.schedule(
                 () -> {
                     // Only reconnect if the draining connection is still the live one.
