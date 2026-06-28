@@ -34,7 +34,7 @@ import net.runelite.client.externalplugins.PluginHubManifest;
  */
 public final class BuildProperties {
     /** Protocol/feature version of the plugin. */
-    public static final String VERSION = "0.9.13-RUNELITE";
+    public static final String VERSION = "0.9.14-RUNELITE";
 
     /** Reported in place of build identity when not known. */
     public static final String DEV = "dev";
