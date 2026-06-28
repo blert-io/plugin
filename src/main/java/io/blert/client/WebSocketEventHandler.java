@@ -35,6 +35,7 @@ import io.blert.json.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import joptsimple.internal.Strings;
@@ -124,7 +125,7 @@ public class WebSocketEventHandler implements EventHandler {
     private final ClientThread runeliteThread;
 
     // Callback invoked when a reconnect is requested by the server.
-    private Runnable reconnectHandler;
+    private Consumer<Boolean> reconnectHandler;
 
     private int nextRequestId = 1;
     private int lastRequestId = -1;
@@ -147,14 +148,16 @@ public class WebSocketEventHandler implements EventHandler {
      * Constructs an event handler which will send and receive events over the provided websocket client.
      *
      * @param webSocketClient  Websocket client connected and authenticated to the Blert server.
-     * @param reconnectHandler Callback invoked to trigger a cooperative reconnect. Called once.
+     * @param reconnectHandler Callback invoked to trigger a cooperative reconnect.
+     *                         The boolean argument indicates whether to reconnect immediately or
+     *                         after a short delay. Called once per socket lifecycle.
      */
     public WebSocketEventHandler(
             BlertPlugin plugin,
             WebSocketClient webSocketClient,
             Client client,
             ClientThread runeliteThread,
-            Runnable reconnectHandler) {
+            Consumer<Boolean> reconnectHandler) {
         this.plugin = plugin;
         this.webSocketClient = webSocketClient;
         this.webSocketClient.setTextMessageCallback(this::handleJsonMessage);
@@ -732,7 +735,14 @@ public class WebSocketEventHandler implements EventHandler {
                 // are refused in the meantime.
                 log.info("Server instance is draining; will reconnect when idle");
                 reconnectWhenIdle = true;
-                maybeReconnect();
+                reconnectIfIdle(false);
+                break;
+            }
+
+            case ServerStatus.STATUS_REBALANCING: {
+                // Reconnect if not in a challenge, otherwise ignore.
+                log.info("Server requested a reconnect");
+                reconnectIfIdle(true);
                 break;
             }
 
@@ -844,20 +854,18 @@ public class WebSocketEventHandler implements EventHandler {
     private void setStatus(Status status) {
         this.status = status;
         plugin.getSidePanel().updateChallengeStatus(status, currentChallenge, challengeId);
-        maybeReconnect();
+        if (reconnectWhenIdle) {
+            reconnectIfIdle(false);
+        }
     }
 
     private boolean pendingServerShutdown() {
         return serverShutdownTime != null;
     }
 
-    private boolean isPendingReconnect() {
-        return reconnectWhenIdle && status == Status.IDLE;
-    }
-
-    private void maybeReconnect() {
-        if (isPendingReconnect() && reconnectHandler != null) {
-            reconnectHandler.run();
+    private void reconnectIfIdle(boolean immediate) {
+        if (status == Status.IDLE && reconnectHandler != null) {
+            reconnectHandler.accept(immediate);
             reconnectHandler = null;
         }
     }
