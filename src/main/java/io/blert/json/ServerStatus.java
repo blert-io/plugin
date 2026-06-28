@@ -29,6 +29,7 @@ public class ServerStatus {
     public static final int STATUS_SHUTDOWN_CANCELED = 2;
     public static final int STATUS_SHUTDOWN_IMMINENT = 3;
     public static final int STATUS_DRAINING = 4;
+    public static final int STATUS_REBALANCING = 5;
 
     public int status;
     public Timestamp shutdownTime;
