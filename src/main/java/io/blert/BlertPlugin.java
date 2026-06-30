@@ -28,6 +28,7 @@ import com.google.inject.Provides;
 import io.blert.challenges.colosseum.ColosseumChallenge;
 import io.blert.challenges.inferno.InfernoChallenge;
 import io.blert.challenges.mokhaiotl.MokhaiotlChallenge;
+import io.blert.challenges.chambers.CoxChallenge;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.client.WebSocketManager;
 import io.blert.core.AttackRegistry;
@@ -94,6 +95,8 @@ public class BlertPlugin extends Plugin {
 
     @Getter
     private @Nullable RecordableChallenge activeChallenge = null;
+    // Track if challenge initialization is pending due to missing event handler
+    private boolean pendingChallengeInit = false;
 
     private enum LoginState {
         LOGGED_IN,
@@ -147,6 +150,7 @@ public class BlertPlugin extends Plugin {
         clientToolbar.addNavigation(sidePanelButton);
         sidePanel.startPanel();
 
+        challenges.add(new CoxChallenge(client, clientThread));
         challenges.add(new TheatreChallenge(client, clientThread));
         challenges.add(new ColosseumChallenge(client, clientThread));
         challenges.add(new InfernoChallenge(client, clientThread));
@@ -184,6 +188,13 @@ public class BlertPlugin extends Plugin {
 
         if (loginState != LoginState.JUST_LOGGED_IN) {
             updateActiveChallenge();
+
+            // Retry challenge initialization if pending and event handler is now available
+            if (pendingChallengeInit && activeChallenge != null && websocketManager.getEventHandler() != null) {
+                activeChallenge.initialize(websocketManager.getEventHandler());
+                pendingChallengeInit = false;
+                log.info("Retried challenge initialization after event handler became available.");
+            }
 
             if (activeChallenge != null) {
                 activeChallenge.tick();
@@ -268,6 +279,7 @@ public class BlertPlugin extends Plugin {
 
             activeChallenge.terminate();
             activeChallenge = null;
+            pendingChallengeInit = false;
         }
     }
 

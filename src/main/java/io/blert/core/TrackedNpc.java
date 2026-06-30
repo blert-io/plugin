@@ -23,6 +23,7 @@
 
 package io.blert.core;
 
+import io.blert.challenges.chambers.CoxNpc;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.events.NpcEvent;
 import lombok.Getter;
@@ -80,6 +81,15 @@ public abstract class TrackedNpc {
     protected TrackedNpc(@NonNull NPC npc, @NonNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
         this.npc = npc;
         this.mode = tobNpc.getMode();
+        this.roomId = roomId;
+        this.hitpoints = hitpoints;
+        this.spawnTick = -1;
+        this.updatedProperties = true;
+    }
+
+    protected TrackedNpc(@NonNull NPC npc, @NonNull CoxNpc coxNpc, long roomId, Hitpoints hitpoints) {
+        this.npc = npc;
+        this.mode = ChallengeMode.COX_REGULAR; // Default COX mode, could be updated later
         this.roomId = roomId;
         this.hitpoints = hitpoints;
         this.spawnTick = -1;
