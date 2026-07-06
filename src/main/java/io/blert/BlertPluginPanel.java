@@ -33,6 +33,7 @@ import io.blert.core.Stage;
 import io.blert.json.PastChallenge;
 import io.blert.ui.*;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -40,12 +41,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.config.ConfigManager;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.LinkBrowser;
 import org.apache.commons.lang3.time.DurationFormatUtils;
@@ -79,14 +83,25 @@ public class BlertPluginPanel extends PluginPanel {
         UNSUPPORTED_VERSION,
     }
 
+    private static final String REGISTER_URL =
+            WebSocketManager.DEFAULT_BLERT_HOST + "/register?next=%2Fsettings%2Fapi-keys";
+    private static final String API_KEYS_URL = WebSocketManager.DEFAULT_BLERT_HOST + "/settings/api-keys";
+
+    // API keys are 24-character hex strings.
+    private static final Pattern API_KEY_PATTERN = Pattern.compile("[0-9a-fA-F]{24}");
+
     private final BlertConfig config;
+    private final ConfigManager configManager;
     private final WebSocketManager websocketManager;
 
     private JPanel userPanel;
+    private JPanel gettingStartedPanel;
     private JPanel challengeStatusPanel;
     private JPanel recentRecordingsPanel;
     private JPanel recentRecordingsContainer;
     private final JLabel serverStatusLabel = new JLabel();
+    private final JTextField apiKeyField = new JTextField();
+    private final JLabel apiKeyErrorLabel = new JLabel("Not a valid Blert API key.");
     private final Timer shutdownLabelTimer;
 
     private final List<PastChallenge> recentRecordings = new ArrayList<>();
@@ -98,12 +113,29 @@ public class BlertPluginPanel extends PluginPanel {
     private Challenge currentChallenge = null;
     private String currentChallengeId = null;
 
-    public BlertPluginPanel(BlertConfig config, WebSocketManager websocketManager) {
+    public BlertPluginPanel(BlertConfig config, ConfigManager configManager, WebSocketManager websocketManager) {
         super(false);
         this.config = config;
+        this.configManager = configManager;
         this.websocketManager = websocketManager;
 
         shutdownLabelTimer = new Timer(1000, e -> updateShutdownLabel());
+
+        apiKeyField.setFont(FONT_SMALL);
+        apiKeyField.setForeground(TEXT_MAIN);
+        apiKeyField.setCaretColor(TEXT_MAIN);
+        apiKeyField.setBackground(BG_BASE);
+        apiKeyField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(BORDER), new EmptyBorder(3, 6, 3, 6)));
+        apiKeyField.setAlignmentX(Component.LEFT_ALIGNMENT);
+        apiKeyField.setMaximumSize(new Dimension(Short.MAX_VALUE, 26));
+        apiKeyField.addActionListener(e -> submitApiKey());
+
+        apiKeyErrorLabel.setFont(FONT_SMALLEST);
+        apiKeyErrorLabel.setForeground(ACCENT_RED);
+        apiKeyErrorLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        apiKeyErrorLabel.setBorder(new EmptyBorder(2, 0, 0, 0));
+        apiKeyErrorLabel.setVisible(false);
 
         setBorder(new EmptyBorder(10, 10, 10, 10));
         setBackground(BG_BASE);
@@ -122,6 +154,11 @@ public class BlertPluginPanel extends PluginPanel {
         userPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
         topContainer.add(userPanel);
 
+        gettingStartedPanel = new JPanel(new BorderLayout());
+        gettingStartedPanel.setBackground(BG_BASE);
+        gettingStartedPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        topContainer.add(gettingStartedPanel);
+
         challengeStatusPanel = new JPanel(new BorderLayout());
         challengeStatusPanel.setBackground(BG_BASE);
         challengeStatusPanel.setBorder(new EmptyBorder(0, 0, 10, 0));
@@ -133,6 +170,7 @@ public class BlertPluginPanel extends PluginPanel {
         add(recentRecordingsPanel, BorderLayout.CENTER);
 
         rebuildUserPanel();
+        rebuildGettingStartedPanel();
         rebuildChallengePanel();
         populateRecentRecordingsPanel();
 
@@ -173,6 +211,7 @@ public class BlertPluginPanel extends PluginPanel {
                 this.connectionState = state;
                 this.connectedUsername = username;
                 rebuildUserPanel();
+                rebuildGettingStartedPanel();
                 rebuildChallengePanel();
                 revalidate();
                 repaint();
@@ -264,7 +303,7 @@ public class BlertPluginPanel extends PluginPanel {
         connectButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         connectButton.setMaximumSize(new Dimension(Short.MAX_VALUE, 25));
 
-        JLabel configHint = new JLabel("Enter API Key in config");
+        JLabel configHint = new JLabel("Follow the setup steps below");
         configHint.setFont(FONT_SMALL);
         configHint.setForeground(TEXT_MUTED);
         configHint.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -275,7 +314,7 @@ public class BlertPluginPanel extends PluginPanel {
         String detailMsg = null;
         boolean showUser = false;
         boolean showButton = false;
-        boolean hasApiKey = !Strings.isNullOrEmpty(config.apiKey());
+        boolean hasKey = hasApiKey();
 
         switch (connectionState) {
             case CONNECTED:
@@ -293,8 +332,8 @@ public class BlertPluginPanel extends PluginPanel {
                 break;
             case REJECTED:
                 stateTitle = "Connection Failed";
-                detailMsg = "Invalid API Key, check plugin config.";
-                showButton = hasApiKey;
+                detailMsg = "Invalid API key, follow the steps below.";
+                showButton = hasKey;
                 break;
             case UNSUPPORTED_VERSION:
                 stateTitle = "Update Required";
@@ -303,7 +342,7 @@ public class BlertPluginPanel extends PluginPanel {
             case DISCONNECTED:
             default:
                 stateTitle = "Disconnected";
-                showButton = hasApiKey;
+                showButton = hasKey;
                 break;
         }
 
@@ -325,7 +364,7 @@ public class BlertPluginPanel extends PluginPanel {
         card.add(Box.createVerticalStrut(4));
         if (showButton) {
             card.add(connectButton);
-        } else if (!hasApiKey
+        } else if (!hasKey
                 && connectionState != ConnectionState.CONNECTED
                 && connectionState != ConnectionState.CONNECTING) {
             card.add(configHint);
@@ -358,6 +397,154 @@ public class BlertPluginPanel extends PluginPanel {
             }
         };
         worker.execute();
+    }
+
+    /**
+     * Builds the getting started panel, which walks new users through creating a Blert
+     * account and API key if they haven't entered one.
+     */
+    private void rebuildGettingStartedPanel() {
+        gettingStartedPanel.removeAll();
+
+        boolean showSetup = !hasApiKey() || connectionState == ConnectionState.REJECTED;
+        gettingStartedPanel.setVisible(showSetup);
+        if (!showSetup) {
+            return;
+        }
+
+        gettingStartedPanel.add(createHeader("GETTING STARTED"), BorderLayout.NORTH);
+
+        CardPanel card = new CardPanel();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(new EmptyBorder(8, 8, 8, 8));
+
+        JLabel intro = new JLabel(
+                wrapText("Blert records your raids so you can review them on blert.io. To start recording:"));
+        intro.setFont(FONT_SMALL);
+        intro.setForeground(TEXT_MUTED);
+        intro.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(intro);
+        card.add(Box.createVerticalStrut(8));
+
+        addSetupStep(card, 1, "Create an account", "Sign up for free on blert.io.", "Sign Up", REGISTER_URL);
+        card.add(Box.createVerticalStrut(8));
+
+        addSetupStep(
+                card,
+                2,
+                "Generate an API key",
+                "Create an API key for your OSRS account in your Blert settings.",
+                "Manage API Keys",
+                API_KEYS_URL);
+        card.add(Box.createVerticalStrut(8));
+
+        addSetupStep(card, 3, "Enter your API key", "Paste your key below and press Connect.", null, null);
+        card.add(Box.createVerticalStrut(4));
+
+        card.add(apiKeyField);
+        card.add(apiKeyErrorLabel);
+        card.add(Box.createVerticalStrut(4));
+
+        JPanel apiKeyButtons = new JPanel(new GridLayout(1, 2, 8, 0));
+        apiKeyButtons.setOpaque(false);
+        apiKeyButtons.setAlignmentX(Component.LEFT_ALIGNMENT);
+        apiKeyButtons.setMaximumSize(new Dimension(Short.MAX_VALUE, 25));
+
+        RoundedButton pasteButton = new RoundedButton("Paste");
+        pasteButton.addActionListener(e -> pasteApiKeyFromClipboard());
+
+        RoundedButton keyConnectButton = new RoundedButton("Connect");
+        keyConnectButton.addActionListener(e -> submitApiKey());
+
+        apiKeyButtons.add(pasteButton);
+        apiKeyButtons.add(keyConnectButton);
+        card.add(apiKeyButtons);
+
+        gettingStartedPanel.add(card, BorderLayout.CENTER);
+    }
+
+    /**
+     * Saves the API key entered into the panel's text field to plugin config,
+     * which automatically triggers a connection to the server.
+     */
+    private void submitApiKey() {
+        String key = apiKeyField.getText().trim();
+        if (key.isEmpty()) {
+            return;
+        }
+
+        if (!API_KEY_PATTERN.matcher(key).matches()) {
+            setApiKeyErrorVisible(true);
+            return;
+        }
+        setApiKeyErrorVisible(false);
+
+        key = key.toLowerCase(Locale.ROOT);
+        if (key.equals(config.apiKey())) {
+            // An unchanged key won't fire a ConfigChanged event, so connect directly.
+            connectToServer();
+        } else {
+            configManager.setConfiguration("blert", "apiKey", key);
+            updateConnectionState(ConnectionState.CONNECTING, null);
+        }
+    }
+
+    private void setApiKeyErrorVisible(boolean visible) {
+        if (apiKeyErrorLabel.isVisible() != visible) {
+            apiKeyErrorLabel.setVisible(visible);
+            gettingStartedPanel.revalidate();
+            gettingStartedPanel.repaint();
+        }
+    }
+
+    private void pasteApiKeyFromClipboard() {
+        try {
+            Object data = Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+            if (data != null) {
+                apiKeyField.setText(data.toString().trim());
+                setApiKeyErrorVisible(false);
+            }
+        } catch (Exception e) {
+            // Nothing to paste.
+        }
+    }
+
+    /**
+     * Adds a numbered setup step to the getting started card, with an optional
+     * button which opens a link in the browser.
+     */
+    private void addSetupStep(
+            JPanel card,
+            int number,
+            String title,
+            String description,
+            @Nullable String buttonText,
+            @Nullable String url) {
+        JLabel titleLabel = new JLabel(String.format("%d. %s", number, title));
+        titleLabel.setFont(FONT_BOLD);
+        titleLabel.setForeground(TEXT_MAIN);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        card.add(titleLabel);
+
+        JLabel descriptionLabel = new JLabel(wrapText(description));
+        descriptionLabel.setFont(FONT_SMALL);
+        descriptionLabel.setForeground(TEXT_MUTED);
+        descriptionLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        descriptionLabel.setBorder(new EmptyBorder(2, 13, 0, 0));
+        card.add(descriptionLabel);
+
+        if (buttonText != null) {
+            RoundedButton button = new RoundedButton(buttonText);
+            button.addActionListener(e -> LinkBrowser.browse(url));
+            button.setAlignmentX(Component.LEFT_ALIGNMENT);
+            button.setMaximumSize(new Dimension(Short.MAX_VALUE, 25));
+            card.add(Box.createVerticalStrut(4));
+            card.add(button);
+        }
+    }
+
+    private boolean hasApiKey() {
+        return !Strings.isNullOrEmpty(config.apiKey());
     }
 
     private void rebuildChallengePanel() {
@@ -727,5 +914,12 @@ public class BlertPluginPanel extends PluginPanel {
         long days = hours / 24;
         if (days < 30) return days + "d ago";
         return (days / 365) + "y ago";
+    }
+
+    /**
+     * Wraps text in HTML tags so that it wraps across multiple lines when rendered in a JLabel.
+     */
+    private static String wrapText(String text) {
+        return String.format("<html><body style='width:150px'>%s</body></html>", text);
     }
 }
