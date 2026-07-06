@@ -73,6 +73,9 @@ public class BlertPlugin extends Plugin {
     private BlertConfig config;
 
     @Inject
+    private ConfigManager configManager;
+
+    @Inject
     private WebSocketManager websocketManager;
 
     @Inject
@@ -136,7 +139,7 @@ public class BlertPlugin extends Plugin {
 
         websocketManager.open();
 
-        sidePanel = new BlertPluginPanel(config, websocketManager);
+        sidePanel = new BlertPluginPanel(config, configManager, websocketManager);
         final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "/blert.png");
         sidePanelButton = NavigationButton.builder()
                 .tooltip("Blert")
