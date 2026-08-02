@@ -51,42 +51,39 @@ public class FeedItem extends JPanel {
     }
 
     private static JPanel getTitlePanel(String title, String mode, int ticks, @Nullable String timestamp) {
-        JPanel header = new JPanel(new BorderLayout());
+        JPanel header = new JPanel();
+        header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
         header.setOpaque(false);
-
-        JPanel leftHead = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        leftHead.setOpaque(false);
 
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(FONT_BOLD.deriveFont(11f));
         titleLabel.setForeground(TEXT_MAIN);
-        leftHead.add(titleLabel);
+        titleLabel.setMinimumSize(new Dimension(0, titleLabel.getPreferredSize().height));
+        header.add(titleLabel);
 
         if (!mode.isEmpty()) {
-            JLabel modeLabel = new JLabel(" • " + mode);
-            modeLabel.setFont(FONT_SMALLEST);
-            modeLabel.setForeground(TEXT_MUTED);
-            leftHead.add(modeLabel);
+            header.add(mutedLabel(" • " + mode));
         }
 
         if (ticks > 0) {
-            JLabel ticksLabel = new JLabel(" • " + Tick.asTimeString(ticks));
-            ticksLabel.setFont(FONT_SMALLEST);
-            ticksLabel.setForeground(TEXT_MUTED);
-            leftHead.add(ticksLabel);
+            header.add(mutedLabel(" • " + Tick.asTimeString(ticks)));
         }
 
-        header.add(leftHead, BorderLayout.WEST);
-
-        if (Strings.isNullOrEmpty(timestamp)) {
-            return header;
+        if (!Strings.isNullOrEmpty(timestamp)) {
+            header.add(Box.createHorizontalGlue());
+            JLabel timeLabel = mutedLabel(timestamp);
+            timeLabel.setBorder(new EmptyBorder(0, 6, 0, 0));
+            header.add(timeLabel);
         }
 
-        JLabel timeLabel = new JLabel(timestamp);
-        timeLabel.setFont(FONT_SMALLEST);
-        timeLabel.setForeground(TEXT_MUTED);
-        header.add(timeLabel, BorderLayout.EAST);
         return header;
+    }
+
+    private static JLabel mutedLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(FONT_SMALLEST);
+        label.setForeground(TEXT_MUTED);
+        return label;
     }
 
     void setCardHovered(boolean hovered) {

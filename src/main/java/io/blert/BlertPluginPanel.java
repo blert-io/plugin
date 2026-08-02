@@ -906,14 +906,15 @@ public class BlertPluginPanel extends PluginPanel {
 
     private String formatTimeAgo(Instant time) {
         long seconds = Duration.between(time, Instant.now()).getSeconds();
-        if (seconds < 60) return "Just now";
+        if (seconds < 60) return "now";
         long minutes = seconds / 60;
-        if (minutes < 60) return minutes + "m ago";
+        if (minutes < 60) return minutes + "m";
         long hours = minutes / 60;
-        if (hours < 24) return hours + "h ago";
+        if (hours < 24) return hours + "h";
         long days = hours / 24;
-        if (days < 30) return days + "d ago";
-        return (days / 365) + "y ago";
+        if (days < 30) return days + "d";
+        if (days < 365) return Math.min(days / 30, 11) + "mo";
+        return (days / 365) + "y";
     }
 
     /**
