@@ -240,10 +240,10 @@ public final class ColosseumChallenge extends RecordableChallenge {
     private void finishColosseum(ChallengeState state) {
         log.debug("Ending Colosseum challenge: {}", state);
         stateChangeCooldown = false;
+        int reported = reportedChallengeTicks;
 
         cleanup();
-        dispatchEvent(new ChallengeEndEvent(reportedChallengeTicks, -1));
-
+        dispatchEvent(new ChallengeEndEvent(reported, -1));
         setState(state);
     }
 

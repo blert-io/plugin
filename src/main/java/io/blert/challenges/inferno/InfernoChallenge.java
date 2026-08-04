@@ -231,9 +231,9 @@ public class InfernoChallenge extends RecordableChallenge {
 
     private void finishInferno(ChallengeState state) {
         log.info("Finishing Inferno challenge with state: {}", state);
+        int reported = reportedChallengeTicks;
         cleanup();
-
-        dispatchEvent(new ChallengeEndEvent(reportedChallengeTicks, reportedChallengeTicks));
+        dispatchEvent(new ChallengeEndEvent(reported, reported));
         setState(state);
     }
 

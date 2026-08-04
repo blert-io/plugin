@@ -137,9 +137,11 @@ public class MokhaiotlChallenge extends RecordableChallenge {
 
     private void finishMokhaiotl() {
         log.info("Finishing Mokhaiotl challenge with state: {}", getState());
-        cleanup();
 
-        dispatchEvent(new ChallengeEndEvent(reportedChallengeTicks, -1));
+        int reported = reportedChallengeTicks;
+
+        cleanup();
+        dispatchEvent(new ChallengeEndEvent(reported, -1));
         setState(ChallengeState.INACTIVE);
     }
 
