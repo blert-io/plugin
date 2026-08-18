@@ -46,13 +46,16 @@ public class WaveDataTracker extends DataTracker {
         }
 
         // NPC spawn events are typically received before the wave start message,
-        // so capture any NPCs that are already present.
-        client.getTopLevelWorldView().npcs().stream().forEach(npc -> {
-            InfernoNpc.withId(npc.getId())
-                    .filter(inf -> !inf.isPillar())
-                    .ifPresent(infernoNpc -> addTrackedNpc(
-                            new BasicTrackedNpc(npc, generateRoomId(npc), new Hitpoints(infernoNpc.getHitpoints()))));
-        });
+        // so capture any NPCs that are already present, ignoring those already
+        // captured during NOT_STARTED.
+        client.getTopLevelWorldView().npcs().stream()
+                .filter(npc -> getTrackedNpcs().getByNpc(npc).isEmpty())
+                .forEach(npc -> {
+                    InfernoNpc.withId(npc.getId())
+                            .filter(inf -> !inf.isPillar())
+                            .ifPresent(infernoNpc -> addTrackedNpc(new BasicTrackedNpc(
+                                    npc, generateRoomId(npc), new Hitpoints(infernoNpc.getHitpoints()))));
+                });
     }
 
     @Override
@@ -65,8 +68,12 @@ public class WaveDataTracker extends DataTracker {
                 // Pillars are managed by the challenge itself.
                 return Optional.empty();
             }
-            return Optional.of(new BasicTrackedNpc(
-                    event.getNpc(), generateRoomId(event.getNpc()), new Hitpoints(npc.getHitpoints())));
+
+            Hitpoints hitpoints = getTick() > 0 && wave <= 66 && npc.isResurrectable()
+                    ? npc.resurrectedHitpoints()
+                    : new Hitpoints(npc.getHitpoints());
+
+            return Optional.of(new BasicTrackedNpc(event.getNpc(), generateRoomId(event.getNpc()), hitpoints));
         });
     }
 
