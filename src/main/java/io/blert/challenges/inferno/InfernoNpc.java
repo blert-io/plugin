@@ -23,6 +23,7 @@
 
 package io.blert.challenges.inferno;
 
+import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import java.util.Optional;
 import lombok.Getter;
@@ -103,6 +104,23 @@ public enum InfernoNpc {
 
     boolean isPillar() {
         return this == ROCKY_SUPPORT;
+    }
+
+    boolean isResurrectable() {
+        switch (this) {
+            case BAT:
+            case BLOB:
+            case MELEER:
+            case RANGER:
+            case MAGER:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    Hitpoints resurrectedHitpoints() {
+        return new Hitpoints((hitpoints + 1) / 2, hitpoints);
     }
 
     @SafeVarargs
