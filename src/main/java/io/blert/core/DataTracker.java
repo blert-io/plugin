@@ -467,7 +467,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
         client.getTopLevelWorldView().players().forEach(player -> {
             Raider raider = challenge.getRaider(player.getName());
-            if (raider == null || raider.isDead()) {
+            if (raider == null || raider.isDead() && raider.getDeathTick() < tick) {
                 return;
             }
 
@@ -478,7 +478,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
     }
 
     private void checkForPlayerActions(@NonNull Raider raider) {
-        if (raider.isDead() && raider.getDeathTick() != getTick()) {
+        if (raider.isDead() && raider.getDeathTick() < getTick()) {
             return;
         }
 
