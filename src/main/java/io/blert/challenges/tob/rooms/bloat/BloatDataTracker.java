@@ -121,7 +121,7 @@ public class BloatDataTracker extends RoomDataTracker {
             }
 
             if (tick == nextUpTick) {
-                handleBloatUp(bloat.getNpc(), tick);
+                handleBloatUp(tick);
             } else if (currentDownTick == BLOAT_STOMP_TICK && bloat != null) {
                 WorldPoint point = getWorldLocation(bloat);
                 dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_BLOAT_STOMP, bloat));
@@ -174,7 +174,7 @@ public class BloatDataTracker extends RoomDataTracker {
         if (npc.getAnimation() == BLOAT_DOWN_ANIMATION) {
             handleBloatDown(npc, tick);
         } else if (state == State.DOWN && npc.getAnimation() == -1) {
-            handleBloatUp(npc, tick);
+            handleBloatUp(tick);
         }
     }
 
@@ -201,12 +201,12 @@ public class BloatDataTracker extends RoomDataTracker {
         dispatchEvent(new BloatDownEvent(tick, getWorldLocation(bloat), currentDown, tick - lastUpTick));
     }
 
-    private void handleBloatUp(NPC bloat, int tick) {
+    private void handleBloatUp(int tick) {
         lastUpTick = tick;
         nextUpTick = -1;
         state = State.WALKING;
         log.debug("Bloat up {} tick {}", currentDown, lastUpTick);
 
-        dispatchEvent(new BloatUpEvent(tick, getWorldLocation(bloat)));
+        dispatchEvent(new BloatUpEvent(tick));
     }
 }
