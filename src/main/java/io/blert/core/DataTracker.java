@@ -791,7 +791,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
     @Override
     public final void onChatMessage(ChatMessage event) {
-        if (state == State.IN_PROGRESS || event.getType() == ChatMessageType.GAMEMESSAGE) {
+        if (event.getType() == ChatMessageType.GAMEMESSAGE) {
             onMessage(event);
         }
     }

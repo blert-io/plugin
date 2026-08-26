@@ -34,6 +34,7 @@ import io.blert.core.*;
 import io.blert.events.ChallengeEndEvent;
 import io.blert.events.ChallengeStartEvent;
 import io.blert.events.StageUpdateEvent;
+import io.blert.util.ChatText;
 import io.blert.util.DeferredTask;
 import io.blert.util.Tick;
 import java.util.Arrays;
@@ -370,7 +371,7 @@ public class TheatreChallenge extends RecordableChallenge {
         updateLocation();
 
         if (message.getType() == ChatMessageType.GAMEMESSAGE) {
-            String stripped = Text.removeTags(message.getMessage());
+            String stripped = ChatText.stripFormatting(message.getMessage());
 
             if (getState().isInactive()) {
                 // Listen for a chat message indicating the start of a raid, and queue the start action immediately
