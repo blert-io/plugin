@@ -26,6 +26,7 @@ package io.blert.challenges.colosseum;
 import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.colosseum.*;
+import io.blert.util.ChatText;
 import io.blert.util.Tick;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -38,7 +39,6 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
-import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
@@ -298,7 +298,7 @@ public class WaveDataTracker extends DataTracker {
 
     @Override
     protected void onMessage(ChatMessage event) {
-        String stripped = Text.removeTags(event.getMessage());
+        String stripped = ChatText.stripFormatting(event.getMessage());
 
         if (stripped.equals(waveStartMessage)) {
             startWave(0);

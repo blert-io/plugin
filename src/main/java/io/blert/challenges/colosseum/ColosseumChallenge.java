@@ -26,6 +26,7 @@ package io.blert.challenges.colosseum;
 import io.blert.core.*;
 import io.blert.events.ChallengeEndEvent;
 import io.blert.events.ChallengeStartEvent;
+import io.blert.util.ChatText;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
 import io.blert.util.Tick;
@@ -36,12 +37,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
@@ -172,8 +173,9 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
     @Override
     public void onChatMessage(ChatMessage event) {
-        if (!getState().isInactive()) {
-            Matcher matcher = ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(Text.removeTags(event.getMessage()));
+        if (!getState().isInactive() && event.getType() == ChatMessageType.GAMEMESSAGE) {
+            Matcher matcher =
+                    ColosseumChallenge.COLOSSEUM_END_REGEX.matcher(ChatText.stripFormatting(event.getMessage()));
             if (matcher.find()) {
                 try {
                     reportedChallengeTicks = Tick.fromTimeString(matcher.group(1))
