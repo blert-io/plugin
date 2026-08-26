@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableSet;
 import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.mokhaiotl.*;
+import io.blert.util.ChatText;
 import io.blert.util.Location;
 import io.blert.util.Tick;
 import java.util.*;
@@ -39,7 +40,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
-import net.runelite.client.util.Text;
 
 @Slf4j
 public class DelveDataTracker extends DataTracker {
@@ -203,7 +203,7 @@ public class DelveDataTracker extends DataTracker {
 
     @Override
     protected void onMessage(ChatMessage event) {
-        String stripped = Text.removeTags(event.getMessage());
+        String stripped = ChatText.stripFormatting(event.getMessage());
         Matcher matcher = delveEndRegex.matcher(stripped);
 
         if (matcher.find()) {

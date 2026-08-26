@@ -26,6 +26,7 @@ package io.blert.challenges.inferno;
 import io.blert.core.*;
 import io.blert.events.NpcAttackEvent;
 import io.blert.events.inferno.InfernoWaveStartEvent;
+import io.blert.util.ChatText;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import javax.annotation.Nullable;
@@ -37,7 +38,6 @@ import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
-import net.runelite.client.util.Text;
 
 @Slf4j
 public class WaveDataTracker extends DataTracker {
@@ -138,7 +138,7 @@ public class WaveDataTracker extends DataTracker {
 
     @Override
     protected void onMessage(ChatMessage event) {
-        String stripped = Text.removeTags(event.getMessage());
+        String stripped = ChatText.stripFormatting(event.getMessage());
         if (stripped.equals(waveStartMessage)) {
             start();
         } else if (stripped.equals(waveEndMessage)) {

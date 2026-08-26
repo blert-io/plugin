@@ -35,6 +35,7 @@ import io.blert.events.ChallengeUpdateEvent;
 import io.blert.events.Event;
 import io.blert.events.EventHandler;
 import io.blert.events.PlayerDeathEvent;
+import io.blert.util.ChatText;
 import io.blert.util.Tick;
 import java.util.ArrayList;
 import java.util.List;
@@ -195,7 +196,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
 
     @Override
     protected final void onMessage(ChatMessage chatMessage) {
-        String stripped = Text.removeTags(chatMessage.getMessage());
+        String stripped = ChatText.stripFormatting(chatMessage.getMessage());
         Matcher matcher = waveEndRegex.matcher(stripped);
         if (matcher.find()) {
             try {

@@ -26,6 +26,7 @@ package io.blert.challenges.inferno;
 import io.blert.core.*;
 import io.blert.events.ChallengeEndEvent;
 import io.blert.events.ChallengeStartEvent;
+import io.blert.util.ChatText;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
 import io.blert.util.Tick;
@@ -35,6 +36,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.NPC;
@@ -43,7 +45,6 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
@@ -161,8 +162,8 @@ public class InfernoChallenge extends RecordableChallenge {
 
     @Override
     public void onChatMessage(ChatMessage event) {
-        if (!getState().isInactive()) {
-            String stripped = Text.removeTags(event.getMessage());
+        if (!getState().isInactive() && event.getType() == ChatMessageType.GAMEMESSAGE) {
+            String stripped = ChatText.stripFormatting(event.getMessage());
             if (stripped.equals(WAVE_1_START_MESSAGE)) {
                 challengeStartTick = client.getTickCount() - WAVE_1_TIME_OFFSET_TICKS;
             } else {
