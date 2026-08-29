@@ -262,8 +262,8 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
     private void clearWaveDataTracker() {
         if (waveDataTracker != null) {
-            recordedChallengeTicks += waveDataTracker.getTotalTicks();
             waveDataTracker.terminate();
+            recordedChallengeTicks += waveDataTracker.getTotalTicks();
             waveDataTracker = null;
         }
     }
