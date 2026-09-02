@@ -29,10 +29,7 @@ import io.blert.util.Tick;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
@@ -48,6 +45,13 @@ public abstract class DataTracker implements RuneliteEventHandler {
         TERMINATING,
     }
 
+    @AllArgsConstructor
+    private static class PendingCompletion {
+        final boolean completion;
+        final int inGameStageTicks;
+        final boolean gameTicksPrecise;
+    }
+
     @Getter(AccessLevel.PROTECTED)
     private final RecordableChallenge challenge;
 
@@ -60,6 +64,9 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Getter(AccessLevel.PROTECTED)
     @Setter(AccessLevel.PROTECTED)
     private State state;
+
+    @Nullable
+    private PendingCompletion pendingCompletion;
 
     private int startClientTick;
 
@@ -97,6 +104,10 @@ public abstract class DataTracker implements RuneliteEventHandler {
      * Prepares the tracker for cleanup, preventing any further events from being processed.
      */
     public void terminate() {
+        if (getState() == State.IN_PROGRESS && pendingCompletion != null) {
+            completeStage(false);
+        }
+
         if (getState() == State.IN_PROGRESS) {
             state = State.TERMINATING;
             finish(false);
@@ -131,6 +142,10 @@ public abstract class DataTracker implements RuneliteEventHandler {
             }
         }
         trackedNpcs.forEach(this::sendNpcUpdate);
+
+        if (pendingCompletion != null) {
+            completeStage(true);
+        }
     }
 
     /**
@@ -389,7 +404,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
     }
 
     /**
-     * Finishes tracking data for the stage and performs any necessary cleanup.
+     * Marks the stage as complete, queueing cleanup to run at the end of the tick.
      *
      * @param completion       Whether the stage was completed successfully.
      * @param inGameStageTicks The number of in-game ticks the stage took to complete, or -1 if the in-game timer is not
@@ -397,18 +412,35 @@ public abstract class DataTracker implements RuneliteEventHandler {
      * @param gameTicksPrecise Whether the in-game tick timer is precise or rounded.
      */
     protected void finish(boolean completion, int inGameStageTicks, boolean gameTicksPrecise) {
-        boolean waitToDispatch = true;
-
         switch (state) {
             case TERMINATING:
                 log.debug("Forcefully terminating stage {}", stage);
-                waitToDispatch = false;
+                pendingCompletion = new PendingCompletion(completion, inGameStageTicks, gameTicksPrecise);
+                completeStage(false);
                 break;
             case IN_PROGRESS:
-                setState(State.COMPLETED);
+                if (pendingCompletion == null) {
+                    pendingCompletion = new PendingCompletion(completion, inGameStageTicks, gameTicksPrecise);
+                }
                 break;
             default:
-                return;
+                break;
+        }
+    }
+
+    private void completeStage(boolean waitToDispatch) {
+        final PendingCompletion pending = pendingCompletion;
+        if (pending == null) {
+            return;
+        }
+        pendingCompletion = null;
+
+        final boolean completion = pending.completion;
+        final int inGameStageTicks = pending.inGameStageTicks;
+        final boolean gameTicksPrecise = pending.gameTicksPrecise;
+
+        if (state == State.IN_PROGRESS) {
+            setState(State.COMPLETED);
         }
 
         final int lastRecordedRoomTick = getTick();
