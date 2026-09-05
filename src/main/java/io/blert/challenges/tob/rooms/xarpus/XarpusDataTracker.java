@@ -50,6 +50,7 @@ public class XarpusDataTracker extends RoomDataTracker {
     private static final int FIRST_P2_TURN_TICK = 7;
     private static final int TICKS_PER_TURN_P2 = 4;
     private static final int TICKS_PER_TURN_P3 = 8;
+    private static final int P3_HP_VARBIT_THRESHOLD = 300;
 
     private static final int EXHUMED_GROUND_OBJECT_ID = 32743;
     private static final int EXHUMED_PROJECTILE_ID = 1550;
@@ -120,10 +121,13 @@ public class XarpusDataTracker extends RoomDataTracker {
         final int tick = getTick();
 
         if (xarpus != null && xarpus.getNpc().getOverheadText() != null && phase != XarpusPhase.P3) {
-            phase = XarpusPhase.P3;
-            nextTurnTick = tick + TICKS_PER_TURN_P3;
-            dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(xarpus.getNpc()), phase));
-            log.debug("Screech: {} ({})", tick, formattedRoomTime());
+            int hpVarbit = getBossHitpointsVarbitValue();
+            if (hpVarbit < P3_HP_VARBIT_THRESHOLD) {
+                phase = XarpusPhase.P3;
+                nextTurnTick = tick + TICKS_PER_TURN_P3;
+                dispatchEvent(new XarpusPhaseEvent(tick, getWorldLocation(xarpus.getNpc()), phase));
+                log.debug("Screech: {} ({})", tick, formattedRoomTime());
+            }
         }
 
         if (tick == nextTurnTick && xarpus != null) {
