@@ -107,8 +107,10 @@ public class MaidenDataTracker extends RoomDataTracker {
         for (MaidenCrab crab : crabs.values()) {
             NPC crabNpc = crab.getNpc();
 
-            if (!crabNpc.isDead()
+            if (!crab.isLeaked()
+                    && !crabNpc.isDead()
                     && crabNpc.getWorldArea().distanceTo2D(maiden.getNpc().getWorldArea()) <= 1) {
+                crab.setLeaked(true);
                 crab.setUpdatedProperties(true);
                 dispatchEvent(new MaidenCrabLeakEvent(tick, getWorldLocation(crabNpc), crab));
             }
