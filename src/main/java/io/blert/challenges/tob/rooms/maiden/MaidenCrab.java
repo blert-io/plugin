@@ -44,6 +44,9 @@ public class MaidenCrab extends TrackedNpc {
     @Setter(AccessLevel.PACKAGE)
     private CrabSpawn spawn;
 
+    @Setter(AccessLevel.PACKAGE)
+    private boolean leaked;
+
     private final Position position;
     private final boolean scuffed;
 
