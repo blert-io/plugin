@@ -54,7 +54,6 @@ public class Event {
     public XarpusExhumed xarpusExhumed;
     public XarpusSplat xarpusSplat;
     public Integer verzikPhase;
-    public AttackStyle verzikAttackStyle;
     public List<Coords> verzikYellows;
     public VerzikBounce verzikBounce;
     public VerzikHeal verzikHeal;
