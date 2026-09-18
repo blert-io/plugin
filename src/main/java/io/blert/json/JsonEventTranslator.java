@@ -304,14 +304,6 @@ public class JsonEventTranslator {
                 break;
             }
 
-            case VERZIK_ATTACK_STYLE: {
-                VerzikAttackStyleEvent verzikAttackStyleEvent = (VerzikAttackStyleEvent) event;
-                json.verzikAttackStyle = new Event.AttackStyle();
-                json.verzikAttackStyle.style = verzikAttackStyleEvent.getStyle().ordinal();
-                json.verzikAttackStyle.npcAttackTick = verzikAttackStyleEvent.getAttackTick();
-                break;
-            }
-
             case VERZIK_YELLOWS: {
                 VerzikYellowsEvent verzikYellowsEvent = (VerzikYellowsEvent) event;
                 json.verzikYellows = toCoordsList(verzikYellowsEvent.getYellows());
