@@ -52,6 +52,11 @@ public class VerzikDataTracker extends RoomDataTracker {
     private static final int P2_AUTO_ANIMATION = 8114;
     private static final int P2_BOUNCE_ANIMATION = 8116;
     private static final int P3_TRANSITION_ANIMATION = 8118;
+    private static final int P3_MELEE_ANIMATION = 8123;
+    private static final int P3_MAGE_ANIMATION = 8124;
+    private static final int P3_RANGE_ANIMATION = 8125;
+    private static final int P3_YELLOWS_ANIMATION = 8126;
+    private static final int P3_DEATH_ANIMATION = 8128;
 
     private static final int P2_BOUNCE_GRAPHIC = 245;
     private static final int P3_TORNADO_HEAL_GRAPHIC = 1602;
@@ -60,8 +65,6 @@ public class VerzikDataTracker extends RoomDataTracker {
     private static final int P2_ZAP_PROJECTILE = 1585;
     private static final int P2_PURPLE_PROJECTILE = 1586;
     private static final int P2_MAGE_PROJECTILE = 1591;
-    private static final int P3_RANGE_PROJECTILE = 1593;
-    private static final int P3_MAGE_PROJECTILE = 1594;
 
     private static final int P1_ATTACK_SPEED = 14;
     private static final int P1_MIN_DAWN_DAMAGE = 75;
@@ -69,11 +72,8 @@ public class VerzikDataTracker extends RoomDataTracker {
     private static final int P2_TICKS_BEFORE_FIRST_ATTACK_AFTER_SPAWN = 3;
     private static final int P2_TICKS_BEFORE_FIRST_ATTACK_AFTER_REDS = 12;
     private static final int P2_ATTACKS_PER_REDS = 7;
-    private static final int P3_ATTACK_SPEED = 7;
-    private static final int P3_ENRAGED_ATTACK_SPEED = 5;
-    private static final int P3_TICKS_BEFORE_FIRST_ATTACK = 12;
-    private static final int P3_GREEN_BALL_TICK_DELAY = 12;
     private static final int P3_ATTACKS_BEFORE_SPECIAL = 4;
+    private static final int P3_MIN_TICKS_BETWEEN_ATTACKS = 5;
 
     private static final ImmutableSet<Integer> VERZIK_WEB_IDS = ImmutableSet.of(8376, 10837, 10854);
     private static final int VERZIK_YELLOW_OBJECT_ID = 1595;
@@ -85,16 +85,13 @@ public class VerzikDataTracker extends RoomDataTracker {
     private VerzikPhase phase;
     int phaseStartTick;
 
-    private int unidentifiedVerzikAttackTick;
     private int nextVerzikAttackTick;
-    private final Set<Number> p3MeleeChanceTicks = new HashSet<>();
-    private int firstP3AttackTick;
     private @Nullable NpcAttack nextVerzikAttack;
+    private @Nullable NpcAttack p3AttackThisTick;
     private int verzikAttacksUntilSpecial;
     private final P2AttackTracker p2AttackTracker = new P2AttackTracker();
     private @Nullable VerzikSpecial activeSpecial;
     private VerzikSpecial nextSpecial;
-    boolean enraged;
 
     private int redCrabsTick;
     private int redCrabSpawnCount;
@@ -191,15 +188,13 @@ public class VerzikDataTracker extends RoomDataTracker {
     public VerzikDataTracker(TheatreChallenge manager, Client client) {
         super(manager, client, Room.VERZIK);
         this.phase = VerzikPhase.IDLE;
-        this.unidentifiedVerzikAttackTick = -1;
         this.nextVerzikAttackTick = -1;
-        this.firstP3AttackTick = -1;
         this.nextVerzikAttack = null;
+        this.p3AttackThisTick = null;
         this.verzikAttacksUntilSpecial = -1;
         this.redCrabsTick = -1;
         this.redCrabSpawnCount = 0;
         this.p2LastBounce = -1;
-        this.enraged = false;
         this.activeSpecial = null;
     }
 
@@ -258,30 +253,18 @@ public class VerzikDataTracker extends RoomDataTracker {
             return;
         }
 
-        if (tick == nextVerzikAttackTick - 1) {
-            if (phase == VerzikPhase.P2) {
-                checkForBounceChances();
-            } else if (phase == VerzikPhase.P3) {
-                checkForMeleeChance();
-            }
-        }
-
-        if (tick == nextVerzikAttackTick) {
-            handleVerzikAttack(tick);
+        if (tick == nextVerzikAttackTick - 1 && phase == VerzikPhase.P2) {
+            checkForBounceChances();
         }
 
         if (phase == VerzikPhase.P3) {
-            checkForEnrage(tick);
+            handleP3Attack(tick);
+        } else if (tick == nextVerzikAttackTick) {
+            handleVerzikAttack(tick);
         }
 
         if (activeSpecial != null && verzik.getNpc().getInteracting() != null) {
             // Once Verzik targets a player, her special attack has ended.
-            if (activeSpecial == VerzikSpecial.YELLOWS) {
-                nextVerzikAttackTick = tick + 7;
-            } else {
-                nextVerzikAttackTick = tick + 10;
-            }
-
             activeSpecial = null;
             yellowPools.clear();
         } else if (activeSpecial == VerzikSpecial.YELLOWS) {
@@ -469,7 +452,6 @@ public class VerzikDataTracker extends RoomDataTracker {
 
         if (phase == VerzikPhase.P2 && TobNpc.isVerzikP2(npcId) && animationId == P3_TRANSITION_ANIMATION) {
             startVerzikPhase(VerzikPhase.P3, tick, true);
-            firstP3AttackTick = nextVerzikAttackTick;
             log.debug("P2: {} ({})", tick, formattedRoomTime());
             return;
         }
@@ -490,6 +472,27 @@ public class VerzikDataTracker extends RoomDataTracker {
                 nextVerzikAttack = NpcAttack.TOB_VERZIK_P2_BOUNCE;
                 p2LastBounce = tick;
             }
+
+            if (phase == VerzikPhase.P3) {
+                switch (animationId) {
+                    case P3_MELEE_ANIMATION:
+                        p3AttackThisTick = NpcAttack.TOB_VERZIK_P3_MELEE;
+                        break;
+                    case P3_MAGE_ANIMATION:
+                        p3AttackThisTick = NpcAttack.TOB_VERZIK_P3_MAGE;
+                        break;
+                    case P3_RANGE_ANIMATION:
+                        p3AttackThisTick = NpcAttack.TOB_VERZIK_P3_RANGE;
+                        break;
+                    case P3_YELLOWS_ANIMATION:
+                        p3AttackThisTick = NpcAttack.TOB_VERZIK_P3_YELLOWS;
+                        break;
+                    case P3_DEATH_ANIMATION:
+                        // Stop tracking attacks.
+                        verzikAttacksUntilSpecial = -1;
+                        break;
+                }
+            }
         }
     }
 
@@ -501,30 +504,6 @@ public class VerzikDataTracker extends RoomDataTracker {
         if (phase == VerzikPhase.P2 && tick == nextVerzikAttackTick && nextVerzikAttack == null) {
             if (tick != redCrabsTick) {
                 nextVerzikAttack = p2AttackTracker.checkProjectile(projectile);
-            }
-        }
-
-        if (phase == VerzikPhase.P3) {
-            int totalCycles = projectile.getEndCycle() - projectile.getStartCycle();
-            if (projectile.getRemainingCycles() != totalCycles) {
-                return;
-            }
-
-            VerzikAttackStyleEvent.Style style;
-            switch (event.getProjectile().getId()) {
-                case P3_RANGE_PROJECTILE:
-                    style = VerzikAttackStyleEvent.Style.RANGE;
-                    break;
-                case P3_MAGE_PROJECTILE:
-                    style = VerzikAttackStyleEvent.Style.MAGE;
-                    break;
-                default:
-                    return;
-            }
-
-            if (unidentifiedVerzikAttackTick != -1) {
-                dispatchEvent(new VerzikAttackStyleEvent(tick, style, unidentifiedVerzikAttackTick));
-                unidentifiedVerzikAttackTick = -1;
             }
         }
     }
@@ -642,46 +621,11 @@ public class VerzikDataTracker extends RoomDataTracker {
         });
     }
 
-    private void checkForMeleeChance() {
-        if (nextVerzikAttackTick == firstP3AttackTick) {
-            // First P3 attack can't be melee.
-            return;
-        }
-
-        Actor tank = verzik.getNpc().getInteracting();
-        if (!(tank instanceof Player)) {
-            return;
-        }
-
-        WorldArea verzikArea = verzik.getNpc().getWorldArea();
-        boolean isMeleeDistance = verzikArea.isInMeleeDistance(tank.getWorldLocation());
-        boolean isUnderVerzik = verzikArea.contains(tank.getWorldLocation());
-        if (isMeleeDistance && !isUnderVerzik) {
-            log.debug("Player {} chanced a melee on tick {} ({})", tank.getName(), getTick(), formattedRoomTime());
-            p3MeleeChanceTicks.add(nextVerzikAttackTick);
-        }
-    }
-
-    private void sendMeleeIfChanced(int tick) {
-        if (unidentifiedVerzikAttackTick != -1) {
-            // No projectiles were recorded since the last Verzik
-            // attack. Check if it could have been a melee attack.
-            if (p3MeleeChanceTicks.contains(unidentifiedVerzikAttackTick)) {
-                dispatchEvent(new VerzikAttackStyleEvent(
-                        tick, VerzikAttackStyleEvent.Style.MELEE, unidentifiedVerzikAttackTick));
-            }
-            unidentifiedVerzikAttackTick = -1;
-        }
-    }
-
     private void handleVerzikAttack(int tick) {
         var party = getChallenge().getParty();
         if (!party.isEmpty() && party.stream().allMatch(Raider::isDead)) {
-            // Verzik attacks are inferred purely from tick cadence rather than
-            // animations. Stop sending them if every player has died.
-            if (phase == VerzikPhase.P3) {
-                sendMeleeIfChanced(tick);
-            }
+            // Verzik's P2 attacks are partially inferred from tick cadence
+            // rather than animations. Stop sending them if every player has died.
             return;
         }
 
@@ -724,57 +668,6 @@ public class VerzikDataTracker extends RoomDataTracker {
                 }
                 break;
 
-            case P3:
-                sendMeleeIfChanced(tick);
-
-                if (verzikAttacksUntilSpecial == 0) {
-                    verzikAttacksUntilSpecial = P3_ATTACKS_BEFORE_SPECIAL;
-                    WorldPoint point = getWorldLocation(verzik);
-
-                    switch (nextSpecial) {
-                        case BALL:
-                            // Green ball occurs alongside a regular Verzik attack, and delays her next attack by 12
-                            // ticks total.
-                            // TODO(frolv): `unidentifiedVerzikAttackTick` is deliberately not set here, as the green
-                            // ball projectile seems to hide the regular attack projectiles. Investigate this further.
-                            dispatchEvent(
-                                    new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_VERZIK_P3_BALL, verzik));
-                            nextSpecial = nextSpecial.next();
-                            verzikAttacksUntilSpecial += 1;
-                            nextVerzikAttackTick += P3_GREEN_BALL_TICK_DELAY - attackSpeed();
-                            break;
-
-                        case CRABS:
-                            // Crabs occur alongside a regular Verzik attack whose projectile is identifiable.
-                            nextSpecial = nextSpecial.next();
-                            verzikAttacksUntilSpecial += 1;
-                            unidentifiedVerzikAttackTick = tick;
-                            break;
-
-                        case WEBS:
-                        case YELLOWS:
-                            NpcAttack attack = nextSpecial == VerzikSpecial.WEBS
-                                    ? NpcAttack.TOB_VERZIK_P3_WEBS
-                                    : NpcAttack.TOB_VERZIK_P3_YELLOWS;
-                            dispatchEvent(new NpcAttackEvent(getStage(), tick, point, attack, verzik));
-
-                            // Other specials pause the attack cycle until they are completed.
-                            p3MeleeChanceTicks.remove(tick);
-                            nextSpecial = nextSpecial.next();
-                            nextVerzikAttackTick = -1;
-                            nextVerzikAttack = null;
-                            return;
-                    }
-                } else {
-                    // Verzik is performing a regular attack on this tick, without a stacked special.
-                    // Mark the attack as unidentified.
-                    unidentifiedVerzikAttackTick = tick;
-                }
-
-                nextVerzikAttack = NpcAttack.TOB_VERZIK_P3_AUTO;
-                verzikAttacksUntilSpecial--;
-                break;
-
             default:
                 nextVerzikAttack = null;
                 nextVerzikAttackTick = -1;
@@ -795,35 +688,66 @@ public class VerzikDataTracker extends RoomDataTracker {
         nextVerzikAttack = null;
     }
 
-    private void checkForEnrage(int tick) {
-        if (enraged) {
+    private void handleP3Attack(int tick) {
+        NpcAttack attack = p3AttackThisTick;
+        p3AttackThisTick = null;
+
+        if (attack == null) {
+            // Send webs the moment that Verzik starts walking to the center of
+            // the room. To avoid brief target loss from sending spurious webs,
+            // only consider them when sufficient ticks have passed between
+            // attacks.
+            if (verzikAttacksUntilSpecial == 0
+                    && nextSpecial == VerzikSpecial.WEBS
+                    && tick >= nextVerzikAttackTick
+                    && verzik.getNpc().getInteracting() == null) {
+                dispatchEvent(new NpcAttackEvent(
+                        getStage(), tick, getWorldLocation(verzik), NpcAttack.TOB_VERZIK_P3_WEBS, verzik));
+                nextSpecial = nextSpecial.next();
+                verzikAttacksUntilSpecial = P3_ATTACKS_BEFORE_SPECIAL;
+            }
             return;
         }
 
-        if (verzik.getHitpoints().percentage() < 25.0 && verzik.getNpc().getOverheadText() != null) {
-            enraged = true;
-            if (activeSpecial != VerzikSpecial.WEBS) {
-                nextVerzikAttackTick = tick + P3_ENRAGED_ATTACK_SPEED;
-            }
+        WorldPoint point = getWorldLocation(verzik);
+        nextVerzikAttackTick = tick + P3_MIN_TICKS_BETWEEN_ATTACKS;
+
+        if (attack == NpcAttack.TOB_VERZIK_P3_YELLOWS) {
+            dispatchEvent(new NpcAttackEvent(getStage(), tick, point, attack, verzik));
+            nextSpecial = VerzikSpecial.YELLOWS.next();
+            verzikAttacksUntilSpecial = P3_ATTACKS_BEFORE_SPECIAL;
+            return;
         }
+
+        if (verzikAttacksUntilSpecial == 0
+                && (nextSpecial == VerzikSpecial.CRABS || nextSpecial == VerzikSpecial.BALL)) {
+            // Crabs and green ball occur alongside a regular attack.
+            if (nextSpecial == VerzikSpecial.BALL) {
+                dispatchEvent(new NpcAttackEvent(getStage(), tick, point, NpcAttack.TOB_VERZIK_P3_BALL, verzik));
+            }
+            nextSpecial = nextSpecial.next();
+            verzikAttacksUntilSpecial = P3_ATTACKS_BEFORE_SPECIAL;
+        } else if (verzikAttacksUntilSpecial > 0) {
+            verzikAttacksUntilSpecial--;
+        }
+
+        dispatchEvent(new NpcAttackEvent(getStage(), tick, point, attack, verzik));
     }
 
     private void startVerzikPhase(VerzikPhase phase, int tick, boolean dispatchPhaseEvent) {
         this.phase = phase;
         phaseStartTick = tick;
         nextVerzikAttack = null;
-        unidentifiedVerzikAttackTick = -1;
 
         if (phase == VerzikPhase.P2) {
             nextVerzikAttackTick = tick + P2_TICKS_BEFORE_FIRST_ATTACK_AFTER_SPAWN;
             p2AttackTracker.reset();
         } else if (phase == VerzikPhase.P3) {
-            nextVerzikAttackTick = tick + P3_TICKS_BEFORE_FIRST_ATTACK;
-            p3MeleeChanceTicks.clear();
+            nextVerzikAttackTick = -1;
+            p3AttackThisTick = null;
             verzikAttacksUntilSpecial = P3_ATTACKS_BEFORE_SPECIAL;
             nextSpecial = VerzikSpecial.CRABS;
             activeSpecial = null;
-            enraged = false;
         } else {
             dawnSpecs.clear();
             nextVerzikAttackTick = -1;
@@ -854,8 +778,6 @@ public class VerzikDataTracker extends RoomDataTracker {
                 return P1_ATTACK_SPEED;
             case P2:
                 return P2_ATTACK_SPEED;
-            case P3:
-                return enraged ? P3_ENRAGED_ATTACK_SPEED : P3_ATTACK_SPEED;
             default:
                 return -1;
         }
