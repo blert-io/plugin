@@ -26,6 +26,7 @@ package io.blert.core;
 import com.google.gson.Gson;
 import java.io.InputStream;
 import java.util.*;
+import java.util.function.IntPredicate;
 import lombok.AllArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +66,7 @@ public class AttackRegistry {
                 "UNKNOWN",
                 new int[] {-1},
                 new int[] {-1},
+                new int[0],
                 0,
                 null,
                 false,
@@ -102,7 +104,7 @@ public class AttackRegistry {
         log.info("Updated attack registry with {} definitions from server", definitions.size());
     }
 
-    private void updateDefinitions(List<AttackDefinition> definitions) {
+    void updateDefinitions(List<AttackDefinition> definitions) {
         Map<Integer, List<AttackDefinition>> newByAnimationId = new HashMap<>();
         Set<Integer> newContinuousAnimationIds = new HashSet<>();
         List<AttackDefinition> newSuppressableAttacks = new ArrayList<>();
@@ -140,23 +142,35 @@ public class AttackRegistry {
      *
      * @param weaponId    ID of the weapon used.
      * @param animationId ID of the animation played with the attack.
-     * @return If the animation ID does not map to any known attack, returns {@code Optional.empty()}.
-     * Otherwise, returns the attack if the weapon ID is consistent with the animation,
-     * or the UNKNOWN attack if not.
+     * @param hasGraphic  Tests whether the attacker is showing the given graphic ID.
+     * @return If the animation ID and graphics do not map to any known attack,
+     * returns {@code Optional.empty()}. Otherwise, returns the attack if the
+     * weapon ID is consistent with the animation, or the UNKNOWN attack if not.
      */
-    public Optional<AttackDefinition> find(int weaponId, int animationId) {
+    public Optional<AttackDefinition> find(int weaponId, int animationId, IntPredicate hasGraphic) {
         List<AttackDefinition> candidates = state.byAnimationId.get(animationId);
         if (candidates == null) {
             return Optional.empty();
         }
 
+        List<AttackDefinition> matching = new ArrayList<>(candidates.size());
         for (AttackDefinition attack : candidates) {
+            int[] requiredGraphics = attack.getAttackerGraphicIds();
+            if (requiredGraphics.length == 0 || Arrays.stream(requiredGraphics).anyMatch(hasGraphic)) {
+                matching.add(attack);
+            }
+        }
+        if (matching.isEmpty()) {
+            return Optional.empty();
+        }
+
+        for (AttackDefinition attack : matching) {
             if (attack.hasWeapon(weaponId)) {
                 return Optional.of(attack);
             }
         }
 
-        for (AttackDefinition attack : candidates) {
+        for (AttackDefinition attack : matching) {
             if (attack.isUnknown()) {
                 return Optional.of(attack);
             }

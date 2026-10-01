@@ -186,6 +186,7 @@
     "protoId": 112,
     "weaponIds": [4170, 21255, 28988, 29849, 6914, 12904, 21006, 29594],
     "animationIds": [8977],
+    "attackerGraphicIds": [1869],
     "cooldown": 5,
     "category": "MAGIC"
   },
