@@ -92,6 +92,12 @@ public class AttackDefinition {
     private final int[] animationIds;
 
     /**
+     * Graphic IDs shown on the attacker, one of which must be present for the
+     * attack to be matched. If empty, no graphic is required.
+     */
+    private final int[] attackerGraphicIds;
+
+    /**
      * Attack cooldown in game ticks.
      */
     private final int cooldown;
@@ -133,6 +139,7 @@ public class AttackDefinition {
             String name,
             int[] weaponIds,
             int[] animationIds,
+            int[] attackerGraphicIds,
             int cooldown,
             List<Projectile> projectiles,
             boolean continuousAnimation,
@@ -143,6 +150,7 @@ public class AttackDefinition {
         this.name = name;
         this.weaponIds = weaponIds;
         this.animationIds = animationIds;
+        this.attackerGraphicIds = attackerGraphicIds != null ? attackerGraphicIds : new int[0];
         this.cooldown = cooldown;
         this.projectiles = projectiles != null ? projectiles : Collections.emptyList();
         this.continuousAnimation = continuousAnimation;

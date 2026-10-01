@@ -647,7 +647,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
             }
             maybeAttack = registry.findSuppressedAttack(weaponId);
         } else {
-            maybeAttack = registry.find(weaponId, animationId);
+            maybeAttack = registry.find(weaponId, animationId, player::hasSpotAnim);
         }
 
         maybeAttack.ifPresent(attack -> {
