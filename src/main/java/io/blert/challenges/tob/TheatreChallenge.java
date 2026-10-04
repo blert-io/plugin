@@ -193,7 +193,7 @@ public class TheatreChallenge extends RecordableChallenge {
         for (int player = 0; player < 5; player++) {
             String username = client.getVarcStrValue(TOB_P1_VARCSTR_ID + player);
             if (!Strings.isNullOrEmpty(username)) {
-                callback.accept(player, Text.sanitize(username));
+                callback.accept(player, sanitizePartyWidgetName(username));
             }
         }
     }
@@ -429,10 +429,15 @@ public class TheatreChallenge extends RecordableChallenge {
         resetParty();
 
         Arrays.stream(tobPartyWidget.getText().split("<br>"))
+                .map(TheatreChallenge::sanitizePartyWidgetName)
                 .filter(s -> !s.equals("-"))
-                .map((name) -> Text.sanitize(name).replace(" (R)", ""))
                 .forEach(s ->
                         addRaider(new Raider(s, s.equals(client.getLocalPlayer().getName()))));
+    }
+
+    /** Removes formatting and known embellishments from widget text. */
+    private static String sanitizePartyWidgetName(String displayed) {
+        return Text.sanitize(ChatText.stripFormatting(displayed)).replace(" (R)", ""); // Party ready check plugin
     }
 
     private void initializePartyFromOrbs() {
