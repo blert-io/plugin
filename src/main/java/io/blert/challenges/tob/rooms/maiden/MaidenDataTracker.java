@@ -30,6 +30,7 @@ import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
 import io.blert.core.BasicTrackedNpc;
+import io.blert.core.ChallengeRecordingConfig;
 import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
@@ -60,8 +61,8 @@ public class MaidenDataTracker extends RoomDataTracker {
     private final Set<GameObject> bloodTrails = new HashSet<>();
     private final Map<Integer, MaidenCrab> crabs = new HashMap<>();
 
-    public MaidenDataTracker(TheatreChallenge manager, Client client) {
-        super(manager, client, Room.MAIDEN, true);
+    public MaidenDataTracker(TheatreChallenge manager, Client client, ChallengeRecordingConfig recordingConfig) {
+        super(manager, client, recordingConfig, Room.MAIDEN, true);
     }
 
     @Override

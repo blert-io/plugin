@@ -265,7 +265,7 @@ public class InfernoChallenge extends RecordableChallenge {
         clearWaveDataTracker();
 
         wave++;
-        waveDataTracker = new WaveDataTracker(this, client, wave);
+        waveDataTracker = new WaveDataTracker(this, client, currentRecordingConfig(), wave);
 
         if (westPillar != null) {
             waveDataTracker.addTrackedNpc(westPillar);

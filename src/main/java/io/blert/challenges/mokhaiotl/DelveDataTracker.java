@@ -100,8 +100,9 @@ public class DelveDataTracker extends DataTracker {
         return Stage.values()[Stage.MOKHAIOTL_DELVE_1.ordinal() + delve - 1];
     }
 
-    public DelveDataTracker(RecordableChallenge challenge, Client client, int delve) {
-        super(challenge, client, delveToStage(delve));
+    public DelveDataTracker(
+            RecordableChallenge challenge, Client client, ChallengeRecordingConfig recordingConfig, int delve) {
+        super(challenge, client, recordingConfig, delveToStage(delve));
         this.delve = delve;
         if (delve > 8) {
             this.delveEndRegex =

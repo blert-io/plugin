@@ -1,8 +1,8 @@
 /*
- * Copyright (c) 2025 Alexei Frolov
+ * Copyright (c) 2026 Alexei Frolov
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
+ * this software and associated documentation files (the “Software”), to deal in
  * the Software without restriction, including without limitation the rights to use,
  * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
  * Software, and to permit persons to whom the Software is furnished to do so,
@@ -11,7 +11,7 @@
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
  * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
@@ -21,27 +21,31 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.json;
+package io.blert.core;
 
-import java.util.List;
+import javax.annotation.Nullable;
+import lombok.Getter;
 
-public class ChallengeUpdate {
-    public int mode;
-    public List<String> party;
-    public StageUpdate stageUpdate;
+public enum ObjectType {
+    GAME(1),
+    GROUND(2),
+    GRAPHICS(3),
+    ;
 
-    public static class StageUpdate {
-        public static final int STATUS_ENTERED = 0;
-        public static final int STATUS_STARTED = 1;
-        public static final int STATUS_COMPLETED = 2;
-        public static final int STATUS_WIPED = 3;
+    @Getter
+    private final int id;
 
-        public int stage;
-        public int status;
-        public boolean accurate;
-        public int recordedTicks;
-        public Integer gameServerTicks;
-        public boolean gameTicksPrecise;
-        public Integer recordingConfigVersion;
+    ObjectType(int id) {
+        this.id = id;
+    }
+
+    @Nullable
+    public static ObjectType fromId(int id) {
+        for (ObjectType type : values()) {
+            if (type.getId() == id) {
+                return type;
+            }
+        }
+        return null;
     }
 }
