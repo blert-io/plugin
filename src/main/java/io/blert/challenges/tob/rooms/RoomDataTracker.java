@@ -148,11 +148,15 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
             NPC npc = trackedNpc.getNpc();
             int healthRatio = npc.getHealthRatio();
             int healthScale = npc.getHealthScale();
+            TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
 
             if (healthScale > 0 && healthRatio != -1) {
                 double percent = healthRatio / (double) healthScale;
-                TobNpc tobNpc = TobNpc.withId(npc.getId()).orElseThrow();
                 trackedNpc.setHitpoints(Hitpoints.fromRatio(percent, tobNpc.getBaseHitpoints(scale)));
+            } else {
+                // Assume full HP if the bar isn't visible. Varbit NPCs will
+                // later self-correct.
+                trackedNpc.setHitpoints(new Hitpoints(tobNpc, scale));
             }
         });
     }
