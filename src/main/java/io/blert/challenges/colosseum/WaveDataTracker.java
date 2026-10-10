@@ -90,8 +90,13 @@ public class WaveDataTracker extends DataTracker {
         return Stage.values()[Stage.COLOSSEUM_WAVE_1.ordinal() + wave - 1];
     }
 
-    public WaveDataTracker(RecordableChallenge challenge, Client client, int wave, int ticksOnEntry) {
-        super(challenge, client, waveToStage(wave));
+    public WaveDataTracker(
+            RecordableChallenge challenge,
+            Client client,
+            ChallengeRecordingConfig recordingConfig,
+            int wave,
+            int ticksOnEntry) {
+        super(challenge, client, recordingConfig, waveToStage(wave));
 
         this.waveStartMessage = "Wave: " + wave;
         this.waveEndRegex =

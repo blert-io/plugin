@@ -69,8 +69,8 @@ public class SotetsegDataTracker extends RoomDataTracker {
     private int invulnerableUntilTick = -1;
     private final Set<GroundObject> activeMazeTiles = new HashSet<>();
 
-    public SotetsegDataTracker(TheatreChallenge manager, Client client) {
-        super(manager, client, Room.SOTETSEG);
+    public SotetsegDataTracker(TheatreChallenge manager, Client client, ChallengeRecordingConfig recordingConfig) {
+        super(manager, client, recordingConfig, Room.SOTETSEG);
     }
 
     @Override

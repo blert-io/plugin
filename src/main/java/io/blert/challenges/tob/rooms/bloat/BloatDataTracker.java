@@ -28,6 +28,7 @@ import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
+import io.blert.core.ChallengeRecordingConfig;
 import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
@@ -77,8 +78,8 @@ public class BloatDataTracker extends RoomDataTracker {
     private final List<WorldPoint> fallingHands = new ArrayList<>(16);
     private final List<WorldPoint> splatHands = new ArrayList<>(16);
 
-    public BloatDataTracker(TheatreChallenge manager, Client client) {
-        super(manager, client, Room.BLOAT, true);
+    public BloatDataTracker(TheatreChallenge manager, Client client, ChallengeRecordingConfig recordingConfig) {
+        super(manager, client, recordingConfig, Room.BLOAT, true);
         state = State.WALKING;
         currentDown = 0;
         lastDownTick = -1;

@@ -32,6 +32,7 @@ import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.client.WebSocketManager;
 import io.blert.core.AttackRegistry;
 import io.blert.core.RecordableChallenge;
+import io.blert.core.RecordingConfig;
 import io.blert.core.SpellRegistry;
 import io.blert.util.DeferredTask;
 import io.blert.util.Location;
@@ -88,6 +89,9 @@ public class BlertPlugin extends Plugin {
     private NavigationButton sidePanelButton;
 
     @Getter
+    private final RecordingConfig recordingConfig = new RecordingConfig();
+
+    @Getter
     private final AttackRegistry attackRegistry = new AttackRegistry();
 
     @Getter
@@ -132,6 +136,7 @@ public class BlertPlugin extends Plugin {
 
     @Override
     protected void startUp() throws Exception {
+        recordingConfig.loadDefaults(gson);
         attackRegistry.setGson(gson);
         spellRegistry.setGson(gson);
         attackRegistry.loadDefaults();
@@ -263,7 +268,8 @@ public class BlertPlugin extends Plugin {
             }
 
             activeChallenge = challenge;
-            activeChallenge.initialize(websocketManager.getEventHandler(), attackRegistry, spellRegistry);
+            activeChallenge.initialize(
+                    websocketManager.getEventHandler(), recordingConfig, attackRegistry, spellRegistry);
 
             log.info("Entered challenge \"{}\"", activeChallenge.getName());
         } else if (activeChallenge != null) {

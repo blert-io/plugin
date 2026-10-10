@@ -45,6 +45,7 @@ public class ServerMessage {
     public static final int TYPE_GAME_STATE_REQUEST = 18;
     public static final int TYPE_ATTACK_DEFINITIONS = 19;
     public static final int TYPE_SPELL_DEFINITIONS = 20;
+    public static final int TYPE_RECORDING_CONFIG = 21;
 
     public int type;
     public User user;
@@ -61,5 +62,6 @@ public class ServerMessage {
     public ChallengeUpdate challengeUpdate;
     public List<AttackDefinition> attackDefinitions;
     public List<SpellDefinition> spellDefinitions;
+    public RecordingConfig recordingConfig;
     public Integer requestId;
 }

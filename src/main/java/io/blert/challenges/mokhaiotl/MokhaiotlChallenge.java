@@ -178,7 +178,7 @@ public class MokhaiotlChallenge extends RecordableChallenge {
             setState(ChallengeState.COMPLETE);
         }
 
-        delveDataTracker = new DelveDataTracker(this, client, delve);
+        delveDataTracker = new DelveDataTracker(this, client, currentRecordingConfig(), delve);
     }
 
     private void clearDelveDataTracker() {

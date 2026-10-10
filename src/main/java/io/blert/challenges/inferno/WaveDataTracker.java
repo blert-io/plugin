@@ -52,8 +52,9 @@ public class WaveDataTracker extends DataTracker {
         return Stage.values()[Stage.INFERNO_WAVE_1.ordinal() + (wave - 1)];
     }
 
-    public WaveDataTracker(InfernoChallenge challenge, Client client, int wave) {
-        super(challenge, client, waveToStage(wave));
+    public WaveDataTracker(
+            InfernoChallenge challenge, Client client, ChallengeRecordingConfig recordingConfig, int wave) {
+        super(challenge, client, recordingConfig, waveToStage(wave));
         this.wave = wave;
         this.waveStartMessage = String.format("Wave: %d", wave);
     }

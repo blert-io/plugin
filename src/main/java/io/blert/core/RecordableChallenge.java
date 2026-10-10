@@ -52,6 +52,8 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
     @Getter
     private final ClientThread clientThread;
 
+    private RecordingConfig recordingConfig;
+
     @Getter
     private AttackRegistry attackRegistry;
 
@@ -195,11 +197,20 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
         party.clear();
     }
 
-    public void initialize(EventHandler handler, AttackRegistry attackRegistry, SpellRegistry spellRegistry) {
+    public void initialize(
+            EventHandler handler,
+            RecordingConfig recordingConfig,
+            AttackRegistry attackRegistry,
+            SpellRegistry spellRegistry) {
+        this.recordingConfig = recordingConfig;
         this.attackRegistry = attackRegistry;
         this.spellRegistry = spellRegistry;
         onInitialize();
         addEventHandler(handler);
+    }
+
+    protected ChallengeRecordingConfig currentRecordingConfig() {
+        return recordingConfig.forChallenge(challenge);
     }
 
     public void terminate() {
