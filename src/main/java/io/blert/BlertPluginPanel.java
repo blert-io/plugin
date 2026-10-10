@@ -820,6 +820,31 @@ public class BlertPluginPanel extends PluginPanel {
                 case MOKHAIOTL_DELVE_8PLUS:
                     boss = "Delve 8+";
                     break;
+
+                case TFA_GUARDIAN:
+                    boss = "Guardian";
+                    break;
+                case TFA_EZEKIEL:
+                    boss = "Ezekiel";
+                    break;
+                case TFA_BORK:
+                    boss = "Bork";
+                    break;
+                case TFA_NECROMANCER:
+                    boss = "Necromancer";
+                    break;
+                case TFA_DREADNOTH:
+                    boss = "Dreadnoth";
+                    break;
+                case TFA_XARTH:
+                    boss = "Xarth";
+                    break;
+                case TFA_DAGONHAI:
+                    boss = "Dagon'hai Trio";
+                    break;
+                case TFA_FINAL:
+                    boss = "Final Boss";
+                    break;
             }
         }
 
@@ -843,6 +868,9 @@ public class BlertPluginPanel extends PluginPanel {
         }
         if (challengeId == Challenge.MOKHAIOTL.getId()) {
             return "MOK";
+        }
+        if (challengeId == Challenge.TFA.getId()) {
+            return "TFA";
         }
 
         if (modeId == ChallengeMode.TOB_ENTRY.getId()) {
@@ -885,6 +913,8 @@ public class BlertPluginPanel extends PluginPanel {
                 return String.format("%s/raids/cox/%s/overview", hostname, challengeId);
             case TOA:
                 return String.format("%s/raids/toa/%s/overview", hostname, challengeId);
+            case TFA:
+                return String.format("%s/raids/tfa/%s/overview", hostname, challengeId);
             case COLOSSEUM:
                 return String.format("%s/challenges/colosseum/%s/overview", hostname, challengeId);
             case INFERNO:
