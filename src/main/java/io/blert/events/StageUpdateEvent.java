@@ -40,23 +40,41 @@ public class StageUpdateEvent extends Event {
     private final boolean accurate;
     private final Optional<Integer> inGameTicks;
     private final boolean gameTicksPrecise;
+    private final Optional<Integer> recordingConfigVersion;
 
-    public StageUpdateEvent(Stage stage, int tick, Status status) {
-        this(stage, tick, status, false, Optional.empty(), false);
+    public static StageUpdateEvent entered(Stage stage) {
+        return new StageUpdateEvent(stage, 0, Status.ENTERED, false, Optional.empty(), false, Optional.empty());
     }
 
-    public StageUpdateEvent(
+    public static StageUpdateEvent started(Stage stage, int recordingConfigVersion) {
+        return new StageUpdateEvent(
+                stage, 0, Status.STARTED, false, Optional.empty(), false, Optional.of(recordingConfigVersion));
+    }
+
+    public static StageUpdateEvent completed(
+            Stage stage, int tick, boolean accurate, Optional<Integer> inGameTicks, boolean gameTicksPrecise) {
+        return new StageUpdateEvent(
+                stage, tick, Status.COMPLETED, accurate, inGameTicks, gameTicksPrecise, Optional.empty());
+    }
+
+    public static StageUpdateEvent wiped(Stage stage, int tick) {
+        return new StageUpdateEvent(stage, tick, Status.WIPED, false, Optional.empty(), false, Optional.empty());
+    }
+
+    private StageUpdateEvent(
             Stage stage,
             int tick,
             Status status,
             boolean accurate,
             Optional<Integer> inGameTicks,
-            boolean gameTicksPrecise) {
+            boolean gameTicksPrecise,
+            Optional<Integer> recordingConfigVersion) {
         super(EventType.STAGE_UPDATE, stage, tick, null);
         this.status = status;
         this.accurate = accurate;
         this.inGameTicks = inGameTicks;
         this.gameTicksPrecise = gameTicksPrecise;
+        this.recordingConfigVersion = recordingConfigVersion;
     }
 
     @Override

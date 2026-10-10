@@ -256,7 +256,8 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
         currentWave++;
         if (currentWave < 13) {
-            waveDataTracker = new WaveDataTracker(this, client, currentWave, recordedChallengeTicks);
+            waveDataTracker =
+                    new WaveDataTracker(this, client, currentRecordingConfig(), currentWave, recordedChallengeTicks);
         }
     }
 

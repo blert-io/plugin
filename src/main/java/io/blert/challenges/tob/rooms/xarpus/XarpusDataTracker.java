@@ -29,6 +29,7 @@ import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
 import io.blert.core.ChallengeMode;
+import io.blert.core.ChallengeRecordingConfig;
 import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
@@ -94,8 +95,8 @@ public class XarpusDataTracker extends RoomDataTracker {
         }
     }
 
-    public XarpusDataTracker(TheatreChallenge manager, Client client) {
-        super(manager, client, Room.XARPUS);
+    public XarpusDataTracker(TheatreChallenge manager, Client client, ChallengeRecordingConfig recordingConfig) {
+        super(manager, client, recordingConfig, Room.XARPUS);
     }
 
     @Override

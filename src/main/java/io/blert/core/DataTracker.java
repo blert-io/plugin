@@ -58,6 +58,8 @@ public abstract class DataTracker implements RuneliteEventHandler {
     protected final Client client;
     protected final ClientThread clientThread;
 
+    private final ChallengeRecordingConfig recordingConfig;
+
     @Getter
     private final Stage stage;
 
@@ -76,10 +78,12 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Getter(AccessLevel.PROTECTED)
     private final TrackedNpcCollection trackedNpcs = new TrackedNpcCollection();
 
-    public DataTracker(RecordableChallenge challenge, Client client, Stage stage) {
+    public DataTracker(
+            RecordableChallenge challenge, Client client, ChallengeRecordingConfig recordingConfig, Stage stage) {
         this.challenge = challenge;
         this.client = client;
         this.clientThread = challenge.getClientThread();
+        this.recordingConfig = recordingConfig;
         this.state = State.NOT_STARTED;
         this.stage = stage;
     }
@@ -380,7 +384,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
             }
         });
 
-        dispatchEvent(new StageUpdateEvent(getStage(), 0, StageUpdateEvent.Status.STARTED));
+        dispatchEvent(StageUpdateEvent.started(getStage(), recordingConfig.getVersion()));
     }
 
     /**
@@ -480,8 +484,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
             log.info("Stage {} finished, status: {}", stage, status);
 
             Optional<Integer> gameTicks = inGameStageTicks == -1 ? Optional.empty() : Optional.of(inGameStageTicks);
-            Runnable dispatch = () -> challenge.dispatchEvent(new StageUpdateEvent(
-                    getStage(), lastRecordedRoomTick, status, accurate, gameTicks, gameTicksPrecise));
+            Runnable dispatch = () -> challenge.dispatchEvent(
+                    completion
+                            ? StageUpdateEvent.completed(
+                                    getStage(), lastRecordedRoomTick, accurate, gameTicks, gameTicksPrecise)
+                            : StageUpdateEvent.wiped(getStage(), lastRecordedRoomTick));
 
             if (waitToDispatch) {
                 // Don't send the final room status immediately; allow other pending subscribers to run and dispatch

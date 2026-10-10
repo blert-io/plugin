@@ -396,6 +396,7 @@ public class WebSocketEventHandler implements EventHandler {
             stageUpdate.recordedTicks = stage.getTick();
             stageUpdate.gameTicksPrecise = stage.isGameTicksPrecise();
             stage.getInGameTicks().ifPresent(t -> stageUpdate.gameServerTicks = t);
+            stage.getRecordingConfigVersion().ifPresent(v -> stageUpdate.recordingConfigVersion = v);
             challengeUpdate.stageUpdate = stageUpdate;
         }
 
@@ -549,6 +550,12 @@ public class WebSocketEventHandler implements EventHandler {
                             .updateFromServer(serverMessage.spellDefinitions.stream()
                                     .map(io.blert.json.SpellDefinition::toCore)
                                     .collect(Collectors.toList()));
+                }
+                break;
+
+            case ServerMessage.TYPE_RECORDING_CONFIG:
+                if (serverMessage.recordingConfig != null) {
+                    plugin.getRecordingConfig().update(serverMessage.recordingConfig);
                 }
                 break;
 

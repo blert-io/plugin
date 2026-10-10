@@ -468,24 +468,25 @@ public class TheatreChallenge extends RecordableChallenge {
     private void initializeRoomDataTracker() {
         clearRoomDataTracker();
 
+        var recordingConfig = currentRecordingConfig();
         if (location.inMaidenInstance()) {
-            roomDataTracker = new MaidenDataTracker(this, client);
+            roomDataTracker = new MaidenDataTracker(this, client, recordingConfig);
         } else if (location.inBloatInstance()) {
-            roomDataTracker = new BloatDataTracker(this, client);
+            roomDataTracker = new BloatDataTracker(this, client, recordingConfig);
         } else if (location.inNylocasInstance()) {
-            roomDataTracker = new NylocasDataTracker(this, client);
+            roomDataTracker = new NylocasDataTracker(this, client, recordingConfig);
         } else if (location.inSotetsegInstance()) {
-            roomDataTracker = new SotetsegDataTracker(this, client);
+            roomDataTracker = new SotetsegDataTracker(this, client, recordingConfig);
         } else if (location.inXarpusInstance()) {
-            roomDataTracker = new XarpusDataTracker(this, client);
+            roomDataTracker = new XarpusDataTracker(this, client, recordingConfig);
         } else if (location.inVerzikInstance()) {
-            roomDataTracker = new VerzikDataTracker(this, client);
+            roomDataTracker = new VerzikDataTracker(this, client, recordingConfig);
         }
 
         if (roomDataTracker != null) {
             log.info("Initialized room data tracker for {} from {}", roomDataTracker.getRoom(), location);
             addEventHandler(roomDataTracker);
-            dispatchEvent(new StageUpdateEvent(roomDataTracker.getStage(), 0, StageUpdateEvent.Status.ENTERED));
+            dispatchEvent(StageUpdateEvent.entered(roomDataTracker.getStage()));
             getParty().forEach(Raider::resetForNewRoom);
         }
     }

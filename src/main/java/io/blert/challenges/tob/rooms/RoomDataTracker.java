@@ -27,6 +27,7 @@ import io.blert.challenges.tob.HpVarbitTrackedNpc;
 import io.blert.challenges.tob.Location;
 import io.blert.challenges.tob.TheatreChallenge;
 import io.blert.challenges.tob.TobNpc;
+import io.blert.core.ChallengeRecordingConfig;
 import io.blert.core.ChallengeState;
 import io.blert.core.DataTracker;
 import io.blert.core.Hitpoints;
@@ -66,8 +67,13 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     private boolean shouldUpdateHitpoints;
     private int healTick = -1;
 
-    protected RoomDataTracker(TheatreChallenge theatreChallenge, Client client, Room room, boolean startOnEntry) {
-        super(theatreChallenge, client, room.toStage());
+    protected RoomDataTracker(
+            TheatreChallenge theatreChallenge,
+            Client client,
+            ChallengeRecordingConfig recordingConfig,
+            Room room,
+            boolean startOnEntry) {
+        super(theatreChallenge, client, recordingConfig, room.toStage());
         this.theatreChallenge = theatreChallenge;
         this.room = room;
         this.waveEndRegex = Pattern.compile("Wave '" + room.waveName() + "' \\(\\w+ Mode\\) " + "complete!Duration: ("
@@ -75,8 +81,9 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
         this.startOnEntry = startOnEntry;
     }
 
-    protected RoomDataTracker(TheatreChallenge theatreChallenge, Client client, Room room) {
-        this(theatreChallenge, client, room, false);
+    protected RoomDataTracker(
+            TheatreChallenge theatreChallenge, Client client, ChallengeRecordingConfig recordingConfig, Room room) {
+        this(theatreChallenge, client, recordingConfig, room, false);
     }
 
     public void startRoom() {

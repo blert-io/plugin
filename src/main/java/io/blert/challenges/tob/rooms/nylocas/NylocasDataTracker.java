@@ -29,6 +29,7 @@ import io.blert.challenges.tob.TobNpc;
 import io.blert.challenges.tob.rooms.Room;
 import io.blert.challenges.tob.rooms.RoomDataTracker;
 import io.blert.core.ChallengeMode;
+import io.blert.core.ChallengeRecordingConfig;
 import io.blert.core.Hitpoints;
 import io.blert.core.NpcAttack;
 import io.blert.core.TrackedNpc;
@@ -74,8 +75,8 @@ public class NylocasDataTracker extends RoomDataTracker {
     private static final ImmutableSet<Integer> NYLOCAS_PILLAR_NPC_IDS =
             ImmutableSet.of(NullNpcID.NULL_10790, NullNpcID.NULL_8358, NullNpcID.NULL_10811);
 
-    public NylocasDataTracker(TheatreChallenge manager, Client client) {
-        super(manager, client, Room.NYLOCAS);
+    public NylocasDataTracker(TheatreChallenge manager, Client client, ChallengeRecordingConfig recordingConfig) {
+        super(manager, client, recordingConfig, Room.NYLOCAS);
         currentWave = 0;
         nextWaveSpawnCheckTick = -1;
         bossSpawnTick = -1;

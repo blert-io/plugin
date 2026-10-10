@@ -185,8 +185,8 @@ public class VerzikDataTracker extends RoomDataTracker {
         }
     }
 
-    public VerzikDataTracker(TheatreChallenge manager, Client client) {
-        super(manager, client, Room.VERZIK);
+    public VerzikDataTracker(TheatreChallenge manager, Client client, ChallengeRecordingConfig recordingConfig) {
+        super(manager, client, recordingConfig, Room.VERZIK);
         this.phase = VerzikPhase.IDLE;
         this.nextVerzikAttackTick = -1;
         this.nextVerzikAttack = null;
