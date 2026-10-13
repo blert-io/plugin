@@ -46,6 +46,7 @@ public class ServerMessage {
     public static final int TYPE_ATTACK_DEFINITIONS = 19;
     public static final int TYPE_SPELL_DEFINITIONS = 20;
     public static final int TYPE_RECORDING_CONFIG = 21;
+    public static final int TYPE_RECORDING_INFO = 22;
 
     public int type;
     public User user;
@@ -63,5 +64,6 @@ public class ServerMessage {
     public List<AttackDefinition> attackDefinitions;
     public List<SpellDefinition> spellDefinitions;
     public RecordingConfig recordingConfig;
+    public RecordingInfo recordingInfo;
     public Integer requestId;
 }

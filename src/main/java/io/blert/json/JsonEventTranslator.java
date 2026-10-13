@@ -188,6 +188,28 @@ public class JsonEventTranslator {
                 break;
             }
 
+            case OBJECTS: {
+                ObjectsEvent objectsEvent = (ObjectsEvent) event;
+                json.objects = new Event.Objects();
+                if (objectsEvent.isSnapshot()) {
+                    json.objects.snapshot = true;
+                }
+                json.objects.updates = objectsEvent.getUpdates().stream()
+                        .map(update -> {
+                            Event.ObjectUpdate objectUpdate = new Event.ObjectUpdate();
+                            objectUpdate.type = update.getType().getId();
+                            objectUpdate.id = update.getId();
+                            if (update.isSnapshot()) {
+                                objectUpdate.snapshot = true;
+                            }
+                            objectUpdate.added = toCoordsList(update.getAdded());
+                            objectUpdate.removed = toCoordsList(update.getRemoved());
+                            return objectUpdate;
+                        })
+                        .collect(Collectors.toList());
+                break;
+            }
+
             case MAIDEN_BLOOD_SPLATS: {
                 MaidenBloodSplatsEvent bloodSplatsEvent = (MaidenBloodSplatsEvent) event;
                 json.maidenBloodSplats = toCoordsList(bloodSplatsEvent.getBloodSplats());

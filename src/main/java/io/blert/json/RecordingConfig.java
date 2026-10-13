@@ -33,6 +33,7 @@ public class RecordingConfig {
     public static class ObjectCapture {
         public int type;
         public List<Integer> ids;
+        public Boolean onCreation;
     }
 
     public static class Scope {

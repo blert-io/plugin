@@ -42,6 +42,5 @@ public class ChallengeUpdate {
         public int recordedTicks;
         public Integer gameServerTicks;
         public boolean gameTicksPrecise;
-        public Integer recordingConfigVersion;
     }
 }
