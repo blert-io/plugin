@@ -1,3 +1,65 @@
 {
-  "version": 0
+  "version": 1,
+  "challenges": [
+    {
+      "challenge": 1,
+      "scope": {
+        "objects": [
+          {
+            "type": 1,
+            "ids": [32984]
+          },
+          {
+            "type": 2,
+            "ids": [32743, 32744, 33035]
+          },
+          {
+            "type": 3,
+            "ids": [1579, 1595]
+          },
+          {
+            "type": 3,
+            "ids": [505, 1556, 1570, 1571, 1572, 1573, 1576],
+            "onCreation": true
+          }
+        ]
+      }
+    },
+    {
+      "challenge": 4,
+      "scope": {
+        "objects": [
+          {
+            "type": 1,
+            "ids": [50743]
+          },
+          {
+            "type": 2,
+            "ids": [50744]
+          },
+          {
+            "type": 3,
+            "ids": [2669, 2670, 2671, 2689, 2690, 2691, 2693, 2694, 2695, 2698],
+            "onCreation": true
+          }
+        ]
+      }
+    },
+    {
+      "challenge": 6,
+      "scope": {
+        "objects": [
+          {
+            "type": 1,
+            "ids": [57283, 57286]
+          },
+          {
+            "type": 3,
+            "ids": [3405, 3406, 3407],
+            "onCreation": true
+          }
+        ]
+      }
+    }
+  ]
 }

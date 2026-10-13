@@ -77,13 +77,17 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
         private final Stage stage;
         private final List<String> party;
 
+        @Nullable
+        private final Integer recordingConfigVersion;
+
         @Override
         public String toString() {
             return "Status(" + "challenge="
                     + challenge + ", mode="
                     + mode + ", stage="
                     + stage + ", party="
-                    + party + ')';
+                    + party + ", recordingConfigVersion="
+                    + recordingConfigVersion + ')';
         }
     }
 
@@ -280,7 +284,13 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
     }
 
     private Status currentStatus() {
-        return new Status(challenge, challengeMode, getStage(), new ArrayList<>(party.keySet()));
+        DataTracker tracker = getActiveTracker();
+        return new Status(
+                challenge,
+                challengeMode,
+                getStage(),
+                new ArrayList<>(party.keySet()),
+                tracker != null ? tracker.getRecordingConfig().getVersion() : null);
     }
 
     /**

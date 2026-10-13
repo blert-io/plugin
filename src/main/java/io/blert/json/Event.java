@@ -43,6 +43,7 @@ public class Event {
     public Npc npc;
     public NpcAttack npcAttack;
     public Spell playerSpell;
+    public Objects objects;
 
     // ToB event-specific fields
     public List<Coords> maidenBloodSplats;
@@ -146,6 +147,19 @@ public class Event {
         public int type;
         public String targetPlayer;
         public Npc targetNpc;
+    }
+
+    public static class Objects {
+        public Boolean snapshot;
+        public List<ObjectUpdate> updates;
+    }
+
+    public static class ObjectUpdate {
+        public int type;
+        public int id;
+        public Boolean snapshot;
+        public List<Coords> added;
+        public List<Coords> removed;
     }
 
     public static class NpcAttack {

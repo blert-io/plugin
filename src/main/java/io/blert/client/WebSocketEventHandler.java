@@ -70,7 +70,6 @@ public class WebSocketEventHandler implements EventHandler {
 
         final int currentRequestId;
         final ChallengeStartRequest request;
-        final Challenge challenge;
         final int remainingRetries;
 
         // Queue of events received during CHALLENGE_STARTING, before the challenge ID is known.
@@ -80,8 +79,8 @@ public class WebSocketEventHandler implements EventHandler {
         @Nullable
         ChallengeEndEvent pendingEndEvent;
 
-        ChallengeStartAttempt(int requestId, ChallengeStartRequest request, Challenge challenge) {
-            this(requestId, request, challenge, INITIAL_RETRIES, new ArrayList<>(), null);
+        ChallengeStartAttempt(int requestId, ChallengeStartRequest request) {
+            this(requestId, request, INITIAL_RETRIES, new ArrayList<>(), null);
         }
 
         /**
@@ -90,7 +89,7 @@ public class WebSocketEventHandler implements EventHandler {
          */
         ChallengeStartAttempt retry(int newRequestId) {
             return new ChallengeStartAttempt(
-                    newRequestId, request, challenge, remainingRetries - 1, queuedEvents, pendingEndEvent);
+                    newRequestId, request, remainingRetries - 1, queuedEvents, pendingEndEvent);
         }
 
         boolean canRetry() {
@@ -116,6 +115,30 @@ public class WebSocketEventHandler implements EventHandler {
         final Event event;
     }
 
+    /**
+     * State of the challenge being recorded.
+     */
+    private static class Recording {
+        final Challenge challenge;
+
+        // Null until the server responds to the start request.
+        @Nullable
+        String id;
+
+        @Nullable
+        ChallengeStartAttempt startAttempt;
+
+        // Recording config version of each stage's current attempt.
+        final Map<Integer, Integer> stageConfigVersions = new HashMap<>();
+
+        // Stages whose recording info has been sent to the server.
+        final Set<Integer> reportedStages = new HashSet<>();
+
+        Recording(Challenge challenge) {
+            this.challenge = challenge;
+        }
+    }
+
     private static final int DEFAULT_REQUEST_TIMEOUT_MS = 5000;
 
     private final BlertPlugin plugin;
@@ -132,9 +155,7 @@ public class WebSocketEventHandler implements EventHandler {
     private final Timer requestTimeout = new Timer();
     private volatile Status status = Status.IDLE;
 
-    private Challenge currentChallenge = null;
-    private @Nullable String challengeId = null;
-    private @Nullable ChallengeStartAttempt currentStartAttempt = null;
+    private volatile @Nullable Recording recording = null;
     private Instant serverShutdownTime = null;
     private boolean apiKeyUsernameMismatch = false;
 
@@ -170,23 +191,25 @@ public class WebSocketEventHandler implements EventHandler {
 
     @Override
     public void handleEvent(int clientTick, Event event) {
+        ChallengeStartAttempt startAttempt = pendingStartAttempt();
+
         switch (event.getType()) {
             case CHALLENGE_START:
                 // Starting a new challenge. Discard any buffered events and abandon any
                 // pending start attempt.
                 eventBuffer.flushEventsUpTo(clientTick);
-                if (currentStartAttempt != null) {
+                if (startAttempt != null) {
                     log.warn("Abandoning previous challenge start attempt due to new challenge");
-                    abandonChallengeStart();
+                    resetChallenge();
                 }
                 startChallenge((ChallengeStartEvent) event);
                 break;
 
             case CHALLENGE_END:
                 // If we're still waiting for a challenge start response, queue the end event.
-                if (currentStartAttempt != null) {
+                if (startAttempt != null) {
                     log.debug("Queueing challenge end event until start response is received");
-                    currentStartAttempt.pendingEndEvent = (ChallengeEndEvent) event;
+                    startAttempt.pendingEndEvent = (ChallengeEndEvent) event;
                     break;
                 }
 
@@ -199,8 +222,8 @@ public class WebSocketEventHandler implements EventHandler {
 
             case CHALLENGE_UPDATE:
                 // Queue if waiting for challenge start response.
-                if (currentStartAttempt != null) {
-                    currentStartAttempt.queuedEvents.add(new QueuedEvent(clientTick, event));
+                if (startAttempt != null) {
+                    startAttempt.queuedEvents.add(new QueuedEvent(clientTick, event));
                     break;
                 }
                 updateChallenge((ChallengeUpdateEvent) event, null);
@@ -208,8 +231,9 @@ public class WebSocketEventHandler implements EventHandler {
 
             case STAGE_UPDATE:
                 // Queue if waiting for challenge start response.
-                if (currentStartAttempt != null) {
-                    currentStartAttempt.queuedEvents.add(new QueuedEvent(clientTick, event));
+                if (startAttempt != null) {
+                    setStageConfigVersion((StageUpdateEvent) event);
+                    startAttempt.queuedEvents.add(new QueuedEvent(clientTick, event));
                     break;
                 }
 
@@ -217,6 +241,7 @@ public class WebSocketEventHandler implements EventHandler {
                 if (eventBuffer.hasEvents()) {
                     sendEvents(eventBuffer.flushEventsUpTo(clientTick));
                 }
+                setStageConfigVersion((StageUpdateEvent) event);
                 updateChallenge(null, (StageUpdateEvent) event);
                 break;
 
@@ -226,7 +251,7 @@ public class WebSocketEventHandler implements EventHandler {
 
                 // Only send events if we have an active challenge ID.
                 // During CHALLENGE_STARTING, events are buffered until the ID is received.
-                if (status == Status.CHALLENGE_ACTIVE && currentStartAttempt == null) {
+                if (status == Status.CHALLENGE_ACTIVE && startAttempt == null) {
                     if (currentTick != clientTick) {
                         // Events are collected and sent in a single batch at the end of a tick.
                         sendEvents(eventBuffer.flushEventsUpTo(clientTick));
@@ -275,11 +300,12 @@ public class WebSocketEventHandler implements EventHandler {
         event.getStage().map(Stage::getId).ifPresent(s -> challengeStartRequest.stage = s);
 
         // Create a new attempt to track the challenge start request and queued events.
-        currentStartAttempt = new ChallengeStartAttempt(getRequestId(), challengeStartRequest, event.getChallenge());
-        this.currentChallenge = event.getChallenge();
+        Recording recording = new Recording(event.getChallenge());
+        recording.startAttempt = new ChallengeStartAttempt(getRequestId(), challengeStartRequest);
+        this.recording = recording;
 
         setStatus(Status.CHALLENGE_STARTING);
-        sendChallengeStartRequest(currentStartAttempt);
+        sendChallengeStartRequest(recording.startAttempt);
     }
 
     /**
@@ -310,34 +336,27 @@ public class WebSocketEventHandler implements EventHandler {
      */
     private void handleChallengeStartTimeout(ChallengeStartAttempt attempt) {
         // Verify this is still the current attempt and we're still waiting for a response.
-        if (currentStartAttempt != attempt || status != Status.CHALLENGE_STARTING) {
+        Recording recording = this.recording;
+        if (recording == null || recording.startAttempt != attempt || status != Status.CHALLENGE_STARTING) {
             return;
         }
 
         if (attempt.canRetry()) {
             ChallengeStartAttempt retryAttempt = attempt.retry(getRequestId());
-            currentStartAttempt = retryAttempt;
+            recording.startAttempt = retryAttempt;
             log.warn(
                     "Challenge start request timed out; retrying ({} retries remaining)",
                     retryAttempt.remainingRetries);
             sendChallengeStartRequest(retryAttempt);
         } else {
             log.error("Challenge start request failed after all retries");
-            abandonChallengeStart();
+            resetChallenge();
         }
     }
 
-    /**
-     * Abandons any pending challenge start attempt, clearing state and returning to IDLE.
-     */
-    private void abandonChallengeStart() {
-        currentStartAttempt = null;
-        currentChallenge = null;
-        setStatus(Status.IDLE);
-    }
-
     void endChallenge(ChallengeEndEvent event) {
-        if (challengeId == null) {
+        Recording recording = this.recording;
+        if (recording == null || recording.id == null) {
             log.warn("Attempted to end challenge without an active challenge ID");
             return;
         }
@@ -347,7 +366,7 @@ public class WebSocketEventHandler implements EventHandler {
         ServerMessage message = new ServerMessage();
         message.type = ServerMessage.TYPE_CHALLENGE_END_REQUEST;
         message.requestId = requestId;
-        message.activeChallengeId = challengeId;
+        message.activeChallengeId = recording.id;
         message.challengeEndRequest = new io.blert.json.ChallengeEndRequest();
         message.challengeEndRequest.challengeTimeTicks = event.getChallengeTime();
         message.challengeEndRequest.overallTimeTicks = event.getOverallTime();
@@ -371,7 +390,8 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     void updateChallenge(@Nullable ChallengeUpdateEvent challenge, @Nullable StageUpdateEvent stage) {
-        if (challengeId == null) {
+        Recording recording = this.recording;
+        if (recording == null || recording.id == null) {
             log.warn("Attempted to update challenge without an active challenge ID");
             return;
         }
@@ -396,16 +416,25 @@ public class WebSocketEventHandler implements EventHandler {
             stageUpdate.recordedTicks = stage.getTick();
             stageUpdate.gameTicksPrecise = stage.isGameTicksPrecise();
             stage.getInGameTicks().ifPresent(t -> stageUpdate.gameServerTicks = t);
-            stage.getRecordingConfigVersion().ifPresent(v -> stageUpdate.recordingConfigVersion = v);
             challengeUpdate.stageUpdate = stageUpdate;
         }
 
         ServerMessage message = new ServerMessage();
-        message.activeChallengeId = challengeId;
+        message.activeChallengeId = recording.id;
         message.type = ServerMessage.TYPE_CHALLENGE_UPDATE;
         message.challengeUpdate = challengeUpdate;
 
         webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
+    }
+
+    private synchronized void setStageConfigVersion(StageUpdateEvent event) {
+        Recording recording = this.recording;
+        Optional<Stage> stage = event.getStage();
+        Optional<Integer> version = event.getRecordingConfigVersion();
+        if (recording != null && stage.isPresent() && version.isPresent()) {
+            recording.stageConfigVersions.put(stage.get().getId(), version.get());
+            recording.reportedStages.remove(stage.get().getId());
+        }
     }
 
     public void updateGameState(GameState gameState) {
@@ -598,8 +627,8 @@ public class WebSocketEventHandler implements EventHandler {
                                 + "If you changed your display name, please go update it on the Blert website.</col>");
                 apiKeyUsernameMismatch = true;
                 // Abandon any pending challenge start since this account can't record.
-                if (currentStartAttempt != null) {
-                    abandonChallengeStart();
+                if (pendingStartAttempt() != null) {
+                    resetChallenge();
                 }
                 break;
 
@@ -608,16 +637,18 @@ public class WebSocketEventHandler implements EventHandler {
                 closeWebsocketClient();
                 break;
 
-            case ErrorData.TYPE_CHALLENGE_RECORDING_ENDED:
-                if (challengeId == null || !challengeId.equals(message.activeChallengeId)) {
+            case ErrorData.TYPE_CHALLENGE_RECORDING_ENDED: {
+                Recording recording = this.recording;
+                if (recording == null || recording.id == null || !recording.id.equals(message.activeChallengeId)) {
                     break;
                 }
 
                 if (status == Status.CHALLENGE_STARTING || status == Status.CHALLENGE_ACTIVE) {
-                    log.error("Server ended recording for challenge {}", challengeId);
+                    log.error("Server ended recording for challenge {}", recording.id);
                     resetChallenge();
                 }
                 break;
+            }
 
             case ErrorData.TYPE_UNKNOWN:
             default:
@@ -627,7 +658,9 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private void handleChallengeStartResponse(ServerMessage serverMessage) {
-        if (status != Status.CHALLENGE_STARTING
+        Recording recording = this.recording;
+        if (recording == null
+                || status != Status.CHALLENGE_STARTING
                 || serverMessage.requestId == null
                 || serverMessage.requestId != lastRequestId) {
             log.warn("Received unexpected CHALLENGE_START_RESPONSE from server");
@@ -636,11 +669,7 @@ public class WebSocketEventHandler implements EventHandler {
 
         if (Strings.isNullOrEmpty(serverMessage.activeChallengeId)) {
             log.error("Failed to start challenge");
-            eventBuffer.setChallengeId(null);
-            currentChallenge = null;
-            challengeId = null;
-            currentStartAttempt = null;
-            setStatus(Status.IDLE);
+            resetChallenge();
 
             if (serverMessage.error != null && serverMessage.error.message != null) {
                 sendGameMessage(
@@ -649,14 +678,14 @@ public class WebSocketEventHandler implements EventHandler {
             return;
         }
 
-        challengeId = serverMessage.activeChallengeId;
+        recording.id = serverMessage.activeChallengeId;
 
         // Stamp all buffered events with the challenge ID.
-        eventBuffer.setChallengeId(challengeId);
+        eventBuffer.setChallengeId(recording.id);
 
         // Capture and clear the start attempt before processing queued events.
-        ChallengeStartAttempt attempt = currentStartAttempt;
-        currentStartAttempt = null;
+        ChallengeStartAttempt attempt = recording.startAttempt;
+        recording.startAttempt = null;
 
         setStatus(Status.CHALLENGE_ACTIVE);
 
@@ -783,7 +812,7 @@ public class WebSocketEventHandler implements EventHandler {
         plugin.getSidePanel().setRecentRecordings(null);
     }
 
-    private void sendEvents(List<io.blert.json.Event> events) {
+    private synchronized void sendEvents(List<io.blert.json.Event> events) {
         if (!webSocketClient.isOpen() || events.isEmpty()) {
             return;
         }
@@ -803,7 +832,7 @@ public class WebSocketEventHandler implements EventHandler {
 
             if (!event.challengeId.equals(message.activeChallengeId)) {
                 if (!message.challengeEvents.isEmpty()) {
-                    webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
+                    sendEventStream(message);
                 }
 
                 message = new ServerMessage();
@@ -818,12 +847,43 @@ public class WebSocketEventHandler implements EventHandler {
         }
 
         if (!message.challengeEvents.isEmpty()) {
-            webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
+            sendEventStream(message);
         }
 
         if (ignoredEvents > 0) {
             log.debug("Ignored {} events without a challenge ID", ignoredEvents);
         }
+    }
+
+    private void sendEventStream(ServerMessage message) {
+        message.challengeEvents.stream()
+                .map(event -> event.stage)
+                .filter(Objects::nonNull)
+                .distinct()
+                .forEach(stage -> sendRecordingInfo(message.activeChallengeId, stage));
+        webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
+    }
+
+    private void sendRecordingInfo(String challengeId, int stage) {
+        Recording recording = this.recording;
+        if (recording == null || !challengeId.equals(recording.id) || recording.reportedStages.contains(stage)) {
+            return;
+        }
+
+        Integer version = recording.stageConfigVersions.get(stage);
+        if (version == null) {
+            log.debug("No recording config version for stage {}", stage);
+            return;
+        }
+
+        ServerMessage message = new ServerMessage();
+        message.type = ServerMessage.TYPE_RECORDING_INFO;
+        message.activeChallengeId = challengeId;
+        message.recordingInfo = new RecordingInfo();
+        message.recordingInfo.stage = stage;
+        message.recordingInfo.configVersion = version;
+        webSocketClient.sendTextMessage(plugin.getGson().toJson(message));
+        recording.reportedStages.add(stage);
     }
 
     private void sendPong() {
@@ -841,9 +901,7 @@ public class WebSocketEventHandler implements EventHandler {
     }
 
     private void resetChallenge() {
-        currentChallenge = null;
-        challengeId = null;
-        currentStartAttempt = null;
+        recording = null;
         eventBuffer.setChallengeId(null);
         setStatus(Status.IDLE);
     }
@@ -860,7 +918,12 @@ public class WebSocketEventHandler implements EventHandler {
 
     private void setStatus(Status status) {
         this.status = status;
-        plugin.getSidePanel().updateChallengeStatus(status, currentChallenge, challengeId);
+        Recording recording = this.recording;
+        plugin.getSidePanel()
+                .updateChallengeStatus(
+                        status,
+                        recording != null ? recording.challenge : null,
+                        recording != null ? recording.id : null);
         if (reconnectWhenIdle) {
             reconnectIfIdle(false);
         }
@@ -868,6 +931,12 @@ public class WebSocketEventHandler implements EventHandler {
 
     private boolean pendingServerShutdown() {
         return serverShutdownTime != null;
+    }
+
+    @Nullable
+    private ChallengeStartAttempt pendingStartAttempt() {
+        Recording recording = this.recording;
+        return recording != null ? recording.startAttempt : null;
     }
 
     private void reconnectIfIdle(boolean immediate) {
@@ -964,10 +1033,16 @@ public class WebSocketEventHandler implements EventHandler {
                 self.webSocketClient.sendTextMessage(plugin.getGson().toJson(response));
 
                 if (isValid) {
-                    self.challengeId = message.activeChallengeId;
-                    self.eventBuffer.setChallengeId(self.challengeId);
+                    Recording recording = new Recording(status.getChallenge());
+                    recording.id = message.activeChallengeId;
+                    if (status.getRecordingConfigVersion() != null) {
+                        recording.stageConfigVersions.put(
+                                status.getStage().getId(), status.getRecordingConfigVersion());
+                    }
+                    self.recording = recording;
+                    self.eventBuffer.setChallengeId(recording.id);
                     self.setStatus(Status.CHALLENGE_ACTIVE);
-                    log.debug("Confirmed challenge state; rejoining challenge {}", self.challengeId);
+                    log.debug("Confirmed challenge state; rejoining challenge {}", recording.id);
                 }
             }
         });

@@ -40,6 +40,7 @@ public enum EventType {
     NPC_DEATH(9),
     NPC_ATTACK(10),
     PLAYER_SPELL(11),
+    OBJECTS(12),
 
     MAIDEN_CRAB_LEAK(100),
     MAIDEN_BLOOD_SPLATS(101),

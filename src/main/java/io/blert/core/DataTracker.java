@@ -58,7 +58,10 @@ public abstract class DataTracker implements RuneliteEventHandler {
     protected final Client client;
     protected final ClientThread clientThread;
 
+    @Getter(AccessLevel.PACKAGE)
     private final ChallengeRecordingConfig recordingConfig;
+
+    private final ObjectTracker objectTracker;
 
     @Getter
     private final Stage stage;
@@ -84,6 +87,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
         this.client = client;
         this.clientThread = challenge.getClientThread();
         this.recordingConfig = recordingConfig;
+        this.objectTracker = new ObjectTracker(client, recordingConfig);
         this.state = State.NOT_STARTED;
         this.stage = stage;
     }
@@ -146,6 +150,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
             }
         }
         trackedNpcs.forEach(this::sendNpcUpdate);
+
+        ObjectsEvent objectsEvent = objectTracker.update(getStage(), getTick());
+        if (objectsEvent != null) {
+            dispatchEvent(objectsEvent);
+        }
 
         if (pendingCompletion != null) {
             completeStage(true);
@@ -383,6 +392,8 @@ public abstract class DataTracker implements RuneliteEventHandler {
                 raider.resetForNewRoom();
             }
         });
+
+        objectTracker.scan(client.getTopLevelWorldView().getPlane());
 
         dispatchEvent(StageUpdateEvent.started(getStage(), recordingConfig.getVersion()));
     }
@@ -765,6 +776,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
             return;
         }
 
+        if (event.getGameState() == GameState.LOADING) {
+            // Perform a rescan after crossing a loading line to send a snapshot.
+            objectTracker.reset();
+        }
+
         onGameState(event);
     }
 
@@ -860,6 +876,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Override
     public final void onGameObjectSpawned(GameObjectSpawned event) {
         if (!terminating()) {
+            objectTracker.add(event.getGameObject());
             onGameObjectSpawn(event);
         }
     }
@@ -867,6 +884,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Override
     public final void onGameObjectDespawned(GameObjectDespawned event) {
         if (!terminating()) {
+            objectTracker.remove(event.getGameObject());
             onGameObjectDespawn(event);
         }
     }
@@ -874,6 +892,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Override
     public final void onGroundObjectSpawned(GroundObjectSpawned event) {
         if (!terminating()) {
+            objectTracker.add(event.getGroundObject());
             onGroundObjectSpawn(event);
         }
     }
@@ -881,6 +900,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Override
     public final void onGroundObjectDespawned(GroundObjectDespawned event) {
         if (!terminating()) {
+            objectTracker.remove(event.getGroundObject());
             onGroundObjectDespawn(event);
         }
     }
@@ -895,6 +915,9 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Override
     public final void onGraphicsObjectCreated(GraphicsObjectCreated event) {
         if (!terminating()) {
+            if (getState() == State.IN_PROGRESS) {
+                objectTracker.record(event.getGraphicsObject());
+            }
             onGraphicsObjectCreation(event);
         }
     }
