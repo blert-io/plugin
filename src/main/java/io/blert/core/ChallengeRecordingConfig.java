@@ -24,9 +24,8 @@
 package io.blert.core;
 
 import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import javax.annotation.Nullable;
 import lombok.Getter;
 
@@ -34,10 +33,18 @@ import lombok.Getter;
  * Recording config resolved for a challenge type.
  */
 public class ChallengeRecordingConfig {
+    public enum ObjectCapture {
+        NONE,
+        /** Recorded on every tick that the client has the object. */
+        PRESENCE,
+        /** Recorded only on the tick the object is created. Only applies to graphics. */
+        ON_CREATION,
+    }
+
     @Getter
     private final int version;
 
-    private final Map<ObjectType, Set<Integer>> objectIds = new EnumMap<>(ObjectType.class);
+    private final Map<ObjectType, Map<Integer, ObjectCapture>> objectCaptures = new EnumMap<>(ObjectType.class);
 
     ChallengeRecordingConfig(io.blert.json.RecordingConfig json, Challenge challenge) {
         this.version = json.version;
@@ -53,11 +60,18 @@ public class ChallengeRecordingConfig {
     }
 
     /**
-     * Returns whether objects of a type and ID should be recorded.
+     * Returns how objects of a type and ID should be recorded.
      */
-    public boolean shouldRecordObject(ObjectType type, int id) {
-        Set<Integer> ids = objectIds.get(type);
-        return ids != null && ids.contains(id);
+    public ObjectCapture objectCapture(ObjectType type, int id) {
+        Map<Integer, ObjectCapture> captures = objectCaptures.get(type);
+        return captures != null ? captures.getOrDefault(id, ObjectCapture.NONE) : ObjectCapture.NONE;
+    }
+
+    /**
+     * Returns whether any objects are configured to be recorded.
+     */
+    public boolean recordsObjects() {
+        return objectCaptures.values().stream().anyMatch(captures -> !captures.isEmpty());
     }
 
     private void addScope(@Nullable io.blert.json.RecordingConfig.Scope scope) {
@@ -68,7 +82,14 @@ public class ChallengeRecordingConfig {
         for (io.blert.json.RecordingConfig.ObjectCapture capture : scope.objects) {
             ObjectType type = ObjectType.fromId(capture.type);
             if (type != null && capture.ids != null) {
-                objectIds.computeIfAbsent(type, t -> new HashSet<>()).addAll(capture.ids);
+                // Creation mode is only meaningful for graphics.
+                ObjectCapture mode = type == ObjectType.GRAPHICS && Boolean.TRUE.equals(capture.onCreation)
+                        ? ObjectCapture.ON_CREATION
+                        : ObjectCapture.PRESENCE;
+                Map<Integer, ObjectCapture> captures = objectCaptures.computeIfAbsent(type, t -> new HashMap<>());
+                for (int id : capture.ids) {
+                    captures.put(id, mode);
+                }
             }
         }
     }
