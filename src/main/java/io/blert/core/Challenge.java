@@ -33,6 +33,7 @@ public enum Challenge {
     COLOSSEUM("Colosseum", 4),
     INFERNO("Inferno", 5),
     MOKHAIOTL("Mokhaiotl", 6),
+    TFA("Fractured Archive", 7),
     ;
 
     @Getter
