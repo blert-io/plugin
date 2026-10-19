@@ -24,6 +24,7 @@
 package io.blert.core;
 
 import java.util.Optional;
+import javax.annotation.Nullable;
 import lombok.Getter;
 
 public enum ChallengeMode {
@@ -46,6 +47,16 @@ public enum ChallengeMode {
 
     ChallengeMode(int id) {
         this.id = id;
+    }
+
+    @Nullable
+    public static ChallengeMode fromId(int id) {
+        for (ChallengeMode mode : values()) {
+            if (mode.getId() == id) {
+                return mode;
+            }
+        }
+        return null;
     }
 
     public static Optional<ChallengeMode> parseTob(String string) {

@@ -164,6 +164,16 @@ public class JsonEventTranslator {
                 npc.roomId = npcEvent.getRoomId();
                 npc.hitpoints = npcEvent.getHitpoints().getValue();
                 npc.activePrayers = npcEvent.getPrayers();
+                npc.size = npcEvent.getSize();
+                npc.animation = npcEvent.getAnimation();
+                npc.spotAnims = npcEvent.getSpotAnims();
+
+                NpcEvent.Target target = npcEvent.getTarget();
+                if (target != null) {
+                    npc.target = new Event.Target();
+                    npc.target.player = target.getPlayer();
+                    npc.target.npcRoomId = target.getNpcRoomId();
+                }
 
                 if (npcEvent.propertiesChanged()) {
                     addTranslatedNpcProperties(npc, npcEvent);
@@ -216,16 +226,7 @@ public class JsonEventTranslator {
                 break;
             }
 
-            case BLOAT_DOWN: {
-                BloatDownEvent bloatDownEvent = (BloatDownEvent) event;
-                json.bloatDown = new Event.BloatDown();
-                json.bloatDown.downNumber = bloatDownEvent.getDownNumber();
-                json.bloatDown.walkTime = bloatDownEvent.getUptime();
-                break;
-            }
-
-            case BLOAT_HANDS_DROP:
-            case BLOAT_HANDS_SPLAT: {
+            case BLOAT_HANDS_DROP: {
                 BloatHandsEvent bloatHandsEvent = (BloatHandsEvent) event;
                 json.bloatHands = toCoordsList(bloatHandsEvent.getHands());
                 break;

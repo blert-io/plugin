@@ -69,17 +69,16 @@ public abstract class TrackedNpc {
     private boolean updatedProperties;
 
     protected TrackedNpc(@NonNull NPC npc, long roomId, Hitpoints hitpoints) {
-        this.npc = npc;
-        this.mode = ChallengeMode.NO_MODE;
-        this.roomId = roomId;
-        this.hitpoints = hitpoints;
-        this.spawnTick = -1;
-        this.updatedProperties = true;
+        this(npc, ChallengeMode.NO_MODE, roomId, hitpoints);
     }
 
     protected TrackedNpc(@NonNull NPC npc, @NonNull TobNpc tobNpc, long roomId, Hitpoints hitpoints) {
+        this(npc, tobNpc.getMode(), roomId, hitpoints);
+    }
+
+    protected TrackedNpc(@NonNull NPC npc, @NonNull ChallengeMode mode, long roomId, Hitpoints hitpoints) {
         this.npc = npc;
-        this.mode = tobNpc.getMode();
+        this.mode = mode;
         this.roomId = roomId;
         this.hitpoints = hitpoints;
         this.spawnTick = -1;
