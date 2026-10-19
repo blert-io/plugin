@@ -21,7 +21,8 @@
     "weaponIds": [27665, 27679],
     "animationIds": [9961],
     "cooldown": 4,
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "specCost": 50
   },
   {
     "name": "AGS_SPEC",
@@ -29,7 +30,8 @@
     "weaponIds": [11802, 20368, 29605],
     "animationIds": [7644, 7645],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "ARCLIGHT_AUTO",
@@ -37,7 +39,8 @@
     "weaponIds": [19675],
     "animationIds": [386, 390],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "ARCLIGHT_SPEC",
@@ -45,7 +48,9 @@
     "weaponIds": [19675],
     "animationIds": [2890],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"],
+    "specCost": 50
   },
   {
     "name": "ATLATL_AUTO",
@@ -61,7 +66,8 @@
     "weaponIds": [29000],
     "animationIds": [11060],
     "cooldown": 3,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 50
   },
   {
     "name": "BGS_SPEC",
@@ -69,7 +75,8 @@
     "weaponIds": [11804, 20370],
     "animationIds": [7642, 7643],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "BLOWPIPE",
@@ -97,7 +104,8 @@
     ],
     "continuousAnimation": true,
     "animationFrameMax": 2,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 50
   },
   {
     "name": "BOWFA",
@@ -123,7 +131,8 @@
     "weaponIds": [29577],
     "animationIds": [11140],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 35
   },
   {
     "name": "CHALLY_SWIPE",
@@ -139,7 +148,8 @@
     "weaponIds": [23987],
     "animationIds": [1203],
     "cooldown": 7,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 30
   },
   {
     "name": "CHIN_BLACK",
@@ -179,7 +189,8 @@
     "weaponIds": [13652, 28039],
     "animationIds": [7514],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "DARK_DEMONBANE",
@@ -188,7 +199,8 @@
     "animationIds": [8977],
     "attackerGraphicIds": [1869],
     "cooldown": 5,
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "DARKLIGHT_AUTO",
@@ -196,7 +208,8 @@
     "weaponIds": [6746, 8281],
     "animationIds": [386, 390],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "DARKLIGHT_SPEC",
@@ -204,7 +217,9 @@
     "weaponIds": [6746, 8281],
     "animationIds": [2890],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"],
+    "specCost": 50
   },
   {
     "name": "DAWN_SPEC",
@@ -216,7 +231,8 @@
       "id": 1547,
       "startCycleOffset": 51
     },
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "specCost": 35
   },
   {
     "name": "DAWN_AUTO",
@@ -255,7 +271,8 @@
     "weaponIds": [1215, 1231, 5680, 5698],
     "animationIds": [1062],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 25
   },
   {
     "name": "DHAROKS_GREATAXE",
@@ -271,7 +288,8 @@
     "weaponIds": [21015, 28682],
     "animationIds": [7511],
     "cooldown": 5,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "DRAGON_HUNTER_LANCE",
@@ -295,7 +313,8 @@
     "weaponIds": [22804, 22806, 22808, 22810],
     "animationIds": [8291],
     "cooldown": 2,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 25
   },
   {
     "name": "DRAGON_SCIMITAR",
@@ -335,7 +354,8 @@
     "weaponIds": [21003, 27100],
     "animationIds": [11124],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "EMBERLIGHT_AUTO",
@@ -343,7 +363,8 @@
     "weaponIds": [29589],
     "animationIds": [386, 390],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "EMBERLIGHT_SPEC",
@@ -351,7 +372,9 @@
     "weaponIds": [29589],
     "animationIds": [11138],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"],
+    "specCost": 50
   },
   {
     "name": "EYE_OF_AYAK_AUTO",
@@ -369,7 +392,8 @@
     "weaponIds": [31113],
     "animationIds": [12394],
     "cooldown": 5,
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "specCost": 50
   },
   {
     "name": "FANG",
@@ -385,7 +409,8 @@
     "weaponIds": [26219, 27246],
     "animationIds": [11222],
     "cooldown": 5,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 25
   },
   {
     "name": "GLACIAL_TEMOTLI",
@@ -436,7 +461,8 @@
     "weaponIds": [13576, 28035],
     "animationIds": [1378],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "HAM_JOINT",
@@ -585,7 +611,8 @@
     "weaponIds": [29591],
     "animationIds": [426],
     "cooldown": 4,
-    "category": "RANGED"
+    "category": "RANGED",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "SCORCHING_BOW_SPEC",
@@ -593,7 +620,9 @@
     "weaponIds": [29591],
     "animationIds": [11133],
     "cooldown": 4,
-    "category": "RANGED"
+    "category": "RANGED",
+    "classes": ["DEMONBANE"],
+    "specCost": 25
   },
   {
     "name": "SCYTHE",
@@ -617,7 +646,8 @@
     "weaponIds": [11806, 20372],
     "animationIds": [7640, 7641],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "SHADOW",
@@ -646,7 +676,7 @@
   {
     "name": "SOULREAPER_AXE",
     "protoId": 43,
-    "weaponIds": [28338],
+    "weaponIds": [28338, 33335],
     "animationIds": [10172],
     "cooldown": 5,
     "category": "MELEE"
@@ -705,7 +735,8 @@
     "weaponIds": [28922],
     "animationIds": [10914],
     "cooldown": 6,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 50
   },
   {
     "name": "TONALZTICS_UNCHARGED",
@@ -809,7 +840,8 @@
     "weaponIds": [27690, 29607],
     "animationIds": [1378, 11275],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "VOLATILE_NM_SPEC",
@@ -817,7 +849,8 @@
     "weaponIds": [24424, 29602, 29609],
     "animationIds": [8532],
     "cooldown": 5,
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "specCost": 55
   },
   {
     "name": "WEBWEAVER_AUTO",
@@ -833,7 +866,8 @@
     "weaponIds": [27655],
     "animationIds": [9964],
     "cooldown": 3,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 50
   },
   {
     "name": "XGS_SPEC",
@@ -841,7 +875,8 @@
     "weaponIds": [26233, 27184],
     "animationIds": [9171],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "ZCB_AUTO",
@@ -865,7 +900,8 @@
       "id": 1995,
       "startCycleOffset": 41
     },
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 75
   },
   {
     "name": "ZGS_SPEC",
@@ -873,7 +909,8 @@
     "weaponIds": [11808, 20374],
     "animationIds": [7638, 7639],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "ZOMBIE_AXE",
