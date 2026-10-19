@@ -41,6 +41,10 @@ public class BasicTrackedNpc extends TrackedNpc {
         super(npc, tobNpc, roomId, hitpoints);
     }
 
+    public BasicTrackedNpc(@NonNull NPC npc, ChallengeMode mode, long roomId, Hitpoints hitpoints) {
+        super(npc, mode, roomId, hitpoints);
+    }
+
     @Override
     public @NonNull Properties getProperties() {
         return new EmptyProperties();

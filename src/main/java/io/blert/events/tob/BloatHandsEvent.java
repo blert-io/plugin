@@ -15,10 +15,6 @@ public class BloatHandsEvent extends TobEvent {
         return new BloatHandsEvent(EventType.BLOAT_HANDS_DROP, tick, hands);
     }
 
-    public static BloatHandsEvent splat(int tick, List<WorldPoint> hands) {
-        return new BloatHandsEvent(EventType.BLOAT_HANDS_SPLAT, tick, hands);
-    }
-
     private BloatHandsEvent(EventType type, int tick, List<WorldPoint> hands) {
         super(type, Room.BLOAT, tick, null);
         this.hands = hands;

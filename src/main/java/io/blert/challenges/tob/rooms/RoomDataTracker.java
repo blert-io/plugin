@@ -30,6 +30,7 @@ import io.blert.challenges.tob.TobNpc;
 import io.blert.core.ChallengeRecordingConfig;
 import io.blert.core.ChallengeState;
 import io.blert.core.DataTracker;
+import io.blert.core.GenericTrackedNpc;
 import io.blert.core.Hitpoints;
 import io.blert.core.Raider;
 import io.blert.events.ChallengeUpdateEvent;
@@ -53,7 +54,7 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.util.Text;
 
 @Slf4j
-public abstract class RoomDataTracker extends DataTracker implements EventHandler {
+public class RoomDataTracker extends DataTracker implements EventHandler {
     private static final int TOB_HITPOINTS_VARBIT = 6448;
 
     protected final TheatreChallenge theatreChallenge;
@@ -67,7 +68,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     private boolean shouldUpdateHitpoints;
     private int healTick = -1;
 
-    protected RoomDataTracker(
+    public RoomDataTracker(
             TheatreChallenge theatreChallenge,
             Client client,
             ChallengeRecordingConfig recordingConfig,
@@ -152,6 +153,11 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
      */
     public void correctNpcHitpointsForScale(int scale) {
         getTrackedNpcs().forEach(trackedNpc -> {
+            if (trackedNpc instanceof GenericTrackedNpc) {
+                ((GenericTrackedNpc) trackedNpc).correctHitpointsForScale(scale);
+                return;
+            }
+
             NPC npc = trackedNpc.getNpc();
             int healthRatio = npc.getHealthRatio();
             int healthScale = npc.getHealthScale();
@@ -171,7 +177,7 @@ public abstract class RoomDataTracker extends DataTracker implements EventHandle
     /**
      * Initialization method invoked when the room is first started.
      */
-    protected abstract void onRoomStart();
+    protected void onRoomStart() {}
 
     /**
      * Handler function for Blert events which originate from the data tracker.
