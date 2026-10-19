@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "challenges": [
     {
       "challenge": 1,
@@ -21,6 +21,26 @@
             "type": 3,
             "ids": [505, 1556, 1570, 1571, 1572, 1573, 1576],
             "onCreation": true
+          }
+        ],
+        "npcDefinitions": [
+          {
+            "ids": [10812],
+            "mode": 10,
+            "hitpoints": [320, 640, 960, 1280, 1600],
+            "hitpointsVarbit": { "id": 6448, "scale": 1000 }
+          },
+          {
+            "ids": [8359],
+            "mode": 11,
+            "hitpoints": [1500, 1500, 1500, 1750, 2000],
+            "hitpointsVarbit": { "id": 6448, "scale": 1000 }
+          },
+          {
+            "ids": [10813],
+            "mode": 12,
+            "hitpoints": [1800, 1800, 1800, 2100, 2400],
+            "hitpointsVarbit": { "id": 6448, "scale": 1000 }
           }
         ]
       }

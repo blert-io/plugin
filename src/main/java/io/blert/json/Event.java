@@ -47,7 +47,6 @@ public class Event {
 
     // ToB event-specific fields
     public List<Coords> maidenBloodSplats;
-    public BloatDown bloatDown;
     public List<Coords> bloatHands;
     public NyloWave nyloWave;
     public SoteMaze soteMaze;
@@ -112,9 +111,19 @@ public class Event {
         public Integer hitpoints;
         public Long activePrayers;
 
+        public Integer size;
+        public Integer animation;
+        public Target target;
+        public List<Integer> spotAnims;
+
         public MaidenCrab maidenCrab;
         public Nylo nylo;
         public VerzikCrab verzikCrab;
+    }
+
+    public static class Target {
+        public String player;
+        public Long npcRoomId;
     }
 
     public static class MaidenCrab {
@@ -165,11 +174,6 @@ public class Event {
     public static class NpcAttack {
         public int attack;
         public String target;
-    }
-
-    public static class BloatDown {
-        public int downNumber;
-        public int walkTime;
     }
 
     public static class NyloWave {

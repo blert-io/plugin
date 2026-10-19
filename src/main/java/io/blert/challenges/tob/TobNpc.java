@@ -49,11 +49,6 @@ public enum TobNpc {
     MAIDEN_BLOOD_SPAWN_REGULAR(8367, 1, ChallengeMode.TOB_REGULAR, new int[] {90, 105, 120}),
     MAIDEN_BLOOD_SPAWN_HARD(10829, 1, ChallengeMode.TOB_HARD, new int[] {90, 105, 120}),
 
-    // Bloat.
-    BLOAT_ENTRY(10812, 1, ChallengeMode.TOB_ENTRY, 320),
-    BLOAT_REGULAR(8359, 1, ChallengeMode.TOB_REGULAR, new int[] {1500, 1750, 2000}),
-    BLOAT_HARD(10813, 1, ChallengeMode.TOB_HARD, new int[] {1800, 2100, 2400}),
-
     // Melee small nylos.
     NYLOCAS_ISCHYROS_SMALL_ENTRY(10774, 1, ChallengeMode.TOB_ENTRY, 2),
     NYLOCAS_ISCHYROS_SMALL_REGULAR(8342, 1, ChallengeMode.TOB_REGULAR, new int[] {8, 9, 11}),
@@ -257,10 +252,6 @@ public enum TobNpc {
 
     public static boolean isMaidenBloodSpawn(int id) {
         return idMatches(id, MAIDEN_BLOOD_SPAWN_ENTRY, MAIDEN_BLOOD_SPAWN_REGULAR, MAIDEN_BLOOD_SPAWN_HARD);
-    }
-
-    public static boolean isBloat(int id) {
-        return idMatches(id, BLOAT_ENTRY, BLOAT_REGULAR, BLOAT_HARD);
     }
 
     public static boolean isNylocasIschyrosSmall(int id) {

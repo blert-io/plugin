@@ -28,7 +28,6 @@ import lombok.Getter;
 public enum NpcAttack {
     TOB_MAIDEN_AUTO(1),
     TOB_MAIDEN_BLOOD_THROW(2),
-    TOB_BLOAT_STOMP(3),
     TOB_NYLO_BOSS_MELEE(4),
     TOB_NYLO_BOSS_RANGE(5),
     TOB_NYLO_BOSS_MAGE(6),

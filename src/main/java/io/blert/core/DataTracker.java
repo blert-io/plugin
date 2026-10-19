@@ -81,6 +81,8 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Getter(AccessLevel.PROTECTED)
     private final TrackedNpcCollection trackedNpcs = new TrackedNpcCollection();
 
+    private boolean npcScanPending = false;
+
     public DataTracker(
             RecordableChallenge challenge, Client client, ChallengeRecordingConfig recordingConfig, Stage stage) {
         this.challenge = challenge;
@@ -129,6 +131,14 @@ public abstract class DataTracker implements RuneliteEventHandler {
             return;
         }
 
+        if (npcScanPending) {
+            // Capture NPCs which spawned before the tracker was created.
+            client.getTopLevelWorldView().npcs().stream()
+                    .filter(npc -> trackedNpcs.getByNpc(npc).isEmpty())
+                    .forEach(npc -> createGenericNpc(npc).ifPresent(this::addTrackedNpc));
+            npcScanPending = false;
+        }
+
         updatePlayers();
 
         challenge.getParty().forEach(this::checkForPlayerActions);
@@ -149,6 +159,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
                 dispatchEvent(new PlayerDeathEvent(getStage(), getTick(), location, raider.getUsername()));
             }
         }
+        trackedNpcs.forEach(npc -> {
+            if (npc instanceof GenericTrackedNpc) {
+                ((GenericTrackedNpc) npc).updateHitpointsFromVarbit(client, getTick());
+            }
+        });
         trackedNpcs.forEach(this::sendNpcUpdate);
 
         ObjectsEvent objectsEvent = objectTracker.update(getStage(), getTick());
@@ -195,7 +210,9 @@ public abstract class DataTracker implements RuneliteEventHandler {
      * @param event The Runelite NPC spawn event.
      * @return The tracked NPC to track if desired.
      */
-    protected abstract Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event);
+    protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
+        return Optional.empty();
+    }
 
     /**
      * Event handler invoked when an NPC in the room despawns. If the NPC was being tracked, and is now completely
@@ -206,7 +223,9 @@ public abstract class DataTracker implements RuneliteEventHandler {
      * @return {@code true} if the NPC should no longer be tracked, {@code false} if it should not (e.g. this despawn
      * indicates a phase change).
      */
-    protected abstract boolean onNpcDespawn(NpcDespawned event, @Nullable TrackedNpc trackedNpc);
+    protected boolean onNpcDespawn(NpcDespawned event, @Nullable TrackedNpc trackedNpc) {
+        return false;
+    }
 
     /**
      * Implementation-specific equivalent of the {@code onNpcChanged} Runelite event handler.
@@ -394,6 +413,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
         });
 
         objectTracker.scan(client.getTopLevelWorldView().getPlane());
+
+        // Run a scan for generic NPCs on the first tick after starting,
+        // deferred until implementations' start hooks have taken any they
+        // are interested in.
+        npcScanPending = true;
 
         dispatchEvent(StageUpdateEvent.started(getStage(), recordingConfig.getVersion()));
     }
@@ -742,7 +766,19 @@ public abstract class DataTracker implements RuneliteEventHandler {
         final int tick = getTick();
         WorldPoint point = getWorldLocation(trackedNpc);
 
-        if (trackedNpc.getSpawnTick() == tick) {
+        if (trackedNpc instanceof GenericTrackedNpc) {
+            Actor interacting = trackedNpc.getNpc().getInteracting();
+            NpcEvent.Target target = null;
+            if (interacting instanceof Player) {
+                target = NpcEvent.Target.player(interacting.getName());
+            } else if (interacting instanceof NPC) {
+                target = trackedNpcs
+                        .getByNpc((NPC) interacting)
+                        .map(NpcEvent.Target::npc)
+                        .orElse(null);
+            }
+            dispatchEvent(NpcEvent.genericUpdate(getStage(), tick, point, (GenericTrackedNpc) trackedNpc, target));
+        } else if (trackedNpc.getSpawnTick() == tick) {
             dispatchEvent(NpcEvent.spawn(getStage(), tick, point, trackedNpc));
         } else {
             dispatchEvent(NpcEvent.update(getStage(), tick, point, trackedNpc));
@@ -771,6 +807,12 @@ public abstract class DataTracker implements RuneliteEventHandler {
         return npc.getIndex();
     }
 
+    private Optional<GenericTrackedNpc> createGenericNpc(@NonNull NPC npc) {
+        return recordingConfig
+                .getNpcDefinition(npc.getId())
+                .map(definition -> new GenericTrackedNpc(npc, definition, generateRoomId(npc), challenge.getScale()));
+    }
+
     public final void onGameStateChanged(GameStateChanged event) {
         if (terminating()) {
             return;
@@ -789,7 +831,12 @@ public abstract class DataTracker implements RuneliteEventHandler {
             return;
         }
 
-        onNpcSpawn(event).ifPresent(this::addTrackedNpc);
+        Optional<? extends TrackedNpc> trackedNpc = onNpcSpawn(event);
+        if (trackedNpc.isPresent()) {
+            addTrackedNpc(trackedNpc.get());
+        } else {
+            createGenericNpc(event.getNpc()).ifPresent(this::addTrackedNpc);
+        }
     }
 
     @Override
@@ -799,8 +846,16 @@ public abstract class DataTracker implements RuneliteEventHandler {
         }
 
         Optional<TrackedNpc> maybeTrackedNpc = trackedNpcs.getByNpc(event.getNpc());
-        if (onNpcDespawn(event, maybeTrackedNpc.orElse(null))) {
-            maybeTrackedNpc.ifPresent(this::despawnTrackedNpc);
+        boolean despawn = onNpcDespawn(event, maybeTrackedNpc.orElse(null));
+        if (maybeTrackedNpc.isEmpty()) {
+            return;
+        }
+
+        TrackedNpc trackedNpc = maybeTrackedNpc.get();
+        if (trackedNpc instanceof GenericTrackedNpc) {
+            trackedNpcs.remove(trackedNpc);
+        } else if (despawn) {
+            despawnTrackedNpc(trackedNpc);
         }
     }
 
@@ -864,6 +919,9 @@ public abstract class DataTracker implements RuneliteEventHandler {
             trackedNpcs.getByNpc((NPC) target).ifPresent(trackedNpc -> {
                 if (hitsplat.getHitsplatType() == HitsplatID.HEAL) {
                     trackedNpc.getHitpoints().boost(hitsplat.getAmount());
+                    if (trackedNpc instanceof GenericTrackedNpc) {
+                        ((GenericTrackedNpc) trackedNpc).setHealTick(getTick());
+                    }
                 } else {
                     trackedNpc.getHitpoints().drain(hitsplat.getAmount());
                 }

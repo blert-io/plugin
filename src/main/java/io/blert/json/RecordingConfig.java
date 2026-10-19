@@ -36,8 +36,23 @@ public class RecordingConfig {
         public Boolean onCreation;
     }
 
+    public static class HitpointsVarbit {
+        public int id;
+        public int scale;
+    }
+
+    public static class NpcDefinition {
+        public List<Integer> ids;
+        public Integer mode;
+        /** Base hitpoints by scale. */
+        public List<Integer> hitpoints;
+
+        public HitpointsVarbit hitpointsVarbit;
+    }
+
     public static class Scope {
         public List<ObjectCapture> objects;
+        public List<NpcDefinition> npcDefinitions;
     }
 
     public static class ChallengeScope {
