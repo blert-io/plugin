@@ -830,8 +830,8 @@ public class BlertPluginPanel extends PluginPanel {
                 case TFA_BORK:
                     boss = "Bork";
                     break;
-                case TFA_NECROMANCER:
-                    boss = "Necromancer";
+                case TFA_MOIA:
+                    boss = "Moia";
                     break;
                 case TFA_DREADNOTH:
                     boss = "Dreadnoth";
@@ -840,10 +840,10 @@ public class BlertPluginPanel extends PluginPanel {
                     boss = "Xarth";
                     break;
                 case TFA_DAGONHAI:
-                    boss = "Dagon'hai Trio";
+                    boss = "Dagon'hai";
                     break;
-                case TFA_FINAL:
-                    boss = "Final Boss";
+                case TFA_OCELLUS:
+                    boss = "Ocellus";
                     break;
             }
         }

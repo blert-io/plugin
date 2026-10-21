@@ -21,7 +21,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.tfa.bosses.necromancer;
+package io.blert.challenges.tfa.bosses.ocellus;
 
 import io.blert.challenges.tfa.ArchiveChallenge;
 import io.blert.challenges.tfa.bosses.BossDataTracker;
@@ -29,19 +29,29 @@ import io.blert.core.ChallengeRecordingConfig;
 import io.blert.core.Stage;
 import io.blert.core.TrackedNpc;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 import net.runelite.api.Client;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
-public class NecromancerDataTracker extends BossDataTracker {
-    public NecromancerDataTracker(
+public class OcellusDataTracker extends BossDataTracker {
+    private static final Set<Integer> OCELLUS_ACTIVE_IDS = Set.of(16674, 16675, 16677);
+
+    public OcellusDataTracker(
             ArchiveChallenge archiveChallenge, Client client, ChallengeRecordingConfig recordingConfig) {
-        super(archiveChallenge, client, recordingConfig, Stage.TFA_NECROMANCER);
+        super(archiveChallenge, client, recordingConfig, Stage.TFA_OCELLUS);
     }
 
     @Override
-    protected void onTick() {}
+    protected boolean bossIsActive() {
+        return client.getTopLevelWorldView().npcs().stream().anyMatch(npc -> OCELLUS_ACTIVE_IDS.contains(npc.getId()));
+    }
+
+    @Override
+    protected void onTick() {
+        super.onTick();
+    }
 
     @Override
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {

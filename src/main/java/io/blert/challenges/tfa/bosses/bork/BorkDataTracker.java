@@ -31,16 +31,21 @@ import io.blert.core.TrackedNpc;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.runelite.api.Client;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
 public class BorkDataTracker extends BossDataTracker {
+    private static final WorldArea ARENA = new WorldArea(4184, 5591, 15, 17, 0);
+
     public BorkDataTracker(ArchiveChallenge archiveChallenge, Client client, ChallengeRecordingConfig recordingConfig) {
-        super(archiveChallenge, client, recordingConfig, Stage.TFA_BORK);
+        super(archiveChallenge, client, recordingConfig, Stage.TFA_BORK, ARENA);
     }
 
     @Override
-    protected void onTick() {}
+    protected void onTick() {
+        super.onTick();
+    }
 
     @Override
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {

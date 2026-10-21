@@ -21,7 +21,7 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package io.blert.challenges.tfa.bosses.finalboss;
+package io.blert.challenges.tfa.bosses.moia;
 
 import io.blert.challenges.tfa.ArchiveChallenge;
 import io.blert.challenges.tfa.bosses.BossDataTracker;
@@ -31,17 +31,21 @@ import io.blert.core.TrackedNpc;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.runelite.api.Client;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
-public class FinalBossDataTracker extends BossDataTracker {
-    public FinalBossDataTracker(
-            ArchiveChallenge archiveChallenge, Client client, ChallengeRecordingConfig recordingConfig) {
-        super(archiveChallenge, client, recordingConfig, Stage.TFA_FINAL);
+public class MoiaDataTracker extends BossDataTracker {
+    private static final WorldArea ARENA = new WorldArea(4059, 5659, 9, 9, 0);
+
+    public MoiaDataTracker(ArchiveChallenge archiveChallenge, Client client, ChallengeRecordingConfig recordingConfig) {
+        super(archiveChallenge, client, recordingConfig, Stage.TFA_MOIA, ARENA);
     }
 
     @Override
-    protected void onTick() {}
+    protected void onTick() {
+        super.onTick();
+    }
 
     @Override
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {

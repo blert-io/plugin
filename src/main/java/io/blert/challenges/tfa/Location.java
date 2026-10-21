@@ -32,17 +32,31 @@ import net.runelite.api.coords.WorldPoint;
 public enum Location {
     ELSEWHERE(null),
     LOBBY(null),
+    HUB(null),
     GUARDIAN(Stage.TFA_GUARDIAN),
     EZEKIEL(Stage.TFA_EZEKIEL),
     BORK(Stage.TFA_BORK),
-    NECROMANCER(Stage.TFA_NECROMANCER),
+    MOIA(Stage.TFA_MOIA),
     DREADNOTH(Stage.TFA_DREADNOTH),
     XARTH(Stage.TFA_XARTH),
     DAGONHAI(Stage.TFA_DAGONHAI),
-    FINAL(Stage.TFA_FINAL),
+    OCELLUS(Stage.TFA_OCELLUS),
     ;
 
-    private static final Map<Integer, Location> REGIONS = Map.of();
+    // The hub is the Guardian's region, on a different plane. The party
+    // returns to it after each boss from the first row onwards.
+    private static final int GUARDIAN_REGION_ID = 16471;
+    private static final int GUARDIAN_PLANE = 0;
+
+    private static final Map<Integer, Location> REGIONS = Map.of(
+            16470, LOBBY,
+            16214, EZEKIEL,
+            16727, BORK,
+            16216, MOIA,
+            16728, DREADNOTH,
+            16726, XARTH,
+            16215, DAGONHAI,
+            16472, OCELLUS);
 
     @Getter
     @Nullable
@@ -53,6 +67,9 @@ public enum Location {
     }
 
     public static Location fromWorldPoint(WorldPoint worldPoint) {
+        if (worldPoint.getRegionID() == GUARDIAN_REGION_ID) {
+            return worldPoint.getPlane() == GUARDIAN_PLANE ? GUARDIAN : HUB;
+        }
         return REGIONS.getOrDefault(worldPoint.getRegionID(), ELSEWHERE);
     }
 
