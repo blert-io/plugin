@@ -116,7 +116,8 @@ public class InfernoChallenge extends RecordableChallenge {
 
     @Override
     protected void onTerminate() {
-        if (getState().inChallenge()) {
+        // A completed challenge has already sent its end.
+        if (getState().inChallenge() && getState() != ChallengeState.COMPLETE) {
             log.warn("Terminating Inferno challenge while still active");
             finishInferno(ChallengeState.INACTIVE);
         }

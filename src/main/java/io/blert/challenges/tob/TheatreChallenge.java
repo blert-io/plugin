@@ -113,6 +113,11 @@ public class TheatreChallenge extends RecordableChallenge {
         clearRoomDataTracker();
         resetParty();
         reportedChallengeTime = -1;
+
+        // The same instance records the next raid, so drop anything still
+        // pending from this one.
+        deferredTask = null;
+        clearPendingEvents();
     }
 
     @Override
@@ -253,6 +258,7 @@ public class TheatreChallenge extends RecordableChallenge {
             // If a raid start is pending, cancel it.
             setState(ChallengeState.INACTIVE);
             resetMode();
+            clearRoomDataTracker();
             clearPendingEvents();
             resetParty();
             deferredTask = null;
