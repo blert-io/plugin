@@ -92,7 +92,8 @@ public final class ColosseumChallenge extends RecordableChallenge {
 
     @Override
     protected void onTerminate() {
-        if (getState().inChallenge()) {
+        // A completed challenge has already sent its end.
+        if (getState().inChallenge() && getState() != ChallengeState.COMPLETE) {
             log.warn("Terminating Colosseum challenge while still active");
             finishColosseum(ChallengeState.INACTIVE);
         }
@@ -275,6 +276,7 @@ public final class ColosseumChallenge extends RecordableChallenge {
     }
 
     private void reset() {
+        deferredTask = null;
         currentWave = 0;
         recordedChallengeTicks = 0;
         reportedChallengeTicks = -1;
