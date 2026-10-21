@@ -107,8 +107,10 @@ public abstract class TrackedNpc {
     public PrayerSet getActivePrayers() {
         short[] ids = npc.getOverheadSpriteIds();
         PrayerSet prayerSet = new PrayerSet(Prayer.PRAYER_BOOK_NORMAL);
-        if (ids != null && ids.length > 0) {
-            // Only the first ID is used to store overhead prayers.
+        // Only the first ID is used to store overhead prayers.
+        // Ignore anything that isn't a HeadIcon.
+        // TODO(frolv): Support other overhead sprites.
+        if (ids != null && ids.length > 0 && ids[0] >= 0 && ids[0] < HeadIcon.values().length) {
             HeadIcon icon = HeadIcon.values()[ids[0]];
             switch (icon) {
                 case RANGED:

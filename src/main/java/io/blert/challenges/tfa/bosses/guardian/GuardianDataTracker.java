@@ -29,19 +29,36 @@ import io.blert.core.ChallengeRecordingConfig;
 import io.blert.core.Stage;
 import io.blert.core.TrackedNpc;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 import net.runelite.api.Client;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
 public class GuardianDataTracker extends BossDataTracker {
+    private static final int GUARDIAN_INERT_ID = 16657;
+    private static final int GUARDIAN_START_ANIMATION = 14755;
+    private static final Set<Integer> GUARDIAN_ACTIVE_IDS = Set.of(16659, 16660);
+
     public GuardianDataTracker(
             ArchiveChallenge archiveChallenge, Client client, ChallengeRecordingConfig recordingConfig) {
         super(archiveChallenge, client, recordingConfig, Stage.TFA_GUARDIAN);
     }
 
+    // TODO(frolv): Guardian remains in its inert form until 5 ticks after its
+    // start animation, which only plays on the start tick, so a client that
+    // loads in during those ticks starts the fight up to 5 ticks late.
     @Override
-    protected void onTick() {}
+    protected boolean bossIsActive() {
+        return client.getTopLevelWorldView().npcs().stream()
+                .anyMatch(npc -> GUARDIAN_ACTIVE_IDS.contains(npc.getId())
+                        || (npc.getId() == GUARDIAN_INERT_ID && npc.getAnimation() == GUARDIAN_START_ANIMATION));
+    }
+
+    @Override
+    protected void onTick() {
+        super.onTick();
+    }
 
     @Override
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {

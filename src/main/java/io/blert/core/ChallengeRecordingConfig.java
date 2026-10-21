@@ -42,6 +42,8 @@ public class ChallengeRecordingConfig {
         ON_CREATION,
     }
 
+    // TODO(frolv): Support absolute hitpoints varbits, with current HP in one varbit and the maximum in another
+    // (e.g. TFA's 6099 and 6100).
     @Getter
     public static class HitpointsVarbit {
         private final int id;
