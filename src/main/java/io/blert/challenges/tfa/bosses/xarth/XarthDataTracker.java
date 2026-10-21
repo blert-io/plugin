@@ -31,17 +31,22 @@ import io.blert.core.TrackedNpc;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.runelite.api.Client;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
 public class XarthDataTracker extends BossDataTracker {
+    private static final WorldArea ARENA = new WorldArea(4183, 5527, 17, 17, 0);
+
     public XarthDataTracker(
             ArchiveChallenge archiveChallenge, Client client, ChallengeRecordingConfig recordingConfig) {
-        super(archiveChallenge, client, recordingConfig, Stage.TFA_XARTH);
+        super(archiveChallenge, client, recordingConfig, Stage.TFA_XARTH, ARENA);
     }
 
     @Override
-    protected void onTick() {}
+    protected void onTick() {
+        super.onTick();
+    }
 
     @Override
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {

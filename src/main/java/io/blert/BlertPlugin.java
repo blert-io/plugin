@@ -46,6 +46,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.Player;
 import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
@@ -253,8 +254,14 @@ public class BlertPlugin extends Plugin {
      * Updates the active challenge based on the player's game location.
      */
     private void updateActiveChallenge() {
-        WorldPoint playerLocation =
-                Location.getWorldLocation(client, client.getLocalPlayer().getWorldLocation());
+        Player localPlayer = client.getLocalPlayer();
+        if (localPlayer == null) {
+            // Can happen on a scene load (e.g. switching rooms spectating a raid).
+            // Keep the current challenge until the player's location is known.
+            return;
+        }
+
+        WorldPoint playerLocation = Location.getWorldLocation(client, localPlayer.getWorldLocation());
 
         var maybeChallenge = challenges.stream()
                 .filter(c -> c.containsLocation(playerLocation))

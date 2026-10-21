@@ -31,17 +31,22 @@ import io.blert.core.TrackedNpc;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.runelite.api.Client;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 
 public class DagonhaiDataTracker extends BossDataTracker {
+    private static final WorldArea ARENA = new WorldArea(4055, 5590, 20, 19, 0);
+
     public DagonhaiDataTracker(
             ArchiveChallenge archiveChallenge, Client client, ChallengeRecordingConfig recordingConfig) {
-        super(archiveChallenge, client, recordingConfig, Stage.TFA_DAGONHAI);
+        super(archiveChallenge, client, recordingConfig, Stage.TFA_DAGONHAI, ARENA);
     }
 
     @Override
-    protected void onTick() {}
+    protected void onTick() {
+        super.onTick();
+    }
 
     @Override
     protected Optional<? extends TrackedNpc> onNpcSpawn(NpcSpawned event) {
