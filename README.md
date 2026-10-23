@@ -9,6 +9,7 @@ track your performance over time.
 ## Supported content
 
 - Theatre of Blood
+- The Fractured Archive
 - Fortis Colosseum
 - Inferno
 - Doom of Mokhaiotl

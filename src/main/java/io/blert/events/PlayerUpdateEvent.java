@@ -184,7 +184,7 @@ public class PlayerUpdateEvent extends Event {
         PrayerSet set = new PrayerSet(Prayer.PRAYER_BOOK_NORMAL);
 
         for (Prayer prayer : Prayer.values()) {
-            if (client.isPrayerActive(prayer.getRunelitePrayer())) {
+            if (client.getServerVarbitValue(prayer.getVarbit()) == 1) {
                 set.add(prayer);
             }
         }
