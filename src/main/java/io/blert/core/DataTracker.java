@@ -545,7 +545,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
                 return;
             }
 
-            raider.updateState(client, player, tick);
+            raider.updateState(client, challenge.getAttackRegistry(), player, tick);
 
             dispatchEvent(PlayerUpdateEvent.fromRaider(getStage(), tick, getWorldLocation(player), client, raider));
         });
@@ -664,9 +664,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
         boolean ignoreCooldown = target.map(this::npcIgnoresCooldown).orElse(false);
 
-        boolean mayHaveAttacked = (ignoreCooldown || raider.isOffCooldownOn(tick))
-                && (isNewAnimation || raider.isBlowpiping() || raider.stoppedBlowpiping());
-        if (!mayHaveAttacked) {
+        if (!isNewAnimation && !raider.stoppedBlowpiping()) {
             return;
         }
 
@@ -694,10 +692,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
         maybeAttack.ifPresent(attack -> {
             try {
-                if (!isNewAnimation && !attack.isFrameAllowed(player.getAnimationFrame())) {
-                    return;
-                }
-
                 AttackDefinition finalAttack = attack;
                 if (attack.hasProjectile()) {
                     finalAttack = adjustForProjectile(registry, attack, player, weaponId);
