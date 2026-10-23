@@ -94,6 +94,10 @@ public class Raider {
     @Getter
     private int animationTick;
 
+    // The player's animation as of the last update.
+    private int lastAnimationId = -1;
+    private int lastAnimationFrame = -1;
+
     private final Map<Integer, ActorSpotAnim> graphicsIds = new HashMap<>();
 
     @Getter
@@ -161,6 +165,8 @@ public class Raider {
         equipmentChangesThisTick.clear();
         animationId = -1;
         animationTick = 0;
+        lastAnimationId = -1;
+        lastAnimationFrame = -1;
         graphicsIds.clear();
         lastAttack = null;
         offCooldownTick = 0;
@@ -206,8 +212,21 @@ public class Raider {
         return actor instanceof NPC ? Optional.of((NPC) actor) : Optional.empty();
     }
 
-    public void updateState(Client client, Player player, int tick) {
+    public void updateState(Client client, AttackRegistry attackRegistry, Player player, int tick) {
         this.player = player;
+
+        // Check if the animation started playing again without a change event,
+        // resetting to an earlier frame, and count it as a fresh animation.
+        // Frame 0 is a special case for 1t attacks as the animation restarts
+        // on every server tick.
+        int animation = player.getAnimation();
+        int frame = player.getAnimationFrame();
+        boolean restarted = frame < lastAnimationFrame || (frame == 0 && lastAnimationFrame == 0);
+        if (lastUpdateTick == tick - 1 && (animation != lastAnimationId || (animation != -1 && restarted))) {
+            setAnimation(tick, animation, attackRegistry.isContinuousAnimation(animation));
+        }
+        lastAnimationId = animation;
+        lastAnimationFrame = frame;
 
         if (blowpiping == BlowpipeState.STOPPED_PIPING) {
             blowpiping = BlowpipeState.NOT_PIPING;

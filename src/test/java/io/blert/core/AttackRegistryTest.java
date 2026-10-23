@@ -73,8 +73,6 @@ public class AttackRegistryTest {
                 5,
                 null,
                 false,
-                0,
-                Integer.MAX_VALUE,
                 AttackDefinition.Category.MELEE);
     }
 }
