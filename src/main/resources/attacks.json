@@ -53,6 +53,14 @@
     "specCost": 50
   },
   {
+    "name": "ASCENSION_CROSSBOWS",
+    "protoId": 124,
+    "weaponIds": [34681],
+    "animationIds": [15113, 15115, 15114, 15116],
+    "cooldown": 2,
+    "category": "RANGED"
+  },
+  {
     "name": "ATLATL_AUTO",
     "protoId": 81,
     "weaponIds": [29000],
@@ -188,6 +196,23 @@
     "protoId": 20,
     "weaponIds": [13652, 28039],
     "animationIds": [7514],
+    "cooldown": 4,
+    "category": "MELEE",
+    "specCost": 50
+  },
+  {
+    "name": "CRIMSON_KISTEN_AUTO",
+    "protoId": 118,
+    "weaponIds": [33631],
+    "animationIds": [14253, 566],
+    "cooldown": 4,
+    "category": "MELEE"
+  },
+  {
+    "name": "CRIMSON_KISTEN_SPEC",
+    "protoId": 119,
+    "weaponIds": [33631],
+    "animationIds": [14255],
     "cooldown": 4,
     "category": "MELEE",
     "specCost": 50
@@ -553,6 +578,22 @@
     "category": "MELEE"
   },
   {
+    "name": "OBLIGATOR_SMASH",
+    "protoId": 121,
+    "weaponIds": [34715, 34717],
+    "animationIds": [15122, 15130],
+    "cooldown": 3,
+    "category": "MELEE"
+  },
+  {
+    "name": "OBLIGATOR_THRUST",
+    "protoId": 120,
+    "weaponIds": [34715, 34717],
+    "animationIds": [15123, 15131],
+    "cooldown": 5,
+    "category": "MELEE"
+  },
+  {
     "name": "PUNCH",
     "protoId": 66,
     "weaponIds": [-1],
@@ -677,7 +718,15 @@
     "name": "SOULREAPER_AXE",
     "protoId": 43,
     "weaponIds": [28338, 33335],
-    "animationIds": [10172],
+    "animationIds": [10172, 10171],
+    "cooldown": 5,
+    "category": "MELEE"
+  },
+  {
+    "name": "SOULREAPER_AXE_SPEC",
+    "protoId": 117,
+    "weaponIds": [28338, 33335],
+    "animationIds": [10173],
     "cooldown": 5,
     "category": "MELEE"
   },
