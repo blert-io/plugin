@@ -70,8 +70,6 @@ public class AttackRegistry {
                 0,
                 null,
                 false,
-                Integer.MIN_VALUE,
-                Integer.MAX_VALUE,
                 AttackDefinition.Category.MELEE);
     }
 
