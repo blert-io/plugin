@@ -73,9 +73,7 @@ public class Event {
     // Mokhaiotl event-specific fields
     public AttackStyle mokhaiotlAttackStyle;
     public MokhaiotlOrb mokhaiotlOrb;
-    public MokhaiotlObjects mokhaiotlObjects;
     public MokhaiotlLarvaLeak mokhaiotlLarvaLeak;
-    public MokhaiotlShockwave mokhaiotlShockwave;
 
     // Inferno event-specific fields
     public InfernoWaveStart infernoWaveStart;
@@ -239,20 +237,9 @@ public class Event {
         public int endTick;
     }
 
-    public static class MokhaiotlObjects {
-        public List<Coords> rocksSpawned;
-        public List<Coords> rocksDespawned;
-        public List<Coords> splatsSpawned;
-        public List<Coords> splatsDespawned;
-    }
-
     public static class MokhaiotlLarvaLeak {
         public long roomId;
         public int healAmount;
-    }
-
-    public static class MokhaiotlShockwave {
-        public List<Coords> tiles;
     }
 
     public static class ColosseumTotemHeal {

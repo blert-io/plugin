@@ -8,10 +8,8 @@ import io.blert.util.ChatText;
 import io.blert.util.Location;
 import io.blert.util.Tick;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
@@ -29,9 +27,6 @@ public class DelveDataTracker extends DataTracker {
 
     private static final int MOKHAIOTL_RANGED_BALL_PROJECTILE_ID = 3384;
     private static final int MOKHAIOTL_MAGE_BALL_PROJECTILE_ID = 3385;
-
-    private static final int ACID_BLOOD_GAME_OBJECT_ID = 57283;
-    private static final int ROCK_GAME_OBJECT_ID = 57286;
 
     private static final Set<Number> SHOCKWAVE_GRAPHICS_IDs = ImmutableSet.of(3405, 3406, 3407);
 
@@ -63,10 +58,7 @@ public class DelveDataTracker extends DataTracker {
     private int unidentifiedAttackTick;
     private int lastRacecarTick;
     private final Map<Projectile, Orb> activeOrbs = new HashMap<>();
-    private final Set<GameObject> activeRocksAndSplats = new HashSet<>();
-    private final List<GameObject> rocksAndSplatsSpawnedThisTick = new ArrayList<>();
-    private final List<GameObject> rocksAndSplatsDespawnedThisTick = new ArrayList<>();
-    private final Set<WorldPoint> shockwaveLocationsThisTick = new HashSet<>();
+    private boolean shockwaveThisTick;
     private final Queue<Hitsplat> healsThisTick = new LinkedList<>();
     private final Queue<TrackedNpc> larvaeLeakedThisTick = new LinkedList<>();
 
@@ -96,33 +88,6 @@ public class DelveDataTracker extends DataTracker {
     protected void start() {
         super.start();
         log.info("Starting delve {}", delve);
-
-        // The client doesn't receive `GameObjectSpawned` events for acid already present
-        // when entering the delve, so we have to manually grab our initial set.
-        Tile[][][] tiles = client.getTopLevelWorldView().getScene().getTiles();
-        if (tiles.length == 0 || tiles[0].length == 0) {
-            log.warn("No tiles available during delve start, cannot initialize splats");
-            return;
-        }
-
-        try {
-            for (Tile[] tileRow : tiles[0]) {
-                for (Tile tile : tileRow) {
-                    if (tile == null || tile.getGameObjects() == null) {
-                        continue;
-                    }
-                    for (GameObject gameObject : tile.getGameObjects()) {
-                        if (gameObject != null && gameObject.getId() == ACID_BLOOD_GAME_OBJECT_ID) {
-                            activeRocksAndSplats.add(gameObject);
-                            rocksAndSplatsSpawnedThisTick.add(gameObject);
-                        }
-                    }
-                }
-            }
-            log.debug("Found {} splats on delve start", activeRocksAndSplats.size());
-        } catch (Exception e) {
-            log.warn("Error while initializing splats on delve start", e);
-        }
     }
 
     @Override
@@ -138,21 +103,6 @@ public class DelveDataTracker extends DataTracker {
             mokhaiotl.setHitpoints(new Hitpoints(hitpointsBeforeShield, HITPOINTS_BY_DELVE[Math.min(delve, 8)]));
         }
 
-        if (!rocksAndSplatsSpawnedThisTick.isEmpty() || !rocksAndSplatsDespawnedThisTick.isEmpty()) {
-            BiFunction<List<GameObject>, Integer, List<WorldPoint>> toWorldPoints = (objects, id) -> objects.stream()
-                    .filter(o -> o.getId() == id)
-                    .map(this::getWorldLocation)
-                    .collect(Collectors.toList());
-            List<WorldPoint> rocksSpawned = toWorldPoints.apply(rocksAndSplatsSpawnedThisTick, ROCK_GAME_OBJECT_ID);
-            List<WorldPoint> splatsSpawned =
-                    toWorldPoints.apply(rocksAndSplatsSpawnedThisTick, ACID_BLOOD_GAME_OBJECT_ID);
-            List<WorldPoint> rocksDespawned = toWorldPoints.apply(rocksAndSplatsDespawnedThisTick, ROCK_GAME_OBJECT_ID);
-            List<WorldPoint> splatsDespawned =
-                    toWorldPoints.apply(rocksAndSplatsDespawnedThisTick, ACID_BLOOD_GAME_OBJECT_ID);
-            dispatchEvent(new MokhaiotlObjectsEvent(
-                    getStage(), tick, rocksSpawned, rocksDespawned, splatsSpawned, splatsDespawned));
-        }
-
         while (!healsThisTick.isEmpty()) {
             Hitsplat hitsplat = healsThisTick.remove();
             TrackedNpc larva = larvaeLeakedThisTick.poll();
@@ -163,17 +113,14 @@ public class DelveDataTracker extends DataTracker {
             dispatchEvent(new MokhaiotlLarvaLeakEvent(getStage(), tick, larva.getRoomId(), hitsplat.getAmount()));
         }
 
-        if (!shockwaveLocationsThisTick.isEmpty()) {
+        if (shockwaveThisTick) {
             boolean isSlam = mokhaiotl.getNpc().getId() == MokhaiotlNpc.MOKHAIOTL_BURROWED.getId()
                     || lastRacecarTick >= tick - 12;
             NpcAttack attack = isSlam ? NpcAttack.MOKHAIOTL_SLAM : NpcAttack.MOKHAIOTL_SHOCKWAVE;
             dispatchEvent(new NpcAttackEvent(getStage(), tick, getWorldLocation(mokhaiotl), attack, mokhaiotl));
-            dispatchEvent(new MokhaiotlShockwaveEvent(getStage(), tick, new ArrayList<>(shockwaveLocationsThisTick)));
         }
 
-        rocksAndSplatsSpawnedThisTick.clear();
-        rocksAndSplatsDespawnedThisTick.clear();
-        shockwaveLocationsThisTick.clear();
+        shockwaveThisTick = false;
         healsThisTick.clear();
         larvaeLeakedThisTick.clear();
         phaseChange = PhaseChange.NONE;
@@ -362,41 +309,9 @@ public class DelveDataTracker extends DataTracker {
     }
 
     @Override
-    protected void onGameObjectSpawn(GameObjectSpawned event) {
-        GameObject object = event.getGameObject();
-        switch (object.getId()) {
-            case ACID_BLOOD_GAME_OBJECT_ID:
-            case ROCK_GAME_OBJECT_ID:
-                if (activeRocksAndSplats.add(object)) {
-                    rocksAndSplatsSpawnedThisTick.add(object);
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    @Override
-    protected void onGameObjectDespawn(GameObjectDespawned event) {
-        GameObject object = event.getGameObject();
-        switch (object.getId()) {
-            case ACID_BLOOD_GAME_OBJECT_ID:
-            case ROCK_GAME_OBJECT_ID:
-                if (activeRocksAndSplats.remove(object)) {
-                    rocksAndSplatsDespawnedThisTick.add(object);
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
-    @Override
     protected void onGraphicsObjectCreation(GraphicsObjectCreated event) {
-        GraphicsObject object = event.getGraphicsObject();
-        if (SHOCKWAVE_GRAPHICS_IDs.contains(object.getId())) {
-            WorldPoint wp = WorldPoint.fromLocal(client, object.getLocation());
-            shockwaveLocationsThisTick.add(Location.getWorldLocation(client, wp));
+        if (SHOCKWAVE_GRAPHICS_IDs.contains(event.getGraphicsObject().getId())) {
+            shockwaveThisTick = true;
         }
     }
 
