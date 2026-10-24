@@ -480,28 +480,11 @@ public class JsonEventTranslator {
                 break;
             }
 
-            case MOKHAIOTL_OBJECTS: {
-                MokhaiotlObjectsEvent mokhaiotlObjectsEvent = (MokhaiotlObjectsEvent) event;
-                json.mokhaiotlObjects = new Event.MokhaiotlObjects();
-                json.mokhaiotlObjects.rocksSpawned = toCoordsList(mokhaiotlObjectsEvent.getRocksSpawned());
-                json.mokhaiotlObjects.splatsDespawned = toCoordsList(mokhaiotlObjectsEvent.getSplatsDespawned());
-                json.mokhaiotlObjects.rocksDespawned = toCoordsList(mokhaiotlObjectsEvent.getRocksDespawned());
-                json.mokhaiotlObjects.splatsSpawned = toCoordsList(mokhaiotlObjectsEvent.getSplatsSpawned());
-                break;
-            }
-
             case MOKHAIOTL_LARVA_LEAK: {
                 MokhaiotlLarvaLeakEvent mokhaiotlLarvaLeakEvent = (MokhaiotlLarvaLeakEvent) event;
                 json.mokhaiotlLarvaLeak = new Event.MokhaiotlLarvaLeak();
                 json.mokhaiotlLarvaLeak.roomId = mokhaiotlLarvaLeakEvent.getRoomId();
                 json.mokhaiotlLarvaLeak.healAmount = mokhaiotlLarvaLeakEvent.getHealAmount();
-                break;
-            }
-
-            case MOKHAIOTL_SHOCKWAVE: {
-                MokhaiotlShockwaveEvent mokhaiotlShockwaveEvent = (MokhaiotlShockwaveEvent) event;
-                json.mokhaiotlShockwave = new Event.MokhaiotlShockwave();
-                json.mokhaiotlShockwave.tiles = toCoordsList(mokhaiotlShockwaveEvent.getShockwaveTiles());
                 break;
             }
 
