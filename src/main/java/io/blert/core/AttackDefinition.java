@@ -82,7 +82,7 @@ public class AttackDefinition {
     private final String name;
 
     /**
-     * Item IDs that can perform this attack.
+     * Item IDs that can perform this attack. If empty, any weapon can perform it.
      */
     private final int[] weaponIds;
 
@@ -158,6 +158,10 @@ public class AttackDefinition {
      * Returns whether this attack can be performed with the given weapon.
      */
     public boolean hasWeapon(int weaponId) {
+        if (weaponIds.length == 0) {
+            // Accepts any weapon.
+            return true;
+        }
         for (int wid : weaponIds) {
             if (wid == weaponId) {
                 return true;
