@@ -23,6 +23,7 @@
 
 package io.blert.events;
 
+import io.blert.core.OverallTicks;
 import io.blert.core.Stage;
 import java.util.Optional;
 import lombok.Getter;
@@ -40,25 +41,41 @@ public class StageUpdateEvent extends Event {
     private final boolean accurate;
     private final Optional<Integer> inGameTicks;
     private final boolean gameTicksPrecise;
+    private final Optional<OverallTicks> overallTicks;
     private final Optional<Integer> recordingConfigVersion;
 
     public static StageUpdateEvent entered(Stage stage) {
-        return new StageUpdateEvent(stage, 0, Status.ENTERED, false, Optional.empty(), false, Optional.empty());
+        return new StageUpdateEvent(
+                stage, 0, Status.ENTERED, false, Optional.empty(), false, Optional.empty(), Optional.empty());
     }
 
-    public static StageUpdateEvent started(Stage stage, int recordingConfigVersion) {
+    public static StageUpdateEvent started(
+            Stage stage, Optional<OverallTicks> overallTicks, int recordingConfigVersion) {
         return new StageUpdateEvent(
-                stage, 0, Status.STARTED, false, Optional.empty(), false, Optional.of(recordingConfigVersion));
+                stage,
+                0,
+                Status.STARTED,
+                false,
+                Optional.empty(),
+                false,
+                overallTicks,
+                Optional.of(recordingConfigVersion));
     }
 
     public static StageUpdateEvent completed(
-            Stage stage, int tick, boolean accurate, Optional<Integer> inGameTicks, boolean gameTicksPrecise) {
+            Stage stage,
+            int tick,
+            boolean accurate,
+            Optional<Integer> inGameTicks,
+            boolean gameTicksPrecise,
+            Optional<OverallTicks> overallTicks) {
         return new StageUpdateEvent(
-                stage, tick, Status.COMPLETED, accurate, inGameTicks, gameTicksPrecise, Optional.empty());
+                stage, tick, Status.COMPLETED, accurate, inGameTicks, gameTicksPrecise, overallTicks, Optional.empty());
     }
 
-    public static StageUpdateEvent wiped(Stage stage, int tick) {
-        return new StageUpdateEvent(stage, tick, Status.WIPED, false, Optional.empty(), false, Optional.empty());
+    public static StageUpdateEvent wiped(Stage stage, int tick, Optional<OverallTicks> overallTicks) {
+        return new StageUpdateEvent(
+                stage, tick, Status.WIPED, false, Optional.empty(), false, overallTicks, Optional.empty());
     }
 
     private StageUpdateEvent(
@@ -68,12 +85,14 @@ public class StageUpdateEvent extends Event {
             boolean accurate,
             Optional<Integer> inGameTicks,
             boolean gameTicksPrecise,
+            Optional<OverallTicks> overallTicks,
             Optional<Integer> recordingConfigVersion) {
         super(EventType.STAGE_UPDATE, stage, tick, null);
         this.status = status;
         this.accurate = accurate;
         this.inGameTicks = inGameTicks;
         this.gameTicksPrecise = gameTicksPrecise;
+        this.overallTicks = overallTicks;
         this.recordingConfigVersion = recordingConfigVersion;
     }
 

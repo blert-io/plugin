@@ -127,6 +127,13 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
 
     protected abstract @Nullable Stage getStage();
 
+    /**
+     * Returns the challenge's overall time in ticks, if known.
+     */
+    public Optional<OverallTicks> getOverallTicks() {
+        return Optional.empty();
+    }
+
     public String getName() {
         return challenge.getName();
     }
