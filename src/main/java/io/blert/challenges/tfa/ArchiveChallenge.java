@@ -41,20 +41,21 @@ import io.blert.util.DeferredTask;
 import io.blert.util.Tick;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import joptsimple.internal.Strings;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
+import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.NpcSpawned;
-import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
@@ -63,6 +64,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class ArchiveChallenge extends RecordableChallenge {
     private static final int TFA_PARTY_VARBIT = 16386;
     private static final int TFA_PARTY_LIST_COMPONENT_ID = 63897605;
+    private static final int TFA_RAID_TIMER_SCRIPT_ID = 10036;
 
     private static final int TFA_VARBIT_NO_PARTY = 0;
     private static final int TFA_VARBIT_IN_PARTY = 1;
@@ -73,8 +75,6 @@ public class ArchiveChallenge extends RecordableChallenge {
             Pattern.compile("(.+) has entered the Fractured Archive\\. Step inside to join (her|him|them)\\.\\.\\.");
     private static final String RAID_WIPE_MESSAGE = "You failed to survive the Fractured Archive.";
     private static final String RAID_ABANDON_MESSAGE = "You abandon the raid and leave the Fractured Archive.";
-    private static final Pattern BOSS_COMPLETION_TOTAL_REGEX = Pattern.compile("Challenge complete: .+?\\. Duration: "
-            + Tick.TIME_STRING_REGEX + "\\. Total: (?<total>" + Tick.TIME_STRING_REGEX + ")");
     private static final Pattern RAID_COMPLETION_REGEX =
             Pattern.compile("The Fractured Archive: Total completion time: (" + Tick.TIME_STRING_REGEX + ").*");
 
@@ -86,8 +86,16 @@ public class ArchiveChallenge extends RecordableChallenge {
 
     private @Nullable DeferredTask deferredTask = null;
 
-    // Ticks since Guardian start, from the latest boss completion message.
-    private int reportedOverallTime = -1;
+    @AllArgsConstructor
+    private static class RaidTimer {
+        private final int clientTick;
+        private final int ticks;
+        private final boolean stopped;
+    }
+
+    // The raid timer as of the latest run of its script.
+    @Nullable
+    private RaidTimer raidTimer = null;
 
     public ArchiveChallenge(Client client, ClientThread clientThread) {
         super(Challenge.TFA, client, clientThread);
@@ -105,37 +113,13 @@ public class ArchiveChallenge extends RecordableChallenge {
     }
 
     @Override
-    protected void onInitialize() {
-        // TODO(frolv): Temporary, for comparing TFA lifecycle against captures. Remove once verified.
-        addEventHandler((clientTick, event) -> {
-            switch (event.getType()) {
-                case CHALLENGE_START:
-                case CHALLENGE_UPDATE:
-                case CHALLENGE_END:
-                case PLAYER_DEATH:
-                    log.warn("TFA-VERIFY tick={} state={} {}", clientTick, getState(), event);
-                    break;
-                case STAGE_UPDATE:
-                    StageUpdateEvent update = (StageUpdateEvent) event;
-                    log.warn(
-                            "TFA-VERIFY tick={} state={} {} inGameTicks={} accurate={} overall={}",
-                            clientTick,
-                            getState(),
-                            event,
-                            update.getInGameTicks().orElse(-1),
-                            update.isAccurate(),
-                            reportedOverallTime);
-                    break;
-                default:
-                    break;
-            }
-        });
-    }
+    protected void onInitialize() {}
 
     @Override
     protected void onTerminate() {
         clearBossDataTracker();
         resetParty();
+        raidTimer = null;
 
         // The same instance records the next raid, so drop anything still
         // pending from this one.
@@ -205,6 +189,21 @@ public class ArchiveChallenge extends RecordableChallenge {
     }
 
     /**
+     * Returns the raid's overall time in ticks, from the start of Guardian, if known.
+     */
+    @Override
+    public Optional<OverallTicks> getOverallTicks() {
+        if (raidTimer == null) {
+            return Optional.empty();
+        }
+        // The raid timer is always precise.
+        if (raidTimer.stopped) {
+            return Optional.of(OverallTicks.server(raidTimer.ticks, true));
+        }
+        return Optional.of(OverallTicks.server(raidTimer.ticks + client.getTickCount() - raidTimer.clientTick, true));
+    }
+
+    /**
      * Invokes a callback for each username displayed in the TFA orb list.
      *
      * @param callback Function to run on each user.
@@ -224,7 +223,6 @@ public class ArchiveChallenge extends RecordableChallenge {
     private void queueRaidStart(boolean reinitializeParty) {
         log.info("Starting new TFA raid");
         setState(ChallengeState.PREPARING);
-        reportedOverallTime = -1;
 
         if (reinitializeParty) {
             // The in-raid party list is written 7 ticks after the player's entry message;
@@ -276,6 +274,7 @@ public class ArchiveChallenge extends RecordableChallenge {
             clearBossDataTracker();
             clearPendingEvents();
             resetParty();
+            raidTimer = null;
             deferredTask = null;
             log.info("TFA raid ended before it started");
             return;
@@ -294,6 +293,7 @@ public class ArchiveChallenge extends RecordableChallenge {
         clearBossDataTracker();
         setState(state);
         resetParty();
+        raidTimer = null;
 
         getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(-1, overallTime, soft)));
     }
@@ -371,6 +371,27 @@ public class ArchiveChallenge extends RecordableChallenge {
     }
 
     @Override
+    public void onScriptPreFired(ScriptPreFired event) {
+        if (event.getScriptId() == TFA_RAID_TIMER_SCRIPT_ID) {
+            // The script runs every tick with the raid's overall time in ticks,
+            // and whether the timer is stopped.
+            Object[] args = event.getScriptEvent().getArguments();
+            raidTimer = new RaidTimer(client.getTickCount(), (int) args[1], (int) args[2] == 1);
+        }
+
+        super.onScriptPreFired(event);
+    }
+
+    @Override
+    public void onGameStateChanged(GameStateChanged event) {
+        if (event.getGameState() == GameState.LOGIN_SCREEN) {
+            raidTimer = null;
+        }
+
+        super.onGameStateChanged(event);
+    }
+
+    @Override
     public void onChatMessage(ChatMessage message) {
         updateLocation();
 
@@ -396,13 +417,6 @@ public class ArchiveChallenge extends RecordableChallenge {
                 return;
             }
 
-            Matcher matcher = BOSS_COMPLETION_TOTAL_REGEX.matcher(stripped);
-            if (matcher.find()) {
-                reportedOverallTime = Tick.fromTimeString(matcher.group("total"))
-                        .map(Pair::getLeft)
-                        .orElse(-1);
-            }
-
             if (getState() == ChallengeState.ACTIVE
                     && (stripped.equals(RAID_WIPE_MESSAGE) || stripped.equals(RAID_ABANDON_MESSAGE))) {
                 if (bossDataTracker != null) {
@@ -413,7 +427,7 @@ public class ArchiveChallenge extends RecordableChallenge {
                 queueRaidEnd(ChallengeState.COMPLETE);
             }
 
-            matcher = RAID_COMPLETION_REGEX.matcher(stripped);
+            Matcher matcher = RAID_COMPLETION_REGEX.matcher(stripped);
             if (getState() == ChallengeState.ACTIVE && matcher.matches()) {
                 int overallTime =
                         Tick.fromTimeString(matcher.group(1)).map(Pair::getLeft).orElse(-1);

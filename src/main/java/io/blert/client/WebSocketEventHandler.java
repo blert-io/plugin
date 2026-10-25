@@ -27,6 +27,7 @@ import io.blert.BlertPlugin;
 import io.blert.BlertPluginPanel;
 import io.blert.core.Challenge;
 import io.blert.core.ChallengeMode;
+import io.blert.core.OverallTicks;
 import io.blert.core.RecordableChallenge;
 import io.blert.core.Stage;
 import io.blert.events.*;
@@ -416,6 +417,7 @@ public class WebSocketEventHandler implements EventHandler {
             stageUpdate.recordedTicks = stage.getTick();
             stageUpdate.gameTicksPrecise = stage.isGameTicksPrecise();
             stage.getInGameTicks().ifPresent(t -> stageUpdate.gameServerTicks = t);
+            stage.getOverallTicks().ifPresent(t -> stageUpdate.overallTicks = translateOverallTicks(t));
             challengeUpdate.stageUpdate = stageUpdate;
         }
 
@@ -1071,5 +1073,17 @@ public class WebSocketEventHandler implements EventHandler {
             default:
                 throw new NotImplementedException("Stage status translation not implemented for " + status);
         }
+    }
+
+    private static ChallengeUpdate.OverallTicks translateOverallTicks(OverallTicks overallTicks) {
+        ChallengeUpdate.OverallTicks json = new ChallengeUpdate.OverallTicks();
+        if (overallTicks instanceof OverallTicks.Server) {
+            json.server = new ChallengeUpdate.OverallTicks.Server();
+            json.server.ticks = overallTicks.getTicks();
+            json.server.precise = ((OverallTicks.Server) overallTicks).isPrecise();
+        } else {
+            json.local = overallTicks.getTicks();
+        }
+        return json;
     }
 }
