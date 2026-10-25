@@ -42,5 +42,16 @@ public class ChallengeUpdate {
         public int recordedTicks;
         public Integer gameServerTicks;
         public boolean gameTicksPrecise;
+        public OverallTicks overallTicks;
+    }
+
+    public static class OverallTicks {
+        public static class Server {
+            public int ticks;
+            public boolean precise;
+        }
+
+        public Server server;
+        public Integer local;
     }
 }

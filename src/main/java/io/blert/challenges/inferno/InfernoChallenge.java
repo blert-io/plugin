@@ -8,6 +8,7 @@ import io.blert.util.DeferredTask;
 import io.blert.util.Location;
 import io.blert.util.Tick;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -74,6 +75,14 @@ public class InfernoChallenge extends RecordableChallenge {
 
     public boolean hasLogged() {
         return hasLogged;
+    }
+
+    @Override
+    public Optional<OverallTicks> getOverallTicks() {
+        if (hasLogged || getState().isInactive() || challengeStartTick == -1) {
+            return Optional.empty();
+        }
+        return Optional.of(OverallTicks.local(recordedDurationTicks()));
     }
 
     @Override

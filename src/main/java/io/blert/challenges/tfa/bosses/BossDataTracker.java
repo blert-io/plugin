@@ -45,8 +45,8 @@ public abstract class BossDataTracker extends DataTracker {
     private static final int TFA_ORB1_VARBIT = 16387;
 
     private static final Pattern BOSS_START_REGEX = Pattern.compile("Challenge started: (.+)\\.");
-    private static final Pattern BOSS_END_REGEX =
-            Pattern.compile("Challenge complete: (.+?)\\. Duration: (" + Tick.TIME_STRING_REGEX + ")");
+    private static final Pattern BOSS_END_REGEX = Pattern.compile("Challenge complete: (.+?)\\. Duration: (?<duration>"
+            + Tick.TIME_STRING_REGEX + ")(\\. Total: (?<total>" + Tick.TIME_STRING_REGEX + "))?");
 
     // Boss names as they appear in the start and completion messages.
     private static final Map<Stage, String> BOSS_NAMES = Map.of(
@@ -145,7 +145,7 @@ public abstract class BossDataTracker extends DataTracker {
         matcher = BOSS_END_REGEX.matcher(stripped);
         if (matcher.find() && isBossStartMessage(matcher.group(1))) {
             completionReceived = true;
-            finish(matcher.group(2));
+            finish(matcher.group("duration"), matcher.group("total"));
         }
     }
 

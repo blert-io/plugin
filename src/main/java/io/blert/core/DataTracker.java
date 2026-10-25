@@ -35,6 +35,7 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
+import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
 public abstract class DataTracker implements RuneliteEventHandler {
@@ -50,6 +51,8 @@ public abstract class DataTracker implements RuneliteEventHandler {
         final boolean completion;
         final int inGameStageTicks;
         final boolean gameTicksPrecise;
+        final int inGameOverallTicks;
+        final boolean overallTicksPrecise;
     }
 
     @Getter(AccessLevel.PROTECTED)
@@ -419,7 +422,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
         // are interested in.
         npcScanPending = true;
 
-        dispatchEvent(StageUpdateEvent.started(getStage(), recordingConfig.getVersion()));
+        dispatchEvent(StageUpdateEvent.started(getStage(), challenge.getOverallTicks(), recordingConfig.getVersion()));
     }
 
     /**
@@ -434,32 +437,60 @@ public abstract class DataTracker implements RuneliteEventHandler {
     }
 
     protected void finish(String inGameTime) {
+        finish(inGameTime, null);
+    }
+
+    /**
+     * Marks the stage as complete with known times from the game server.
+     *
+     * @param inGameTime        The stage's in-game time.
+     * @param inGameOverallTime The challenge's in-game overall time at the end of the stage, or null if not displayed.
+     */
+    protected void finish(String inGameTime, @Nullable String inGameOverallTime) {
         var ticks = Tick.fromTimeString(inGameTime);
-        if (ticks.isPresent()) {
-            finish(true, ticks.get().getLeft(), ticks.get().getRight());
-        } else {
-            finish(true);
-        }
+        Optional<Pair<Integer, Boolean>> overallTicks =
+                inGameOverallTime != null ? Tick.fromTimeString(inGameOverallTime) : Optional.empty();
+        finish(
+                true,
+                ticks.map(Pair::getLeft).orElse(-1),
+                ticks.map(Pair::getRight).orElse(false),
+                overallTicks.map(Pair::getLeft).orElse(-1),
+                overallTicks.map(Pair::getRight).orElse(false));
+    }
+
+    protected void finish(boolean completion, int inGameStageTicks, boolean gameTicksPrecise) {
+        finish(completion, inGameStageTicks, gameTicksPrecise, -1, false);
     }
 
     /**
      * Marks the stage as complete, queueing cleanup to run at the end of the tick.
      *
-     * @param completion       Whether the stage was completed successfully.
-     * @param inGameStageTicks The number of in-game ticks the stage took to complete, or -1 if the in-game timer is not
-     *                         available. If provided, it is used to verify the accuracy of the recorded stage time.
-     * @param gameTicksPrecise Whether the in-game tick timer is precise or rounded.
+     * @param completion          Whether the stage was completed successfully.
+     * @param inGameStageTicks    The number of in-game ticks the stage took to complete, or -1 if the in-game timer is
+     *                            not available. If provided, it is used to verify the accuracy of the recorded stage
+     *                            time.
+     * @param gameTicksPrecise    Whether the in-game tick timer is precise or rounded.
+     * @param inGameOverallTicks  The challenge's in-game overall time in ticks at the end of the stage, or -1 if not
+     *                            available. If provided, it is used to verify the challenge's overall time.
+     * @param overallTicksPrecise Whether the in-game overall time is precise or rounded.
      */
-    protected void finish(boolean completion, int inGameStageTicks, boolean gameTicksPrecise) {
+    protected void finish(
+            boolean completion,
+            int inGameStageTicks,
+            boolean gameTicksPrecise,
+            int inGameOverallTicks,
+            boolean overallTicksPrecise) {
         switch (state) {
             case TERMINATING:
                 log.debug("Forcefully terminating stage {}", stage);
-                pendingCompletion = new PendingCompletion(completion, inGameStageTicks, gameTicksPrecise);
+                pendingCompletion = new PendingCompletion(
+                        completion, inGameStageTicks, gameTicksPrecise, inGameOverallTicks, overallTicksPrecise);
                 completeStage(false);
                 break;
             case IN_PROGRESS:
                 if (pendingCompletion == null) {
-                    pendingCompletion = new PendingCompletion(completion, inGameStageTicks, gameTicksPrecise);
+                    pendingCompletion = new PendingCompletion(
+                            completion, inGameStageTicks, gameTicksPrecise, inGameOverallTicks, overallTicksPrecise);
                 }
                 break;
             default:
@@ -519,11 +550,18 @@ public abstract class DataTracker implements RuneliteEventHandler {
             log.info("Stage {} finished, status: {}", stage, status);
 
             Optional<Integer> gameTicks = inGameStageTicks == -1 ? Optional.empty() : Optional.of(inGameStageTicks);
+            Optional<OverallTicks> overallTicks =
+                    checkOverallTicks(pending.inGameOverallTicks, pending.overallTicksPrecise);
             Runnable dispatch = () -> challenge.dispatchEvent(
                     completion
                             ? StageUpdateEvent.completed(
-                                    getStage(), lastRecordedRoomTick, accurate, gameTicks, gameTicksPrecise)
-                            : StageUpdateEvent.wiped(getStage(), lastRecordedRoomTick));
+                                    getStage(),
+                                    lastRecordedRoomTick,
+                                    accurate,
+                                    gameTicks,
+                                    gameTicksPrecise,
+                                    overallTicks)
+                            : StageUpdateEvent.wiped(getStage(), lastRecordedRoomTick, overallTicks));
 
             if (waitToDispatch) {
                 // Don't send the final room status immediately; allow other pending subscribers to run and dispatch
@@ -534,6 +572,35 @@ public abstract class DataTracker implements RuneliteEventHandler {
                 dispatch.run();
             }
         }
+    }
+
+    /**
+     * Verifies the challenge's overall time against a time reported in game.
+     *
+     * @param inGameOverallTicks  The in-game reported time, or -1 if not known.
+     * @param overallTicksPrecise Whether the in-game time is precise or rounded.
+     * @return The overall time to report.
+     */
+    private Optional<OverallTicks> checkOverallTicks(int inGameOverallTicks, boolean overallTicksPrecise) {
+        Optional<OverallTicks> overall = challenge.getOverallTicks();
+        if (inGameOverallTicks == -1) {
+            return overall;
+        }
+        if (overall.isEmpty()) {
+            return Optional.of(OverallTicks.server(inGameOverallTicks, overallTicksPrecise));
+        }
+
+        int ticks = overall.get().getTicks();
+        if (overallTicksPrecise && ticks != inGameOverallTicks) {
+            log.warn(
+                    "Stage {} overall time mismatch: in-game overall ticks = {}, challenge ticks = {}",
+                    stage,
+                    inGameOverallTicks,
+                    ticks);
+            return Optional.of(OverallTicks.server(inGameOverallTicks, true));
+        }
+
+        return overall;
     }
 
     private void updatePlayers() {
