@@ -45,7 +45,7 @@ public class NpcEvent extends Event {
     private final Hitpoints hitpoints;
 
     @Getter
-    private final long prayers;
+    private final @Nullable Long prayers;
 
     @Getter
     private final TrackedNpc.Properties properties;
@@ -63,6 +63,12 @@ public class NpcEvent extends Event {
 
     @Getter
     private final @Nullable List<Integer> spotAnims;
+
+    /**
+     * The NPC's overhead icons, one per slot in order, packed as {@code archive << 16 | sprite}.
+     */
+    @Getter
+    private final @Nullable List<Long> overheads;
 
     @Getter
     public static class Target {
@@ -93,24 +99,7 @@ public class NpcEvent extends Event {
 
     public static NpcEvent genericUpdate(
             Stage stage, int tick, WorldPoint point, GenericTrackedNpc trackedNpc, @Nullable Target target) {
-        NPC npc = trackedNpc.getNpc();
-        int animation = npc.getAnimation();
-
-        List<Integer> spotAnims = new ArrayList<>();
-        for (var spotAnim : npc.getSpotAnims()) {
-            spotAnims.add(spotAnim.getId());
-        }
-
-        return new NpcEvent(
-                EventType.NPC_UPDATE,
-                stage,
-                tick,
-                point,
-                trackedNpc,
-                npc.getComposition().getSize(),
-                animation != -1 ? animation : null,
-                target,
-                spotAnims.isEmpty() ? null : spotAnims);
+        return new NpcEvent(stage, tick, point, trackedNpc, target);
     }
 
     public static NpcEvent death(Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
@@ -118,19 +107,6 @@ public class NpcEvent extends Event {
     }
 
     protected NpcEvent(EventType type, Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
-        this(type, stage, tick, point, trackedNpc, null, null, null, null);
-    }
-
-    private NpcEvent(
-            EventType type,
-            Stage stage,
-            int tick,
-            WorldPoint point,
-            TrackedNpc trackedNpc,
-            @Nullable Integer size,
-            @Nullable Integer animation,
-            @Nullable Target target,
-            @Nullable List<Integer> spotAnims) {
         super(type, stage, tick, point);
         this.roomId = trackedNpc.getRoomId();
         // Omit an unknown NPC ID. The server should carry forward the last known one for this room ID.
@@ -139,10 +115,46 @@ public class NpcEvent extends Event {
         this.prayers = trackedNpc.getActivePrayers().getValue();
         this.properties = trackedNpc.getProperties();
         this.propertiesChanged = trackedNpc.hasUpdatedProperties();
-        this.size = size;
-        this.animation = animation;
+        this.size = null;
+        this.animation = null;
+        this.target = null;
+        this.spotAnims = null;
+        this.overheads = null;
+    }
+
+    private NpcEvent(Stage stage, int tick, WorldPoint point, GenericTrackedNpc trackedNpc, @Nullable Target target) {
+        super(EventType.NPC_UPDATE, stage, tick, point);
+        this.roomId = trackedNpc.getRoomId();
+        // Omit an unknown NPC ID. The server should carry forward the last known one for this room ID.
+        this.npcId = Math.max(trackedNpc.getNpcId(), 0);
+        this.hitpoints = trackedNpc.getHitpoints();
+        this.prayers = null;
+        this.properties = trackedNpc.getProperties();
+        this.propertiesChanged = trackedNpc.hasUpdatedProperties();
         this.target = target;
-        this.spotAnims = spotAnims;
+
+        NPC npc = trackedNpc.getNpc();
+        this.size = npc.getComposition().getSize();
+        int animation = npc.getAnimation();
+        this.animation = animation != -1 ? animation : null;
+
+        List<Integer> spotAnims = new ArrayList<>();
+        for (var spotAnim : npc.getSpotAnims()) {
+            spotAnims.add(spotAnim.getId());
+        }
+        this.spotAnims = spotAnims.isEmpty() ? null : spotAnims;
+
+        List<Long> overheads = new ArrayList<>();
+        int[] archiveIds = npc.getOverheadArchiveIds();
+        short[] spriteIds = npc.getOverheadSpriteIds();
+        if (archiveIds != null && spriteIds != null) {
+            for (int i = 0; i < Math.min(archiveIds.length, spriteIds.length); i++) {
+                if (archiveIds[i] != -1 && spriteIds[i] != -1) {
+                    overheads.add(((long) archiveIds[i] << 16) | (spriteIds[i] & 0xFFFF));
+                }
+            }
+        }
+        this.overheads = overheads.isEmpty() ? null : overheads;
     }
 
     public boolean propertiesChanged() {
