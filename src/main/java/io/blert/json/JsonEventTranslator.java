@@ -167,6 +167,7 @@ public class JsonEventTranslator {
                 npc.size = npcEvent.getSize();
                 npc.animation = npcEvent.getAnimation();
                 npc.spotAnims = npcEvent.getSpotAnims();
+                npc.overheads = npcEvent.getOverheads();
 
                 NpcEvent.Target target = npcEvent.getTarget();
                 if (target != null) {
