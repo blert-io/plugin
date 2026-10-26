@@ -143,6 +143,16 @@
     "specCost": 35
   },
   {
+    "name": "CAMPHOR_BLOWPIPE",
+    "protoId": 129,
+    "weaponIds": [31575],
+    "animationIds": [13142],
+    "cooldown": 2,
+    "continuousAnimation": true,
+    "animationFrameMax": 2,
+    "category": "RANGED"
+  },
+  {
     "name": "CHALLY_SWIPE",
     "protoId": 15,
     "weaponIds": [23987],
@@ -522,6 +532,16 @@
     "category": "MELEE"
   },
   {
+    "name": "IRONWOOD_BLOWPIPE",
+    "protoId": 130,
+    "weaponIds": [31579],
+    "animationIds": [13143],
+    "cooldown": 2,
+    "continuousAnimation": true,
+    "animationFrameMax": 2,
+    "category": "RANGED"
+  },
+  {
     "name": "KARILS_CROSSBOW",
     "protoId": 95,
     "weaponIds": [4734, 4937, 4936, 4935, 4934],
@@ -608,6 +628,27 @@
     "animationIds": [8145],
     "cooldown": 4,
     "category": "MELEE"
+  },
+  {
+    "name": "ROSEWOOD_BLOWPIPE",
+    "protoId": 131,
+    "weaponIds": [31583],
+    "animationIds": [13144],
+    "cooldown": 2,
+    "continuousAnimation": true,
+    "animationFrameMax": 2,
+    "category": "RANGED"
+  },
+  {
+    "name": "ROSEWOOD_BLOWPIPE_SPEC",
+    "protoId": 132,
+    "weaponIds": [31583],
+    "animationIds": [13145],
+    "cooldown": 2,
+    "continuousAnimation": true,
+    "animationFrameMax": 2,
+    "category": "RANGED",
+    "specCost": 25
   },
   {
     "name": "SAELDOR",
@@ -860,6 +901,15 @@
     "category": "RANGED"
   },
   {
+    "name": "UNDEAD_GRASP",
+    "protoId": 128,
+    "weaponIds": [],
+    "animationIds": [8972],
+    "attackerGraphicIds": [1862],
+    "cooldown": 5,
+    "category": "MAGIC"
+  },
+  {
     "name": "VENATOR_BOW",
     "protoId": 61,
     "weaponIds": [27610, 30434],
@@ -968,6 +1018,31 @@
     "animationIds": [3852, 7004],
     "cooldown": 5,
     "category": "MELEE"
+  },
+  {
+    "name": "ZORYAS_TOME_AUTO",
+    "protoId": 125,
+    "weaponIds": [34725],
+    "animationIds": [15139, 15146],
+    "cooldown": 3,
+    "category": "MAGIC"
+  },
+  {
+    "name": "ZORYAS_TOME_BUFFED",
+    "protoId": 127,
+    "weaponIds": [34725],
+    "animationIds": [15139, 15146],
+    "cooldown": 2,
+    "category": "MAGIC"
+  },
+  {
+    "name": "ZORYAS_TOME_SPEC",
+    "protoId": 126,
+    "weaponIds": [34725],
+    "animationIds": [15140, 15147],
+    "cooldown": 3,
+    "category": "MAGIC",
+    "specCost": 50
   },
   {
     "name": "UNKNOWN_BOW",
