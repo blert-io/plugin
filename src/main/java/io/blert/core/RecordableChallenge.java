@@ -24,6 +24,7 @@
 package io.blert.core;
 
 import io.blert.events.*;
+import io.blert.util.ChatText;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
@@ -206,6 +207,11 @@ public abstract class RecordableChallenge implements RuneliteEventHandler {
 
     protected void resetParty() {
         party.clear();
+    }
+
+    /** Removes formatting and known embellishments from widget text. */
+    protected static String sanitizePartyWidgetName(String displayed) {
+        return Text.sanitize(ChatText.stripFormatting(displayed)).replace(" (R)", ""); // Party ready check plugin
     }
 
     public void initialize(

@@ -57,7 +57,6 @@ import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
-import net.runelite.client.util.Text;
 import org.apache.commons.lang3.tuple.Pair;
 
 @Slf4j
@@ -454,11 +453,6 @@ public class ArchiveChallenge extends RecordableChallenge {
                 .filter(s -> !s.equals("-"))
                 .forEach(s ->
                         addRaider(new Raider(s, s.equals(client.getLocalPlayer().getName()))));
-    }
-
-    /** Removes formatting from widget text. */
-    private static String sanitizePartyWidgetName(String displayed) {
-        return Text.sanitize(ChatText.stripFormatting(displayed));
     }
 
     private void initializePartyFromOrbs() {
