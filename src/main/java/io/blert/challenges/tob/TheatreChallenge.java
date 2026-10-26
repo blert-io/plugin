@@ -441,11 +441,6 @@ public class TheatreChallenge extends RecordableChallenge {
                         addRaider(new Raider(s, s.equals(client.getLocalPlayer().getName()))));
     }
 
-    /** Removes formatting and known embellishments from widget text. */
-    private static String sanitizePartyWidgetName(String displayed) {
-        return Text.sanitize(ChatText.stripFormatting(displayed)).replace(" (R)", ""); // Party ready check plugin
-    }
-
     private void initializePartyFromOrbs() {
         resetParty();
         String localPlayer = client.getLocalPlayer().getName();
