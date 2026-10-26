@@ -113,6 +113,7 @@ public class Event {
         public Integer animation;
         public Target target;
         public List<Integer> spotAnims;
+        public List<Long> overheads;
 
         public MaidenCrab maidenCrab;
         public Nylo nylo;
