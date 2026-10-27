@@ -24,6 +24,7 @@
 package io.blert.client;
 
 import io.blert.BuildProperties;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
+import java.util.zip.Deflater;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.Setter;
@@ -40,6 +42,9 @@ import okhttp3.internal.annotations.EverythingIsNonNull;
 
 @Slf4j
 public class WebSocketClient extends WebSocketListener {
+    private static final String PROTOCOL_JSON = "blert-json";
+    private static final String PROTOCOL_JSON_DEFLATE = "blert-json-deflate";
+
     public enum State {
         CLOSED,
         OPEN,
@@ -62,6 +67,10 @@ public class WebSocketClient extends WebSocketListener {
     private final OkHttpClient client;
     private WebSocket socket;
     private State state = State.CLOSED;
+
+    // Set when the server accepts blert-json-deflate. Every message sent on the connection shares its stream.
+    private @Nullable Deflater deflater = null;
+    private final byte[] deflateBuffer = new byte[8192]; // arbitrary size
 
     private final List<CompletableFuture<Boolean>> openFutures = new ArrayList<>();
     private final List<CompletableFuture<Void>> closeFutures = new ArrayList<>();
@@ -117,7 +126,7 @@ public class WebSocketClient extends WebSocketListener {
         Request.Builder request = new Request.Builder()
                 .url(hostname)
                 .header("Authorization", "Basic " + Base64.getEncoder().encodeToString(apiKey))
-                .header("Sec-WebSocket-Protocol", "blert-json")
+                .header("Sec-WebSocket-Protocol", PROTOCOL_JSON_DEFLATE + ", " + PROTOCOL_JSON)
                 .header("Blert-Version", BuildProperties.VERSION)
                 .header("Blert-Revision", BuildProperties.revision())
                 .header("Blert-Jar-Hash", BuildProperties.jarHash())
@@ -146,16 +155,25 @@ public class WebSocketClient extends WebSocketListener {
      *
      * @param message The text to send.
      */
-    public void sendTextMessage(String message) {
-        if (isOpen()) {
-            socket.send(message);
+    public synchronized void sendTextMessage(String message) {
+        if (!isOpen()) {
+            return;
         }
+        if (deflater == null) {
+            socket.send(message);
+            return;
+        }
+        socket.send(okio.ByteString.of(deflate(deflater, deflateBuffer, message)));
     }
 
     @Override
     @EverythingIsNonNull
     public synchronized void onOpen(WebSocket webSocket, Response response) {
-        log.info("Blert websocket {} opened", webSocket);
+        String protocol = response.header("Sec-WebSocket-Protocol");
+        log.info("Blert websocket {} opened with protocol {}", webSocket, protocol);
+        if (PROTOCOL_JSON_DEFLATE.equals(protocol)) {
+            deflater = new Deflater(Deflater.BEST_SPEED, true);
+        }
         state = State.OPEN;
         openFutures.forEach(future -> future.complete(true));
         openFutures.clear();
@@ -190,6 +208,7 @@ public class WebSocketClient extends WebSocketListener {
         log.info("Blert websocket {} closed: {} ({})", webSocket, status, reason);
         state = State.CLOSED;
         socket = null;
+        endDeflater();
         closeFutures.forEach(future -> future.complete(null));
         closeFutures.clear();
         onDisconnect(DisconnectReason.CLOSED_SUCCESSFULLY);
@@ -214,6 +233,7 @@ public class WebSocketClient extends WebSocketListener {
 
         state = State.CLOSED;
         socket = null;
+        endDeflater();
 
         if (response != null) {
             switch (response.code()) {
@@ -258,5 +278,23 @@ public class WebSocketClient extends WebSocketListener {
         if (this.disconnectCallback != null) {
             this.disconnectCallback.accept(reason);
         }
+    }
+
+    private void endDeflater() {
+        if (deflater != null) {
+            deflater.end();
+            deflater = null;
+        }
+    }
+
+    static byte[] deflate(Deflater deflater, byte[] buffer, String message) {
+        deflater.setInput(message.getBytes(StandardCharsets.UTF_8));
+        ByteArrayOutputStream compressed = new ByteArrayOutputStream();
+        int n;
+        do {
+            n = deflater.deflate(buffer, 0, buffer.length, Deflater.SYNC_FLUSH);
+            compressed.write(buffer, 0, n);
+        } while (n == buffer.length);
+        return compressed.toByteArray();
     }
 }
