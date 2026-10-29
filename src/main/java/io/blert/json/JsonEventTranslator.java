@@ -221,6 +221,14 @@ public class JsonEventTranslator {
                 break;
             }
 
+            case VARS: {
+                VarsEvent varsEvent = (VarsEvent) event;
+                json.vars = new Event.Vars();
+                json.vars.varbits = toVarValues(varsEvent.getVarbits());
+                json.vars.varps = toVarValues(varsEvent.getVarps());
+                break;
+            }
+
             case MAIDEN_BLOOD_SPLATS: {
                 MaidenBloodSplatsEvent bloodSplatsEvent = (MaidenBloodSplatsEvent) event;
                 json.maidenBloodSplats = toCoordsList(bloodSplatsEvent.getBloodSplats());
@@ -510,6 +518,20 @@ public class JsonEventTranslator {
 
     private static Coords worldPointToCoords(WorldPoint point) {
         return new Coords(point.getX(), point.getY());
+    }
+
+    private static @Nullable List<Event.Vars.Value> toVarValues(List<VarsEvent.Value> values) {
+        if (values.isEmpty()) {
+            return null;
+        }
+        return values.stream()
+                .map(v -> {
+                    Event.Vars.Value value = new Event.Vars.Value();
+                    value.id = v.getId();
+                    value.value = v.getValue();
+                    return value;
+                })
+                .collect(Collectors.toList());
     }
 
     /**
