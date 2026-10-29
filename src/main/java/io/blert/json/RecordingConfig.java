@@ -53,6 +53,8 @@ public class RecordingConfig {
     public static class Scope {
         public List<ObjectCapture> objects;
         public List<NpcDefinition> npcDefinitions;
+        public List<Integer> varbits;
+        public List<Integer> varps;
     }
 
     public static class ChallengeScope {

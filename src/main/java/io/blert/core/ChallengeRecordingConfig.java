@@ -25,8 +25,10 @@ package io.blert.core;
 
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Nullable;
 import lombok.Getter;
 
@@ -42,8 +44,6 @@ public class ChallengeRecordingConfig {
         ON_CREATION,
     }
 
-    // TODO(frolv): Support absolute hitpoints varbits, with current HP in one varbit and the maximum in another
-    // (e.g. TFA's 6099 and 6100).
     @Getter
     public static class HitpointsVarbit {
         private final int id;
@@ -91,6 +91,14 @@ public class ChallengeRecordingConfig {
 
     private final Map<ObjectType, Map<Integer, ObjectCapture>> objectCaptures = new EnumMap<>(ObjectType.class);
     private final Map<Integer, NpcDefinition> npcDefinitions = new HashMap<>();
+
+    /** Varbits whose values are sent every tick. */
+    @Getter
+    private final Set<Integer> varbits = new LinkedHashSet<>();
+
+    /** Varps whose values are sent every tick. */
+    @Getter
+    private final Set<Integer> varps = new LinkedHashSet<>();
 
     ChallengeRecordingConfig(io.blert.json.RecordingConfig json, Challenge challenge) {
         this.version = json.version;
@@ -157,6 +165,13 @@ public class ChallengeRecordingConfig {
                     }
                 }
             }
+        }
+
+        if (scope.varbits != null) {
+            varbits.addAll(scope.varbits);
+        }
+        if (scope.varps != null) {
+            varps.addAll(scope.varps);
         }
     }
 }

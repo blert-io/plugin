@@ -28,6 +28,7 @@ import io.blert.util.Location;
 import io.blert.util.Tick;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
@@ -172,6 +173,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
         ObjectsEvent objectsEvent = objectTracker.update(getStage(), getTick());
         if (objectsEvent != null) {
             dispatchEvent(objectsEvent);
+        }
+
+        VarsEvent varsEvent = readVars();
+        if (varsEvent != null) {
+            dispatchEvent(varsEvent);
         }
 
         if (pendingCompletion != null) {
@@ -871,6 +877,20 @@ public abstract class DataTracker implements RuneliteEventHandler {
         return recordingConfig
                 .getNpcDefinition(npc.getId())
                 .map(definition -> new GenericTrackedNpc(npc, definition, generateRoomId(npc), challenge.getScale()));
+    }
+
+    private @Nullable VarsEvent readVars() {
+        if (recordingConfig.getVarbits().isEmpty() && recordingConfig.getVarps().isEmpty()) {
+            return null;
+        }
+
+        List<VarsEvent.Value> varbits = recordingConfig.getVarbits().stream()
+                .map(id -> new VarsEvent.Value(id, client.getServerVarbitValue(id)))
+                .collect(Collectors.toList());
+        List<VarsEvent.Value> varps = recordingConfig.getVarps().stream()
+                .map(id -> new VarsEvent.Value(id, client.getServerVarpValue(id)))
+                .collect(Collectors.toList());
+        return new VarsEvent(getStage(), getTick(), varbits, varps);
     }
 
     public final void onGameStateChanged(GameStateChanged event) {
