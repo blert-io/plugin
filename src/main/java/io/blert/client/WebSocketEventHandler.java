@@ -25,11 +25,7 @@ package io.blert.client;
 
 import io.blert.BlertPlugin;
 import io.blert.BlertPluginPanel;
-import io.blert.core.Challenge;
-import io.blert.core.ChallengeMode;
-import io.blert.core.OverallTicks;
-import io.blert.core.RecordableChallenge;
-import io.blert.core.Stage;
+import io.blert.core.*;
 import io.blert.events.*;
 import io.blert.events.Event;
 import io.blert.json.*;

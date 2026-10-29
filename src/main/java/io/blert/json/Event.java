@@ -44,6 +44,7 @@ public class Event {
     public NpcAttack npcAttack;
     public Spell playerSpell;
     public Objects objects;
+    public Vars vars;
 
     // ToB event-specific fields
     public List<Coords> maidenBloodSplats;
@@ -168,6 +169,16 @@ public class Event {
         public Boolean snapshot;
         public List<Coords> added;
         public List<Coords> removed;
+    }
+
+    public static class Vars {
+        public static class Value {
+            public int id;
+            public int value;
+        }
+
+        public List<Value> varbits;
+        public List<Value> varps;
     }
 
     public static class NpcAttack {
