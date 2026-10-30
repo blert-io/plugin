@@ -59,6 +59,9 @@ public class NpcEvent extends Event {
     private final @Nullable Integer animation;
 
     @Getter
+    private final @Nullable Integer animationStartTick;
+
+    @Getter
     private final @Nullable Target target;
 
     @Getter
@@ -117,6 +120,7 @@ public class NpcEvent extends Event {
         this.propertiesChanged = trackedNpc.hasUpdatedProperties();
         this.size = null;
         this.animation = null;
+        this.animationStartTick = null;
         this.target = null;
         this.spotAnims = null;
         this.overheads = null;
@@ -137,6 +141,7 @@ public class NpcEvent extends Event {
         this.size = npc.getComposition().getSize();
         int animation = npc.getAnimation();
         this.animation = animation != -1 ? animation : null;
+        this.animationStartTick = trackedNpc.getAnimationStartTick();
 
         List<Integer> spotAnims = new ArrayList<>();
         for (var spotAnim : npc.getSpotAnims()) {

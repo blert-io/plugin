@@ -23,6 +23,7 @@
 
 package io.blert.core;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.runelite.api.Client;
@@ -36,9 +37,16 @@ public class GenericTrackedNpc extends BasicTrackedNpc {
     @Setter
     private int healTick = -1;
 
-    GenericTrackedNpc(@NonNull NPC npc, ChallengeRecordingConfig.NpcDefinition definition, long roomId, int scale) {
+    /** The tick on which the NPC's current animation, or lack thereof, started. */
+    @Getter
+    @Setter
+    private int animationStartTick;
+
+    GenericTrackedNpc(
+            @NonNull NPC npc, ChallengeRecordingConfig.NpcDefinition definition, long roomId, int scale, int tick) {
         super(npc, definition.getMode(), roomId, new Hitpoints(definition.getBaseHitpoints(scale)));
         this.definition = definition;
+        this.animationStartTick = tick;
     }
 
     public void correctHitpointsForScale(int scale) {
