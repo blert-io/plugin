@@ -28,6 +28,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class Tick {
     public static final int MILLISECONDS_PER_TICK = 600;
+    public static final int CLIENT_CYCLES_PER_TICK = 30;
     public static final String TIME_STRING_REGEX = "(\\d+:)?\\d{1,2}:\\d{2}(\\.\\d{2})?";
 
     /**

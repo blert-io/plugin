@@ -55,6 +55,7 @@ public class RecordingConfig {
         public List<NpcDefinition> npcDefinitions;
         public List<Integer> varbits;
         public List<Integer> varps;
+        public List<Integer> projectiles;
     }
 
     public static class ChallengeScope {
