@@ -26,8 +26,11 @@ package io.blert.core;
 import io.blert.events.*;
 import io.blert.util.Location;
 import io.blert.util.Tick;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.*;
@@ -66,6 +69,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
     private final ChallengeRecordingConfig recordingConfig;
 
     private final ObjectTracker objectTracker;
+    private Set<Projectile> activeProjectiles = new HashSet<>();
 
     @Getter
     private final Stage stage;
@@ -178,6 +182,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
         VarsEvent varsEvent = readVars();
         if (varsEvent != null) {
             dispatchEvent(varsEvent);
+        }
+
+        ProjectilesEvent projectilesEvent = readProjectiles();
+        if (projectilesEvent != null) {
+            dispatchEvent(projectilesEvent);
         }
 
         if (pendingCompletion != null) {
@@ -833,16 +842,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
         WorldPoint point = getWorldLocation(trackedNpc);
 
         if (trackedNpc instanceof GenericTrackedNpc) {
-            Actor interacting = trackedNpc.getNpc().getInteracting();
-            NpcEvent.Target target = null;
-            if (interacting instanceof Player) {
-                target = NpcEvent.Target.player(interacting.getName());
-            } else if (interacting instanceof NPC) {
-                target = trackedNpcs
-                        .getByNpc((NPC) interacting)
-                        .map(NpcEvent.Target::npc)
-                        .orElse(null);
-            }
+            Target target = toTarget(trackedNpc.getNpc().getInteracting());
             dispatchEvent(NpcEvent.genericUpdate(getStage(), tick, point, (GenericTrackedNpc) trackedNpc, target));
         } else if (trackedNpc.getSpawnTick() == tick) {
             dispatchEvent(NpcEvent.spawn(getStage(), tick, point, trackedNpc));
@@ -851,6 +851,16 @@ public abstract class DataTracker implements RuneliteEventHandler {
         }
 
         trackedNpc.setUpdatedProperties(false);
+    }
+
+    private @Nullable Target toTarget(@Nullable Actor actor) {
+        if (actor instanceof Player) {
+            return Target.player(actor.getName());
+        }
+        if (actor instanceof NPC) {
+            return trackedNpcs.getByNpc((NPC) actor).map(Target::npc).orElse(null);
+        }
+        return null;
     }
 
     public void addTrackedNpc(TrackedNpc trackedNpc) {
@@ -892,6 +902,37 @@ public abstract class DataTracker implements RuneliteEventHandler {
                 .map(id -> new VarsEvent.Value(id, client.getServerVarpValue(id)))
                 .collect(Collectors.toList());
         return new VarsEvent(getStage(), getTick(), varbits, varps);
+    }
+
+    private @Nullable ProjectilesEvent readProjectiles() {
+        if (recordingConfig.getProjectiles().isEmpty()) {
+            return null;
+        }
+
+        Set<Projectile> current = new HashSet<>();
+        List<ProjectilesEvent.Projectile> projectiles = new ArrayList<>();
+        for (Projectile projectile : client.getProjectiles()) {
+            if (!recordingConfig.getProjectiles().contains(projectile.getId())) {
+                continue;
+            }
+
+            current.add(projectile);
+            if (activeProjectiles.contains(projectile)) {
+                continue;
+            }
+
+            int cyclesLeft = projectile.getEndCycle() - client.getGameCycle();
+            projectiles.add(new ProjectilesEvent.Projectile(
+                    projectile.getId(),
+                    toTarget(projectile.getSourceActor()),
+                    Location.getWorldLocation(client, projectile.getSourcePoint()),
+                    toTarget(projectile.getTargetActor()),
+                    Location.getWorldLocation(client, projectile.getTargetPoint()),
+                    getTick() + Math.round(cyclesLeft / (float) Tick.CLIENT_CYCLES_PER_TICK)));
+        }
+        activeProjectiles = current;
+
+        return !projectiles.isEmpty() ? new ProjectilesEvent(getStage(), getTick(), projectiles) : null;
     }
 
     public final void onGameStateChanged(GameStateChanged event) {

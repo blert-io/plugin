@@ -170,12 +170,7 @@ public class JsonEventTranslator {
                 npc.spotAnims = npcEvent.getSpotAnims();
                 npc.overheads = npcEvent.getOverheads();
 
-                NpcEvent.Target target = npcEvent.getTarget();
-                if (target != null) {
-                    npc.target = new Event.Target();
-                    npc.target.player = target.getPlayer();
-                    npc.target.npcRoomId = target.getNpcRoomId();
-                }
+                npc.target = toJsonTarget(npcEvent.getTarget());
 
                 if (npcEvent.propertiesChanged()) {
                     addTranslatedNpcProperties(npc, npcEvent);
@@ -227,6 +222,27 @@ public class JsonEventTranslator {
                 json.vars = new Event.Vars();
                 json.vars.varbits = toVarValues(varsEvent.getVarbits());
                 json.vars.varps = toVarValues(varsEvent.getVarps());
+                break;
+            }
+
+            case PROJECTILES: {
+                ProjectilesEvent projectilesEvent = (ProjectilesEvent) event;
+                json.projectiles = projectilesEvent.getProjectiles().stream()
+                        .map(p -> {
+                            Event.Projectile projectile = new Event.Projectile();
+                            projectile.id = p.getId();
+                            projectile.source = toJsonTarget(p.getSource());
+                            if (p.getSourceCoords() != null) {
+                                projectile.sourceCoords = worldPointToCoords(p.getSourceCoords());
+                            }
+                            projectile.target = toJsonTarget(p.getTarget());
+                            if (p.getTargetCoords() != null) {
+                                projectile.targetCoords = worldPointToCoords(p.getTargetCoords());
+                            }
+                            projectile.landingTick = p.getLandingTick();
+                            return projectile;
+                        })
+                        .collect(Collectors.toList());
                 break;
             }
 
@@ -519,6 +535,16 @@ public class JsonEventTranslator {
 
     private static Coords worldPointToCoords(WorldPoint point) {
         return new Coords(point.getX(), point.getY());
+    }
+
+    private static @Nullable Event.Target toJsonTarget(@Nullable Target target) {
+        if (target == null) {
+            return null;
+        }
+        Event.Target json = new Event.Target();
+        json.player = target.getPlayer();
+        json.npcRoomId = target.getNpcRoomId();
+        return json;
     }
 
     private static @Nullable List<Event.Vars.Value> toVarValues(List<VarsEvent.Value> values) {

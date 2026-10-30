@@ -42,6 +42,7 @@ public enum EventType {
     PLAYER_SPELL(11),
     OBJECTS(12),
     VARS(13),
+    PROJECTILES(14),
 
     MAIDEN_CRAB_LEAK(100),
     MAIDEN_BLOOD_SPLATS(101),

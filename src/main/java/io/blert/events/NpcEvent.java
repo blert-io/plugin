@@ -73,25 +73,6 @@ public class NpcEvent extends Event {
     @Getter
     private final @Nullable List<Long> overheads;
 
-    @Getter
-    public static class Target {
-        private final @Nullable String player;
-        private final @Nullable Long npcRoomId;
-
-        public static Target player(String name) {
-            return new Target(name, null);
-        }
-
-        public static Target npc(TrackedNpc trackedNpc) {
-            return new Target(null, trackedNpc.getRoomId());
-        }
-
-        private Target(@Nullable String player, @Nullable Long npcRoomId) {
-            this.player = player;
-            this.npcRoomId = npcRoomId;
-        }
-    }
-
     public static NpcEvent spawn(Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
         return new NpcEvent(EventType.NPC_SPAWN, stage, tick, point, trackedNpc);
     }
