@@ -112,6 +112,7 @@ public class Event {
 
         public Integer size;
         public Integer animation;
+        public Integer animationStartTick;
         public Target target;
         public List<Integer> spotAnims;
         public List<Long> overheads;

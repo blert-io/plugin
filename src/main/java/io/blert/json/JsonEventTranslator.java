@@ -166,6 +166,7 @@ public class JsonEventTranslator {
                 npc.activePrayers = npcEvent.getPrayers();
                 npc.size = npcEvent.getSize();
                 npc.animation = npcEvent.getAnimation();
+                npc.animationStartTick = npcEvent.getAnimationStartTick();
                 npc.spotAnims = npcEvent.getSpotAnims();
                 npc.overheads = npcEvent.getOverheads();
 
