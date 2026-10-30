@@ -25,6 +25,7 @@ package io.blert.core;
 
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -100,6 +101,10 @@ public class ChallengeRecordingConfig {
     @Getter
     private final Set<Integer> varps = new LinkedHashSet<>();
 
+    /** IDs of projectiles to record on first sight. */
+    @Getter
+    private final Set<Integer> projectiles = new HashSet<>();
+
     ChallengeRecordingConfig(io.blert.json.RecordingConfig json, Challenge challenge) {
         this.version = json.version;
 
@@ -172,6 +177,9 @@ public class ChallengeRecordingConfig {
         }
         if (scope.varps != null) {
             varps.addAll(scope.varps);
+        }
+        if (scope.projectiles != null) {
+            projectiles.addAll(scope.projectiles);
         }
     }
 }
