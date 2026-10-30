@@ -877,7 +877,8 @@ public abstract class DataTracker implements RuneliteEventHandler {
     private Optional<GenericTrackedNpc> createGenericNpc(@NonNull NPC npc) {
         return recordingConfig
                 .getNpcDefinition(npc.getId())
-                .map(definition -> new GenericTrackedNpc(npc, definition, generateRoomId(npc), challenge.getScale()));
+                .map(definition ->
+                        new GenericTrackedNpc(npc, definition, generateRoomId(npc), challenge.getScale(), getTick()));
     }
 
     private @Nullable VarsEvent readVars() {
@@ -968,6 +969,12 @@ public abstract class DataTracker implements RuneliteEventHandler {
                 boolean isContinuous = challenge.getAttackRegistry().isContinuousAnimation(animationId);
                 raider.setAnimation(getTick(), animationId, isContinuous);
             }
+        } else if (actor instanceof NPC) {
+            trackedNpcs.getByNpc((NPC) actor).ifPresent(trackedNpc -> {
+                if (trackedNpc instanceof GenericTrackedNpc) {
+                    ((GenericTrackedNpc) trackedNpc).setAnimationStartTick(getTick());
+                }
+            });
         }
 
         onAnimation(event);
