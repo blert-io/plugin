@@ -73,8 +73,6 @@ public class Event {
     public ColosseumSolLasers colosseumSolLasers;
 
     // Mokhaiotl event-specific fields
-    public AttackStyle mokhaiotlAttackStyle;
-    public MokhaiotlOrb mokhaiotlOrb;
     public MokhaiotlLarvaLeak mokhaiotlLarvaLeak;
 
     // Inferno event-specific fields
@@ -225,11 +223,6 @@ public class Event {
         public Coords bounceFrom;
     }
 
-    public static class AttackStyle {
-        public int style;
-        public int npcAttackTick;
-    }
-
     public static class VerzikBounce {
         public int npcAttackTick;
         public int playersInRange;
@@ -250,14 +243,6 @@ public class Event {
 
     public static class VerzikDawnDrop {
         public boolean dropped;
-    }
-
-    public static class MokhaiotlOrb {
-        public int source;
-        public Coords sourcePoint;
-        public int style;
-        public int startTick;
-        public int endTick;
     }
 
     public static class MokhaiotlLarvaLeak {

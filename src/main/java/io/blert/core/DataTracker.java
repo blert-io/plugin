@@ -367,18 +367,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
     protected void onItemDespawn(ItemDespawned event) {}
 
     /**
-     * Returns whether attacking the NPC with the given ID ignores the player's
-     * attack cooldown.
-     * Should be overriden by implementations which require special handling.
-     *
-     * @param npc The NPC.
-     * @return {@code true} if the NPC ignores cooldown, {@code false} otherwise.
-     */
-    protected boolean npcIgnoresCooldown(NPC npc) {
-        return false;
-    }
-
-    /**
      * Implementation-specific equivalent of the {@code onVarbitChanged} Runelite event handler.
      * Should be overriden by implementations which require special handling.
      *
@@ -744,8 +732,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
         Optional<NPC> target = raider.getTarget();
         boolean isNewAnimation = raider.getAnimationTick() == tick;
 
-        boolean ignoreCooldown = target.map(this::npcIgnoresCooldown).orElse(false);
-
         if (!isNewAnimation && !raider.stoppedBlowpiping()) {
             return;
         }
@@ -778,7 +764,7 @@ public abstract class DataTracker implements RuneliteEventHandler {
                     finalAttack = adjustForProjectile(registry, attack, player, weaponId);
                 }
 
-                raider.recordAttack(tick, finalAttack, ignoreCooldown);
+                raider.recordAttack(tick, finalAttack);
 
                 TrackedNpc roomTarget = target.flatMap(trackedNpcs::getByNpc).orElse(null);
                 int distanceToNpc = target.map(npc -> npc.getWorldArea().distanceTo2D(player.getWorldArea()))
