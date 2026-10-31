@@ -486,26 +486,6 @@ public class JsonEventTranslator {
                 break;
             }
 
-            case MOKHAIOTL_ATTACK_STYLE: {
-                MokhaiotlAttackStyleEvent mokhaiotlAttackStyleEvent = (MokhaiotlAttackStyleEvent) event;
-                json.mokhaiotlAttackStyle = new Event.AttackStyle();
-                json.mokhaiotlAttackStyle.style =
-                        mokhaiotlAttackStyleEvent.getStyle().ordinal();
-                json.mokhaiotlAttackStyle.npcAttackTick = mokhaiotlAttackStyleEvent.getAttackTick();
-                break;
-            }
-
-            case MOKHAIOTL_ORB: {
-                MokhaiotlOrbEvent mokhaiotlOrbEvent = (MokhaiotlOrbEvent) event;
-                json.mokhaiotlOrb = new Event.MokhaiotlOrb();
-                json.mokhaiotlOrb.source = mokhaiotlOrbEvent.getSource().getId();
-                json.mokhaiotlOrb.sourcePoint = worldPointToCoords(mokhaiotlOrbEvent.getSourcePoint());
-                json.mokhaiotlOrb.style = mokhaiotlOrbEvent.getStyle().getId();
-                json.mokhaiotlOrb.startTick = mokhaiotlOrbEvent.getStartTick();
-                json.mokhaiotlOrb.endTick = mokhaiotlOrbEvent.getEndTick();
-                break;
-            }
-
             case MOKHAIOTL_LARVA_LEAK: {
                 MokhaiotlLarvaLeakEvent mokhaiotlLarvaLeakEvent = (MokhaiotlLarvaLeakEvent) event;
                 json.mokhaiotlLarvaLeak = new Event.MokhaiotlLarvaLeak();
