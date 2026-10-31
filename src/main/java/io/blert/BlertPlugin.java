@@ -73,6 +73,7 @@ public class BlertPlugin extends Plugin {
     private ClientToolbar clientToolbar;
 
     @Inject
+    @Getter
     private BlertConfig config;
 
     @Inject
@@ -303,6 +304,12 @@ public class BlertPlugin extends Plugin {
     @Subscribe
     private void onConfigChanged(ConfigChanged event) {
         websocketManager.onConfigChanged(event);
+
+        if (event.getGroup().equals("blert")
+                && event.getKey().equals("useBundledRecordingConfig")
+                && config.useBundledRecordingConfig()) {
+            recordingConfig.loadDefaults(gson);
+        }
     }
 
     @Subscribe(priority = 10)

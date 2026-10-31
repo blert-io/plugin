@@ -34,6 +34,9 @@ public interface BlertConfig extends Config {
     @ConfigSection(name = "General", description = "Blert plugin settings", position = 1)
     String GENERAL_SECTION = "general";
 
+    @ConfigSection(name = "Development", description = "Plugin development settings", position = 2)
+    String DEVELOPMENT_SECTION = "development";
+
     @ConfigItem(
             keyName = "apiKey",
             name = "Blert API key",
@@ -42,5 +45,15 @@ public interface BlertConfig extends Config {
             section = GENERAL_SECTION)
     default @Nullable String apiKey() {
         return null;
+    }
+
+    @ConfigItem(
+            keyName = "useBundledRecordingConfig",
+            name = "Use bundled recording config",
+            description = "Ignore recording configs from the server and use the one bundled with the plugin",
+            position = 1,
+            section = DEVELOPMENT_SECTION)
+    default boolean useBundledRecordingConfig() {
+        return false;
     }
 }

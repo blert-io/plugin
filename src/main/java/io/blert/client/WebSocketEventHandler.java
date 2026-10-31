@@ -581,7 +581,7 @@ public class WebSocketEventHandler implements EventHandler {
                 break;
 
             case ServerMessage.TYPE_RECORDING_CONFIG:
-                if (serverMessage.recordingConfig != null) {
+                if (serverMessage.recordingConfig != null && !plugin.getConfig().useBundledRecordingConfig()) {
                     plugin.getRecordingConfig().update(serverMessage.recordingConfig);
                 }
                 break;
