@@ -36,7 +36,7 @@ dependencies {
 }
 
 group = 'io.blert'
-version = '0.10.1'
+version = '0.10.6'
 
 def generatedResourcesDir = layout.buildDirectory.dir('generated/blert/resources')
 
