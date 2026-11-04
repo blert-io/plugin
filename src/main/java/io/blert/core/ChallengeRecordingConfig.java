@@ -37,14 +37,6 @@ import lombok.Getter;
  * Recording config resolved for a challenge type.
  */
 public class ChallengeRecordingConfig {
-    public enum ObjectCapture {
-        NONE,
-        /** Recorded on every tick that the client has the object. */
-        PRESENCE,
-        /** Recorded only on the tick the object is created. Only applies to graphics. */
-        ON_CREATION,
-    }
-
     @Getter
     public static class HitpointsVarbit {
         private final int id;
@@ -90,7 +82,7 @@ public class ChallengeRecordingConfig {
     @Getter
     private final int version;
 
-    private final Map<ObjectType, Map<Integer, ObjectCapture>> objectCaptures = new EnumMap<>(ObjectType.class);
+    private final Map<ObjectType, Set<Integer>> objectIds = new EnumMap<>(ObjectType.class);
     private final Map<Integer, NpcDefinition> npcDefinitions = new HashMap<>();
 
     /** Varbits whose values are sent every tick. */
@@ -104,6 +96,8 @@ public class ChallengeRecordingConfig {
     /** IDs of projectiles to record on first sight. */
     @Getter
     private final Set<Integer> projectiles = new HashSet<>();
+
+    private final Map<Integer, Integer> spotAnimLengths = new HashMap<>();
 
     ChallengeRecordingConfig(io.blert.json.RecordingConfig json, Challenge challenge) {
         this.version = json.version;
@@ -119,18 +113,39 @@ public class ChallengeRecordingConfig {
     }
 
     /**
-     * Returns how objects of a type and ID should be recorded.
+     * Returns whether objects of a type and ID should be recorded.
      */
-    public ObjectCapture objectCapture(ObjectType type, int id) {
-        Map<Integer, ObjectCapture> captures = objectCaptures.get(type);
-        return captures != null ? captures.getOrDefault(id, ObjectCapture.NONE) : ObjectCapture.NONE;
+    public boolean recordsObject(ObjectType type, int id) {
+        Set<Integer> ids = objectIds.get(type);
+        return ids != null && ids.contains(id);
     }
 
     /**
      * Returns whether any objects are configured to be recorded.
      */
     public boolean recordsObjects() {
-        return objectCaptures.values().stream().anyMatch(captures -> !captures.isEmpty());
+        return objectIds.values().stream().anyMatch(ids -> !ids.isEmpty());
+    }
+
+    /**
+     * Returns whether spot anims with the given ID should be recorded.
+     */
+    public boolean recordsSpotAnim(int id) {
+        return spotAnimLengths.containsKey(id);
+    }
+
+    /**
+     * Returns whether any spot anims are configured to be recorded.
+     */
+    public boolean recordsSpotAnims() {
+        return !spotAnimLengths.isEmpty();
+    }
+
+    /**
+     * Returns the length of a recorded spot anim's animation in client cycles.
+     */
+    public int getSpotAnimLength(int id) {
+        return spotAnimLengths.get(id);
     }
 
     /**
@@ -149,14 +164,7 @@ public class ChallengeRecordingConfig {
             for (io.blert.json.RecordingConfig.ObjectCapture capture : scope.objects) {
                 ObjectType type = ObjectType.fromId(capture.type);
                 if (type != null && capture.ids != null) {
-                    // Creation mode is only meaningful for graphics.
-                    ObjectCapture mode = type == ObjectType.GRAPHICS && Boolean.TRUE.equals(capture.onCreation)
-                            ? ObjectCapture.ON_CREATION
-                            : ObjectCapture.PRESENCE;
-                    Map<Integer, ObjectCapture> captures = objectCaptures.computeIfAbsent(type, t -> new HashMap<>());
-                    for (int id : capture.ids) {
-                        captures.put(id, mode);
-                    }
+                    objectIds.computeIfAbsent(type, t -> new HashSet<>()).addAll(capture.ids);
                 }
             }
         }
@@ -180,6 +188,11 @@ public class ChallengeRecordingConfig {
         }
         if (scope.projectiles != null) {
             projectiles.addAll(scope.projectiles);
+        }
+        if (scope.spotAnims != null) {
+            for (io.blert.json.RecordingConfig.SpotAnim spotAnim : scope.spotAnims) {
+                spotAnimLengths.put(spotAnim.id, spotAnim.length);
+            }
         }
     }
 }

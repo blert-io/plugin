@@ -59,6 +59,14 @@ public abstract class DataTracker implements RuneliteEventHandler {
         final boolean overallTicksPrecise;
     }
 
+    @AllArgsConstructor
+    @EqualsAndHashCode
+    private static class TrackedSpotAnim {
+        private final Actor actor;
+        private final int id;
+        private final int startCycle;
+    }
+
     @Getter(AccessLevel.PROTECTED)
     private final RecordableChallenge challenge;
 
@@ -70,6 +78,8 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
     private final ObjectTracker objectTracker;
     private Set<Projectile> activeProjectiles = new HashSet<>();
+    private Set<GraphicsObject> activeGraphicsObjects = new HashSet<>();
+    private Set<TrackedSpotAnim> activeSpotAnims = new HashSet<>();
 
     @Getter
     private final Stage stage;
@@ -187,6 +197,11 @@ public abstract class DataTracker implements RuneliteEventHandler {
         ProjectilesEvent projectilesEvent = readProjectiles();
         if (projectilesEvent != null) {
             dispatchEvent(projectilesEvent);
+        }
+
+        SpotAnimsEvent spotAnimsEvent = readSpotAnims();
+        if (spotAnimsEvent != null) {
+            dispatchEvent(spotAnimsEvent);
         }
 
         if (pendingCompletion != null) {
@@ -922,6 +937,79 @@ public abstract class DataTracker implements RuneliteEventHandler {
         return !projectiles.isEmpty() ? new ProjectilesEvent(getStage(), getTick(), projectiles) : null;
     }
 
+    private @Nullable SpotAnimsEvent readSpotAnims() {
+        if (!recordingConfig.recordsSpotAnims()) {
+            return null;
+        }
+
+        List<SpotAnimsEvent.SpotAnim> spotAnims = new ArrayList<>();
+
+        Set<GraphicsObject> currentGraphicsObjects = new HashSet<>();
+        for (GraphicsObject object : client.getTopLevelWorldView().getGraphicsObjects()) {
+            if (recordingConfig.recordsSpotAnim(object.getId())) {
+                currentGraphicsObjects.add(object);
+            }
+        }
+
+        for (GraphicsObject object : currentGraphicsObjects) {
+            if (activeGraphicsObjects.contains(object)) {
+                continue;
+            }
+
+            int drawTick = firstTickFrom(object.getStartCycle());
+            int endTick = firstTickFrom(object.getStartCycle() + recordingConfig.getSpotAnimLength(object.getId()));
+            WorldPoint tile = getWorldLocation(object);
+            if (drawTick >= 0 && tile != null) {
+                spotAnims.add(SpotAnimsEvent.SpotAnim.onTile(object.getId(), tile, drawTick, endTick));
+            }
+        }
+        activeGraphicsObjects = currentGraphicsObjects;
+
+        List<Actor> actors = new ArrayList<>();
+        trackedNpcs.forEach(trackedNpc -> {
+            if (trackedNpc instanceof GenericTrackedNpc) {
+                actors.add(trackedNpc.getNpc());
+            }
+        });
+        for (Raider raider : challenge.getParty()) {
+            if (raider.getPlayer() != null) {
+                actors.add(raider.getPlayer());
+            }
+        }
+
+        Set<TrackedSpotAnim> currentSpotAnims = new HashSet<>();
+        for (Actor actor : actors) {
+            for (ActorSpotAnim spotAnim : actor.getSpotAnims()) {
+                int id = spotAnim.getId();
+                if (!recordingConfig.recordsSpotAnim(id)) {
+                    continue;
+                }
+
+                TrackedSpotAnim tracked = new TrackedSpotAnim(actor, id, spotAnim.getStartCycle());
+                currentSpotAnims.add(tracked);
+                if (activeSpotAnims.contains(tracked)) {
+                    continue;
+                }
+
+                int drawTick = firstTickFrom(spotAnim.getStartCycle());
+                int endTick = firstTickFrom(spotAnim.getStartCycle() + recordingConfig.getSpotAnimLength(id));
+                Target target = toTarget(actor);
+                if (drawTick >= 0 && target != null) {
+                    spotAnims.add(SpotAnimsEvent.SpotAnim.onActor(id, target, drawTick, endTick));
+                }
+            }
+        }
+        activeSpotAnims = currentSpotAnims;
+
+        return !spotAnims.isEmpty() ? new SpotAnimsEvent(getStage(), getTick(), spotAnims) : null;
+    }
+
+    /** Returns the first tick that starts at or after a client cycle. */
+    private int firstTickFrom(int cycle) {
+        int cyclesLeft = cycle - client.getGameCycle();
+        return getTick() + (int) Math.ceil(cyclesLeft / (float) Tick.CLIENT_CYCLES_PER_TICK);
+    }
+
     public final void onGameStateChanged(GameStateChanged event) {
         if (terminating()) {
             return;
@@ -1088,9 +1176,6 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Override
     public final void onGraphicsObjectCreated(GraphicsObjectCreated event) {
         if (!terminating()) {
-            if (getState() == State.IN_PROGRESS) {
-                objectTracker.record(event.getGraphicsObject());
-            }
             onGraphicsObjectCreation(event);
         }
     }

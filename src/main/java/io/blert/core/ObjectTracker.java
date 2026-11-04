@@ -23,7 +23,6 @@
 
 package io.blert.core;
 
-import io.blert.core.ChallengeRecordingConfig.ObjectCapture;
 import io.blert.events.ObjectsEvent;
 import io.blert.util.Location;
 import java.util.*;
@@ -47,7 +46,6 @@ class ObjectTracker {
     private final ChallengeRecordingConfig config;
 
     private final Map<ObjectKey, Map<TileObject, WorldPoint>> objects = new HashMap<>();
-    private final Map<ObjectKey, Set<WorldPoint>> createdGraphics = new HashMap<>();
     private Map<ObjectKey, Set<WorldPoint>> previousPositions = new HashMap<>();
     private boolean resyncPending = true;
     private boolean rescanPending = false;
@@ -90,23 +88,6 @@ class ObjectTracker {
         add(ObjectType.GROUND, object);
     }
 
-    /**
-     * Records a graphics object created on the current tick.
-     */
-    void record(GraphicsObject object) {
-        // Non-creation graphics are polled every tick in update.
-        if (config.objectCapture(ObjectType.GRAPHICS, object.getId()) != ObjectCapture.ON_CREATION) {
-            return;
-        }
-
-        WorldPoint point = getWorldLocation(object);
-        if (point != null) {
-            createdGraphics
-                    .computeIfAbsent(new ObjectKey(ObjectType.GRAPHICS, object.getId()), k -> new HashSet<>())
-                    .add(point);
-        }
-    }
-
     void remove(GameObject object) {
         remove(ObjectType.GAME, object);
     }
@@ -125,7 +106,7 @@ class ObjectTracker {
     }
 
     /**
-     * Updates the tracked graphics for a tick and returns an event describing
+     * Updates the tracked objects for a tick and returns an event describing
      * the changes, if any.
      */
     @Nullable
@@ -145,21 +126,6 @@ class ObjectTracker {
                 positions.put(key, new HashSet<>(current.values()));
             }
         });
-
-        for (GraphicsObject object : client.getTopLevelWorldView().getGraphicsObjects()) {
-            if (config.objectCapture(ObjectType.GRAPHICS, object.getId()) == ObjectCapture.PRESENCE) {
-                WorldPoint point = getWorldLocation(object);
-                if (point != null) {
-                    positions
-                            .computeIfAbsent(new ObjectKey(ObjectType.GRAPHICS, object.getId()), k -> new HashSet<>())
-                            .add(point);
-                }
-            }
-        }
-
-        createdGraphics.forEach((key, points) ->
-                positions.computeIfAbsent(key, k -> new HashSet<>()).addAll(points));
-        createdGraphics.clear();
 
         Map<ObjectKey, Set<WorldPoint>> previous = previousPositions;
         previousPositions = positions;
@@ -197,7 +163,7 @@ class ObjectTracker {
     }
 
     private void add(ObjectType type, TileObject object) {
-        if (config.objectCapture(type, object.getId()) == ObjectCapture.NONE) {
+        if (!config.recordsObject(type, object.getId())) {
             return;
         }
 
@@ -213,11 +179,6 @@ class ObjectTracker {
         if (current != null) {
             current.remove(object);
         }
-    }
-
-    @Nullable
-    private WorldPoint getWorldLocation(GraphicsObject object) {
-        return Location.getWorldLocation(client, WorldPoint.fromLocal(client, object.getLocation()));
     }
 
     private static List<WorldPoint> difference(Set<WorldPoint> from, Set<WorldPoint> exclude) {
