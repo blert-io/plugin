@@ -43,6 +43,7 @@ public enum EventType {
     OBJECTS(12),
     VARS(13),
     PROJECTILES(14),
+    SPOT_ANIMS(15),
 
     MAIDEN_CRAB_LEAK(100),
     MAIDEN_BLOOD_SPLATS(101),

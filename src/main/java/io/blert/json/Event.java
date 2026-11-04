@@ -46,6 +46,7 @@ public class Event {
     public Objects objects;
     public Vars vars;
     public List<Projectile> projectiles;
+    public List<SpotAnim> spotAnims;
 
     // ToB event-specific fields
     public List<Coords> maidenBloodSplats;
@@ -93,6 +94,7 @@ public class Event {
         public Integer magic;
         public List<Long> equipmentDeltas;
         public Long activePrayers;
+        public List<Integer> spotAnims;
         public int dataSource;
         public Boolean snapshot;
 
@@ -188,6 +190,14 @@ public class Event {
         public Target target;
         public Coords targetCoords;
         public int landingTick;
+    }
+
+    public static class SpotAnim {
+        public int id;
+        public Target actor;
+        public Coords tile;
+        public int drawTick;
+        public int endTick;
     }
 
     public static class NpcAttack {

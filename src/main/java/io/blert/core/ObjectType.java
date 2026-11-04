@@ -29,7 +29,6 @@ import lombok.Getter;
 public enum ObjectType {
     GAME(1),
     GROUND(2),
-    GRAPHICS(3),
     ;
 
     @Getter

@@ -33,7 +33,6 @@ public class RecordingConfig {
     public static class ObjectCapture {
         public int type;
         public List<Integer> ids;
-        public Boolean onCreation;
     }
 
     public static class HitpointsVarbit {
@@ -50,12 +49,19 @@ public class RecordingConfig {
         public HitpointsVarbit hitpointsVarbit;
     }
 
+    public static class SpotAnim {
+        public int id;
+        /** Length of the spot anim's animation in client cycles. */
+        public int length;
+    }
+
     public static class Scope {
         public List<ObjectCapture> objects;
         public List<NpcDefinition> npcDefinitions;
         public List<Integer> varbits;
         public List<Integer> varps;
         public List<Integer> projectiles;
+        public List<SpotAnim> spotAnims;
     }
 
     public static class ChallengeScope {

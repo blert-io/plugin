@@ -93,6 +93,10 @@ public class JsonEventTranslator {
 
                 playerUpdateEvent.getActivePrayers().ifPresent(prayers -> player.activePrayers = prayers.getValue());
 
+                if (!playerUpdateEvent.getSpotAnims().isEmpty()) {
+                    player.spotAnims = playerUpdateEvent.getSpotAnims();
+                }
+
                 if (!playerUpdateEvent.getEquipmentChangesThisTick().isEmpty()) {
                     player.equipmentDeltas = playerUpdateEvent.getEquipmentChangesThisTick().stream()
                             .map(ItemDelta::getValue)
@@ -241,6 +245,24 @@ public class JsonEventTranslator {
                             }
                             projectile.landingTick = p.getLandingTick();
                             return projectile;
+                        })
+                        .collect(Collectors.toList());
+                break;
+            }
+
+            case SPOT_ANIMS: {
+                SpotAnimsEvent spotAnimsEvent = (SpotAnimsEvent) event;
+                json.spotAnims = spotAnimsEvent.getSpotAnims().stream()
+                        .map(s -> {
+                            Event.SpotAnim spotAnim = new Event.SpotAnim();
+                            spotAnim.id = s.getId();
+                            spotAnim.actor = toJsonTarget(s.getActor());
+                            if (s.getTile() != null) {
+                                spotAnim.tile = worldPointToCoords(s.getTile());
+                            }
+                            spotAnim.drawTick = s.getDrawTick();
+                            spotAnim.endTick = s.getEndTick();
+                            return spotAnim;
                         })
                         .collect(Collectors.toList());
                 break;
