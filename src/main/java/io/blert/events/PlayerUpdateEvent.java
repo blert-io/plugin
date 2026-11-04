@@ -24,6 +24,7 @@
 package io.blert.events;
 
 import io.blert.core.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -65,6 +66,8 @@ public class PlayerUpdateEvent extends Event {
 
     private @Nullable PrayerSet activePrayers = null;
 
+    private List<Integer> spotAnims;
+
     @Getter
     private final boolean snapshot;
 
@@ -90,6 +93,7 @@ public class PlayerUpdateEvent extends Event {
                 new PlayerUpdateEvent(stage, tick, point, source, raider.getUsername(), raider.isSnapshot());
         evt.equipmentChangesThisTick = raider.getEquipmentChangesThisTick();
         evt.offCooldownTick = raider.getOffCooldownTick();
+        evt.spotAnims = new ArrayList<>(raider.getGraphicIds());
 
         if (raider.isLocalPlayer()) {
             evt.hitpoints = new Hitpoints(
