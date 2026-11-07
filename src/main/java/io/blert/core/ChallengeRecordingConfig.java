@@ -27,6 +27,7 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -57,6 +58,9 @@ public class ChallengeRecordingConfig {
         private final @Nullable HitpointsVarbit hitpointsVarbit;
 
         private final int[] hitpoints;
+        private final int[] startingHitpoints;
+
+        private final boolean capturesOverheadText;
 
         NpcDefinition(io.blert.json.RecordingConfig.NpcDefinition json) {
             ChallengeMode mode = json.mode != null ? ChallengeMode.fromId(json.mode) : null;
@@ -64,14 +68,31 @@ public class ChallengeRecordingConfig {
             this.hitpointsVarbit = json.hitpointsVarbit != null && json.hitpointsVarbit.scale > 0
                     ? new HitpointsVarbit(json.hitpointsVarbit.id, json.hitpointsVarbit.scale)
                     : null;
-            this.hitpoints = json.hitpoints != null
-                    ? json.hitpoints.stream()
-                            .mapToInt(hp -> hp != null ? hp : -1)
-                            .toArray()
-                    : new int[0];
+            this.hitpoints = hitpointsByScale(json.hitpoints);
+            this.startingHitpoints = hitpointsByScale(json.startingHitpoints);
+            this.capturesOverheadText = json.captureOverheadText;
         }
 
         public int getBaseHitpoints(int scale) {
+            return forScale(hitpoints, scale);
+        }
+
+        public int getStartingHitpoints(int scale) {
+            int starting = forScale(startingHitpoints, scale);
+            return starting != -1 ? starting : getBaseHitpoints(scale);
+        }
+
+        public boolean capturesOverheadText() {
+            return capturesOverheadText;
+        }
+
+        private static int[] hitpointsByScale(@Nullable List<Integer> hitpoints) {
+            return hitpoints != null
+                    ? hitpoints.stream().mapToInt(hp -> hp != null ? hp : -1).toArray()
+                    : new int[0];
+        }
+
+        private static int forScale(int[] hitpoints, int scale) {
             if (scale < 1 || scale > hitpoints.length) {
                 return -1;
             }

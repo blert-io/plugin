@@ -91,7 +91,65 @@
               "id": 6448,
               "scale": 1000
             }
+          },
+          {
+            "ids": [
+              8338,
+              8339,
+              8340
+            ],
+            "mode": 11,
+            "hitpoints": [
+              4870,
+              4902,
+              4902,
+              5455,
+              6152
+            ],
+            "startingHitpoints": [
+              3750,
+              3750,
+              3750,
+              4375,
+              5000
+            ],
+            "hitpointsVarbit": {
+              "id": 6448,
+              "scale": 1000
+            },
+            "captureOverheadText": true
+          },
+          {
+            "ids": [
+              10770,
+              10771,
+              10772
+            ],
+            "mode": 12,
+            "hitpoints": [
+              5634,
+              5592,
+              5652,
+              6330,
+              7152
+            ],
+            "startingHitpoints": [
+              4500,
+              4500,
+              4500,
+              5250,
+              6000
+            ],
+            "hitpointsVarbit": {
+              "id": 6448,
+              "scale": 1000
+            },
+            "captureOverheadText": true
           }
+        ],
+        "projectiles": [
+          1550,
+          1555
         ],
         "spotAnims": [
           {
