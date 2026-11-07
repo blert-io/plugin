@@ -37,7 +37,6 @@ import io.blert.events.colosseum.*;
 import io.blert.events.inferno.InfernoWaveStartEvent;
 import io.blert.events.mokhaiotl.*;
 import io.blert.events.tob.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -169,10 +168,12 @@ public class JsonEventTranslator {
                 npc.hitpoints = npcEvent.getHitpoints().getValue();
                 npc.activePrayers = npcEvent.getPrayers();
                 npc.size = npcEvent.getSize();
+                npc.orientation = npcEvent.getOrientation();
                 npc.animation = npcEvent.getAnimation();
                 npc.animationStartTick = npcEvent.getAnimationStartTick();
                 npc.spotAnims = npcEvent.getSpotAnims();
                 npc.overheads = npcEvent.getOverheads();
+                npc.overheadText = npcEvent.getOverheadText();
 
                 npc.target = toJsonTarget(npcEvent.getTarget());
 
@@ -321,31 +322,6 @@ public class JsonEventTranslator {
                     case OVERWORLD_PIVOTS:
                         json.soteMaze.overworldPivots = coords;
                         break;
-                }
-                break;
-            }
-
-            case XARPUS_PHASE: {
-                XarpusPhaseEvent xarpusPhaseEvent = (XarpusPhaseEvent) event;
-                json.xarpusPhase = xarpusPhaseEvent.getPhase().ordinal();
-                break;
-            }
-
-            case XARPUS_EXHUMED: {
-                XarpusExhumedEvent xarpusExhumedEvent = (XarpusExhumedEvent) event;
-                json.xarpusExhumed = new Event.XarpusExhumed();
-                json.xarpusExhumed.spawnTick = xarpusExhumedEvent.getSpawnTick();
-                json.xarpusExhumed.healAmount = xarpusExhumedEvent.getHealAmount();
-                json.xarpusExhumed.healTicks = new ArrayList<>(xarpusExhumedEvent.getHealTicks());
-                break;
-            }
-
-            case XARPUS_SPLAT: {
-                XarpusSplatEvent xarpusSplatEvent = (XarpusSplatEvent) event;
-                json.xarpusSplat = new Event.XarpusSplat();
-                json.xarpusSplat.source = xarpusSplatEvent.getSource().getId();
-                if (xarpusSplatEvent.getBounceFrom() != null) {
-                    json.xarpusSplat.bounceFrom = worldPointToCoords(xarpusSplatEvent.getBounceFrom());
                 }
                 break;
             }

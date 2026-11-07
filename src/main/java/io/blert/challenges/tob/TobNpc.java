@@ -115,21 +115,6 @@ public enum TobNpc {
     SOTETSEG_REGULAR(8388, 1, ChallengeMode.TOB_REGULAR, new int[] {3000, 3500, 4000}),
     SOTETSEG_HARD(10868, 1, ChallengeMode.TOB_HARD, new int[] {3000, 3500, 4000}),
 
-    // Inactive Xarpus prior to room entry.
-    XARPUS_IDLE_ENTRY(10766, 1, ChallengeMode.TOB_ENTRY, 680),
-    XARPUS_IDLE_REGULAR(8338, 1, ChallengeMode.TOB_REGULAR, new int[] {3810, 4445, 5080}),
-    XARPUS_IDLE_HARD(10770, 1, ChallengeMode.TOB_HARD, new int[] {4500, 5250, 6000}),
-
-    // Xarpus healing during P1 exhumes.
-    XARPUS_P1_ENTRY(10767, 1, ChallengeMode.TOB_ENTRY, 680),
-    XARPUS_P1_REGULAR(8339, 1, ChallengeMode.TOB_REGULAR, new int[] {3810, 4445, 5080}),
-    XARPUS_P1_HARD(10771, 1, ChallengeMode.TOB_HARD, new int[] {4500, 5250, 6000}),
-
-    // Xarpus main phase and post-screech.
-    XARPUS_ENTRY(10768, 1, ChallengeMode.TOB_ENTRY, 680),
-    XARPUS_REGULAR(8340, 1, ChallengeMode.TOB_REGULAR, new int[] {3810, 4445, 5080}),
-    XARPUS_HARD(10772, 1, ChallengeMode.TOB_HARD, new int[] {4500, 5250, 6000}),
-
     // Verzik sitting at her throne prior to combat.
     VERZIK_IDLE_ENTRY(NpcID.VERZIK_INITIAL_STORY, 1, ChallengeMode.TOB_ENTRY, 240),
     VERZIK_IDLE_REGULAR(NpcID.VERZIK_INITIAL, 1, ChallengeMode.TOB_REGULAR, new int[] {1500, 1750, 2000}),
@@ -355,38 +340,6 @@ public enum TobNpc {
 
     public static boolean isAnySotetseg(int id) {
         return isSotetsegIdle(id) || isSotetseg(id);
-    }
-
-    public static boolean isXarpusIdle(int id) {
-        return idMatches(id, XARPUS_IDLE_ENTRY, XARPUS_IDLE_REGULAR, XARPUS_IDLE_HARD);
-    }
-
-    public boolean isXarpusIdle() {
-        return isXarpusIdle(this.id);
-    }
-
-    public static boolean isXarpusP1(int id) {
-        return idMatches(id, XARPUS_P1_ENTRY, XARPUS_P1_REGULAR, XARPUS_P1_HARD);
-    }
-
-    public boolean isXarpusP1() {
-        return isXarpusP1(this.id);
-    }
-
-    public static boolean isXarpus(int id) {
-        return idMatches(id, XARPUS_ENTRY, XARPUS_REGULAR, XARPUS_HARD);
-    }
-
-    public boolean isXarpus() {
-        return isXarpus(this.id);
-    }
-
-    public static boolean isAnyXarpus(int id) {
-        return isXarpusIdle(id) || isXarpusP1(id) || isXarpus(id);
-    }
-
-    public boolean isAnyXarpus() {
-        return isXarpusIdle() || isXarpusP1() || isXarpus();
     }
 
     public static boolean isVerzikIdle(int id) {

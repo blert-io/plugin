@@ -53,9 +53,6 @@ public class Event {
     public List<Coords> bloatHands;
     public NyloWave nyloWave;
     public SoteMaze soteMaze;
-    public Integer xarpusPhase;
-    public XarpusExhumed xarpusExhumed;
-    public XarpusSplat xarpusSplat;
     public Integer verzikPhase;
     public List<Coords> verzikYellows;
     public VerzikBounce verzikBounce;
@@ -112,11 +109,13 @@ public class Event {
         public Long activePrayers;
 
         public Integer size;
+        public Integer orientation;
         public Integer animation;
         public Integer animationStartTick;
         public Target target;
         public List<Integer> spotAnims;
         public List<Long> overheads;
+        public String overheadText;
 
         public MaidenCrab maidenCrab;
         public Nylo nylo;
@@ -220,17 +219,6 @@ public class Event {
         public List<Coords> overworldPivots;
         public List<Coords> underworldPivots;
         public String chosenPlayer;
-    }
-
-    public static class XarpusExhumed {
-        public int spawnTick;
-        public int healAmount;
-        public List<Integer> healTicks;
-    }
-
-    public static class XarpusSplat {
-        public int source;
-        public Coords bounceFrom;
     }
 
     public static class VerzikBounce {

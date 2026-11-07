@@ -44,9 +44,17 @@ public class GenericTrackedNpc extends BasicTrackedNpc {
 
     GenericTrackedNpc(
             @NonNull NPC npc, ChallengeRecordingConfig.NpcDefinition definition, long roomId, int scale, int tick) {
-        super(npc, definition.getMode(), roomId, new Hitpoints(definition.getBaseHitpoints(scale)));
+        super(
+                npc,
+                definition.getMode(),
+                roomId,
+                new Hitpoints(definition.getStartingHitpoints(scale), definition.getBaseHitpoints(scale)));
         this.definition = definition;
         this.animationStartTick = tick;
+    }
+
+    public boolean capturesOverheadText() {
+        return definition.capturesOverheadText();
     }
 
     public void correctHitpointsForScale(int scale) {
@@ -57,9 +65,9 @@ public class GenericTrackedNpc extends BasicTrackedNpc {
         if (healthScale > 0 && healthRatio != -1) {
             setHitpoints(Hitpoints.fromRatio(healthRatio / (double) healthScale, base));
         } else {
-            // Assume full HP if the bar isn't visible. Varbit NPCs will
+            // Assume starting HP if the bar isn't visible. Varbit NPCs will
             // later self-correct.
-            setHitpoints(new Hitpoints(base));
+            setHitpoints(new Hitpoints(definition.getStartingHitpoints(scale), base));
         }
     }
 
@@ -72,7 +80,7 @@ public class GenericTrackedNpc extends BasicTrackedNpc {
 
         int varbitValue = client.getVarbitValue(varbit.getId());
 
-        if (lastVarbitValue == -1) {
+        if (lastVarbitValue == -1 && varbitValue == 0) {
             lastVarbitValue = varbitValue;
             return;
         }
