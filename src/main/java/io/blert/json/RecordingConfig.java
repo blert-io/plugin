@@ -45,8 +45,11 @@ public class RecordingConfig {
         public Integer mode;
         /** Base hitpoints by scale. */
         public List<Integer> hitpoints;
+        /** Hitpoints the NPC spawns with by scale. Defaults to its base. */
+        public List<Integer> startingHitpoints;
 
         public HitpointsVarbit hitpointsVarbit;
+        public boolean captureOverheadText;
     }
 
     public static class SpotAnim {

@@ -35,6 +35,8 @@ import net.runelite.api.NPC;
 import net.runelite.api.coords.WorldPoint;
 
 public class NpcEvent extends Event {
+    private static final int MAX_OVERHEAD_TEXT_LENGTH = 80;
+
     @Getter
     private final long roomId;
 
@@ -56,6 +58,9 @@ public class NpcEvent extends Event {
     private final @Nullable Integer size;
 
     @Getter
+    private final @Nullable Integer orientation;
+
+    @Getter
     private final @Nullable Integer animation;
 
     @Getter
@@ -72,6 +77,9 @@ public class NpcEvent extends Event {
      */
     @Getter
     private final @Nullable List<Long> overheads;
+
+    @Getter
+    private final @Nullable String overheadText;
 
     public static NpcEvent spawn(Stage stage, int tick, WorldPoint point, TrackedNpc trackedNpc) {
         return new NpcEvent(EventType.NPC_SPAWN, stage, tick, point, trackedNpc);
@@ -100,11 +108,13 @@ public class NpcEvent extends Event {
         this.properties = trackedNpc.getProperties();
         this.propertiesChanged = trackedNpc.hasUpdatedProperties();
         this.size = null;
+        this.orientation = null;
         this.animation = null;
         this.animationStartTick = null;
         this.target = null;
         this.spotAnims = null;
         this.overheads = null;
+        this.overheadText = null;
     }
 
     private NpcEvent(Stage stage, int tick, WorldPoint point, GenericTrackedNpc trackedNpc, @Nullable Target target) {
@@ -120,6 +130,7 @@ public class NpcEvent extends Event {
 
         NPC npc = trackedNpc.getNpc();
         this.size = npc.getComposition().getSize();
+        this.orientation = npc.getOrientation();
         int animation = npc.getAnimation();
         this.animation = animation != -1 ? animation : null;
         this.animationStartTick = trackedNpc.getAnimationStartTick();
@@ -141,6 +152,12 @@ public class NpcEvent extends Event {
             }
         }
         this.overheads = overheads.isEmpty() ? null : overheads;
+
+        String overheadText = trackedNpc.capturesOverheadText() ? npc.getOverheadText() : null;
+        if (overheadText != null && overheadText.length() > MAX_OVERHEAD_TEXT_LENGTH) {
+            overheadText = overheadText.substring(0, MAX_OVERHEAD_TEXT_LENGTH);
+        }
+        this.overheadText = overheadText;
     }
 
     public boolean propertiesChanged() {
