@@ -52,11 +52,4 @@ public class Hitpoints extends SkillLevel {
     public Hitpoints update(int current) {
         return new Hitpoints(current, base);
     }
-
-    public double percentage() {
-        if (base == 0) {
-            return Double.NaN;
-        }
-        return current / (double) base * 100.0;
-    }
 }
