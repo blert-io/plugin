@@ -36,7 +36,7 @@ dependencies {
 }
 
 group = 'io.blert'
-version = '0.10.7-RUNELITE'
+version = '0.10.8-RUNELITE'
 
 def generatedResourcesDir = layout.buildDirectory.dir('generated/blert/resources')
 
