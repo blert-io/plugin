@@ -116,6 +116,12 @@ public class ArchiveChallenge extends RecordableChallenge {
 
     @Override
     protected void onTerminate() {
+        if (getState() == ChallengeState.ACTIVE) {
+            // If teleporting out of the raid to another region, its regular end
+            // handling won't run, so force-end it here.
+            endRaid(ChallengeState.INACTIVE, -1, false);
+        }
+
         clearBossDataTracker();
         resetParty();
         raidTimer = null;
@@ -230,15 +236,15 @@ public class ArchiveChallenge extends RecordableChallenge {
             deferredTask = new DeferredTask(
                     () -> {
                         initializePartyFromOrbs();
-                        startRaid();
+                        startRaid(null);
                     },
                     TICKS_TO_DELAY_ORB_CHECK);
         } else {
-            deferredTask = new DeferredTask(this::startRaid, 1);
+            deferredTask = new DeferredTask(() -> startRaid(Stage.TFA_GUARDIAN), 1);
         }
     }
 
-    private void startRaid() {
+    private void startRaid(@Nullable Stage initialStage) {
         deferredTask = null;
 
         updateLocation();
@@ -247,7 +253,7 @@ public class ArchiveChallenge extends RecordableChallenge {
         boolean spectator = !playerIsInChallenge(client.getLocalPlayer().getName());
 
         List<String> names = getParty().stream().map(Raider::getUsername).collect(Collectors.toList());
-        Stage stage = null;
+        Stage stage = initialStage;
 
         if (bossDataTracker != null) {
             // Raid scale information is not immediately available when the raid starts, so if any NPCs have already
@@ -280,21 +286,27 @@ public class ArchiveChallenge extends RecordableChallenge {
         }
 
         setState(ChallengeState.ENDING);
-        deferredTask = new DeferredTask(() -> endRaid(state, overallTime), 3);
+        deferredTask = new DeferredTask(() -> endRaid(state, overallTime, true), 3);
     }
 
-    private void endRaid(ChallengeState state, int overallTime) {
+    private void endRaid(ChallengeState state, int overallTime, boolean atTickEnd) {
         log.info("TFA raid ended");
 
         // Spectators should send a soft end so they don't affect other recorders.
-        boolean soft = !playerIsInChallenge(client.getLocalPlayer().getName());
+        Player player = client.getLocalPlayer();
+        boolean soft = player == null || !playerIsInChallenge(player.getName());
 
         clearBossDataTracker();
         setState(state);
         resetParty();
         raidTimer = null;
 
-        getClientThread().invokeAtTickEnd(() -> dispatchEvent(new ChallengeEndEvent(-1, overallTime, soft)));
+        var event = new ChallengeEndEvent(-1, overallTime, soft);
+        if (atTickEnd) {
+            getClientThread().invokeAtTickEnd(() -> dispatchEvent(event));
+        } else {
+            dispatchEvent(event);
+        }
     }
 
     /**
