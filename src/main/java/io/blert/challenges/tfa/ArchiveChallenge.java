@@ -39,9 +39,7 @@ import io.blert.events.StageUpdateEvent;
 import io.blert.util.ChatText;
 import io.blert.util.DeferredTask;
 import io.blert.util.Tick;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -50,12 +48,12 @@ import javax.annotation.Nullable;
 import joptsimple.internal.Strings;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.Player;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
+import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.callback.ClientThread;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -68,6 +66,18 @@ public class ArchiveChallenge extends RecordableChallenge {
     private static final int TFA_VARBIT_NO_PARTY = 0;
     private static final int TFA_VARBIT_IN_PARTY = 1;
     private static final int TFA_VARBIT_RAID_STARTED = 2;
+
+    private static final int TFA_PREFERRED_MODE_PRACTICE = 1;
+
+    private static final Set<String> PRACTICE_MESSAGES = Set.of(
+            "A sweet smelling root grows inside your bag.",
+            "A sweet smelling root grows beneath your feet.",
+            "Your party failed to complete the challenge. You may try again...",
+            "You can't skip this phase at the moment.");
+
+    private static final Set<Integer> OPEN_DOOR_IDS =
+            Set.of(63089, 63090, 63092, 63093, 63097, 63098, 63100, 63101, 63103, 63104, 63106, 63107);
+    private static final int NORMAL_MODE_MAX_OPEN_DOORS = 2;
 
     private static final String RAID_ENTRY_MESSAGE_1P = "You enter the Archive...";
     private static final Pattern RAID_ENTRY_REGEX_3P =
@@ -84,6 +94,8 @@ public class ArchiveChallenge extends RecordableChallenge {
     private BossDataTracker bossDataTracker = null;
 
     private @Nullable DeferredTask deferredTask = null;
+
+    private boolean doorScanPending = false;
 
     @AllArgsConstructor
     private static class RaidTimer {
@@ -112,7 +124,10 @@ public class ArchiveChallenge extends RecordableChallenge {
     }
 
     @Override
-    protected void onInitialize() {}
+    protected void onInitialize() {
+        // Catch any doors already in the scene if initialized during an active raid.
+        doorScanPending = true;
+    }
 
     @Override
     protected void onTerminate() {
@@ -123,8 +138,10 @@ public class ArchiveChallenge extends RecordableChallenge {
         }
 
         clearBossDataTracker();
+        resetMode();
         resetParty();
         raidTimer = null;
+        doorScanPending = false;
 
         // The same instance records the next raid, so drop anything still
         // pending from this one.
@@ -145,6 +162,16 @@ public class ArchiveChallenge extends RecordableChallenge {
             initializePartyFromLobby();
         }
 
+        ItemContainer inventory = client.getItemContainer(InventoryID.INV);
+        if (inventory != null && inventory.contains(ItemID.TFA_GUTHIXIAN_ROOT)) {
+            updateMode(ChallengeMode.TFA_PRACTICE);
+        }
+
+        if (doorScanPending) {
+            doorScanPending = false;
+            checkForPracticeDoors();
+        }
+
         if (deferredTask != null) {
             deferredTask.tick();
         }
@@ -158,6 +185,7 @@ public class ArchiveChallenge extends RecordableChallenge {
             switch (getState()) {
                 case COMPLETE:
                     setState(ChallengeState.INACTIVE);
+                    resetMode();
                     break;
                 case ACTIVE:
                     queueRaidEnd(ChallengeState.INACTIVE);
@@ -227,6 +255,9 @@ public class ArchiveChallenge extends RecordableChallenge {
 
     private void queueRaidStart(boolean reinitializeParty) {
         log.info("Starting new TFA raid");
+        if (getChallengeMode() == ChallengeMode.NO_MODE) {
+            updateMode(ChallengeMode.TFA_NORMAL);
+        }
         setState(ChallengeState.PREPARING);
 
         if (reinitializeParty) {
@@ -248,6 +279,9 @@ public class ArchiveChallenge extends RecordableChallenge {
         deferredTask = null;
 
         updateLocation();
+        if (isSoloPracticeRaid()) {
+            updateMode(ChallengeMode.TFA_PRACTICE);
+        }
         setState(location.inRaid() ? ChallengeState.ACTIVE : ChallengeState.STARTING);
 
         boolean spectator = !playerIsInChallenge(client.getLocalPlayer().getName());
@@ -268,6 +302,14 @@ public class ArchiveChallenge extends RecordableChallenge {
         dispatchPendingEvents();
     }
 
+    private boolean isSoloPracticeRaid() {
+        if (client.getVarbitValue(VarbitID.TFA_PREFERRED_MODE) != TFA_PREFERRED_MODE_PRACTICE) {
+            return false;
+        }
+        Collection<Raider> party = getParty();
+        return party.size() == 1 && party.iterator().next().isLocalPlayer();
+    }
+
     private void queueRaidEnd(ChallengeState state) {
         queueRaidEnd(state, -1);
     }
@@ -276,6 +318,7 @@ public class ArchiveChallenge extends RecordableChallenge {
         if (getState() == ChallengeState.PREPARING) {
             // If a raid start is pending, cancel it.
             setState(ChallengeState.INACTIVE);
+            resetMode();
             clearBossDataTracker();
             clearPendingEvents();
             resetParty();
@@ -298,6 +341,7 @@ public class ArchiveChallenge extends RecordableChallenge {
 
         clearBossDataTracker();
         setState(state);
+        resetMode();
         resetParty();
         raidTimer = null;
 
@@ -344,10 +388,48 @@ public class ArchiveChallenge extends RecordableChallenge {
         locationChangedThisTick = true;
     }
 
+    private void checkForPracticeDoors() {
+        WorldView worldView = client.getTopLevelWorldView();
+        // Objects larger than a tile are listed on every tile they cover.
+        Set<GameObject> openDoors = new HashSet<>();
+        for (Tile[] row : worldView.getScene().getTiles()[worldView.getPlane()]) {
+            for (Tile tile : row) {
+                if (tile == null || tile.getGameObjects() == null) {
+                    continue;
+                }
+                for (GameObject object : tile.getGameObjects()) {
+                    if (object != null && OPEN_DOOR_IDS.contains(object.getId())) {
+                        openDoors.add(object);
+                    }
+                }
+            }
+        }
+
+        if (openDoors.size() > NORMAL_MODE_MAX_OPEN_DOORS) {
+            updateMode(ChallengeMode.TFA_PRACTICE);
+        }
+    }
+
     @Override
     public void onNpcSpawned(NpcSpawned npcSpawned) {
         updateLocation();
         super.onNpcSpawned(npcSpawned);
+    }
+
+    @Override
+    public void onGameObjectSpawned(GameObjectSpawned event) {
+        if (OPEN_DOOR_IDS.contains(event.getGameObject().getId())) {
+            doorScanPending = true;
+        }
+        super.onGameObjectSpawned(event);
+    }
+
+    @Override
+    public void onItemSpawned(ItemSpawned event) {
+        if (event.getItem().getId() == ItemID.TFA_GUTHIXIAN_ROOT) {
+            updateMode(ChallengeMode.TFA_PRACTICE);
+        }
+        super.onItemSpawned(event);
     }
 
     @Override
@@ -367,6 +449,7 @@ public class ArchiveChallenge extends RecordableChallenge {
                 switch (getState()) {
                     case COMPLETE:
                         setState(ChallengeState.INACTIVE);
+                        resetMode();
                         break;
                     case STARTING:
                     case PREPARING:
@@ -376,6 +459,8 @@ public class ArchiveChallenge extends RecordableChallenge {
                         break;
                 }
             }
+        } else if (varbit.getVarbitId() == VarbitID.TFA_CLIENT_SKIP_PHASE_MODE && varbit.getValue() != 0) {
+            updateMode(ChallengeMode.TFA_PRACTICE);
         }
 
         super.onVarbitChanged(varbit);
@@ -426,6 +511,10 @@ public class ArchiveChallenge extends RecordableChallenge {
                 }
                 super.onChatMessage(message);
                 return;
+            }
+
+            if (PRACTICE_MESSAGES.contains(stripped)) {
+                updateMode(ChallengeMode.TFA_PRACTICE);
             }
 
             if (getState() == ChallengeState.ACTIVE
