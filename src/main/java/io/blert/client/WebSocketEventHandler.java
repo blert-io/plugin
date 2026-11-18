@@ -285,6 +285,11 @@ public class WebSocketEventHandler implements EventHandler {
             return;
         }
 
+        if (event.getMode() == ChallengeMode.TFA_PRACTICE) {
+            log.warn("Recording of Fractured Archive practice raids is disabled");
+            return;
+        }
+
         if (!webSocketClient.isOpen()) {
             return;
         }

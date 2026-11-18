@@ -40,6 +40,9 @@ public enum ChallengeMode {
     TOA_ENTRY(30),
     TOA_NORMAL(31),
     TOA_EXPERT(32),
+
+    TFA_NORMAL(40),
+    TFA_PRACTICE(41),
     ;
 
     @Getter
