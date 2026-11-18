@@ -1,5 +1,5 @@
 {
-  "version": 9,
+  "version": 10,
   "global": {
     "projectiles": [
       1456,
@@ -465,7 +465,8 @@
           {
             "ids": [
               16640
-            ]
+            ],
+            "captureOverheadText": true
           },
           {
             "ids": [

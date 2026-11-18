@@ -368,6 +368,15 @@
     "category": "MELEE"
   },
   {
+    "name": "EARTH_SURGE",
+    "protoId": 135,
+    "weaponIds": [],
+    "animationIds": [9145],
+    "attackerGraphicIds": [1461],
+    "cooldown": 5,
+    "category": "MAGIC"
+  },
+  {
     "name": "EARTHBOUND_TECPATL",
     "protoId": 103,
     "weaponIds": [30957],
@@ -446,6 +455,15 @@
     "cooldown": 5,
     "category": "MELEE",
     "specCost": 25
+  },
+  {
+    "name": "FIRE_SURGE",
+    "protoId": 136,
+    "weaponIds": [],
+    "animationIds": [9145],
+    "attackerGraphicIds": [1464],
+    "cooldown": 5,
+    "category": "MAGIC"
   },
   {
     "name": "GLACIAL_TEMOTLI",
@@ -952,6 +970,15 @@
     "specCost": 55
   },
   {
+    "name": "WATER_SURGE",
+    "protoId": 134,
+    "weaponIds": [],
+    "animationIds": [9145],
+    "attackerGraphicIds": [1458],
+    "cooldown": 5,
+    "category": "MAGIC"
+  },
+  {
     "name": "WEBWEAVER_AUTO",
     "protoId": 75,
     "weaponIds": [27655],
@@ -967,6 +994,15 @@
     "cooldown": 3,
     "category": "RANGED",
     "specCost": 50
+  },
+  {
+    "name": "WIND_SURGE",
+    "protoId": 133,
+    "weaponIds": [],
+    "animationIds": [9145],
+    "attackerGraphicIds": [1455],
+    "cooldown": 5,
+    "category": "MAGIC"
   },
   {
     "name": "XGS_SPEC",
