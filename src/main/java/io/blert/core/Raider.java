@@ -107,6 +107,8 @@ public class Raider {
     private int lastAnimationFrame = -1;
 
     private Map<Integer, SpotAnimState> graphicsIds = new HashMap<>();
+    private final Set<Integer> pendingStartedGraphicIds = new HashSet<>();
+    private Set<Integer> eventStartedGraphicIds = Set.of();
 
     @Getter
     private @Nullable AttackDefinition lastAttack;
@@ -176,6 +178,8 @@ public class Raider {
         lastAnimationId = -1;
         lastAnimationFrame = -1;
         graphicsIds.clear();
+        pendingStartedGraphicIds.clear();
+        eventStartedGraphicIds = Set.of();
         lastAttack = null;
         offCooldownTick = 0;
         activeSpells.clear();
@@ -213,13 +217,26 @@ public class Raider {
             return Set.of();
         }
 
-        Set<Integer> started = new HashSet<>();
+        Set<Integer> started = new HashSet<>(eventStartedGraphicIds);
         graphicsIds.forEach((id, state) -> {
             if (state.startedThisTick) {
                 started.add(id);
             }
         });
         return started;
+    }
+
+    /**
+     * Records graphics that started on the player between ticks. Some are
+     * removed again before the next tick, so the tick update never sees them.
+     */
+    public void onGraphicChanged(Actor actor) {
+        for (var spotAnim : actor.getSpotAnims()) {
+            SpotAnimState last = graphicsIds.get(spotAnim.getId());
+            if (last == null || last.startCycle != spotAnim.getStartCycle()) {
+                pendingStartedGraphicIds.add(spotAnim.getId());
+            }
+        }
     }
 
     /**
@@ -268,6 +285,8 @@ public class Raider {
             spotAnims.put(spotAnim.getId(), new SpotAnimState(spotAnim, spotAnim.getStartCycle(), started));
         }
         graphicsIds = spotAnims;
+        eventStartedGraphicIds = Set.copyOf(pendingStartedGraphicIds);
+        pendingStartedGraphicIds.clear();
 
         updateEquipment(client, tick);
 
