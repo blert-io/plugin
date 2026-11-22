@@ -1172,6 +1172,12 @@ public abstract class DataTracker implements RuneliteEventHandler {
     @Override
     public final void onGraphicChanged(GraphicChanged event) {
         if (!terminating()) {
+            if (event.getActor() instanceof Player) {
+                Raider raider = challenge.getRaider(event.getActor().getName());
+                if (raider != null) {
+                    raider.onGraphicChanged(event.getActor());
+                }
+            }
             onGraphicChange(event);
         }
     }
