@@ -43,4 +43,14 @@ public interface BlertConfig extends Config {
     default @Nullable String apiKey() {
         return null;
     }
+
+    @ConfigItem(
+            keyName = "showUsernameMismatchWarning",
+            name = "Show username mismatch warning",
+            description = "Warn in chat when logging into an OSRS account that isn't linked to your Blert API key",
+            position = 2,
+            section = GENERAL_SECTION)
+    default boolean showUsernameMismatchWarning() {
+        return true;
+    }
 }

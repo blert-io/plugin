@@ -73,6 +73,7 @@ public class BlertPlugin extends Plugin {
     private ClientToolbar clientToolbar;
 
     @Inject
+    @Getter
     private BlertConfig config;
 
     @Inject

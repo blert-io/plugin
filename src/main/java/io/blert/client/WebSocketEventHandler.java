@@ -274,9 +274,12 @@ public class WebSocketEventHandler implements EventHandler {
         }
 
         if (apiKeyUsernameMismatch) {
-            sendGameMessage(
-                    "<col=ef1020>This challenge will not be recorded as this API key is linked to a different OSRS account. "
-                            + "If you changed your display name, please update it on the Blert website.</col>");
+            if (plugin.getConfig().showUsernameMismatchWarning()) {
+                sendGameMessage(
+                        "<col=ef1020>This challenge will not be recorded as this API key is linked to a different OSRS account. "
+                                + "If you changed your display name, please update it on the Blert website. "
+                                + "(Disable warning in settings.)</col>");
+            }
             return;
         }
 
@@ -624,10 +627,12 @@ public class WebSocketEventHandler implements EventHandler {
                 break;
 
             case ErrorData.TYPE_USERNAME_MISMATCH:
-                sendGameMessage(
-                        ChatMessageType.GAMEMESSAGE,
-                        "<col=ef1020>This Blert API key is linked a different OSRS account. "
-                                + "If you changed your display name, please go update it on the Blert website.</col>");
+                if (plugin.getConfig().showUsernameMismatchWarning()) {
+                    sendGameMessage(
+                            ChatMessageType.GAMEMESSAGE,
+                            "<col=ef1020>This Blert API key is linked to a different OSRS account. "
+                                    + "If you changed your display name, please go update it on the Blert website.</col>");
+                }
                 apiKeyUsernameMismatch = true;
                 // Abandon any pending challenge start since this account can't record.
                 if (pendingStartAttempt() != null) {
