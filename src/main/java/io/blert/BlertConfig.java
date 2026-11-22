@@ -48,6 +48,16 @@ public interface BlertConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "showUsernameMismatchWarning",
+            name = "Show username mismatch warning",
+            description = "Warn in chat when logging into an OSRS account that isn't linked to your Blert API key",
+            position = 2,
+            section = GENERAL_SECTION)
+    default boolean showUsernameMismatchWarning() {
+        return true;
+    }
+
+    @ConfigItem(
             keyName = "useBundledRecordingConfig",
             name = "Use bundled recording config",
             description = "Ignore recording configs from the server and use the one bundled with the plugin",
