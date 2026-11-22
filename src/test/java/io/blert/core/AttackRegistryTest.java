@@ -70,6 +70,7 @@ public class AttackRegistryTest {
                 new int[] {weaponId},
                 new int[] {animationId},
                 attackerGraphicIds,
+                new int[0],
                 5,
                 null,
                 false,

@@ -739,42 +739,45 @@ public abstract class DataTracker implements RuneliteEventHandler {
 
     private void checkForPlayerAttack(@NonNull Raider raider, @NonNull Player player) {
         int animationId = raider.getAnimationId();
-        if (animationId == -1) {
-            return;
-        }
-
         final int tick = getTick();
         Optional<NPC> target = raider.getTarget();
         boolean isNewAnimation = raider.getAnimationTick() == tick;
 
-        if (!isNewAnimation && !raider.stoppedBlowpiping()) {
-            return;
-        }
-
-        WorldPoint point = getWorldLocation(player);
-
         AttackRegistry registry = challenge.getAttackRegistry();
-        Optional<AttackDefinition> maybeAttack;
-
+        Optional<AttackDefinition> maybeAttack = Optional.empty();
         Optional<Item> weapon = raider.getEquippedItem(EquipmentSlot.WEAPON);
         int weaponId = weapon.map(Item::getId).orElse(-1);
 
-        if (raider.stoppedBlowpiping()) {
-            // In some instances, a continuous animation ("blowpiping") overrides
-            // another weapon's attack animation when the player attacks right
-            // off cooldown. If the player is still using the same animation but
-            // has just stopped blowpiping and targeted another NPC, assume that
-            // they attacked it with the weapon they're holding.
-            if (!registry.isContinuousAnimation(animationId) || target.isEmpty()) {
-                return;
+        if (animationId != -1) {
+            if (raider.stoppedBlowpiping()) {
+                // In some instances, a continuous animation ("blowpiping") overrides
+                // another weapon's attack animation when the player attacks right
+                // off cooldown. If the player is still using the same animation but
+                // has just stopped blowpiping and targeted another NPC, assume that
+                // they attacked it with the weapon they're holding.
+                if (registry.isContinuousAnimation(animationId) && target.isPresent()) {
+                    maybeAttack = registry.findSuppressedAttack(weaponId);
+                }
+            } else if (isNewAnimation) {
+                maybeAttack = registry.find(weaponId, animationId, player::hasSpotAnim);
             }
-            maybeAttack = registry.findSuppressedAttack(weaponId);
-        } else {
-            maybeAttack = registry.find(weaponId, animationId, player::hasSpotAnim);
+        }
+
+        // If an attack wasn't found by animation, check if any graphics on the
+        // player could indicate a new attack.
+        if (maybeAttack.isEmpty()) {
+            for (int graphicId : raider.getStartedGraphicIds(tick)) {
+                maybeAttack = registry.findByStartGraphic(weaponId, graphicId);
+                if (maybeAttack.isPresent()) {
+                    break;
+                }
+            }
         }
 
         maybeAttack.ifPresent(attack -> {
             try {
+                WorldPoint point = getWorldLocation(player);
+
                 AttackDefinition finalAttack = attack;
                 if (attack.hasProjectile()) {
                     finalAttack = adjustForProjectile(registry, attack, player, weaponId);
