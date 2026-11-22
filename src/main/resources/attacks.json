@@ -21,7 +21,8 @@
     "weaponIds": [27665, 27679],
     "animationIds": [9961],
     "cooldown": 4,
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "specCost": 50
   },
   {
     "name": "AGS_SPEC",
@@ -29,7 +30,8 @@
     "weaponIds": [11802, 20368, 29605],
     "animationIds": [7644, 7645],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "ARCLIGHT_AUTO",
@@ -37,7 +39,8 @@
     "weaponIds": [19675],
     "animationIds": [386, 390],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "ARCLIGHT_SPEC",
@@ -45,7 +48,17 @@
     "weaponIds": [19675],
     "animationIds": [2890],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"],
+    "specCost": 50
+  },
+  {
+    "name": "ASCENSION_CROSSBOWS",
+    "protoId": 124,
+    "weaponIds": [34681],
+    "animationIds": [15113, 15115, 15114, 15116],
+    "cooldown": 2,
+    "category": "RANGED"
   },
   {
     "name": "ATLATL_AUTO",
@@ -61,7 +74,8 @@
     "weaponIds": [29000],
     "animationIds": [11060],
     "cooldown": 3,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 50
   },
   {
     "name": "BGS_SPEC",
@@ -69,7 +83,8 @@
     "weaponIds": [11804, 20370],
     "animationIds": [7642, 7643],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "BLOWPIPE",
@@ -97,7 +112,8 @@
     ],
     "continuousAnimation": true,
     "animationFrameMax": 2,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 50
   },
   {
     "name": "BOWFA",
@@ -123,7 +139,18 @@
     "weaponIds": [29577],
     "animationIds": [11140],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 35
+  },
+  {
+    "name": "CAMPHOR_BLOWPIPE",
+    "protoId": 129,
+    "weaponIds": [31575],
+    "animationIds": [13142],
+    "cooldown": 2,
+    "continuousAnimation": true,
+    "animationFrameMax": 2,
+    "category": "RANGED"
   },
   {
     "name": "CHALLY_SWIPE",
@@ -139,7 +166,8 @@
     "weaponIds": [23987],
     "animationIds": [1203],
     "cooldown": 7,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 30
   },
   {
     "name": "CHIN_BLACK",
@@ -179,7 +207,25 @@
     "weaponIds": [13652, 28039],
     "animationIds": [7514],
     "cooldown": 4,
+    "category": "MELEE",
+    "specCost": 50
+  },
+  {
+    "name": "CRIMSON_KISTEN_AUTO",
+    "protoId": 118,
+    "weaponIds": [33631],
+    "animationIds": [14253, 566],
+    "cooldown": 4,
     "category": "MELEE"
+  },
+  {
+    "name": "CRIMSON_KISTEN_SPEC",
+    "protoId": 119,
+    "weaponIds": [33631],
+    "animationIds": [14255],
+    "cooldown": 4,
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "DARK_DEMONBANE",
@@ -188,7 +234,8 @@
     "animationIds": [8977],
     "attackerGraphicIds": [1869],
     "cooldown": 5,
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "DARKLIGHT_AUTO",
@@ -196,7 +243,8 @@
     "weaponIds": [6746, 8281],
     "animationIds": [386, 390],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "DARKLIGHT_SPEC",
@@ -204,7 +252,9 @@
     "weaponIds": [6746, 8281],
     "animationIds": [2890],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"],
+    "specCost": 50
   },
   {
     "name": "DAWN_SPEC",
@@ -216,7 +266,8 @@
       "id": 1547,
       "startCycleOffset": 51
     },
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "specCost": 35
   },
   {
     "name": "DAWN_AUTO",
@@ -255,7 +306,8 @@
     "weaponIds": [1215, 1231, 5680, 5698],
     "animationIds": [1062],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 25
   },
   {
     "name": "DHAROKS_GREATAXE",
@@ -271,7 +323,8 @@
     "weaponIds": [21015, 28682],
     "animationIds": [7511],
     "cooldown": 5,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "DRAGON_HUNTER_LANCE",
@@ -295,7 +348,8 @@
     "weaponIds": [22804, 22806, 22808, 22810],
     "animationIds": [8291],
     "cooldown": 2,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 25
   },
   {
     "name": "DRAGON_SCIMITAR",
@@ -312,6 +366,15 @@
     "animationIds": [10989],
     "cooldown": 4,
     "category": "MELEE"
+  },
+  {
+    "name": "EARTH_SURGE",
+    "protoId": 135,
+    "weaponIds": [],
+    "animationIds": [9145],
+    "attackerGraphicIds": [1461],
+    "cooldown": 5,
+    "category": "MAGIC"
   },
   {
     "name": "EARTHBOUND_TECPATL",
@@ -335,7 +398,8 @@
     "weaponIds": [21003, 27100],
     "animationIds": [11124],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "EMBERLIGHT_AUTO",
@@ -343,7 +407,8 @@
     "weaponIds": [29589],
     "animationIds": [386, 390],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "EMBERLIGHT_SPEC",
@@ -351,7 +416,9 @@
     "weaponIds": [29589],
     "animationIds": [11138],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "classes": ["DEMONBANE"],
+    "specCost": 50
   },
   {
     "name": "EYE_OF_AYAK_AUTO",
@@ -369,7 +436,8 @@
     "weaponIds": [31113],
     "animationIds": [12394],
     "cooldown": 5,
-    "category": "MAGIC"
+    "category": "MAGIC",
+    "specCost": 50
   },
   {
     "name": "FANG",
@@ -385,7 +453,17 @@
     "weaponIds": [26219, 27246],
     "animationIds": [11222],
     "cooldown": 5,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 25
+  },
+  {
+    "name": "FIRE_SURGE",
+    "protoId": 136,
+    "weaponIds": [],
+    "animationIds": [9145],
+    "attackerGraphicIds": [1464],
+    "cooldown": 5,
+    "category": "MAGIC"
   },
   {
     "name": "GLACIAL_TEMOTLI",
@@ -436,7 +514,8 @@
     "weaponIds": [13576, 28035],
     "animationIds": [1378],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "HAM_JOINT",
@@ -469,6 +548,16 @@
     "animationIds": [400, 4503],
     "cooldown": 4,
     "category": "MELEE"
+  },
+  {
+    "name": "IRONWOOD_BLOWPIPE",
+    "protoId": 130,
+    "weaponIds": [31579],
+    "animationIds": [13143],
+    "cooldown": 2,
+    "continuousAnimation": true,
+    "animationFrameMax": 2,
+    "category": "RANGED"
   },
   {
     "name": "KARILS_CROSSBOW",
@@ -527,6 +616,23 @@
     "category": "MELEE"
   },
   {
+    "name": "OBLIGATOR_SMASH",
+    "protoId": 121,
+    "weaponIds": [34715, 34717],
+    "animationIds": [15122, 15130],
+    "cooldown": 3,
+    "category": "MELEE"
+  },
+  {
+    "name": "OBLIGATOR_THRUST",
+    "protoId": 120,
+    "weaponIds": [34715, 34717],
+    "animationIds": [15123, 15131],
+    "startGraphicIds": [4425, 4426],
+    "cooldown": 5,
+    "category": "MELEE"
+  },
+  {
     "name": "PUNCH",
     "protoId": 66,
     "weaponIds": [-1],
@@ -541,6 +647,35 @@
     "animationIds": [8145],
     "cooldown": 4,
     "category": "MELEE"
+  },
+  {
+    "name": "ROSEWOOD_BLOWPIPE",
+    "protoId": 131,
+    "weaponIds": [31583],
+    "animationIds": [13144],
+    "cooldown": 2,
+    "continuousAnimation": true,
+    "animationFrameMax": 2,
+    "category": "RANGED"
+  },
+  {
+    "name": "ROSEWOOD_BLOWPIPE_SPEC",
+    "protoId": 132,
+    "weaponIds": [31583],
+    "animationIds": [13145],
+    "cooldown": 2,
+    "continuousAnimation": true,
+    "animationFrameMax": 2,
+    "category": "RANGED",
+    "specCost": 25
+  },
+  {
+    "name": "RUNE_CROSSBOW",
+    "protoId": 137,
+    "weaponIds": [9185, 26486],
+    "animationIds": [7552],
+    "cooldown": 5,
+    "category": "RANGED"
   },
   {
     "name": "SAELDOR",
@@ -585,7 +720,8 @@
     "weaponIds": [29591],
     "animationIds": [426],
     "cooldown": 4,
-    "category": "RANGED"
+    "category": "RANGED",
+    "classes": ["DEMONBANE"]
   },
   {
     "name": "SCORCHING_BOW_SPEC",
@@ -593,7 +729,9 @@
     "weaponIds": [29591],
     "animationIds": [11133],
     "cooldown": 4,
-    "category": "RANGED"
+    "category": "RANGED",
+    "classes": ["DEMONBANE"],
+    "specCost": 25
   },
   {
     "name": "SCYTHE",
@@ -617,7 +755,8 @@
     "weaponIds": [11806, 20372],
     "animationIds": [7640, 7641],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "SHADOW",
@@ -646,8 +785,16 @@
   {
     "name": "SOULREAPER_AXE",
     "protoId": 43,
-    "weaponIds": [28338],
-    "animationIds": [10172],
+    "weaponIds": [28338, 33335],
+    "animationIds": [10172, 10171],
+    "cooldown": 5,
+    "category": "MELEE"
+  },
+  {
+    "name": "SOULREAPER_AXE_SPEC",
+    "protoId": 117,
+    "weaponIds": [28338, 33335],
+    "animationIds": [10173],
     "cooldown": 5,
     "category": "MELEE"
   },
@@ -705,7 +852,8 @@
     "weaponIds": [28922],
     "animationIds": [10914],
     "cooldown": 6,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 50
   },
   {
     "name": "TONALZTICS_UNCHARGED",
@@ -780,6 +928,15 @@
     "category": "RANGED"
   },
   {
+    "name": "UNDEAD_GRASP",
+    "protoId": 128,
+    "weaponIds": [],
+    "animationIds": [8972],
+    "attackerGraphicIds": [1862],
+    "cooldown": 5,
+    "category": "MAGIC"
+  },
+  {
     "name": "VENATOR_BOW",
     "protoId": 61,
     "weaponIds": [27610, 30434],
@@ -809,13 +966,24 @@
     "weaponIds": [27690, 29607],
     "animationIds": [1378, 11275],
     "cooldown": 4,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "VOLATILE_NM_SPEC",
     "protoId": 56,
     "weaponIds": [24424, 29602, 29609],
     "animationIds": [8532],
+    "cooldown": 5,
+    "category": "MAGIC",
+    "specCost": 55
+  },
+  {
+    "name": "WATER_SURGE",
+    "protoId": 134,
+    "weaponIds": [],
+    "animationIds": [9145],
+    "attackerGraphicIds": [1458],
     "cooldown": 5,
     "category": "MAGIC"
   },
@@ -833,7 +1001,17 @@
     "weaponIds": [27655],
     "animationIds": [9964],
     "cooldown": 3,
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 50
+  },
+  {
+    "name": "WIND_SURGE",
+    "protoId": 133,
+    "weaponIds": [],
+    "animationIds": [9145],
+    "attackerGraphicIds": [1455],
+    "cooldown": 5,
+    "category": "MAGIC"
   },
   {
     "name": "XGS_SPEC",
@@ -841,7 +1019,8 @@
     "weaponIds": [26233, 27184],
     "animationIds": [9171],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "ZCB_AUTO",
@@ -865,7 +1044,8 @@
       "id": 1995,
       "startCycleOffset": 41
     },
-    "category": "RANGED"
+    "category": "RANGED",
+    "specCost": 75
   },
   {
     "name": "ZGS_SPEC",
@@ -873,7 +1053,8 @@
     "weaponIds": [11808, 20374],
     "animationIds": [7638, 7639],
     "cooldown": 6,
-    "category": "MELEE"
+    "category": "MELEE",
+    "specCost": 50
   },
   {
     "name": "ZOMBIE_AXE",
@@ -882,6 +1063,31 @@
     "animationIds": [3852, 7004],
     "cooldown": 5,
     "category": "MELEE"
+  },
+  {
+    "name": "ZORYAS_TOME_AUTO",
+    "protoId": 125,
+    "weaponIds": [34725],
+    "animationIds": [15139, 15146],
+    "cooldown": 3,
+    "category": "MAGIC"
+  },
+  {
+    "name": "ZORYAS_TOME_BUFFED",
+    "protoId": 127,
+    "weaponIds": [34725],
+    "animationIds": [15139, 15146],
+    "cooldown": 2,
+    "category": "MAGIC"
+  },
+  {
+    "name": "ZORYAS_TOME_SPEC",
+    "protoId": 126,
+    "weaponIds": [34725],
+    "animationIds": [15140, 15147],
+    "cooldown": 3,
+    "category": "MAGIC",
+    "specCost": 50
   },
   {
     "name": "UNKNOWN_BOW",
