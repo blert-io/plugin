@@ -628,6 +628,7 @@
     "protoId": 120,
     "weaponIds": [34715, 34717],
     "animationIds": [15123, 15131],
+    "startGraphicIds": [4425, 4426],
     "cooldown": 5,
     "category": "MELEE"
   },
@@ -667,6 +668,14 @@
     "animationFrameMax": 2,
     "category": "RANGED",
     "specCost": 25
+  },
+  {
+    "name": "RUNE_CROSSBOW",
+    "protoId": 137,
+    "weaponIds": [9185, 26486],
+    "animationIds": [7552],
+    "cooldown": 5,
+    "category": "RANGED"
   },
   {
     "name": "SAELDOR",
