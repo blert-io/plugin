@@ -155,7 +155,9 @@ public class BlertPlugin extends Plugin {
                 .icon(icon)
                 .panel(sidePanel)
                 .build();
-        clientToolbar.addNavigation(sidePanelButton);
+        if (config.showSidebar()) {
+            clientToolbar.addNavigation(sidePanelButton);
+        }
         sidePanel.startPanel();
 
         challenges.add(new TheatreChallenge(client, clientThread));
@@ -304,6 +306,17 @@ public class BlertPlugin extends Plugin {
     @Subscribe
     private void onConfigChanged(ConfigChanged event) {
         websocketManager.onConfigChanged(event);
+        if (!event.getGroup().equals("blert")) {
+            return;
+        }
+
+        if (event.getKey().equals("showSidebar")) {
+            if (config.showSidebar()) {
+                clientToolbar.addNavigation(sidePanelButton);
+            } else {
+                clientToolbar.removeNavigation(sidePanelButton);
+            }
+        }
     }
 
     @Subscribe(priority = 10)

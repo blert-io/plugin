@@ -45,10 +45,20 @@ public interface BlertConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "showSidebar",
+            name = "Show sidebar panel",
+            description = "Show the Blert panel button in the RuneLite sidebar",
+            position = 2,
+            section = GENERAL_SECTION)
+    default boolean showSidebar() {
+        return true;
+    }
+
+    @ConfigItem(
             keyName = "showUsernameMismatchWarning",
             name = "Show username mismatch warning",
             description = "Warn in chat when logging into an OSRS account that isn't linked to your Blert API key",
-            position = 2,
+            position = 3,
             section = GENERAL_SECTION)
     default boolean showUsernameMismatchWarning() {
         return true;
