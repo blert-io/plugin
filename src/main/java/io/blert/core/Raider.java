@@ -26,6 +26,7 @@ package io.blert.core;
 import com.google.common.collect.ImmutableSet;
 import java.util.*;
 import javax.annotation.Nullable;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -50,6 +51,13 @@ public class Raider {
         NOT_PIPING,
         PIPING,
         STOPPED_PIPING,
+    }
+
+    @AllArgsConstructor
+    private static class SpotAnimState {
+        private final ActorSpotAnim spotAnim;
+        private final int startCycle;
+        private final boolean startedThisTick;
     }
 
     @Getter
@@ -98,7 +106,7 @@ public class Raider {
     private int lastAnimationId = -1;
     private int lastAnimationFrame = -1;
 
-    private final Map<Integer, ActorSpotAnim> graphicsIds = new HashMap<>();
+    private Map<Integer, SpotAnimState> graphicsIds = new HashMap<>();
 
     @Getter
     private @Nullable AttackDefinition lastAttack;
@@ -198,6 +206,23 @@ public class Raider {
     }
 
     /**
+     * Returns IDs of graphics that started on the player on the given tick.
+     */
+    public Set<Integer> getStartedGraphicIds(int tick) {
+        if (lastUpdateTick != tick) {
+            return Set.of();
+        }
+
+        Set<Integer> started = new HashSet<>();
+        graphicsIds.forEach((id, state) -> {
+            if (state.startedThisTick) {
+                started.add(id);
+            }
+        });
+        return started;
+    }
+
+    /**
      * Returns the NPC the player is targeting, if any.
      *
      * @return NPC with which the player is interacting, or empty if the player is either not interacting or
@@ -234,10 +259,15 @@ public class Raider {
 
         updateOverheadPrayer();
 
-        graphicsIds.clear();
+        Map<Integer, SpotAnimState> spotAnims = new HashMap<>();
         for (var spotAnim : player.getSpotAnims()) {
-            graphicsIds.put(spotAnim.getId(), spotAnim);
+            SpotAnimState last = graphicsIds.get(spotAnim.getId());
+            // If the cycle changes, the animation has replayed.
+            boolean started =
+                    lastUpdateTick == tick - 1 && (last == null || last.startCycle != spotAnim.getStartCycle());
+            spotAnims.put(spotAnim.getId(), new SpotAnimState(spotAnim, spotAnim.getStartCycle(), started));
         }
+        graphicsIds = spotAnims;
 
         updateEquipment(client, tick);
 
@@ -304,8 +334,8 @@ public class Raider {
 
             SpellDefinition.Graphic graphic = spell.getGraphic(matchedGraphicId);
             if (graphic != null) {
-                ActorSpotAnim spotAnim = graphicsIds.get(matchedGraphicId);
-                if (spotAnim != null && spotAnim.getFrame() > graphic.getMaxFrame()) {
+                SpotAnimState spotAnim = graphicsIds.get(matchedGraphicId);
+                if (spotAnim != null && spotAnim.spotAnim.getFrame() > graphic.getMaxFrame()) {
                     return null;
                 }
             }

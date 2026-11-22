@@ -98,6 +98,12 @@ public class AttackDefinition {
     private final int[] attackerGraphicIds;
 
     /**
+     * Graphic IDs that restart on the attacker with every instance of this
+     * attack. Used as a fallback if an animation does not play or restart.
+     */
+    private final int[] startGraphicIds;
+
+    /**
      * Attack cooldown in game ticks.
      */
     private final int cooldown;
@@ -128,6 +134,7 @@ public class AttackDefinition {
             int[] weaponIds,
             int[] animationIds,
             int[] attackerGraphicIds,
+            int[] startGraphicIds,
             int cooldown,
             List<Projectile> projectiles,
             boolean continuousAnimation,
@@ -137,6 +144,7 @@ public class AttackDefinition {
         this.weaponIds = weaponIds;
         this.animationIds = animationIds;
         this.attackerGraphicIds = attackerGraphicIds != null ? attackerGraphicIds : new int[0];
+        this.startGraphicIds = startGraphicIds != null ? startGraphicIds : new int[0];
         this.cooldown = cooldown;
         this.projectiles = projectiles != null ? projectiles : Collections.emptyList();
         this.continuousAnimation = continuousAnimation;
