@@ -34,6 +34,7 @@ public class AttackDefinition {
     public List<Integer> weaponIds;
     public List<Integer> animationIds;
     public List<Integer> attackerGraphicIds;
+    public List<Integer> startGraphicIds;
     public int cooldown;
     public Projectile projectile;
     public List<Projectile> weaponProjectiles;
@@ -83,6 +84,9 @@ public class AttackDefinition {
                         ? attackerGraphicIds.stream()
                                 .mapToInt(Integer::intValue)
                                 .toArray()
+                        : new int[0],
+                startGraphicIds != null
+                        ? startGraphicIds.stream().mapToInt(Integer::intValue).toArray()
                         : new int[0],
                 cooldown,
                 projectileList,

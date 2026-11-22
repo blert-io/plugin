@@ -41,6 +41,8 @@ public class AttackRegistry {
     private static class State {
         private volatile Map<Integer, List<AttackDefinition>> byAnimationId;
 
+        private volatile Map<Integer, AttackDefinition> byStartGraphicId;
+
         private volatile Set<Integer> continuousAnimationIds;
 
         /**
@@ -52,7 +54,7 @@ public class AttackRegistry {
     @Setter
     private Gson gson;
 
-    private volatile State state = new State(Map.of(), Set.of(), List.of());
+    private volatile State state = new State(Map.of(), Map.of(), Set.of(), List.of());
 
     /**
      * The UNKNOWN attack definition.
@@ -66,6 +68,7 @@ public class AttackRegistry {
                 "UNKNOWN",
                 new int[] {-1},
                 new int[] {-1},
+                new int[0],
                 new int[0],
                 0,
                 null,
@@ -104,6 +107,7 @@ public class AttackRegistry {
 
     void updateDefinitions(List<AttackDefinition> definitions) {
         Map<Integer, List<AttackDefinition>> newByAnimationId = new HashMap<>();
+        Map<Integer, AttackDefinition> newByStartGraphicId = new HashMap<>();
         Set<Integer> newContinuousAnimationIds = new HashSet<>();
         List<AttackDefinition> newSuppressableAttacks = new ArrayList<>();
 
@@ -112,6 +116,10 @@ public class AttackRegistry {
                 newByAnimationId
                         .computeIfAbsent(animationId, k -> new ArrayList<>())
                         .add(def);
+            }
+
+            for (int graphicId : def.getStartGraphicIds()) {
+                newByStartGraphicId.put(graphicId, def);
             }
 
             if (def.isContinuousAnimation()) {
@@ -132,7 +140,8 @@ public class AttackRegistry {
             }
         }
 
-        this.state = new State(newByAnimationId, newContinuousAnimationIds, newSuppressableAttacks);
+        this.state =
+                new State(newByAnimationId, newByStartGraphicId, newContinuousAnimationIds, newSuppressableAttacks);
     }
 
     /**
@@ -175,6 +184,23 @@ public class AttackRegistry {
         }
 
         return Optional.of(unknownAttack);
+    }
+
+    /**
+     * Finds a player attack based on a weapon and a graphic that started on
+     * the attacker.
+     *
+     * @param weaponId  ID of the weapon used.
+     * @param graphicId ID of the graphic that started this tick.
+     * @return The attack that starts the graphic, if it can be performed with
+     * the weapon, or empty if not.
+     */
+    public Optional<AttackDefinition> findByStartGraphic(int weaponId, int graphicId) {
+        AttackDefinition attack = state.byStartGraphicId.get(graphicId);
+        if (attack == null || !attack.hasWeapon(weaponId)) {
+            return Optional.empty();
+        }
+        return Optional.of(attack);
     }
 
     /**
